@@ -65,6 +65,8 @@
     "missing_params": "Missing required login parameters (code/state)",
     "token_exchange_failed": "OIDC token exchange failed",
     "matrix_token_failed": "Failed to get Matrix access token",
+    "unsupported_title": "OIDC login is not enabled on this server",
+    "unsupported_message": "This server does not provide OIDC authentication. Please sign in with account credentials or a QR code.",
     "unknown_error": "An unknown error occurred"
   },
   "status": {

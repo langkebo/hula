@@ -133,4 +133,37 @@ describe('TjgSpaceTree', () => {
       })
     )
   })
+
+  it('加载失败时显示错误态而不是空状态', async () => {
+    getHierarchyMock.mockRejectedValue(new Error('boom'))
+
+    const wrapper = mount(TjgSpaceTree, {
+      props: {
+        spaceId: 'space-root'
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="space-tree-error"]').exists()).toBe(true)
+    expect(wrapper.find('.empty-state').exists()).toBe(false)
+  })
+
+  it('重试成功后恢复子空间列表', async () => {
+    getHierarchyMock.mockRejectedValueOnce(new Error('boom'))
+
+    const wrapper = mount(TjgSpaceTree, {
+      props: {
+        spaceId: 'space-root'
+      }
+    })
+
+    await flushPromises()
+
+    await wrapper.find('[data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="space-tree-error"]').exists()).toBe(false)
+    expect(wrapper.findAll('[role="treeitem"]')).toHaveLength(2)
+  })
 })

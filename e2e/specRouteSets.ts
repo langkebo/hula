@@ -19,6 +19,7 @@ export const MOBILE_ONLY_SPECS: readonly string[] = [
   'mobile-entry-smoke',
   'mobile-friends-card',
   'mobile-input-bar',
+  'mobile-safe-area',
   'mobile-session-list',
   'mobile-sso-login',
   'mobile-touch-targets',
@@ -37,6 +38,9 @@ export const MOBILE_ONLY_SPECS: readonly string[] = [
  * （移动登录壳基线见报告 §3.2-A11Y-M）。
  */
 export const DESKTOP_ONLY_SPECS: readonly string[] = [
+  'a11y-account-live',
+  'account-keyboard-live',
+  'account-states-live',
   'admin-dashboard-live',
   'debug-phase3',
   'desktop-key-flows',

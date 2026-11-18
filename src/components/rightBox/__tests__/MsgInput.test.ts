@@ -14,7 +14,9 @@ const {
   mittOnMock,
   mittOffMock,
   mittEmitMock,
-  appWindowListenMock
+  appWindowListenMock,
+  getCapabilityStatusMock,
+  delayedSupportedHolder
 } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
   processFilesMock: vi.fn(),
@@ -25,7 +27,9 @@ const {
   mittOnMock: vi.fn(),
   mittOffMock: vi.fn(),
   mittEmitMock: vi.fn(),
-  appWindowListenMock: vi.fn()
+  appWindowListenMock: vi.fn(),
+  getCapabilityStatusMock: vi.fn(),
+  delayedSupportedHolder: { value: false }
 }))
 
 let mockLocationStore: {
@@ -112,12 +116,20 @@ vi.mock('@/composables/common/useMitt', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/MatrixCapabilityService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/matrix/MatrixCapabilityService')>()
+  return {
+    ...actual,
+    useServerCapability: () => ({ getCapabilityStatus: getCapabilityStatusMock })
+  }
+})
+
 vi.mock('@/composables/chat/useMsgInput', () => ({
   useMsgInput: () => ({
     inputKeyDown: vi.fn(),
     scheduleDelayedMessage: vi.fn(() => Promise.resolve(false)),
     delayedMessages: {
-      supported: ref(false),
+      supported: ref(delayedSupportedHolder.value),
       probed: ref(true),
       items: ref([]),
       loading: ref(false),
@@ -166,7 +178,7 @@ vi.mock('@/stores/domains/chat/room', () => ({
 vi.mock('../DelayedMessagesModal.vue', () => ({
   default: {
     name: 'DelayedMessagesModal',
-    template: '<div />'
+    template: '<div data-test="DelayedMessagesModal" />'
   }
 }))
 
@@ -266,6 +278,9 @@ const mountComponent = () =>
 describe('MsgInput', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    delayedSupportedHolder.value = false
+    getCapabilityStatusMock.mockReturnValue('unknown')
 
     globalStore = reactive({
       currentSession: null,
@@ -371,5 +386,23 @@ describe('MsgInput', () => {
 
     expect(loggerErrorMock).toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('处理拖拽文件失败', 'error')
+  })
+
+  it('服务端声明支持定时消息时渲染入口', () => {
+    delayedSupportedHolder.value = true
+    getCapabilityStatusMock.mockReturnValue('supported')
+
+    const wrapper = mountComponent()
+
+    expect(wrapper.find('[data-test="DelayedMessagesModal"]').exists()).toBe(true)
+  })
+
+  it('能力位显式不支持定时消息时收起入口', () => {
+    delayedSupportedHolder.value = true
+    getCapabilityStatusMock.mockReturnValue('unsupported')
+
+    const wrapper = mountComponent()
+
+    expect(wrapper.find('[data-test="DelayedMessagesModal"]').exists()).toBe(false)
   })
 })

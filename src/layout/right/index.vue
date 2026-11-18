@@ -86,9 +86,10 @@
               </svg>
             </template>
             <template #extra>
-              <n-text depth="3" class="text-[var(--text-xs)] mt-8px inline-block">
+              <!-- 用普通 span 继承容器 --tjg-text-tertiary；n-text depth=3 在暗色面板上对比度不足 -->
+              <span class="text-[var(--text-xs)] mt-8px inline-block">
                 {{ t('home.chat_sidebar.empty.select_to_start') }}
-              </n-text>
+              </span>
             </template>
           </n-empty>
         </div>

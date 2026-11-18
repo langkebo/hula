@@ -10,6 +10,37 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
   const x = ref(0)
   const y = ref(0)
 
+  /** 打开菜单的触发元素，用于关闭后回收焦点（WCAG 2.4.3） */
+  const openerElement = ref<HTMLElement | null>(null)
+
+  const FOCUSABLE_SELECTOR = '[tabindex], button, a[href], input, textarea, select, [contenteditable="true"]'
+
+  /**
+   * 解析触发元素：右键目标（或其可聚焦祖先）优先。
+   * 右键通常不会改变 `document.activeElement`（仍是上次点击的输入框），
+   * 直接回收到 activeElement 会把焦点带离右键位置。
+   */
+  const resolveOpener = (e: MouseEvent): HTMLElement | null => {
+    const root = ContextMenuRef.value as HTMLElement | null
+    const target = e.target as Node | null
+    if (target instanceof Element) {
+      const candidate = target.closest<HTMLElement>(FOCUSABLE_SELECTOR)
+      if (candidate && (!root || root.contains(candidate))) return candidate
+    }
+    const active = document.activeElement
+    if (active instanceof HTMLElement && active !== document.body) return active
+    return null
+  }
+
+  /** 关闭后把焦点还给触发元素；元素已卸载时放弃，避免焦点落到 body */
+  const restoreOpenerFocus = () => {
+    const opener = openerElement.value
+    openerElement.value = null
+    if (opener?.isConnected) {
+      opener.focus({ preventScroll: true })
+    }
+  }
+
   // 禁止滚动的默认行为
   const preventDefault = (e: Event) => e.preventDefault()
 
@@ -71,6 +102,7 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
     }
 
     handleVirtualListScroll(true)
+    openerElement.value = resolveOpener(e)
     showMenu.value = true
     x.value = e.clientX
     y.value = e.clientY
@@ -82,6 +114,8 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
     if (!(event.target as HTMLElement | null)?.matches('.context-menu, .context-menu *')) {
       handleVirtualListScroll(false)
       showMenu.value = false
+      // 指针关闭不抢焦点，触发元素只服务于键盘关闭时的焦点回收
+      openerElement.value = null
       enableTextSelection() // 恢复文本选择功能
     }
     window.removeEventListener('wheel', preventDefault) // 移除禁止滚轮滚动
@@ -164,6 +198,7 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
     showMenu,
     x,
     y,
-    handleContextMenu
+    handleContextMenu,
+    restoreOpenerFocus
   }
 }

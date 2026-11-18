@@ -52,6 +52,15 @@
           <n-spin size="small" />
         </div>
 
+        <div v-else-if="loadFailed">
+          <ErrorState
+            compact
+            :title="t('common.load_failed')"
+            :retry-text="t('common.retry')"
+            data-test="announcement-error"
+            @retry="loadAnnouncements" />
+        </div>
+
         <EmptyState
           v-else-if="isEmptyAnnouncements"
           compact
@@ -115,6 +124,7 @@ import { emitTo } from '@tauri-apps/api/event'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { extractLinkSegments, openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
@@ -142,6 +152,8 @@ const userStore = useUserStore()
 
 const announcements = ref<Announcement[]>([])
 const loading = ref(false)
+// 读取失败不能落成空列表：那会把「读不到公告」显示成「本群没有公告」
+const loadFailed = ref(false)
 
 const isEmptyAnnouncements = computed(() => announcements.value.length === 0)
 const isEditing = ref(false)
@@ -174,6 +186,7 @@ const openUrl = (url: string) => openExternalUrl(url)
 const loadAnnouncements = async () => {
   if (!props.roomId) return
   loading.value = true
+  loadFailed.value = false
   try {
     const data = await announcementStore.getGroupAnnouncementList(props.roomId, 1, 20)
     if (data?.records) {
@@ -185,6 +198,8 @@ const loadAnnouncements = async () => {
     }
   } catch (err) {
     logger.error(`Failed to load announcements: ${err}`)
+    announcements.value = []
+    loadFailed.value = true
   } finally {
     loading.value = false
   }

@@ -15,7 +15,6 @@ export type Messages = {
   "empty": "名单为空",
   "encrypt_new_dm": "新私聊默认加密",
   "encrypt_new_dm_hint": "新建私聊时默认开启端到端加密",
-  "load_failed": "邀请权限加载失败",
   "loading": "加载中...",
   "mode": {
     "allow_all": "所有人",
@@ -32,7 +31,7 @@ export type Messages = {
   "save_success": "邀请权限已保存",
   "title": "邀请权限",
   "user_id": "用户 ID",
-  "user_id_placeholder": "例如 @alice:example.org"
+  "user_id_placeholder": "例如 {'@'}alice:example.org"
 }
 
 /**
@@ -56,7 +55,6 @@ export type KeyPaths =
   | "mobile_invite_permission.empty"
   | "mobile_invite_permission.encrypt_new_dm"
   | "mobile_invite_permission.encrypt_new_dm_hint"
-  | "mobile_invite_permission.load_failed"
   | "mobile_invite_permission.loading"
   | "mobile_invite_permission.mode.allow_all"
   | "mobile_invite_permission.mode.blocklist"

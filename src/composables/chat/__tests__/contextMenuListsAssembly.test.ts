@@ -20,10 +20,11 @@ vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
   }
 }))
 
-const { getRoomEventMediaUrlsMock, writeMock, getRoomEventUrlMock } = vi.hoisted(() => ({
+const { getRoomEventMediaUrlsMock, writeMock, getRoomEventUrlMock, saveTextFileAsMock } = vi.hoisted(() => ({
   getRoomEventMediaUrlsMock: vi.fn(),
   writeMock: vi.fn(),
-  getRoomEventUrlMock: vi.fn()
+  getRoomEventUrlMock: vi.fn(),
+  saveTextFileAsMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/room/RoomFacade', () => ({
@@ -39,7 +40,8 @@ vi.mock('@/composables/chat/openMsgSession', () => ({ openMsgSession: vi.fn() })
 
 vi.mock('@/utils/AttachmentSaver', () => ({
   saveFileAttachmentAs: vi.fn(),
-  saveVideoAttachmentAs: vi.fn()
+  saveVideoAttachmentAs: vi.fn(),
+  saveTextFileAs: saveTextFileAsMock
 }))
 
 import { createContextMenuLists } from '@/composables/chat/contextMenuLists'
@@ -173,6 +175,44 @@ describe('右键菜单列表装配', () => {
     expect(handleCopy).toHaveBeenCalledWith('https://cdn.example.com/a.png', true, '$e1')
   })
 
+  it('「导出为 HTML」仅对纯文本消息可见，且点击后写入 HTML 文件', async () => {
+    const lists = makeLists()
+    const menu = lists.specialMenuList
+      .value(MsgEnum.TEXT)
+      .find(
+        (item) =>
+          (typeof item.label === 'function' ? item.label({} as never) : item.label) === 'menu.export_message_html'
+      )
+    expect(menu).toBeTruthy()
+    if (!menu?.visible) throw new Error('菜单项应声明 visible')
+
+    const textItem = {
+      message: {
+        id: '$e9',
+        roomId: '!r:hs',
+        type: MsgEnum.TEXT,
+        sendTime: 1700000000000,
+        body: { content: 'hello <b>' }
+      },
+      fromUser: { uid: '@me:hs', username: '我' }
+    }
+    const imageItem = {
+      message: { id: '$e10', roomId: '!r:hs', type: MsgEnum.IMAGE, body: { url: 'mxc://hs/a' } },
+      fromUser: { uid: '@me:hs' }
+    }
+    expect(menu.visible(textItem as never)).toBe(true)
+    expect(menu.visible(imageItem as never)).toBe(false)
+
+    await (menu.click as (item: never) => Promise<void>)(textItem as never)
+
+    expect(saveTextFileAsMock).toHaveBeenCalledTimes(1)
+    const arg = saveTextFileAsMock.mock.calls[0][0]
+    expect(arg.defaultFileName).toMatch(/\.html$/)
+    // 正文里的标签必须已转义
+    expect(arg.content).toContain('&lt;b&gt;')
+    expect(arg.content).not.toContain('hello <b>')
+  })
+
   it('媒体菜单复用通用菜单项实例，而非复制一份', () => {
     const lists = makeLists()
     const commonSelect = lists.commonMenuList.value.find((menu) => menu.icon === 'list-checkbox')
@@ -204,7 +244,7 @@ describe('右键菜单列表装配', () => {
     const lists = makeLists()
     const icons = lists.specialMenuList.value(MsgEnum.TEXT).map((menu) => menu.icon)
 
-    expect(icons).toEqual(['delete', 'info', 'check', 'link'])
+    expect(icons).toEqual(['delete', 'info', 'check', 'link', 'download'])
   })
 
   it('移动端不输出预览与在文件夹中显示的桌面专属项', () => {

@@ -12,7 +12,8 @@ const {
   waitForReciprocationAndLoginMock,
   onStatusChangeMock,
   cancelMock,
-  loginCommandMock
+  loginCommandMock,
+  getCapabilityStatusMock
 } = vi.hoisted(() => ({
   invokeMock: vi.fn(),
   invokeWithErrorHandlerMock: vi.fn(),
@@ -23,7 +24,8 @@ const {
   waitForReciprocationAndLoginMock: vi.fn(),
   onStatusChangeMock: vi.fn(),
   cancelMock: vi.fn(),
-  loginCommandMock: vi.fn()
+  loginCommandMock: vi.fn(),
+  getCapabilityStatusMock: vi.fn()
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -128,6 +130,14 @@ vi.mock('@/stores/domains/widget/global', () => ({
   })
 }))
 
+vi.mock('@/services/matrix/MatrixCapabilityService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/matrix/MatrixCapabilityService')>()
+  return {
+    ...actual,
+    useServerCapability: () => ({ getCapabilityStatus: getCapabilityStatusMock })
+  }
+})
+
 vi.mock('@/components/rendezvous/RendezvousSessionManager.vue', () => ({
   default: { name: 'RendezvousSessionManager', template: '<div />' }
 }))
@@ -173,6 +183,7 @@ describe('QRCode', () => {
     loginCommandMock.mockResolvedValue(undefined)
     invokeMock.mockResolvedValue(undefined)
     invokeWithErrorHandlerMock.mockResolvedValue(undefined)
+    getCapabilityStatusMock.mockReturnValue('unknown')
   })
 
   it('saves session endpoint before completing qr login command', async () => {
@@ -215,5 +226,19 @@ describe('QRCode', () => {
     wrapper.unmount()
 
     expect(cancelMock).toHaveBeenCalled()
+  })
+
+  it('能力位显式不支持 MSC4108 时收起快速登录入口且不发起二维码流程', async () => {
+    getCapabilityStatusMock.mockReturnValue('unsupported')
+
+    const wrapper = shallowMount(QRCode)
+    await flushPromises()
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as { quickLoginSupported: boolean; loginMode: string }
+
+    expect(vm.quickLoginSupported).toBe(false)
+    expect(vm.loginMode).toBe('rendezvous')
+    expect(generateQrCodeAsNewDeviceMock).not.toHaveBeenCalled()
   })
 })

@@ -179,8 +179,7 @@ export function createSessionStorePort(): SessionStorePort {
         groupStore().groupDetails.length = 0
       },
       clearGroupStore() {
-        // 名字沿用 port 契约，但**行为**改为 group store 的全量清理：
-        // `clearAllData()` 清 membersMap + groupInfoMap + memberLoadErrors 三套状态。
+        // 行为是 group store 的全量清理：`clearAllData()` 清 membersMap + groupInfoMap + memberLoadErrors 三套状态。
         // 只删 membersMap 会留下「幽灵 partial」—— 错误映射按 roomId 累积，
         // 换账号后进同一 roomId 仍会读到上一个账号的加载失败（§19.17/§19.19）。
         groupStore().clearAllData()

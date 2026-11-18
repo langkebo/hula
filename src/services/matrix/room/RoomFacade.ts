@@ -24,6 +24,7 @@ import { matrixRoomQueryService } from './QueryService'
 import { roomOperations } from './RoomOperations'
 import type { MatrixRoomSummary } from './SummaryService'
 import { matrixRoomSummaryAggregateService } from './SummaryService'
+import { matrixRoomTimelineService } from './TimelineService'
 import type {
   RoomEventMediaUrlOutcome,
   RoomEventPerspectiveOutcome,
@@ -31,8 +32,7 @@ import type {
   RoomReceiptsOutcome,
   RoomReducedEventsOutcome,
   RoomRenderedOutcome
-} from './TimelineService'
-import { matrixRoomTimelineService } from './TimelineService'
+} from './timelineOutcomes'
 
 export interface MatrixRoomActionFacade {
   // --- Delegated to CreationService (deep) ---

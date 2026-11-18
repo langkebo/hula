@@ -96,10 +96,10 @@ onMounted(async () => {
     // 原来自建 fetch + 5 分钟缓存，与 SDK 是同一条 vendor/v1 端点，已在 C2 收敛中删除。
     const [caps, perms] = await Promise.all([
       matrixRoomReadFacade.getRoomCapabilities(props.roomId).catch(() => null),
-      matrixRoomReadFacade.getRoomPermissions(props.roomId).catch(() => ({}))
+      matrixRoomReadFacade.getRoomPermissions(props.roomId).catch(() => ({ status: 'error' }) as const)
     ])
     capabilities.value = caps as RoomCapabilitiesPayload | null
-    permissions.value = (perms as Record<string, unknown>) ?? {}
+    permissions.value = perms.status === 'ok' ? perms.permissions.raw : {}
   } finally {
     loading.value = false
   }

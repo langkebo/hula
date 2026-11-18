@@ -6,6 +6,7 @@
 export type Messages = {
   "title": "在线状态",
   "subtitle": "设置您的在线状态",
+  "load_failed": "获取当前状态失败",
   "status_message": "状态消息",
   "status_message_placeholder": "设置状态消息（可选）",
   "save": "保存",
@@ -45,6 +46,7 @@ export type Messages = {
 export type KeyPaths =
   | "mobile_status.title"
   | "mobile_status.subtitle"
+  | "mobile_status.load_failed"
   | "mobile_status.status_message"
   | "mobile_status.status_message_placeholder"
   | "mobile_status.save"

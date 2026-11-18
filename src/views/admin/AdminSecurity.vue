@@ -2,14 +2,12 @@
   <div class="admin-security">
     <n-page-header :title="t('admin.security.title')" :subtitle="t('admin.security.subtitle')">
       <template #extra>
-        <n-space>
-          <n-button @click="refreshCurrentTab()" :loading="loading">
-            <template #icon>
-              <n-icon><RefreshIcon /></n-icon>
-            </template>
-            {{ t('common.refresh') }}
-          </n-button>
-        </n-space>
+        <n-button @click="refreshCurrentTab()" :loading="loading">
+          <template #icon>
+            <n-icon><RefreshIcon /></n-icon>
+          </template>
+          {{ t('common.refresh') }}
+        </n-button>
       </template>
     </n-page-header>
 
@@ -194,7 +192,6 @@ import {
   NRadio,
   NRadioGroup,
   NSelect,
-  NSpace,
   NSpin,
   NSwitch,
   NTabPane,
@@ -214,10 +211,8 @@ const logger = createLogger('AdminSecurity')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { auditLogs, loading, nextBatch, loadAuditLogs } = useAdminSecurity()
-
 // ===== Tab 状态 =====
 const activeTab = ref('audit')
-
 // ===== 审计日志 =====
 interface AuditLogRow {
   id: string
@@ -477,6 +472,7 @@ async function saveRegistrationPolicy() {
       registrations_enabled: enabled,
       registration_requires_approval: approval
     })
+    await loadRegistrationPolicy()
     showFeedback(t('admin.security.registration_policy_saved'), 'success')
   } catch (e) {
     logger.error('Failed to save registration policy', e)
@@ -542,8 +538,7 @@ async function saveFederationPolicy() {
         await adminService.removeFromFederationBlacklist(domain)
       }
     }
-    // ADM-10：写入后按服务端实际状态回读（黑名单逐条 diff 写入，本地文本可能
-    // 与服务端规范化后的域名列表不一致），避免界面展示「编辑意图」而非生效值。
+    // ADM-10：黑名单逐条 diff 写入，回读服务端生效值后再展示
     await loadFederationPolicy()
     showFeedback(t('admin.security.federation_policy_saved'), 'success')
   } catch (e) {
@@ -598,6 +593,7 @@ async function savePasswordPolicy() {
         expiry_days: passwordPolicy.expiryDays
       }
     })
+    await loadPasswordPolicy()
     showFeedback(t('admin.security.password_policy_saved'), 'success')
   } catch (e) {
     logger.error('Failed to save password policy', e)

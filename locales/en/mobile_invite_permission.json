@@ -10,7 +10,6 @@
   "empty": "The list is empty",
   "encrypt_new_dm": "Encrypt new direct messages",
   "encrypt_new_dm_hint": "Turn on end-to-end encryption by default for new DMs",
-  "load_failed": "Failed to load invite permission",
   "loading": "Loading...",
   "mode": {
     "allow_all": "Everyone",
@@ -27,5 +26,5 @@
   "save_success": "Invite permission saved",
   "title": "Invite permission",
   "user_id": "User ID",
-  "user_id_placeholder": "e.g. @alice:example.org"
+  "user_id_placeholder": "e.g. {'@'}alice:example.org"
 }

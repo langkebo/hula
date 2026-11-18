@@ -24,6 +24,25 @@ describe('useFileUploadQueue — updateFileServerProgress', () => {
     expect(globalFileUploadQueue.queue.items[0]?.serverProgress).toEqual({ uploadedChunks: 2, totalChunks: 5 })
   })
 
+  it('上传中写入字节进度与状态', () => {
+    const item = initSingleItem()
+    globalFileUploadQueue.updateFileStatus(item.id, 'uploading')
+
+    globalFileUploadQueue.updateFileServerProgress(item.id, 2, 5, {
+      uploadedSize: 2048,
+      totalSize: 5120,
+      status: 'in_progress'
+    })
+
+    expect(globalFileUploadQueue.queue.items[0]?.serverProgress).toEqual({
+      uploadedChunks: 2,
+      totalChunks: 5,
+      uploadedSize: 2048,
+      totalSize: 5120,
+      status: 'in_progress'
+    })
+  })
+
   it('非 uploading 状态忽略写入', () => {
     const item = initSingleItem()
 

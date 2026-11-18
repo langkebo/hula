@@ -157,4 +157,40 @@ describe('PublicSpaceDiscoveryDialog', () => {
     expect(children).toHaveLength(1)
     expect(children[0].text()).toContain('Child Space')
   })
+
+  it('子空间读取失败时展示错误与重试，而不是「暂无子空间」空态', async () => {
+    getPublicSpacesMock.mockResolvedValue([publicSpace])
+    getSpaceHierarchyMock.mockRejectedValueOnce(new Error('boom'))
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="psd-browse"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="psd-children-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="psd-children-error"] [data-testid="error-retry"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="psd-children-empty"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="psd-child"]')).toHaveLength(0)
+  })
+
+  it('子空间读取失败后点击重试可恢复展示子空间', async () => {
+    getPublicSpacesMock.mockResolvedValue([publicSpace])
+    getSpaceHierarchyMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({
+      rooms: [{ room_id: '!child-1:server', room_type: 'm.space', name: 'Child Space', num_joined_members: 7 }]
+    })
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="psd-browse"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="psd-children-error"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="psd-children-error"] [data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="psd-children-error"]').exists()).toBe(false)
+    const children = wrapper.findAll('[data-testid="psd-child"]')
+    expect(children).toHaveLength(1)
+    expect(children[0].text()).toContain('Child Space')
+  })
 })

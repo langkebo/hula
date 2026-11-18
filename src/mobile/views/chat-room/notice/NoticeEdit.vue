@@ -13,46 +13,58 @@
 
     <template #container>
       <div class="h-full p-10px">
-        <van-field
-          v-model="announcementContent"
-          type="textarea"
-          :placeholder="t('mobile_chat.notice.content_placeholder')"
-          class="w-full"
-          rows="5"
-          autosize
-          :maxlength="1000"
-          show-word-limit
-          :spellcheck="false" />
+        <MobileAsyncState
+          v-if="detailLoadFailed"
+          state="error"
+          :error-text="t('mobile_chat.notice.fetch_failed')"
+          min-height="240px"
+          data-testid="notice-detail-error"
+          @retry="loadAnnouncementDetail" />
 
-        <div class="upload-image-container pt-10px">
-          <div class="upload-trigger">
-            <svg class="size-24px text-[--tjg-text-tertiary]" aria-hidden="true">
-              <use href="#plus"></use>
-            </svg>
-            <span class="text-12px text-[--tjg-text-tertiary] mt-5px">{{ t('mobile_chat.notice.click_upload') }}</span>
-          </div>
-        </div>
+        <template v-else>
+          <van-field
+            v-model="announcementContent"
+            type="textarea"
+            :placeholder="t('mobile_chat.notice.content_placeholder')"
+            class="w-full"
+            rows="5"
+            autosize
+            :maxlength="1000"
+            show-word-limit
+            :spellcheck="false" />
 
-        <div class="pb-10px">
-          <div class="flex flex-col w-full">
-            <div class="flex justify-between py-15px px-15px items-center border-b border-gray-200">
-              <div class="flex flex-col">
-                <div class="text-14px font-medium">{{ t('mobile_chat.notice.set_pinned') }}</div>
-                <div class="text-12px text-gray-500 mt-5px">{{ t('mobile_chat.notice.pinned_desc') }}</div>
-              </div>
-              <van-switch v-model="top" />
+          <div class="upload-image-container pt-10px">
+            <div class="upload-trigger">
+              <svg class="size-24px text-[--tjg-text-tertiary]" aria-hidden="true">
+                <use href="#plus"></use>
+              </svg>
+              <span class="text-12px text-[--tjg-text-tertiary] mt-5px">
+                {{ t('mobile_chat.notice.click_upload') }}
+              </span>
             </div>
           </div>
 
-          <div class="flex justify-center gap-15px">
-            <van-button plain round size="large" class="w-40%" @click="handleCancel">
-              {{ t('mobile_chat.notice.cancel') }}
-            </van-button>
-            <van-button type="primary" round size="large" class="w-40%" @click="handleSubmit" :loading="submitting">
-              {{ t('mobile_chat.notice.save') }}
-            </van-button>
+          <div class="pb-10px">
+            <div class="flex flex-col w-full">
+              <div class="flex justify-between py-15px px-15px items-center border-b border-gray-200">
+                <div class="flex flex-col">
+                  <div class="text-14px font-medium">{{ t('mobile_chat.notice.set_pinned') }}</div>
+                  <div class="text-12px text-gray-500 mt-5px">{{ t('mobile_chat.notice.pinned_desc') }}</div>
+                </div>
+                <van-switch v-model="top" />
+              </div>
+            </div>
+
+            <div class="flex justify-center gap-15px">
+              <van-button plain round size="large" class="w-40%" @click="handleCancel">
+                {{ t('mobile_chat.notice.cancel') }}
+              </van-button>
+              <van-button type="primary" round size="large" class="w-40%" @click="handleSubmit" :loading="submitting">
+                {{ t('mobile_chat.notice.save') }}
+              </van-button>
+            </div>
           </div>
-        </div>
+        </template>
       </div>
     </template>
   </AutoFixHeightPage>
@@ -62,6 +74,7 @@
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
@@ -88,6 +101,8 @@ const draftKey = computed(() => buildNoticeDraftKey(roomId.value, noticeId.value
 const announcementContent = ref('')
 const top = ref(false)
 const submitting = ref(false)
+/** 编辑态详情读取失败标记：失败时只展示错误态，不能把空表单伪装成「可编辑」 */
+const detailLoadFailed = ref(false)
 
 const restoreDraft = () => {
   const draft = readNoticeDraft(draftKey.value)
@@ -99,9 +114,12 @@ const restoreDraft = () => {
 
 const loadAnnouncementDetail = async () => {
   if (!isEditMode.value) {
+    // 新增模式没有远端详情可读，草稿就是唯一来源
+    restoreDraft()
     return
   }
 
+  detailLoadFailed.value = false
   try {
     const data = await matrixAnnouncementService.getAnnouncementById(
       globalStore.currentSessionRoomId,
@@ -112,8 +130,12 @@ const loadAnnouncementDetail = async () => {
       announcementContent.value = data.content
       top.value = data.isPinned
     }
+    // 草稿优先于服务端内容回填，避免用户未提交的编辑被覆盖
+    restoreDraft()
   } catch (error) {
     logger.error('Failed to load announcement details:', error)
+    detailLoadFailed.value = true
+    showFeedback(t('mobile_chat.notice.fetch_failed'), 'error')
   }
 }
 
@@ -178,7 +200,6 @@ const handleSubmit = async () => {
 
 onMounted(async () => {
   await loadAnnouncementDetail()
-  restoreDraft()
 })
 </script>
 

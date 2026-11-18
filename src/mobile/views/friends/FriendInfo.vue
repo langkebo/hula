@@ -36,9 +36,22 @@
                           <span class="text-14px text-[--tjg-text-secondary] w-80px">
                             {{ t('mobile_contact.friend_info.user_name') }}
                           </span>
-                          <span class="text-14px">
+                          <span v-if="profileLoadFailed" class="text-14px text-[--tjg-text-tertiary]">
+                            {{ t('mobile_contact.friend_info.load_failed') }}
+                          </span>
+                          <span v-else class="text-14px">
                             {{ targetDisplayName || t('mobile_contact.friend_info.unknown') }}
                           </span>
+                          <van-button
+                            v-if="profileLoadFailed"
+                            size="mini"
+                            plain
+                            type="primary"
+                            class="ml-8px"
+                            data-test="friend-profile-retry"
+                            @click="loadTargetProfile">
+                            {{ t('common.retry') }}
+                          </van-button>
                         </div>
                       </div>
                     </div>
@@ -88,6 +101,8 @@ const activeTab = ref(0)
  * 优先取好友列表（含备注名），其次取群成员缓存，最后按 uid 拉一次 profile。
  */
 const remoteDisplayName = ref('')
+/** 资料读取失败不能落成「未知」：那会把读不到显示成没有昵称 */
+const profileLoadFailed = ref(false)
 const targetDisplayName = computed(() => {
   const contact = contactStore.contactsList.find((item) => item.userId === uid)
   if (contact) return getContactDisplayName(contact)
@@ -97,11 +112,13 @@ const targetDisplayName = computed(() => {
 
 const loadTargetProfile = async (): Promise<void> => {
   if (targetDisplayName.value) return
+  profileLoadFailed.value = false
   try {
     const profile = await profileService.getProfile(uid)
     remoteDisplayName.value = profile.displayname || ''
   } catch (error) {
     logger.error('Failed to load target profile:', uid, error)
+    profileLoadFailed.value = true
   }
 }
 

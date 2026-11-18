@@ -1,7 +1,9 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { CallTypeEnum } from '@/enums'
+import { CallTypeEnum, OnlineEnum } from '@/enums'
+import { matrixRoomQueryFacade } from '@/services/matrix/room/RoomFacade'
+import { type MatrixRoomMember, useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import ChatHeaderRoot from '../ChatHeaderRoot.vue'
 
@@ -91,5 +93,38 @@ describe('ChatHeaderRoot 通话按钮接线 (#5)', () => {
     await (wrapper.vm as unknown as { handleStartVideoCall: () => Promise<void> }).handleStartVideoCall()
 
     expect(startRtcCallMock).not.toHaveBeenCalled()
+  })
+
+  it('成员总数读取失败时不落成 0，回落到已加载成员列表长度', async () => {
+    const makeMember = (userId: string): MatrixRoomMember => ({
+      userId,
+      displayName: userId,
+      avatarUrl: null,
+      membership: 'join',
+      powerLevel: 0,
+      isModerator: false,
+      isCreator: false,
+      name: userId,
+      uid: userId,
+      account: userId,
+      avatar: '',
+      activeStatus: OnlineEnum.OFFLINE,
+      roleId: 0,
+      lastOptTime: 0
+    })
+    const groupStore = useGroupStore(pinia)
+    groupStore.membersMap['!room:example.com'] = [makeMember('@alice:example.com'), makeMember('@bob:example.com')]
+
+    const getCountSpy = vi
+      .spyOn(matrixRoomQueryFacade, 'getJoinedMemberCount')
+      .mockRejectedValueOnce(new Error('server error'))
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(getCountSpy).toHaveBeenCalledWith('!room:example.com')
+    const vm = wrapper.vm as unknown as { joinedMemberCount: number | null; memberCount: number }
+    expect(vm.joinedMemberCount).toBeNull()
+    expect(vm.memberCount).toBe(2)
   })
 })

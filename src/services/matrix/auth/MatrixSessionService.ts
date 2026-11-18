@@ -1,48 +1,21 @@
-import { MatrixRoomType } from '@/common/matrixConstants'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
-import type { DmRoomInfo, MatrixClient, MatrixEvent, Room } from '@/services/matrix/sdk'
+import type { DmRoomInfo, MatrixClient, Room } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { resolveDmIdentityKey } from '@/utils/userIdentity'
-import { hasOwn } from '@/utils/webCompat'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
-import { findDmCounterpart, isDirectMessageRoomFromRoom } from '../room/roomTypeUtils'
+import type { SessionDetail, SessionDetailQuery, SessionInfo } from './sessionRoomMapper'
+import { buildSessionFromRoom, getUnreadCount, isSystemContainerRoom } from './sessionRoomMapper'
+
+export type {
+  RoomNotificationSettings,
+  SessionDetail,
+  SessionDetailQuery,
+  SessionInfo,
+  SessionTagContent
+} from './sessionRoomMapper'
 
 const logger = createLogger('MatrixSessionService')
-
-interface RoomNotificationSettings {
-  shield?: boolean
-  muteNotification?: NotificationTypeEnum
-}
-
-interface SessionTagContent {
-  tags?: Record<string, unknown>
-}
-
-interface SessionInfo {
-  id?: string
-  roomId: string
-  name: string
-  avatar: string
-  type: RoomTypeEnum
-  unreadCount: number
-  activeTime: number
-  top: boolean
-  shield: boolean
-  muteNotification: NotificationTypeEnum
-  detailId?: string | undefined
-  remark?: string
-  account?: string | undefined
-  text?: string
-  isFavorite?: boolean
-}
-
-interface SessionDetail extends SessionInfo {}
-
-interface SessionDetailQuery {
-  id: string
-  roomType?: number
-}
 
 type MatrixClientWithTags = MatrixClient & {
   setRoomTag?: (roomId: string, tagName: string, metadata?: Record<string, unknown>) => Promise<unknown>
@@ -54,17 +27,6 @@ const DIRECT_ROOM_READY_TIMEOUT_MS = 3_000
 const DIRECT_ROOM_READY_POLL_INTERVAL_MS = 100
 
 class MatrixSessionService extends BaseMatrixService {
-  /**
-   * 系统容器房间（如后端存放好友关系的 m.friends 房间）只承载协议状态，
-   * 不能作为聊天会话展示：否则用户会对着只有自己的房间发消息，对方永远收不到。
-   */
-  private isSystemContainerRoom(room: Room): boolean {
-    const createEvents = room.currentState?.getStateEvents?.('m.room.create')
-    const createEvent = Array.isArray(createEvents) ? createEvents[0] : createEvents
-    const roomType = (createEvent?.getContent?.() as { type?: unknown } | undefined)?.type
-    return roomType === MatrixRoomType.FRIENDS
-  }
-
   /** 会话列表：未登录 → []；执行期异常 → 抛出（旧实现 catch 成 []，把故障伪装成 0 条会话）。 */
   async getSessionList(): Promise<SessionInfo[]> {
     let client: MatrixClient
@@ -90,7 +52,7 @@ class MatrixSessionService extends BaseMatrixService {
         if (nameEvents && nameEvents.length > 0) return false
         const joinedCount = typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() : 0
         if (joinedCount > 1) return false
-        return this.getUnreadCount(room) === 0
+        return getUnreadCount(room) === 0
       }
 
       // 已退出/被封禁的房间不是会话：保留只会让用户点进一个自己已不在的房间，
@@ -102,10 +64,10 @@ class MatrixSessionService extends BaseMatrixService {
 
       const sessions = client
         .getRooms()
-        .filter((room) => !this.isSystemContainerRoom(room) && !isLeftRoom(room) && !isDeadRoom(room))
+        .filter((room) => !isSystemContainerRoom(room) && !isLeftRoom(room) && !isDeadRoom(room))
         .map((room) => {
           const dmRoomInfo = dmRoomMap.get(room.roomId) ?? null
-          return this.buildSessionFromRoom(room, dmRoomInfo)
+          return buildSessionFromRoom(room, dmRoomInfo, client)
         })
 
       // 防御性去重：按 counterpart 用户去重（resolveDmIdentityKey 统一 localpart 归一化，
@@ -212,11 +174,12 @@ class MatrixSessionService extends BaseMatrixService {
   }
 
   private async getGroupSessionDetail(roomId: string): Promise<SessionDetail | null> {
-    const room = this.getClient().getRoom(roomId)
+    const client = this.getClient()
+    const room = client.getRoom(roomId)
     if (!room) {
       return null
     }
-    return this.buildSessionFromRoom(room, null)
+    return buildSessionFromRoom(room, null, client)
   }
 
   /**
@@ -228,7 +191,7 @@ class MatrixSessionService extends BaseMatrixService {
    * 在房间已同步时同步构建会话，避免异步查询。
    */
   buildSessionFromRoomPublic(room: Room, dmRoomInfo: DmRoomInfo | null): SessionDetail {
-    return this.buildSessionFromRoom(room, dmRoomInfo)
+    return buildSessionFromRoom(room, dmRoomInfo, this.getClient())
   }
 
   private async getDirectSessionDetail(userId: string): Promise<SessionDetail | null> {
@@ -240,7 +203,7 @@ class MatrixSessionService extends BaseMatrixService {
     const localRoom = this.findLocalDirectRoom(userId)
     if (localRoom) {
       const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(localRoom.roomId, false)
-      return this.buildSessionFromRoom(localRoom, dmRoomInfo)
+      return buildSessionFromRoom(localRoom, dmRoomInfo, client)
     }
 
     // 2) 走 DM 管理器查找/创建（需要 manager 就绪）
@@ -251,7 +214,7 @@ class MatrixSessionService extends BaseMatrixService {
 
       if (room) {
         const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(roomId, false)
-        return this.buildSessionFromRoom(room, dmRoomInfo)
+        return buildSessionFromRoom(room, dmRoomInfo, client)
       }
 
       return {
@@ -275,7 +238,7 @@ class MatrixSessionService extends BaseMatrixService {
       const fallback = this.findLocalDirectRoom(userId)
       if (fallback) {
         const dmRoomInfo = await matrixDirectMessageService.getDmRoomInfo(fallback.roomId, false)
-        return this.buildSessionFromRoom(fallback, dmRoomInfo)
+        return buildSessionFromRoom(fallback, dmRoomInfo, client)
       }
       logger.error(`[MatrixSession] 获取会话详情失败: ${err}`)
       return null
@@ -331,101 +294,6 @@ class MatrixSessionService extends BaseMatrixService {
 
     logger.info(`[MatrixSession] 目标会话在等待窗口内仍未同步到本地房间列表，先返回占位会话: ${roomId}`)
     return null
-  }
-
-  private buildSessionFromRoom(
-    room: Room,
-    dmRoomInfo: { invitees?: string[]; inviter?: string; roomId?: string } | null
-  ): SessionDetail {
-    // 优先用 m.direct 映射的对方身份；若房间未注册进 m.direct（历史/重复创建的 DM 房间常见），
-    // 则从房间成员中解析"除自己外的另一名成员"作为 counterpart，确保 detailId 始终填充，
-    // 否则下游按 detailId 的去重会退回 roomId，导致同一联系人的多个 DM 房间在消息列表重复出现。
-    // findDmCounterpart 优先 join 成员、回退 invite/任意成员，且不会误取自己。
-    const selfId = this.getClient().getUserId() || undefined
-    const joinedMemberCount = typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() : 0
-    // 判型必须与 `RealtimeService.convertRoomToSession` 用同一判据（m.direct / DM 标记 或 2 人房），
-    // 不能看「是否存在除自己外的成员」——群聊同样有对方成员，那样会把所有群聊判成单聊
-    // （症状：群组会话列表恒空；群聊还会被当私聊按 counterpart 去重合并）。
-    const isSingle =
-      dmRoomInfo !== null || joinedMemberCount === 2 || isDirectMessageRoomFromRoom(this.getClient(), room)
-    // counterpart 只属于单聊：给群聊填 detailId 会让 `id`/`account` 指向某个成员，
-    // 下游按该键去重与「进入私聊」动作都会错位。
-    const otherMember = isSingle ? findDmCounterpart(room, selfId) : undefined
-    const detailId = isSingle ? dmRoomInfo?.invitees?.[0] || dmRoomInfo?.inviter || otherMember : undefined
-    const notificationSettings = this.getRoomNotificationSettings(room)
-
-    return {
-      id: detailId ?? room.roomId,
-      roomId: room.roomId,
-      name: this.resolveRoomName(room, detailId),
-      avatar: room.getMxcAvatarUrl() || '',
-      type: isSingle ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP,
-      unreadCount: this.getUnreadCount(room),
-      activeTime: this.getLastActiveTime(room),
-      top: this.isTopSession(room),
-      shield: notificationSettings.shield ?? false,
-      muteNotification: notificationSettings.muteNotification ?? NotificationTypeEnum.RECEPTION,
-      detailId,
-      account: detailId,
-      text: this.getLastMessagePreview(room)
-    }
-  }
-
-  private resolveRoomName(room: Room, fallbackName?: string): string {
-    const roomName = room.name?.trim()
-    if (roomName) {
-      return roomName
-    }
-    return fallbackName || room.roomId
-  }
-
-  private getUnreadCount(room: Room): number {
-    if (typeof room.getUnreadNotificationCount !== 'function') {
-      return 0
-    }
-    return room.getUnreadNotificationCount() ?? 0
-  }
-
-  private getLastActiveTime(room: Room): number {
-    const events = typeof room.getLiveTimeline === 'function' ? room.getLiveTimeline().getEvents() : []
-    const lastEvent = events[events.length - 1]
-    return this.getEventTimestamp(lastEvent)
-  }
-
-  private getLastMessagePreview(room: Room): string {
-    const events = typeof room.getLiveTimeline === 'function' ? room.getLiveTimeline().getEvents() : []
-    const lastEvent = events[events.length - 1]
-    if (!lastEvent || typeof lastEvent.getContent !== 'function') {
-      return ''
-    }
-    const content = lastEvent.getContent()
-    if (!content || typeof content !== 'object') {
-      return ''
-    }
-    const body = Reflect.get(content, 'body')
-    return typeof body === 'string' ? body : ''
-  }
-
-  private getEventTimestamp(event: MatrixEvent | undefined): number {
-    if (!event || typeof event.getTs !== 'function') {
-      return 0
-    }
-    return event.getTs() ?? 0
-  }
-
-  private isTopSession(room: Room): boolean {
-    const accountData = room.getAccountData?.('m.tag')
-    const content = accountData?.getContent() as SessionTagContent | undefined
-    return !!content?.tags && hasOwn(content.tags, 'm.favourite')
-  }
-
-  private getRoomNotificationSettings(room: Room): RoomNotificationSettings {
-    const accountData = room.getAccountData?.('tjg.room.notification_settings')
-    const content = accountData?.getContent()
-    if (!content || typeof content !== 'object') {
-      return {}
-    }
-    return content as RoomNotificationSettings
   }
 }
 

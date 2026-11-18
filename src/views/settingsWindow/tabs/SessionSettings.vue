@@ -26,7 +26,10 @@
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.sessions.other_devices') }}</h3>
       <n-spin :show="loading">
-        <div v-if="otherDevices.length > 0" class="device-list">
+        <div v-if="loadFailed" data-test="session-devices-error">
+          <ErrorState compact :title="t('common.load_failed')" :retry-text="t('common.retry')" @retry="loadDevices" />
+        </div>
+        <div v-else-if="otherDevices.length > 0" class="device-list">
           <div v-for="device in otherDevices" :key="device.deviceId" class="device-item">
             <div class="device-info">
               <Icon :icon="getDeviceIcon(device)" :width="24" />
@@ -109,6 +112,7 @@ import {
 } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { useAccount } from '@/composables/user/useAccount'
@@ -130,6 +134,8 @@ const matrixStore = useMatrixStore()
 const { ensureSessionReady } = useWindowSessionReady()
 
 const loading = ref(false)
+// 读取失败不能落成空列表：否则「读不到设备」会被渲染成「没有其他设备」的假空态
+const loadFailed = ref(false)
 const renaming = ref(false)
 const devices = ref<DeviceInfo[]>([])
 const renameDialogVisible = ref(false)
@@ -174,11 +180,16 @@ onMounted(async () => {
 
 async function loadDevices() {
   loading.value = true
+  loadFailed.value = false
   try {
     devices.value = await getDevices()
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     logger.error('[SessionSettings] Failed to load device list:', msg)
+    // 有缓存时保留旧列表（仅提示失败），没有缓存才进入错误态，避免把「读不到」渲染成「没有其他设备」
+    if (devices.value.length === 0) {
+      loadFailed.value = true
+    }
     showFeedback(t('setting.sessions.fetch_failed'), 'error')
   } finally {
     loading.value = false

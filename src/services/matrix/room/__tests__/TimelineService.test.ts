@@ -14,6 +14,11 @@ const getRoomTimelineMock = vi.fn()
 const getRoomNotificationsMock = vi.fn()
 const getRoomCallMock = vi.fn()
 const getRoomEventPerspectiveMock = vi.fn()
+const getRoomEventUrlMock = vi.fn()
+const getRoomReducedEventsMock = vi.fn()
+const getRoomRenderedMock = vi.fn()
+const getRoomFragmentsMock = vi.fn()
+const getRoomReceiptsMock = vi.fn()
 
 describe('MatrixRoomTimelineService', () => {
   let service: InstanceType<typeof MatrixRoomTimelineService>
@@ -26,8 +31,16 @@ describe('MatrixRoomTimelineService', () => {
     getRoomSummaryManager: () => {
       getRoomTimeline: typeof getRoomTimelineMock
       getRoomNotifications: typeof getRoomNotificationsMock
-      eventOps: { getRoomEventPerspective: typeof getRoomEventPerspectiveMock }
+      eventOps: {
+        getRoomEventPerspective: typeof getRoomEventPerspectiveMock
+        getRoomEventUrl: typeof getRoomEventUrlMock
+        getRoomReducedEvents: typeof getRoomReducedEventsMock
+        getRoomRendered: typeof getRoomRenderedMock
+        getRoomFragments: typeof getRoomFragmentsMock
+        getRoomReceipts: typeof getRoomReceiptsMock
+      }
     }
+    mxcUrlToHttp: (url: string) => string | null
     timestampToEvent: typeof timestampToEventMock
   }
 
@@ -43,8 +56,16 @@ describe('MatrixRoomTimelineService', () => {
       getRoomSummaryManager: () => ({
         getRoomTimeline: getRoomTimelineMock,
         getRoomNotifications: getRoomNotificationsMock,
-        eventOps: { getRoomEventPerspective: getRoomEventPerspectiveMock }
+        eventOps: {
+          getRoomEventPerspective: getRoomEventPerspectiveMock,
+          getRoomEventUrl: getRoomEventUrlMock,
+          getRoomReducedEvents: getRoomReducedEventsMock,
+          getRoomRendered: getRoomRenderedMock,
+          getRoomFragments: getRoomFragmentsMock,
+          getRoomReceipts: getRoomReceiptsMock
+        }
       }),
+      mxcUrlToHttp: (url: string) => (url.startsWith('mxc://') ? `https://media.example/${url.slice(6)}` : null),
       timestampToEvent: timestampToEventMock
     }
 
@@ -234,6 +255,264 @@ describe('MatrixRoomTimelineService', () => {
     it('classifies an uninitialized client as error instead of throwing', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(null as never)
       expect(await service.getRoomEventPerspective('!r:e', '$anchor')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRoomEventMediaUrls', () => {
+    it('normalizes the backend urls[] shape, dedupes and resolves mxc to http', async () => {
+      getRoomEventUrlMock.mockResolvedValue({
+        room_id: '!r:e',
+        event_id: '$e',
+        urls: [
+          { type: 'mxc', url: 'mxc://hs.test/abc', field: 'content.url' },
+          { type: 'mxc', url: 'mxc://hs.test/abc', field: 'content.info.thumbnail_url' },
+          { type: 'mxc', url: 'mxc://hs.test/thumb', field: 'content.info.thumbnail_url' }
+        ],
+        total: 3
+      })
+
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({
+        status: 'ok',
+        urls: [
+          {
+            type: 'mxc',
+            url: 'mxc://hs.test/abc',
+            field: 'content.url',
+            httpUrl: 'https://media.example/hs.test/abc'
+          },
+          {
+            type: 'mxc',
+            url: 'mxc://hs.test/thumb',
+            field: 'content.info.thumbnail_url',
+            httpUrl: 'https://media.example/hs.test/thumb'
+          }
+        ]
+      })
+      expect(getRoomEventUrlMock).toHaveBeenCalledWith('!r:e', '$e')
+    })
+
+    it('accepts the SDK-declared url/mxc shape', async () => {
+      getRoomEventUrlMock.mockResolvedValue({ url: 'mxc://hs.test/abc' })
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({
+        status: 'ok',
+        urls: [{ type: 'mxc', url: 'mxc://hs.test/abc', field: 'url', httpUrl: 'https://media.example/hs.test/abc' }]
+      })
+
+      getRoomEventUrlMock.mockResolvedValue({ mxc: 'mxc://hs.test/def' })
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({
+        status: 'ok',
+        urls: [{ type: 'mxc', url: 'mxc://hs.test/def', field: 'mxc', httpUrl: 'https://media.example/hs.test/def' }]
+      })
+    })
+
+    it('keeps httpUrl null when the client cannot resolve mxc', async () => {
+      delete (mockClient as { mxcUrlToHttp?: unknown }).mxcUrlToHttp
+      getRoomEventUrlMock.mockResolvedValue({
+        urls: [{ type: 'mxc', url: 'mxc://hs.test/abc', field: 'content.url' }]
+      })
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({
+        status: 'ok',
+        urls: [{ type: 'mxc', url: 'mxc://hs.test/abc', field: 'content.url', httpUrl: null }]
+      })
+    })
+
+    it('returns empty for text messages without attachments', async () => {
+      getRoomEventUrlMock.mockResolvedValue({ room_id: '!r:e', event_id: '$e', urls: [], total: 0 })
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomEventUrlMock.mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomEventUrlMock.mockRejectedValue(
+        Object.assign(new Error('forbidden'), { errcode: 'M_FORBIDDEN', httpStatus: 403 })
+      )
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error instead of throwing', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as never)
+      expect(await service.getRoomEventMediaUrls('!r:e', '$e')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRoomReducedEvents', () => {
+    it('normalizes reduced events and keeps the raw total', async () => {
+      getRoomReducedEventsMock.mockResolvedValue({
+        events: [
+          { event_id: '$1', type: 'm.room.message', sender: '@a:e' },
+          { event_id: '$2', type: 'm.room.member', sender: '@b:e' }
+        ],
+        total: 12
+      })
+
+      expect(await service.getRoomReducedEvents('!r:e')).toEqual({
+        status: 'ok',
+        snapshot: {
+          total: 12,
+          events: [
+            { eventId: '$1', type: 'm.room.message', sender: '@a:e' },
+            { eventId: '$2', type: 'm.room.member', sender: '@b:e' }
+          ]
+        }
+      })
+      expect(getRoomReducedEventsMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('drops dirty entries and reports empty when nothing is usable', async () => {
+      getRoomReducedEventsMock.mockResolvedValue({ events: [{ foo: 'bar' }] })
+      expect(await service.getRoomReducedEvents('!r:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomReducedEventsMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_UNRECOGNIZED' }))
+      expect(await service.getRoomReducedEvents('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomReducedEventsMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_FORBIDDEN' }))
+      expect(await service.getRoomReducedEvents('!r:e')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRoomRendered', () => {
+    it('keeps plain_text and per-event rendered content but never exposes html', async () => {
+      getRoomRenderedMock.mockResolvedValue({
+        rendered: true,
+        plain_text: 'hello',
+        html: '<b>hello</b>',
+        events: [{ event_id: '$1', rendered_content: 'hello' }]
+      })
+
+      const result = await service.getRoomRendered('!r:e')
+      expect(result).toEqual({
+        status: 'ok',
+        snapshot: {
+          rendered: true,
+          plainText: 'hello',
+          events: [{ eventId: '$1', renderedContent: 'hello' }]
+        }
+      })
+      expect(JSON.stringify(result)).not.toContain('<b>')
+      expect(getRoomRenderedMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('keeps rendered=null when the backend omits it', async () => {
+      getRoomRenderedMock.mockResolvedValue({ plain_text: 'x' })
+      expect(await service.getRoomRendered('!r:e')).toEqual({
+        status: 'ok',
+        snapshot: { rendered: null, plainText: 'x', events: [] }
+      })
+    })
+
+    it('reports empty when there is no displayable content', async () => {
+      getRoomRenderedMock.mockResolvedValue({ rendered: false })
+      expect(await service.getRoomRendered('!r:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomRenderedMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_UNRECOGNIZED' }))
+      expect(await service.getRoomRendered('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomRenderedMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_NOT_FOUND' }))
+      expect(await service.getRoomRendered('!r:e')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRoomFragments', () => {
+    it('normalizes fragments and falls back to the requested user', async () => {
+      getRoomFragmentsMock.mockResolvedValue({
+        fragments: [
+          { start: '$s1', end: '$e1', limited: true },
+          { start: '$s2', end: '$e2' }
+        ],
+        next_batch: 'tok'
+      })
+
+      expect(await service.getRoomFragments('!r:e', '@me:e')).toEqual({
+        status: 'ok',
+        snapshot: {
+          userId: '@me:e',
+          fragments: [
+            { start: '$s1', end: '$e1', limited: true },
+            { start: '$s2', end: '$e2', limited: false }
+          ],
+          prevBatch: null,
+          nextBatch: 'tok'
+        }
+      })
+      expect(getRoomFragmentsMock).toHaveBeenCalledWith('!r:e', '@me:e')
+    })
+
+    it('drops fragments missing start/end and reports empty', async () => {
+      getRoomFragmentsMock.mockResolvedValue({ fragments: [{ start: '$s1' }] })
+      expect(await service.getRoomFragments('!r:e', '@me:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomFragmentsMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_UNRECOGNIZED' }))
+      expect(await service.getRoomFragments('!r:e', '@me:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomFragmentsMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_FORBIDDEN' }))
+      expect(await service.getRoomFragments('!r:e', '@me:e')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRoomReceipts', () => {
+    it('reads the receipts[] shape and filters by type/event', async () => {
+      getRoomReceiptsMock.mockResolvedValue({
+        receipts: [
+          {
+            type: 'm.read',
+            event_id: '$e',
+            users: { '@a:e': { ts: 100, thread_id: '$t' }, '@b:e': { ts: 200 } }
+          },
+          { type: 'm.read.private', event_id: '$e', users: { '@c:e': { ts: 300 } } }
+        ]
+      })
+
+      expect(await service.getRoomReceipts('!r:e', 'm.read', '$e')).toEqual({
+        status: 'ok',
+        snapshot: {
+          receiptType: 'm.read',
+          eventId: '$e',
+          users: [
+            { userId: '@a:e', ts: 100, threadId: '$t' },
+            { userId: '@b:e', ts: 200, threadId: null }
+          ]
+        }
+      })
+      expect(getRoomReceiptsMock).toHaveBeenCalledWith('!r:e', 'm.read', '$e')
+    })
+
+    it('falls back to a plain users map', async () => {
+      getRoomReceiptsMock.mockResolvedValue({ users: { '@a:e': { ts: 100 } } })
+      expect(await service.getRoomReceipts('!r:e', 'm.read', '$e')).toEqual({
+        status: 'ok',
+        snapshot: { receiptType: 'm.read', eventId: '$e', users: [{ userId: '@a:e', ts: 100, threadId: null }] }
+      })
+    })
+
+    it('reports empty when no user matches', async () => {
+      getRoomReceiptsMock.mockResolvedValue({ receipts: [{ type: 'm.read.private', users: { '@c:e': {} } }] })
+      expect(await service.getRoomReceipts('!r:e', 'm.read', '$e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomReceiptsMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_UNRECOGNIZED' }))
+      expect(await service.getRoomReceipts('!r:e', 'm.read', '$e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomReceiptsMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_FORBIDDEN' }))
+      expect(await service.getRoomReceipts('!r:e', 'm.read', '$e')).toEqual({ status: 'error' })
     })
   })
 })

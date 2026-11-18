@@ -3,6 +3,10 @@ import { setup } from '@storybook/vue3-vite'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
+// 移动端组件模板里的 v-clickable / van-icon 在应用中由 auto-import 注册；
+// Storybook 不跑这些插件，必须在 app 级补齐，否则指令与图标会被静默丢弃。
+import { Icon as VanIcon } from 'vant'
+import vClickable from '../src/directives/v-clickable'
 // 设计令牌是组件真实配色来源；不引入时 stories 内所有 --tjg-* 均为空值，
 // 组件退化为浏览器默认色（黑字透明底），axe 的 color-contrast 结论与视觉基线都会失真。
 import '../src/styles/css/design-tokens.css'
@@ -58,6 +62,8 @@ setup((app) => {
   app.use(i18n)
   setActivePinia(pinia)
   app.use(router)
+  app.directive('clickable', vClickable)
+  app.component('van-icon', VanIcon)
 })
 
 const preview: Preview = {

@@ -15,6 +15,8 @@ vi.mock('@/services/matrix/room/RoomFacade', () => ({
 
 const loadPolicyMock = vi.fn()
 const savePolicyMock = vi.fn()
+// mock 工厂在 import 求值阶段执行，loadFailed 状态需提前到 imports 之前
+const { retentionLoadFailed } = vi.hoisted(() => ({ retentionLoadFailed: { value: false } }))
 
 vi.mock('@/composables/room/useRoomRetention', () => ({
   useRoomRetention: () => ({
@@ -23,6 +25,7 @@ vi.mock('@/composables/room/useRoomRetention', () => ({
     count: { value: 1000 },
     isLoading: { value: false },
     isSaving: { value: false },
+    loadFailed: retentionLoadFailed,
     isConfigValid: { value: true },
     setMode: vi.fn(),
     setDays: vi.fn(),
@@ -78,6 +81,7 @@ describe('RoomRetentionPanel — P2-1 房间保留策略面板', () => {
     loadPolicyMock.mockReset()
     savePolicyMock.mockReset()
     showFeedbackMock.mockReset()
+    retentionLoadFailed.value = false
   })
 
   const mountPanel = (props: Record<string, unknown> = {}) =>
@@ -137,5 +141,24 @@ describe('RoomRetentionPanel — P2-1 房间保留策略面板', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="retention-save-btn"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('读取失败时展示错误与重试并隐藏表单，而不是回落到默认「不限制」', async () => {
+    retentionLoadFailed.value = true
+    loadPolicyMock.mockResolvedValue(undefined)
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="room-retention-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="error-retry"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="retention-mode-unlimited"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="retention-save-btn"]').exists()).toBe(false)
+    expect(showFeedbackMock).toHaveBeenCalledWith('room.retention.load_failed', 'error')
+
+    loadPolicyMock.mockClear()
+    await wrapper.get('[data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+    expect(loadPolicyMock).toHaveBeenCalledWith('!room:hs')
   })
 })

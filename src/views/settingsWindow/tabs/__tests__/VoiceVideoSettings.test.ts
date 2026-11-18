@@ -41,7 +41,11 @@ const messageSuccessMock = vi.fn()
 const messageErrorMock = vi.fn()
 // vi.hoisted：mock 工厂会在 import 求值阶段执行（媒体偏好模块在顶层就 createLogger），
 // 普通 const 此时仍在 TDZ，必须把 loggerErrorMock 提前到 imports 之前。
-const { loggerErrorMock } = vi.hoisted(() => ({ loggerErrorMock: vi.fn() }))
+const { loggerErrorMock, getRtcTransportsMock, getCapabilityStatusMock } = vi.hoisted(() => ({
+  loggerErrorMock: vi.fn(),
+  getRtcTransportsMock: vi.fn(),
+  getCapabilityStatusMock: vi.fn()
+}))
 const enumerateDevicesMock = vi.fn()
 const getUserMediaMock = vi.fn()
 const requestAnimationFrameMock = vi.fn(() => 1)
@@ -101,9 +105,17 @@ vi.mock('naive-ui', () => ({
 // RTC 传输信息与语音消息区块由各自服务/子组件承载，本用例只验证设备与通话设置呈现
 vi.mock('@/services/matrix/media/MatrixVoiceService', () => ({
   matrixVoiceService: {
-    getRtcTransports: vi.fn().mockResolvedValue({})
+    getRtcTransports: getRtcTransportsMock
   }
 }))
+
+vi.mock('@/services/matrix/MatrixCapabilityService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/matrix/MatrixCapabilityService')>()
+  return {
+    ...actual,
+    useServerCapability: () => ({ getCapabilityStatus: getCapabilityStatusMock })
+  }
+})
 
 vi.mock('../sections/VoiceMessageSettings.vue', () => ({
   default: { name: 'VoiceMessageSettings', template: '<div data-test="VoiceMessageSettings" />' }
@@ -154,6 +166,8 @@ describe('VoiceVideoSettings', () => {
       { kind: 'videoinput', label: '', deviceId: 'video-input-1' }
     ])
     getUserMediaMock.mockResolvedValue(createFakeStream())
+    getRtcTransportsMock.mockResolvedValue({})
+    getCapabilityStatusMock.mockReturnValue('supported')
   })
 
   it('renders translated sections and loads device options', async () => {
@@ -220,5 +234,29 @@ describe('VoiceVideoSettings', () => {
 
     expect(messageErrorMock).toHaveBeenCalledWith('无法访问摄像头，请检查权限')
     expect(loggerErrorMock).toHaveBeenCalled()
+  })
+
+  it('RTC 传输读取失败时展示错误与重试，而不是「暂无传输」空态', async () => {
+    getRtcTransportsMock.mockRejectedValueOnce(new Error('rtc down'))
+
+    const wrapper = mount(VoiceVideoSettings)
+    await flushPromises()
+
+    const vm = wrapper.vm as any
+    expect(vm.rtcLoadFailed).toBe(true)
+    expect(wrapper.find('[data-testid="rtc-transports-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="error-retry"]').exists()).toBe(true)
+    expect(wrapper.find('.n-empty').exists()).toBe(false)
+  })
+
+  it('能力位显式不支持 RTC 传输时展示未启用空态且不发请求', async () => {
+    getCapabilityStatusMock.mockReturnValue('unsupported')
+
+    const wrapper = mount(VoiceVideoSettings)
+    await flushPromises()
+
+    expect(getRtcTransportsMock).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="rtc-transports-unsupported"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="rtc-transports-error"]').exists()).toBe(false)
   })
 })

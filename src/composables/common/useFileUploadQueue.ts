@@ -8,8 +8,10 @@ type FileUploadItem = {
   type: string
   status: 'pending' | 'uploading' | 'completed' | 'failed'
   progress: number
-  /** 服务端已接收分片数（分片上传时由 getChunkUploadProgress 轮询得出） */
-  serverProgress?: { uploadedChunks: number; totalChunks: number } | undefined
+  /** 服务端已接收分片数与字节进度（分片上传时由 getChunkUploadProgress 轮询得出） */
+  serverProgress?:
+    | { uploadedChunks: number; totalChunks: number; uploadedSize?: number; totalSize?: number | null; status?: string }
+    | undefined
   startTime?: number | undefined
   endTime?: number | undefined
 }
@@ -117,10 +119,15 @@ const useFileUploadQueue = () => {
   /**
    * 更新服务端分片接收进度
    */
-  const updateFileServerProgress = (fileId: string, uploadedChunks: number, totalChunks: number) => {
+  const updateFileServerProgress = (
+    fileId: string,
+    uploadedChunks: number,
+    totalChunks: number,
+    detail?: { uploadedSize?: number; totalSize?: number | null; status?: string }
+  ) => {
     const item = queue.items.find((item) => item.id === fileId)
     if (item && item.status === 'uploading' && totalChunks > 0) {
-      item.serverProgress = { uploadedChunks, totalChunks }
+      item.serverProgress = { uploadedChunks, totalChunks, ...detail }
     }
   }
 

@@ -11,46 +11,44 @@
         </div>
 
         <template v-else>
-          <!-- 浏览器存储用量 -->
+          <!-- 浏览器存储用量：读取失败时显示不可用 + 重试，不用 0 B / 0% 冒充真实占用 -->
           <van-cell-group :title="t('mobile_storage.usage_section')" inset>
-            <van-cell :title="t('mobile_storage.used')" :value="usageText" />
-            <van-cell :title="t('mobile_storage.quota')" :value="quotaText" />
+            <template v-if="statsAvailable">
+              <van-cell :title="t('mobile_storage.used')" :value="usageText" />
+              <van-cell :title="t('mobile_storage.quota')" :value="quotaText" />
+            </template>
+            <van-cell v-else :title="t('mobile_storage.used')" :value="t('mobile_storage.stats_unavailable')">
+              <template #right-icon>
+                <van-button size="mini" type="primary" plain data-testid="storage-stats-retry" @click="loadStats">
+                  {{ t('common.retry') }}
+                </van-button>
+              </template>
+            </van-cell>
           </van-cell-group>
 
-          <div v-if="quota > 0" class="px-4px">
+          <div v-if="statsAvailable && quota > 0" class="px-4px">
             <van-progress
               :percentage="usagePercent"
               :aria-label="t('mobile_storage.used')"
               :pivot-text="`${usagePercent}%`" />
           </div>
 
-          <!-- 明细：哪些数据占了多少。此前只有总量，用户无法判断「能不能清」 -->
-          <van-cell-group :title="t('mobile_storage.detail_section')" inset>
-            <van-cell
-              :title="t('mobile_storage.search_index')"
-              :value="searchIndexText"
-              :label="t('mobile_storage.search_index_desc')"
-              data-testid="search-index-cell" />
-            <van-cell
-              :title="t('mobile_storage.local_storage')"
-              :value="formatBytes(local.totalBytes)"
-              :label="t('mobile_storage.local_storage_keys', { count: local.keyCount })"
-              data-testid="local-storage-cell" />
-            <van-cell
-              :title="t('mobile_storage.thumbnail_cache')"
-              :value="mediaCacheTextFor('thumbnails')"
-              :label="t('mobile_storage.thumbnail_cache_desc')"
-              data-testid="thumbnail-cache-cell" />
-            <van-cell
-              :title="t('mobile_storage.emoji_cache')"
-              :value="mediaCacheTextFor('emojis')"
-              :label="t('mobile_storage.emoji_cache_desc')"
-              data-testid="emoji-cache-cell" />
-            <van-cell
-              :title="t('mobile_storage.other_data')"
-              :label="t('mobile_storage.other_data_desc')"
-              data-testid="other-data-cell" />
-          </van-cell-group>
+          <MobileServerQuotaCard
+            :state="serverQuotaState"
+            :used="serverQuotaUsed"
+            :limit="serverQuotaLimit"
+            :remaining="serverQuotaRemaining"
+            :media-count="serverQuotaMediaCount"
+            :alerts="serverQuotaAlerts"
+            :exceeded="serverQuotaExceeded"
+            :alert-meta="serverQuotaAlertMeta"
+            @retry="loadServerQuota" />
+
+          <MobileStorageDetailCard
+            :search-index-text="searchIndexText"
+            :local-bytes="local.totalBytes"
+            :local-key-count="local.keyCount"
+            :media-cache-text-for="mediaCacheTextFor" />
 
           <!-- 缓存策略：开关真实生效，关闭后缩略图不再写入本地磁盘 -->
           <van-cell-group :title="t('mobile_storage.strategy_section')" inset>
@@ -164,6 +162,9 @@ import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { measureLocalStorageUsage } from '@/utils/localStorageUsage'
 import { clearAllSearchData, countSearchIndexRecords } from '@/workers/searchIndexDb'
+import MobileServerQuotaCard from './components/MobileServerQuotaCard.vue'
+import MobileStorageDetailCard from './components/MobileStorageDetailCard.vue'
+import { useServerQuota } from './composables/useServerQuota'
 
 const logger = createLogger('MobileStorageSettings')
 
@@ -173,6 +174,8 @@ const loading = ref(false)
 const clearing = ref(false)
 const usage = ref(0)
 const quota = ref(0)
+/** 浏览器存储统计是否可用；不可用时不用 0 B / 0% 冒充真实占用 */
+const statsAvailable = ref(true)
 const local = ref(measureLocalStorageUsage())
 const searchRooms = ref(0)
 const searchEvents = ref(0)
@@ -224,6 +227,19 @@ const searchIndexText = computed(() =>
 
 const hasClearableIndex = computed(() => searchStatsAvailable.value && searchEvents.value + searchRooms.value > 0)
 
+// 服务端媒体配额的状态与取数逻辑独立成 composable，卡片只负责展示
+const {
+  state: serverQuotaState,
+  used: serverQuotaUsed,
+  limit: serverQuotaLimit,
+  remaining: serverQuotaRemaining,
+  mediaCount: serverQuotaMediaCount,
+  alerts: serverQuotaAlerts,
+  exceeded: serverQuotaExceeded,
+  alertMeta: serverQuotaAlertMeta,
+  load: loadServerQuota
+} = useServerQuota()
+
 /** worker 内存统计带 1.5s 上限：worker 卡死时不能把设置页拖到 15s（Host 默认超时） */
 async function loadSearchIndexStats(): Promise<void> {
   try {
@@ -263,17 +279,23 @@ async function loadStats(): Promise<void> {
   // 两者已一并移除，不再用假数据与假成功欺骗用户。
   // 浏览器存储用量与本地明细是真实数据，保留。
   loading.value = true
+  statsAvailable.value = true
   try {
     if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
       const estimate = await navigator.storage.estimate()
       usage.value = estimate.usage ?? 0
       quota.value = estimate.quota ?? 0
+    } else {
+      statsAvailable.value = false
     }
+  } catch (error) {
+    logger.error('Failed to read browser storage estimate', error)
+    statsAvailable.value = false
+  }
+  try {
     local.value = measureLocalStorageUsage()
     await loadSearchIndexStats()
     await loadMediaCacheStats()
-  } catch (error) {
-    logger.error('Failed to load storage stats', error)
   } finally {
     loading.value = false
   }
@@ -368,5 +390,8 @@ async function handleClearMedia(kind: MediaCacheKind): Promise<void> {
   }
 }
 
-onMounted(loadStats)
+onMounted(() => {
+  void loadStats()
+  void loadServerQuota()
+})
 </script>

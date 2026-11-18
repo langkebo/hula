@@ -1,50 +1,63 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { accountDataServiceMock, metadataServiceMock, roomOperationsMock, summaryServiceMock, timelineServiceMock } =
-  vi.hoisted(() => ({
-    accountDataServiceMock: {
-      getRoomAccountData: vi.fn(),
-      getReportScannerInfo: vi.fn(),
-      getAntiScreenshot: vi.fn(),
-      getMessageQueue: vi.fn(),
-      getEncryptedEvents: vi.fn(),
-      signEvent: vi.fn(),
-      verifyEvent: vi.fn()
-    },
-    metadataServiceMock: {
-      getRoomVersion: vi.fn(),
-      getRoomCapabilities: vi.fn(),
-      getRoomMetadata: vi.fn(),
-      getRoomTurnServer: vi.fn(),
-      getRoomSync: vi.fn(),
-      getRoomPermissions: vi.fn(),
-      getRoomExternalIds: vi.fn()
-    },
-    roomOperationsMock: {
-      getRoomState: vi.fn(),
-      getAliases: vi.fn(),
-      getPinnedEvents: vi.fn(),
-      getStickyEvents: vi.fn(),
-      getInviteBlocklist: vi.fn(),
-      getInviteAllowlist: vi.fn(),
-      getTags: vi.fn(),
-      getServerDomain: vi.fn(),
-      translateText: vi.fn(),
-      getDirectRooms: vi.fn()
-    },
-    summaryServiceMock: {
-      getRoomSummary: vi.fn()
-    },
-    timelineServiceMock: {
-      getEventContext: vi.fn(),
-      getRoomTimeline: vi.fn(),
-      getRoomUnreadCount: vi.fn(),
-      timestampToEvent: vi.fn(),
-      getRoomCall: vi.fn(),
-      getRoomNotifications: vi.fn(),
-      getRoomEventPerspective: vi.fn()
-    }
-  }))
+const {
+  accountDataServiceMock,
+  metadataServiceMock,
+  membershipServiceMock,
+  roomOperationsMock,
+  summaryServiceMock,
+  timelineServiceMock
+} = vi.hoisted(() => ({
+  accountDataServiceMock: {
+    getRoomAccountData: vi.fn(),
+    getReportScannerInfo: vi.fn(),
+    getAntiScreenshot: vi.fn(),
+    getMessageQueue: vi.fn(),
+    getEncryptedEvents: vi.fn(),
+    signEvent: vi.fn(),
+    verifyEvent: vi.fn()
+  },
+  metadataServiceMock: {
+    getRoomVersion: vi.fn(),
+    getRoomCapabilities: vi.fn(),
+    getRoomMetadata: vi.fn(),
+    getRoomTurnServer: vi.fn(),
+    getRoomSync: vi.fn(),
+    getRoomPermissions: vi.fn(),
+    getRoomSpaces: vi.fn(),
+    getRoomExternalIds: vi.fn(),
+    getRoomServiceTypes: vi.fn()
+  },
+  membershipServiceMock: {
+    getMembershipEvents: vi.fn(),
+    getRecentMemberChanges: vi.fn()
+  },
+  roomOperationsMock: {
+    getRoomState: vi.fn(),
+    getAliases: vi.fn(),
+    getPinnedEvents: vi.fn(),
+    getStickyEvents: vi.fn(),
+    getInviteBlocklist: vi.fn(),
+    getInviteAllowlist: vi.fn(),
+    getTags: vi.fn(),
+    getServerDomain: vi.fn(),
+    translateText: vi.fn(),
+    getDirectRooms: vi.fn()
+  },
+  summaryServiceMock: {
+    getRoomSummary: vi.fn()
+  },
+  timelineServiceMock: {
+    getEventContext: vi.fn(),
+    getRoomTimeline: vi.fn(),
+    getRoomUnreadCount: vi.fn(),
+    timestampToEvent: vi.fn(),
+    getRoomCall: vi.fn(),
+    getRoomNotifications: vi.fn(),
+    getRoomEventPerspective: vi.fn(),
+    getRoomEventMediaUrls: vi.fn()
+  }
+}))
 
 vi.mock('../AccountDataService', () => ({
   matrixRoomAccountDataService: accountDataServiceMock
@@ -52,6 +65,10 @@ vi.mock('../AccountDataService', () => ({
 
 vi.mock('../MetadataService', () => ({
   matrixRoomMetadataService: metadataServiceMock
+}))
+
+vi.mock('../MembershipService', () => ({
+  matrixRoomMembershipService: membershipServiceMock
 }))
 
 vi.mock('../RoomOperations', () => ({
@@ -294,7 +311,7 @@ describe('matrixRoomReadFacade', () => {
     })
 
     it('getRoomTurnServer 委托', async () => {
-      const turn = { uris: [] } as never
+      const turn = { status: 'empty' } as never
       metadataServiceMock.getRoomTurnServer.mockResolvedValue(turn)
       const result = await matrixRoomReadFacade.getRoomTurnServer('!r:e')
       expect(metadataServiceMock.getRoomTurnServer).toHaveBeenCalledWith('!r:e')
@@ -310,11 +327,19 @@ describe('matrixRoomReadFacade', () => {
     })
 
     it('getRoomPermissions 委托', async () => {
-      const perms = { users: {} } as never
+      const perms = { status: 'empty' } as never
       metadataServiceMock.getRoomPermissions.mockResolvedValue(perms)
       const result = await matrixRoomReadFacade.getRoomPermissions('!r:e')
       expect(metadataServiceMock.getRoomPermissions).toHaveBeenCalledWith('!r:e')
       expect(result).toBe(perms)
+    })
+
+    it('getRoomSpaces 委托', async () => {
+      const spaces = { status: 'empty' } as never
+      metadataServiceMock.getRoomSpaces.mockResolvedValue(spaces)
+      const result = await matrixRoomReadFacade.getRoomSpaces('!r:e')
+      expect(metadataServiceMock.getRoomSpaces).toHaveBeenCalledWith('!r:e')
+      expect(result).toBe(spaces)
     })
 
     it('getRoomExternalIds 委托', async () => {
@@ -391,6 +416,40 @@ describe('matrixRoomReadFacade', () => {
     it('透传扩展端点错误', async () => {
       accountDataServiceMock.verifyEvent.mockRejectedValue(new Error('403'))
       await expect(matrixRoomReadFacade.verifyEvent('!r:e', '$e')).rejects.toThrow('403')
+    })
+  })
+
+  describe('ROOM-03 三端点委托', () => {
+    it('getRoomEventMediaUrls 委托 TimelineService', async () => {
+      const outcome = { status: 'empty' } as const
+      timelineServiceMock.getRoomEventMediaUrls.mockResolvedValue(outcome)
+      const result = await matrixRoomReadFacade.getRoomEventMediaUrls('!r:e', '$e')
+      expect(timelineServiceMock.getRoomEventMediaUrls).toHaveBeenCalledWith('!r:e', '$e')
+      expect(result).toBe(outcome)
+    })
+
+    it('getRoomServiceTypes 委托 MetadataService', async () => {
+      const outcome = { status: 'ok', serviceTypes: ['messaging'] } as const
+      metadataServiceMock.getRoomServiceTypes.mockResolvedValue(outcome)
+      const result = await matrixRoomReadFacade.getRoomServiceTypes('!r:e')
+      expect(metadataServiceMock.getRoomServiceTypes).toHaveBeenCalledWith('!r:e')
+      expect(result).toBe(outcome)
+    })
+
+    it('getMembershipEvents 委托 MembershipService 并透传 limit', async () => {
+      const outcome = { status: 'empty' } as const
+      membershipServiceMock.getMembershipEvents.mockResolvedValue(outcome)
+      const result = await matrixRoomReadFacade.getMembershipEvents('!r:e', 20)
+      expect(membershipServiceMock.getMembershipEvents).toHaveBeenCalledWith('!r:e', 20)
+      expect(result).toBe(outcome)
+    })
+
+    it('getRecentMemberChanges 委托 MembershipService 并透传 limit', async () => {
+      const outcome = { status: 'empty' } as const
+      membershipServiceMock.getRecentMemberChanges.mockResolvedValue(outcome)
+      const result = await matrixRoomReadFacade.getRecentMemberChanges('!r:e', 8)
+      expect(membershipServiceMock.getRecentMemberChanges).toHaveBeenCalledWith('!r:e', 8)
+      expect(result).toBe(outcome)
     })
   })
 })

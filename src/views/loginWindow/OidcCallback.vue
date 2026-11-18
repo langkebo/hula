@@ -5,6 +5,18 @@
       <span class="text-14px text-[--tjg-text-secondary]">{{ t('login.oidc.processing') }}</span>
     </div>
 
+    <div v-else-if="status === 'unsupported'" class="flex-col-center gap-16px">
+      <!-- 服务端未启用 OIDC：重试无意义，只保留返回登录 -->
+      <ErrorState
+        illustration="server-error"
+        :title="t('login.oidc.unsupported_title')"
+        :message="t('login.oidc.unsupported_message')">
+        <template #actions>
+          <n-button @click="goToLogin">{{ t('login.oidc.back_to_login') }}</n-button>
+        </template>
+      </ErrorState>
+    </div>
+
     <div v-else-if="status === 'error'" class="flex-col-center gap-16px">
       <ErrorState
         illustration="network-error"
@@ -48,7 +60,7 @@ const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const router = useRouter()
 
-type CallbackStatus = 'loading' | 'success' | 'error'
+type CallbackStatus = 'loading' | 'success' | 'error' | 'unsupported'
 const status = ref<CallbackStatus>('loading')
 const errorMessage = ref('')
 
@@ -89,6 +101,10 @@ const handleOidcCallback = async () => {
     const tokenResponse = await matrixOidcService.handleCallback(code, state)
 
     if (!tokenResponse) {
+      if (matrixOidcService.getLastCallbackFailureReason() === 'unsupported') {
+        status.value = 'unsupported'
+        return
+      }
       status.value = 'error'
       errorMessage.value = t('login.oidc.token_exchange_failed')
       return
@@ -100,6 +116,10 @@ const handleOidcCallback = async () => {
     )
 
     if (!matrixTokens) {
+      if (matrixOidcService.getLastCallbackFailureReason() === 'unsupported') {
+        status.value = 'unsupported'
+        return
+      }
       status.value = 'error'
       errorMessage.value = t('login.oidc.matrix_token_failed')
       return

@@ -37,6 +37,34 @@
         </n-spin>
       </n-tab-pane>
 
+      <n-tab-pane name="register" :tab="t('admin.appServices.registerTab')">
+        <n-form label-placement="left" label-width="180" class="max-w-[560px]">
+          <n-form-item :label="t('admin.appServices.asToken')">
+            <n-input v-model:value="registerForm.asToken" :placeholder="t('admin.appServices.asTokenPlaceholder')" />
+          </n-form-item>
+          <n-form-item :label="t('admin.appServices.url')">
+            <n-input v-model:value="registerForm.url" :placeholder="t('admin.appServices.urlPlaceholder')" />
+          </n-form-item>
+          <n-form-item :label="t('admin.appServices.senderLocalpart')">
+            <n-input
+              v-model:value="registerForm.senderLocalpart"
+              :placeholder="t('admin.appServices.senderLocalpartPlaceholder')" />
+          </n-form-item>
+          <n-form-item :label="t('admin.appServices.configJson')">
+            <n-input
+              v-model:value="registerForm.configJson"
+              type="textarea"
+              :rows="4"
+              :placeholder="t('admin.appServices.configJsonPlaceholder')" />
+          </n-form-item>
+        </n-form>
+        <n-space class="mt-16px">
+          <n-button type="primary" :loading="registering" @click="handleRegister">
+            {{ t('admin.appServices.register') }}
+          </n-button>
+        </n-space>
+      </n-tab-pane>
+
       <n-tab-pane v-if="selectedService" name="detail" :tab="t('admin.appServices.detail')">
         <n-spin :show="detailLoading">
           <template v-if="selectedService">
@@ -127,7 +155,7 @@
 
 <script setup lang="ts">
 import { NButton, NPopconfirm, NSpace, NTag } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type AppServiceInfo, useAdminAppServices } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -150,6 +178,14 @@ const selectedService = appServices.selectedService
 const detailLoading = appServices.detailLoading
 const pingResult = appServices.pingResult
 const pingLoading = appServices.pingLoading
+const registering = appServices.registering
+
+const registerForm = reactive({
+  asToken: '',
+  url: '',
+  senderLocalpart: '',
+  configJson: ''
+})
 
 const filteredServices = computed(() => {
   if (!searchQuery.value) return services.value
@@ -275,6 +311,44 @@ async function handleDeleteService() {
     showFeedback(t('admin.appServices.deleteSuccess'), 'success')
   } catch (err) {
     if (handleAdminError(err)) showFeedback(t('admin.appServices.deleteFailed'), 'error')
+  }
+}
+
+async function handleRegister() {
+  const asToken = registerForm.asToken.trim()
+  const url = registerForm.url.trim()
+  const senderLocalpart = registerForm.senderLocalpart.trim()
+  if (!asToken || !url || !senderLocalpart) {
+    showFeedback(t('admin.appServices.registerMissingFields'), 'warning')
+    return
+  }
+
+  let extraConfig: Record<string, unknown> = {}
+  const rawConfig = registerForm.configJson.trim()
+  if (rawConfig) {
+    try {
+      const parsed: unknown = JSON.parse(rawConfig)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        showFeedback(t('admin.appServices.configJsonInvalid'), 'error')
+        return
+      }
+      extraConfig = parsed as Record<string, unknown>
+    } catch {
+      showFeedback(t('admin.appServices.configJsonInvalid'), 'error')
+      return
+    }
+  }
+
+  try {
+    await appServices.registerService(asToken, { ...extraConfig, url, sender_localpart: senderLocalpart })
+    registerForm.asToken = ''
+    registerForm.url = ''
+    registerForm.senderLocalpart = ''
+    registerForm.configJson = ''
+    activeTab.value = 'list'
+    showFeedback(t('admin.appServices.registerSuccess'), 'success')
+  } catch (err) {
+    if (handleAdminError(err)) showFeedback(t('admin.appServices.registerFailed'), 'error')
   }
 }
 

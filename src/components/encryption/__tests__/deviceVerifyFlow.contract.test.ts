@@ -145,7 +145,9 @@ describe('设备验证流程接线与文案契约', () => {
     })
 
     it('handleVerifyDevice 必须把 device.userId 写入目标用户', () => {
-      expect(source).toMatch(/verifyTargetUserId\.value\s*=\s*device\.userId/)
+      // 行为已下沉到 useDeviceTrustActions，契约随之校验组合式函数，避免拆分后守卫失效
+      const actions = read('src/composables/encryption/useDeviceTrustActions.ts')
+      expect(actions).toMatch(/verifyTargetUserId\.value\s*=\s*device\.userId/)
     })
   })
 

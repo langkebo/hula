@@ -73,6 +73,7 @@
     "user_id": "User ID",
     "user_name": "Username",
     "unknown": "Unknown",
+    "load_failed": "Could not load profile",
     "moments": "Moments",
     "no_moments": "No moments yet",
     "moments_unsupported": "Moments are not supported by the Matrix protocol yet"

@@ -25,8 +25,9 @@ describe('HeaderBar private-mode', () => {
     expect(src).toContain('PrivateModeConfirmDialog')
   })
 
-  it('ChatMain.vue routes PRIVATE_MODE_TOGGLE_REQUEST by confirmed payload', () => {
-    const src = readFileSync(resolve(__dirname, '../../../../components/rightBox/chatBox/ChatMain.vue'), 'utf-8')
+  it('routes PRIVATE_MODE_TOGGLE_REQUEST by confirmed payload', () => {
+    // 路由逻辑已从 ChatMain.vue 抽到 composable，断言随实现迁移
+    const src = readFileSync(resolve(__dirname, '../../../../composables/chat/useChatPrivateModeControls.ts'), 'utf-8')
     expect(src).toContain('onPrivateModeToggleRequest')
     expect(src).toContain('payload?.confirmed')
     expect(src).toContain('confirmPrivateMode')

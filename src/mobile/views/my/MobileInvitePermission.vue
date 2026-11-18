@@ -10,6 +10,14 @@
           <van-loading size="24px">{{ t('mobile_invite_permission.loading') }}</van-loading>
         </div>
 
+        <!-- 读取失败时不渲染默认策略表单：否则「allow_all + 全开」会被误当成账号真实设置 -->
+        <MobileAsyncState
+          v-else-if="loadFailed"
+          state="error"
+          test-id="invite-permission"
+          min-height="320px"
+          @retry="loadConfig" />
+
         <template v-else>
           <van-cell-group inset>
             <van-radio-group v-model="mode" data-testid="invite-mode-group" @change="handleModeChange">
@@ -144,6 +152,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixAccountService } from '@/services/matrix'
 import { cacheDmPrivacyPreferences, loadDmPrivacyPreferences } from '@/services/matrix/user/dmPrivacyPreferences'
 import {
@@ -161,6 +170,7 @@ const logger = createLogger('MobileInvitePermission')
 const { t } = useI18n()
 
 const loading = ref(true)
+const loadFailed = ref(false)
 const saving = ref(false)
 const mode = ref<InvitePolicyMode>('allow_all')
 const blocklist = ref<string[]>([])
@@ -180,7 +190,9 @@ const activeList = computed(() => (mode.value === 'blocklist' ? blocklist.value 
 /** 当前名单为空：行内占位提示，交由模板统一判定 */
 const isActiveListEmpty = computed(() => activeList.value.length === 0)
 
-onMounted(async () => {
+async function loadConfig() {
+  loading.value = true
+  loadFailed.value = false
   try {
     // 严格读取：能区分「从未存过」（null）与「读取失败」（抛错），
     // 读取失败时展示错误而不是把默认策略当成账号真实策略渲染。
@@ -188,11 +200,13 @@ onMounted(async () => {
     applyConfig(policy)
   } catch (error) {
     logger.error('Failed to load invite permission config', error)
-    showToast({ type: 'fail', message: t('mobile_invite_permission.load_failed') })
+    loadFailed.value = true
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadConfig)
 
 function applyConfig(policy: InvitePolicy | null) {
   const normalized = normalizeInvitePolicy(policy)

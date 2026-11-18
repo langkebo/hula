@@ -97,7 +97,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import { useTypedI18n } from '@/plugins/i18n'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
-import type { RoomReceiptUser } from '@/services/matrix/room/TimelineService'
+import type { RoomReceiptUser } from '@/services/matrix/room/timelineOutcomes'
 
 type ReceiptsState = 'loading' | 'ok' | 'empty' | 'unsupported' | 'error'
 

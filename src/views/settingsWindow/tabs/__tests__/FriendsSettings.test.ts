@@ -194,14 +194,16 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
   })
 
   it('reads the three switches from InvitePolicy and never touches tjg-friend-settings', async () => {
-    getInvitePolicyMock.mockResolvedValue(
+    getInvitePolicyStrictMock.mockResolvedValue(
       accountPolicy({ allowFriendRequests: false, autoAcceptFriends: true, requireFriendRequestMessage: false })
     )
 
     const wrapper = mount(FriendsSettings)
     await flushPromises()
 
-    expect(getInvitePolicyMock).toHaveBeenCalledTimes(1)
+    // 读取走严格变体：宽松版会把读失败折叠成默认策略，界面就显示成账号真实设置
+    expect(getInvitePolicyStrictMock).toHaveBeenCalledTimes(1)
+    expect(getInvitePolicyMock).not.toHaveBeenCalled()
     const vm = getVm(wrapper)
     expect(vm.allowFriendRequests).toBe(false)
     expect(vm.autoAcceptFriends).toBe(true)
@@ -212,8 +214,6 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
   })
 
   it('writes the toggled flag back while preserving the fields it does not own', async () => {
-    getInvitePolicyMock.mockResolvedValue(accountPolicy())
-    getInvitePolicyStrictMock.mockResolvedValue(accountPolicy())
     const wrapper = mount(FriendsSettings)
     await flushPromises()
 
@@ -241,9 +241,10 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
 
   it('re-reads the policy before writing so a sibling editor edit is not clobbered', async () => {
     // 挂载时 blocklist 为空，写回前兄弟编辑器（BlockedUsersSection）刚加了一个人。
-    // 加载走宽松变体（渲染可用），写入必须走严格变体重读。
-    getInvitePolicyMock.mockResolvedValueOnce(accountPolicy({ blocklist: [] }))
-    getInvitePolicyStrictMock.mockResolvedValueOnce(accountPolicy({ blocklist: ['@added-by-sibling:server'] }))
+    // 加载与写入重读都走严格变体。
+    getInvitePolicyStrictMock
+      .mockResolvedValueOnce(accountPolicy({ blocklist: [] }))
+      .mockResolvedValueOnce(accountPolicy({ blocklist: ['@added-by-sibling:server'] }))
 
     const wrapper = mount(FriendsSettings)
     await flushPromises()
@@ -253,8 +254,7 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
     await vm.handleToggle()
     await flushPromises()
 
-    expect(getInvitePolicyMock).toHaveBeenCalledTimes(1)
-    expect(getInvitePolicyStrictMock).toHaveBeenCalledTimes(1)
+    expect(getInvitePolicyStrictMock).toHaveBeenCalledTimes(2)
     const written = setInvitePolicyMock.mock.calls.at(-1)?.[0] as InvitePolicy
     expect(written.blocklist).toEqual(['@added-by-sibling:server'])
     expect(written.autoAcceptFriends).toBe(true)
@@ -270,8 +270,9 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
    * `setInvitePolicy` 成功还会弹"已保存"。写入必须走严格变体：读取失败就中止。
    */
   it('aborts the write with error feedback when the strict re-read fails', async () => {
-    getInvitePolicyMock.mockResolvedValue(accountPolicy({ allowFriendRequests: true }))
-    getInvitePolicyStrictMock.mockRejectedValue(new TypeError('read failed'))
+    getInvitePolicyStrictMock
+      .mockResolvedValueOnce(accountPolicy({ allowFriendRequests: true }))
+      .mockRejectedValueOnce(new TypeError('read failed'))
 
     const wrapper = mount(FriendsSettings)
     await flushPromises()
@@ -293,7 +294,6 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
   })
 
   it('rolls the switch back when the write itself fails', async () => {
-    getInvitePolicyMock.mockResolvedValue(accountPolicy({ autoAcceptFriends: false }))
     getInvitePolicyStrictMock.mockResolvedValue(accountPolicy({ autoAcceptFriends: false }))
     setInvitePolicyMock.mockRejectedValue(new Error('server error'))
 
@@ -312,7 +312,6 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
   })
 
   it('does not write anything when a toggle handler is not triggered', async () => {
-    getInvitePolicyMock.mockResolvedValue(accountPolicy())
     const wrapper = mount(FriendsSettings)
     await flushPromises()
 
@@ -390,6 +389,53 @@ describe('FriendsSettings — partial 态', () => {
     // 重试成功后 partial 态应消失
     expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(false)
 
+    wrapper.unmount()
+  })
+})
+
+/**
+ * 好友请求策略读取失败此前被 catch 吞掉，三个开关继续显示默认值（允许所有人），
+ * 等于把「读不到」谎报成账号真实设置。以下用例锁定错误态与重试。
+ */
+describe('FriendsSettings — 策略读取失败', () => {
+  beforeEach(() => {
+    getFriendGroupsMock.mockReset().mockResolvedValue([])
+    getIncomingRequestsMock.mockReset().mockResolvedValue([])
+    getOutgoingRequestsMock.mockReset().mockResolvedValue([])
+    ensureSessionReadyMock.mockReset().mockResolvedValue('ready')
+    getInvitePolicyStrictMock.mockReset()
+    setInvitePolicyMock.mockReset().mockResolvedValue(true)
+    showFeedbackMock.mockClear()
+    localStorage.clear()
+  })
+
+  it('读取失败时展示错误态与重试，不渲染默认档位的开关', async () => {
+    getInvitePolicyStrictMock.mockRejectedValue(new Error('offline'))
+
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="friend-policy-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="friend-policy-retry"]').exists()).toBe(true)
+    expect(wrapper.findAllComponents({ name: 'NSwitch' })).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it('点击重试会重新读取并恢复开关', async () => {
+    getInvitePolicyStrictMock
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(accountPolicy({ allowFriendRequests: false }))
+
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+    expect(wrapper.find('[data-test="friend-policy-error"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="friend-policy-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="friend-policy-error"]').exists()).toBe(false)
+    expect(wrapper.findAllComponents({ name: 'NSwitch' })).toHaveLength(3)
+    expect(getVm(wrapper).allowFriendRequests).toBe(false)
     wrapper.unmount()
   })
 })

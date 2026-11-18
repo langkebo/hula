@@ -46,8 +46,16 @@ const projectRoot = path.resolve(__dirname, '..')
 export const PROJECT_ROOT = projectRoot
 export const srcRoot = path.join(projectRoot, 'src')
 
-/** 承载跨窗口串行化的目标文件（正向断言的落点） */
+/** 文件簇入口（基数断言的落点） */
 export const TARGET_FILE = 'src/services/matrix/MatrixCryptoStateTracker.ts'
+
+/**
+ * 承载跨窗口串行化的目标文件簇（正向断言在**簇内合并**后判定）。
+ *
+ * 2026-11-18 体量拆分前只有单文件；拆分后 Web Locks 编排落在 Init 片段，
+ * 主文件只保留 `initRustCrypto` 实现。若仍只扫单文件，拆分本身会被误判为回归。
+ */
+export const TARGET_FILES = [TARGET_FILE, 'src/services/matrix/MatrixCryptoStateTrackerInit.ts']
 
 /**
  * 被删除机制的指纹 token —— 出现即判违规（注释里也不允许：这些是**标识符**
@@ -136,7 +144,7 @@ export function scanSources(files) {
   const missingRequired = []
   let checkedFiles = 0
   let targetFound = false
-  let targetContent = null
+  const targetContents = new Map()
 
   for (const file of files ?? []) {
     const relPath = String(file?.path ?? '')
@@ -146,7 +154,9 @@ export function scanSources(files) {
 
     if (relPath === TARGET_FILE) {
       targetFound = true
-      targetContent = content
+    }
+    if (TARGET_FILES.includes(relPath)) {
+      targetContents.set(relPath, content)
     }
 
     const lines = content.split('\n')
@@ -166,11 +176,14 @@ export function scanSources(files) {
     })
   }
 
-  if (targetContent !== null) {
-    const compactedTarget = compactCode(targetContent)
+  if (targetContents.size > 0) {
+    const compactedTarget = TARGET_FILES.map((relPath) => targetContents.get(relPath))
+      .filter((content) => content !== undefined)
+      .map((content) => compactCode(content))
+      .join('\n')
     for (const requirement of REQUIRED_IN_TARGET) {
       if (!compactedTarget.includes(compactToken(requirement.token))) {
-        missingRequired.push({ path: TARGET_FILE, token: requirement.token, why: requirement.why })
+        missingRequired.push({ path: TARGET_FILES.join(' + '), token: requirement.token, why: requirement.why })
       }
     }
   }
@@ -179,6 +192,7 @@ export function scanSources(files) {
     ok: violations.length === 0 && missingRequired.length === 0,
     checkedFiles,
     targetFound,
+    targetFilesFound: [...targetContents.keys()],
     violations,
     missingRequired
   }
@@ -219,9 +233,14 @@ async function main() {
 
   const result = scanSources(files)
 
-  // 基数断言：正向断言的落点文件必须在扫描集合里
+  // 基数断言：正向断言的落点文件簇必须在扫描集合里
   if (!result.targetFound) {
     console.error(`[crypto-cross-window] scan failed: 目标文件未出现在扫描集合（${TARGET_FILE}）`)
+    process.exit(2)
+  }
+  const missingTargets = TARGET_FILES.filter((relPath) => !result.targetFilesFound.includes(relPath))
+  if (missingTargets.length > 0) {
+    console.error(`[crypto-cross-window] scan failed: 目标文件簇缺失（${missingTargets.join(', ')}）`)
     process.exit(2)
   }
 

@@ -68,6 +68,10 @@ vi.mock('@/mobile/components/chat-room/HeaderBar.vue', () => ({
 interface FriendGroupsVm {
   groups: Array<{ group_id: string; name: string; member_count?: number }>
   loading: boolean
+  loadFailed: boolean
+  memberLoadFailed: Record<string, boolean>
+  membersByGroup: Record<string, Array<{ user_id: string; displayname?: string }>>
+  expandedGroups: string[]
   loadGroups: () => Promise<void>
   handleCreate: () => Promise<void>
   handleRename: () => Promise<void>
@@ -104,6 +108,55 @@ describe('FriendGroups', () => {
 
     expect(vmOf(wrapper).loading).toBe(false)
     expect(showToastMock).toHaveBeenCalled()
+  })
+
+  it('首屏读取失败时显示错误态而不是空分组', async () => {
+    getFriendGroupsMock.mockRejectedValueOnce(new Error('boom'))
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="friend-groups-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="friend-groups-empty"]').exists()).toBe(false)
+  })
+
+  it('错误态重试成功后恢复分组列表', async () => {
+    getFriendGroupsMock
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce([{ group_id: 'g1', name: '家人', member_count: 0 }])
+    const wrapper = mountPage()
+    await flushPromises()
+
+    await wrapper.find('[data-test="async-state-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="friend-groups-error"]').exists()).toBe(false)
+    expect(vmOf(wrapper).groups).toHaveLength(1)
+  })
+
+  it('成员读取失败时显示失败提示并可原地重试', async () => {
+    getFriendGroupsMock.mockResolvedValue([{ group_id: 'g1', name: '家人', member_count: 1 }])
+    getFriendsInGroupMock
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce([{ user_id: '@bob:matrix.test', displayname: 'Bob' }])
+    const wrapper = mountPage()
+    await flushPromises()
+    const vm = vmOf(wrapper)
+
+    vm.expandedGroups = ['g1']
+    await flushPromises()
+
+    expect(vm.memberLoadFailed.g1).toBe(true)
+    expect(wrapper.find('[title="mobile_friend_groups.members_load_failed"]').exists()).toBe(true)
+    expect(wrapper.find('[title="mobile_friend_groups.no_member"]').exists()).toBe(false)
+
+    const retryButton = wrapper.findAll('van-button').find((button) => button.text() === 'common.retry')
+    expect(retryButton).toBeTruthy()
+    await retryButton!.trigger('click')
+    await flushPromises()
+
+    expect(vm.memberLoadFailed.g1).toBeUndefined()
+    expect(vm.membersByGroup.g1).toHaveLength(1)
+    expect(wrapper.find('[title="mobile_friend_groups.members_load_failed"]').exists()).toBe(false)
   })
 
   it('创建分组：空名拒绝，合法名调用服务并刷新', async () => {

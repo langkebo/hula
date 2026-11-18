@@ -132,6 +132,11 @@ vi.mock('naive-ui', async () => {
       name: 'NProgress',
       props: ['percentage'],
       template: '<div data-test="progress">{{ percentage }}</div>'
+    }),
+    NAlert: defineComponent({
+      name: 'NAlert',
+      props: ['type'],
+      template: '<div data-test="alert"><slot /></div>'
     })
   }
 })
@@ -174,6 +179,12 @@ vi.mock('@/services/matrix', () => ({
   matrixKeyBackupService: {
     recoverRoomKeys: vi.fn(),
     recoverSessionKey: vi.fn()
+  }
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    waitForClientReady: vi.fn().mockResolvedValue({})
   }
 }))
 
@@ -292,6 +303,27 @@ describe('KeyBackupRestoreDialog', () => {
       message: '恢复失败，请检查密钥是否正确'
     })
     expect(messageErrorMock).toHaveBeenCalledWith('密钥恢复失败')
+  })
+
+  it('备份信息读取失败时显式提示并可重试恢复', async () => {
+    getKeyBackupInfoMock.mockRejectedValueOnce(new Error('backup info unavailable'))
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    // 失败不得静默退化：提示可见，且不伪装成「无版本可选」
+    expect(wrapper.find('[data-test="backup-info-error"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('备份信息读取失败，暂时无法确认备份版本，请重试')
+
+    getKeyBackupInfoMock.mockResolvedValueOnce({
+      version: '2',
+      algorithm: 'm.megolm_backup.v1'
+    })
+    await wrapper.find('[data-test="backup-info-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(getKeyBackupInfoMock).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-test="backup-info-error"]').exists()).toBe(false)
   })
 
   it('取消时重置表单和恢复状态', async () => {

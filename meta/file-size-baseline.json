@@ -1,11 +1,11 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-16T19:02:41.209Z",
+  "updated_at": "2026-11-18T10:44:55.372Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
   "critical_limit": 1000,
-  "total_oversized_files": 120,
+  "total_oversized_files": 100,
   "files": [
     {
       "file": "src/plugins/robot/layout/Left.vue",
@@ -14,18 +14,6 @@
     {
       "file": "src/views/admin/AdminRooms.vue",
       "lines": 714
-    },
-    {
-      "file": "src/services/matrix/MatrixCryptoStateTracker.ts",
-      "lines": 713
-    },
-    {
-      "file": "src/components/encryption/SecureBackupDialog.vue",
-      "lines": 705
-    },
-    {
-      "file": "src/services/matrix/user/MatrixAccountService.ts",
-      "lines": 703
     },
     {
       "file": "src/views/admin/AdminDashboard.vue",
@@ -41,11 +29,7 @@
     },
     {
       "file": "src/views/admin/AdminSecurity.vue",
-      "lines": 669
-    },
-    {
-      "file": "src/components/room/RoomDetailDrawer.vue",
-      "lines": 661
+      "lines": 668
     },
     {
       "file": "src/components/rightBox/renderMessage/File.vue",
@@ -56,19 +40,15 @@
       "lines": 651
     },
     {
-      "file": "src/services/matrix/room/RoomOperations.ts",
-      "lines": 642
-    },
-    {
       "file": "src/views/settingsWindow/tabs/EncryptionSettings.vue",
       "lines": 638
     },
     {
-      "file": "src/components/rightBox/chatBox/ChatMain.vue",
-      "lines": 629
+      "file": "src/components/rightBox/renderMessage/index.vue",
+      "lines": 628
     },
     {
-      "file": "src/components/rightBox/renderMessage/index.vue",
+      "file": "src/components/room/RoomDetailDrawer.vue",
       "lines": 628
     },
     {
@@ -88,19 +68,11 @@
       "lines": 593
     },
     {
-      "file": "src/mobile/views/space/SpaceView.vue",
-      "lines": 590
-    },
-    {
       "file": "src/views/registerWindow/index.vue",
       "lines": 589
     },
     {
       "file": "src/components/rightBox/chatBox/ChatMsgMultiChoose.vue",
-      "lines": 585
-    },
-    {
-      "file": "src/views/settingsWindow/tabs/FriendsSettings.vue",
       "lines": 585
     },
     {
@@ -114,6 +86,10 @@
     {
       "file": "src/views/settingsWindow/tabs/PushSettings.vue",
       "lines": 574
+    },
+    {
+      "file": "src/services/matrix/admin/RoomService.ts",
+      "lines": 573
     },
     {
       "file": "src/services/matrix/room/MatrixSpaceService.ts",
@@ -136,20 +112,8 @@
       "lines": 542
     },
     {
-      "file": "src/components/encryption/KeyBackupRestoreDialog.vue",
-      "lines": 541
-    },
-    {
       "file": "src/App.vue",
       "lines": 539
-    },
-    {
-      "file": "src/services/matrix/admin/AdminFacadeService.ts",
-      "lines": 537
-    },
-    {
-      "file": "src/services/matrix/admin/RoomService.ts",
-      "lines": 536
     },
     {
       "file": "src/components/rendezvous/RendezvousSessionManager.vue",
@@ -168,10 +132,6 @@
       "lines": 521
     },
     {
-      "file": "src/views/settingsWindow/tabs/AccountSettings.vue",
-      "lines": 517
-    },
-    {
       "file": "src/services/matrix/ai/AIService.ts",
       "lines": 515
     },
@@ -182,10 +142,6 @@
     {
       "file": "src/components/friend/AddFriendPane.vue",
       "lines": 512
-    },
-    {
-      "file": "src/components/workbench/SpaceListPane.vue",
-      "lines": 510
     },
     {
       "file": "src/services/matrix/auth/MatrixQrLoginSdkService.ts",
@@ -204,12 +160,12 @@
       "lines": 501
     },
     {
-      "file": "src/components/rightBox/chatBox/ChatHeader/ChatHeaderRoot.vue",
-      "lines": 498
-    },
-    {
       "file": "src/services/matrix/friends/MatrixFriendSync.ts",
       "lines": 497
+    },
+    {
+      "file": "src/components/rightBox/chatBox/ChatHeader/ChatHeaderRoot.vue",
+      "lines": 496
     },
     {
       "file": "src/components/common/InfoPopover.vue",
@@ -240,10 +196,6 @@
       "lines": 478
     },
     {
-      "file": "src/components/encryption/DeviceTrustManager.vue",
-      "lines": 474
-    },
-    {
       "file": "src/plugins/robot/views/Chat.vue",
       "lines": 474
     },
@@ -258,6 +210,10 @@
     {
       "file": "src/plugins/robot/composables/useRobotChat.ts",
       "lines": 467
+    },
+    {
+      "file": "src/components/rightBox/MsgInput.vue",
+      "lines": 461
     },
     {
       "file": "src/components/search/SearchPane.vue",
@@ -276,10 +232,6 @@
       "lines": 454
     },
     {
-      "file": "src/components/rightBox/MsgInput.vue",
-      "lines": 454
-    },
-    {
       "file": "src/shared/composables/useLoginFlow.ts",
       "lines": 454
     },
@@ -290,10 +242,6 @@
     {
       "file": "src/mobile/views/rooms/index.vue",
       "lines": 451
-    },
-    {
-      "file": "src/components/common/ContextMenu.vue",
-      "lines": 450
     },
     {
       "file": "src/components/settings/ThreePidSection.vue",
@@ -320,6 +268,10 @@
       "lines": 443
     },
     {
+      "file": "src/mobile/views/chat-room/ChatSetting.vue",
+      "lines": 442
+    },
+    {
       "file": "src/services/matrix/widget/MatrixWidgetService.ts",
       "lines": 442
     },
@@ -333,10 +285,6 @@
     },
     {
       "file": "src/services/matrix/crypto/CryptoKeyBackupAdapter.ts",
-      "lines": 439
-    },
-    {
-      "file": "src/services/matrix/media/MatrixMediaService.ts",
       "lines": 439
     },
     {
@@ -388,7 +336,7 @@
       "lines": 429
     },
     {
-      "file": "src/services/matrix/auth/MatrixSessionService.ts",
+      "file": "src/stores/domains/chat/chat/message.ts",
       "lines": 427
     },
     {
@@ -400,10 +348,6 @@
       "lines": 423
     },
     {
-      "file": "src/mobile/views/chat-room/ChatSetting.vue",
-      "lines": 422
-    },
-    {
       "file": "src/services/matrix/crypto/MatrixKeyBackupService.ts",
       "lines": 420
     },
@@ -412,20 +356,12 @@
       "lines": 419
     },
     {
-      "file": "src/views/settingsWindow/tabs/StorageSettings.vue",
-      "lines": 418
-    },
-    {
       "file": "src/services/siliconflow/SiliconFlowService.ts",
       "lines": 417
     },
     {
       "file": "src/stores/domains/chat/group/members.ts",
       "lines": 417
-    },
-    {
-      "file": "src/stores/domains/chat/chat/message.ts",
-      "lines": 416
     },
     {
       "file": "src/stores/domains/widget/thumbnailCache.ts",
@@ -444,10 +380,6 @@
       "lines": 412
     },
     {
-      "file": "src/components/space/SpaceTree.vue",
-      "lines": 411
-    },
-    {
       "file": "src/components/common/Screenshot/ScreenshotRoot.vue",
       "lines": 409
     },
@@ -460,20 +392,8 @@
       "lines": 409
     },
     {
-      "file": "src/components/workbench/TjgSpaceTree.vue",
-      "lines": 408
-    },
-    {
       "file": "src/stores/domains/chat/sessionUnread.ts",
       "lines": 405
-    },
-    {
-      "file": "src/components/settings/InvitePermissionPanel.vue",
-      "lines": 402
-    },
-    {
-      "file": "src/components/rightBox/ApplyList.vue",
-      "lines": 401
     },
     {
       "file": "src/components/rightBox/SingleDetails.vue",

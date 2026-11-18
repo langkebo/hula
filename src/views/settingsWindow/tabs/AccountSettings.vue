@@ -3,6 +3,14 @@
     <div class="settings-section" data-settings-anchor="account-profile">
       <h3 class="section-title">{{ t('setting.account.profile') }}</h3>
 
+      <div v-if="extendedProfileLoadFailed" data-test="extended-profile-error">
+        <ErrorState
+          compact
+          :title="t('common.load_failed')"
+          :retry-text="t('common.retry')"
+          @retry="loadExtendedProfile" />
+      </div>
+
       <div class="profile-section">
         <div class="avatar-section">
           <n-avatar round :size="80" :src="displayAvatarUrl" :fallback-src="defaultAvatar" />
@@ -37,7 +45,7 @@
               type="textarea"
               :placeholder="t('setting.account.about_placeholder')"
               :maxlength="300"
-              :disabled="!supportsExtendedProfile"
+              :disabled="extendedProfileDisabled"
               @blur="handleAboutChange" />
           </n-form-item>
 
@@ -46,7 +54,7 @@
               v-model:value="formData.sex"
               :options="genderOptions"
               clearable
-              :disabled="!supportsExtendedProfile"
+              :disabled="extendedProfileDisabled"
               :placeholder="t('setting.account.gender_placeholder')"
               @update:value="handleSexChange" />
           </n-form-item>
@@ -56,7 +64,7 @@
               v-model:value="formData.region"
               :placeholder="t('setting.account.region_placeholder')"
               :maxlength="120"
-              :disabled="!supportsExtendedProfile"
+              :disabled="extendedProfileDisabled"
               @blur="handleRegionChange" />
           </n-form-item>
 
@@ -65,7 +73,7 @@
               v-model:value="formData.birthday"
               :placeholder="t('setting.account.birthday_placeholder')"
               :maxlength="20"
-              :disabled="!supportsExtendedProfile"
+              :disabled="extendedProfileDisabled"
               @blur="handleBirthdayChange" />
           </n-form-item>
         </n-form>
@@ -131,346 +139,50 @@
 </template>
 
 <script setup lang="ts">
-import { convertFileSrc } from '@tauri-apps/api/core'
-import { open } from '@tauri-apps/plugin-dialog'
 import { NAvatar, NButton, NCheckbox, NDivider, NForm, NFormItem, NInput, NSelect } from 'naive-ui'
-import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import defaultAvatarImg from '@/assets/img/win.png'
-import { THUMBNAIL_SIZE_LARGE } from '@/common/constants'
-import { formatMatrixError } from '@/common/matrixErrorTranslator'
-import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
-import { useAccount } from '@/composables/user/useAccount'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useAccountDeactivation } from '@/composables/user/useAccountDeactivation'
-import { SexEnum } from '@/enums'
-import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
-import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
-import { profileService } from '@/services/matrix/user/MatrixProfileService'
-import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { useUserStore } from '@/stores/domains/user/user'
-import { hasTauriRuntime } from '@/utils/AppHarness'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import { createLogger } from '@/utils/Logger'
-import { firstPasswordRuleViolationKey } from '@/utils/passwordStrength'
-
-const logger = createLogger('AccountSettings')
+import { useAccountAvatar } from './account/useAccountAvatar'
+import { useAccountPassword } from './account/useAccountPassword'
+import { useAccountProfileForm } from './account/useAccountProfileForm'
 
 defineOptions({
   name: 'AccountSettings'
 })
 
-const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const { confirmDeactivateAccount } = useAccountDeactivation()
-const { changePassword } = useAccount()
-const userStore = useUserStore()
-const matrixStore = useMatrixStore()
-const { isCapabilityAvailable } = useServerCapability()
 
-const passwordLoading = ref(false)
-const displayNameSaving = ref(false)
-const avatarUploading = ref(false)
-const showCropper = ref(false)
-const localImageUrl = ref('')
-const fileInputRef = ref<HTMLInputElement>()
-const cropperRef = ref<AvatarCropperInstance>()
-const logoutDevices = ref(false)
+const {
+  userId,
+  supportsExtendedProfile,
+  extendedProfileLoadFailed,
+  extendedProfileDisabled,
+  displayNameSaving,
+  formData,
+  genderOptions,
+  loadExtendedProfile,
+  handleDisplayNameChange,
+  handleAboutChange,
+  handleSexChange,
+  handleRegionChange,
+  handleBirthdayChange
+} = useAccountProfileForm()
 
-const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
-const defaultAvatar = computed(() => defaultAvatarImg)
-const userId = computed(() => matrixStore.userId || '')
-const supportsExtendedProfile = computed(() => isCapabilityAvailable('extended-profile'))
+const {
+  avatarUploading,
+  showCropper,
+  localImageUrl,
+  defaultAvatar,
+  displayAvatarUrl,
+  handleAvatarChange,
+  handleFileSelect,
+  handleCrop
+} = useAccountAvatar()
 
-const displayAvatarUrl = computed(() => {
-  if (userAvatar.value?.startsWith('mxc://')) {
-    // 解析统一由 matrixMediaService.getMediaUrl → media/mxcUrl 的 resolveMxcToHttp 承担（SDK 的 mxcUrlToHttp 在 ProfileManager 上，此前误调导致静默失效）。
-    // 这里保留 try/catch 兜底：失败时返回 mxc 原值，naive-avatar 会降级到 placeholder。
-    try {
-      return (
-        matrixMediaService.getMediaUrl(userAvatar.value, THUMBNAIL_SIZE_LARGE, THUMBNAIL_SIZE_LARGE) || userAvatar.value
-      )
-    } catch (err) {
-      logger.warn('Failed to resolve avatar mxc URL:', err)
-      return userAvatar.value
-    }
-  }
-  return userAvatar.value
-})
-
-const formData = reactive({
-  displayName: userStore.currentUserDisplayName || '',
-  about: '',
-  sex: null as number | null,
-  region: '',
-  birthday: ''
-})
-
-const initialExtendedProfile = reactive({
-  about: '',
-  sex: null as number | null,
-  region: '',
-  birthday: ''
-})
-
-const genderOptions = computed(() => [
-  { label: t('setting.account.gender_male'), value: SexEnum.MAN },
-  { label: t('setting.account.gender_female'), value: SexEnum.REMALE }
-])
-
-const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-
-const hasUnsavedPasswordChanges = computed(() => {
-  return Boolean(passwordForm.oldPassword || passwordForm.newPassword || passwordForm.confirmPassword)
-})
-
-useSettingsTabDirty('account', hasUnsavedPasswordChanges)
-
-function handleAvatarChange() {
-  if (hasTauriRuntime()) {
-    openAvatarCropperViaTauri()
-  } else {
-    fileInputRef.value?.click()
-  }
-}
-
-async function openAvatarCropperViaTauri() {
-  try {
-    const selected = await open({
-      multiple: false,
-      filters: [{ name: 'Images', extensions: ['jpeg', 'jpg', 'png', 'webp'] }]
-    })
-    if (!selected) return
-
-    const filePath = typeof selected === 'string' ? selected : (selected as string)
-
-    // 直接使用 convertFileSrc 将本地路径转为 WebView 可访问的 asset URL
-    const assetUrl = convertFileSrc(filePath)
-    localImageUrl.value = assetUrl
-    nextTick(() => {
-      showCropper.value = true
-    })
-  } catch (error) {
-    logger.error('Failed to open file picker:', error)
-  }
-}
-
-function processImageFile(file: File) {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-  if (!allowedTypes.includes(file.type)) {
-    showFeedback(t('setting.account.avatar_format_invalid'), 'error')
-    return
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    showFeedback(t('setting.account.avatar_too_large'), 'error')
-    return
-  }
-
-  const url = URL.createObjectURL(file)
-  localImageUrl.value = url
-  showCropper.value = true
-}
-
-function handleFileSelect(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-
-  processImageFile(file)
-
-  if (fileInputRef.value) {
-    fileInputRef.value.value = ''
-  }
-}
-
-async function handleCrop(blob: Blob) {
-  avatarUploading.value = true
-
-  try {
-    const mimeType = blob.type || 'image/png'
-    const ext = mimeType.split('/')[1] || 'png'
-    const fileName = `avatar_${Date.now()}.${ext}`
-    const file = new File([blob], fileName, { type: mimeType })
-
-    const uploadResult = await matrixMediaService.uploadImage(file)
-
-    const mxcUrl = uploadResult.contentUri
-
-    // 只通过 userStore 更新头像（内部会调用 profileService.setAvatarUrl）
-    await userStore.updateAvatar(mxcUrl)
-
-    // 清除头像缓存，确保 UI 显示新头像
-    AvatarUtils.clearCache()
-
-    showFeedback(t('setting.account.avatar_updated'), 'success')
-    showCropper.value = false
-
-    if (localImageUrl.value) {
-      URL.revokeObjectURL(localImageUrl.value)
-      localImageUrl.value = ''
-    }
-  } catch (error) {
-    logger.error('Failed to upload avatar', error)
-    showFeedback(t('setting.account.avatar_update_failed_retry'), 'error')
-    cropperRef.value?.finishLoading()
-  } finally {
-    avatarUploading.value = false
-  }
-}
-
-async function handleDisplayNameChange() {
-  // 保存期间禁用输入并拦截重复触发，避免 blur 连发造成并发写
-  if (displayNameSaving.value) return
-  if (formData.displayName === userStore.currentUserDisplayName) return
-
-  displayNameSaving.value = true
-  try {
-    await matrixAccountService.updateDisplayName(formData.displayName)
-    showFeedback(t('setting.account.nickname_updated'), 'success')
-  } catch (error) {
-    showFeedback(t('setting.account.nickname_update_failed'), 'error')
-    formData.displayName = userStore.currentUserDisplayName || ''
-  } finally {
-    displayNameSaving.value = false
-  }
-}
-
-function syncExtendedProfileSnapshot() {
-  initialExtendedProfile.about = formData.about
-  initialExtendedProfile.sex = formData.sex
-  initialExtendedProfile.region = formData.region
-  initialExtendedProfile.birthday = formData.birthday
-}
-
-function patchCurrentUserExtendedProfile() {
-  if (userStore.userInfo) {
-    userStore.userInfo.resume = formData.about
-    if (typeof formData.sex === 'number') {
-      userStore.userInfo.sex = formData.sex as typeof userStore.userInfo.sex
-    }
-  }
-  if (userStore.matrixProfile) {
-    userStore.matrixProfile.resume = formData.about || undefined
-    userStore.matrixProfile.sex = typeof formData.sex === 'number' ? formData.sex : undefined
-  }
-}
-
-async function updateExtendedProfileField(
-  field: 'resume' | 'sex' | 'region' | 'birthday',
-  value: string | number | null,
-  previousValue: string | number | null
-) {
-  if (!supportsExtendedProfile.value) {
-    showFeedback(t('setting.account.extended_profile_unsupported'), 'warning')
-    return
-  }
-  if (value === previousValue) return
-  try {
-    await profileService.updateOwnExtendedProfile({
-      [field]: value
-    })
-    patchCurrentUserExtendedProfile()
-    syncExtendedProfileSnapshot()
-    showFeedback(t('setting.account.extended_profile_updated'), 'success')
-  } catch (error) {
-    showFeedback(t('setting.account.extended_profile_update_failed'), 'error')
-    if (field === 'resume') formData.about = initialExtendedProfile.about
-    if (field === 'sex') formData.sex = initialExtendedProfile.sex
-    if (field === 'region') formData.region = initialExtendedProfile.region
-    if (field === 'birthday') formData.birthday = initialExtendedProfile.birthday
-  }
-}
-
-async function handleAboutChange() {
-  await updateExtendedProfileField('resume', formData.about.trim(), initialExtendedProfile.about)
-}
-
-async function handleSexChange(value: number | null) {
-  formData.sex = value
-  await updateExtendedProfileField('sex', value, initialExtendedProfile.sex)
-}
-
-async function handleRegionChange() {
-  await updateExtendedProfileField('region', formData.region.trim(), initialExtendedProfile.region)
-}
-
-async function handleBirthdayChange() {
-  await updateExtendedProfileField('birthday', formData.birthday.trim(), initialExtendedProfile.birthday)
-}
-
-/**
- * 校验密码强度（与后端 synapse-rust 策略一致）。
- *
- * 规则实现已抽到 `@/utils/passwordStrength`，与移动端共用同一事实源；
- * 此处只负责把规则 id 映射到 i18n 文案。
- */
-function validatePasswordStrength(password: string): string | null {
-  const key = firstPasswordRuleViolationKey(password)
-  return key ? t(`setting.account.${key}`) : null
-}
-
-async function handlePasswordChange() {
-  if (!passwordForm.oldPassword || !passwordForm.newPassword) {
-    showFeedback(t('setting.account.password_incomplete'), 'warning')
-    return
-  }
-
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    showFeedback(t('setting.account.password_mismatch'), 'warning')
-    return
-  }
-
-  const strengthError = validatePasswordStrength(passwordForm.newPassword)
-  if (strengthError) {
-    showFeedback(strengthError, 'warning')
-    return
-  }
-
-  passwordLoading.value = true
-  try {
-    await changePassword(passwordForm.oldPassword, passwordForm.newPassword, logoutDevices.value)
-    showFeedback(t('setting.account.password_changed'), 'success')
-    passwordForm.oldPassword = ''
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
-  } catch (error) {
-    const errMsg = formatMatrixError(error)
-    // 根据错误码提供更精确的提示
-    const errObj = error as Record<string, unknown>
-    const errcode = (errObj?.errcode as string) || (errObj?.code as string) || ''
-    if (errcode === 'M_WEAK_PASSWORD') {
-      showFeedback(t('setting.account.password_too_weak'), 'error')
-    } else if (errcode === 'M_FORBIDDEN' || errMsg.includes('403')) {
-      showFeedback(t('setting.account.password_wrong_current'), 'error')
-    } else {
-      showFeedback(t('setting.account.password_change_failed_with_hint'), 'error')
-    }
-  } finally {
-    passwordLoading.value = false
-  }
-}
-
-onMounted(async () => {
-  if (!userId.value || !supportsExtendedProfile.value) return
-  try {
-    const extendedProfile = await profileService.getExtendedProfile(userId.value)
-    formData.about = typeof extendedProfile.resume === 'string' ? extendedProfile.resume : ''
-    formData.sex = typeof extendedProfile.sex === 'number' ? extendedProfile.sex : null
-    formData.region = typeof extendedProfile.region === 'string' ? extendedProfile.region : ''
-    formData.birthday = typeof extendedProfile.birthday === 'string' ? extendedProfile.birthday : ''
-    syncExtendedProfileSnapshot()
-    patchCurrentUserExtendedProfile()
-  } catch (error) {
-    logger.warn('Failed to load extended profile for account settings', error)
-  }
-})
+const { passwordLoading, logoutDevices, passwordForm, handlePasswordChange } = useAccountPassword()
 </script>
 
 <style scoped>

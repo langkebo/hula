@@ -70,10 +70,12 @@
 
           <MobileAsyncState
             v-if="isHistoryEmpty"
-            state="empty"
+            :state="loadFailed ? 'error' : 'empty'"
             :empty-text="t('setting.push.history.empty')"
+            :error-text="t('mobile_push.load_failed')"
             min-height="240px"
-            data-testid="notification-empty" />
+            test-id="notification"
+            @retry="load" />
         </template>
       </div>
     </template>
@@ -106,6 +108,8 @@ const router = useRouter()
 
 const loading = ref(true)
 const loadingMore = ref(false)
+/** 首屏加载失败标记：无缓存时用于区分「暂无通知」与「读取失败」 */
+const loadFailed = ref(false)
 const notifications = ref<Array<Record<string, unknown>>>([])
 const nextToken = ref<string | undefined>()
 const ackingId = ref<string | null>(null)
@@ -122,12 +126,20 @@ const isHistoryEmpty = computed(() => !hasUnread.value && !nextToken.value)
 onMounted(load)
 
 async function load() {
+  const hasCached = notifications.value.length > 0
+  loading.value = true
+  loadFailed.value = false
   try {
     const result = await matrixNotificationService.getNotifications(undefined, 30)
     notifications.value = result.notifications
     nextToken.value = result.next_token
   } catch (error) {
     logger.error('Failed to load notifications', error)
+    // 有缓存时优先展示旧数据（只提示失败）；无缓存才进入错误态，避免把失败伪装成空态
+    if (!hasCached) {
+      notifications.value = []
+      loadFailed.value = true
+    }
     showToast({ type: 'fail', message: t('mobile_push.load_failed') })
   } finally {
     loading.value = false

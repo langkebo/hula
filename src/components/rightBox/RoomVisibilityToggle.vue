@@ -1,16 +1,29 @@
 <template>
   <div class="room-visibility-toggle">
     <span class="room-visibility-toggle__label">{{ t('room.detail.visibility_label') }}</span>
+    <span v-if="loadFailed" class="room-visibility-toggle__error" data-test="visibility-error">
+      {{ t('room.detail.visibility_load_failed') }}
+      <button class="room-visibility-toggle__retry" type="button" data-test="visibility-retry" @click="loadVisibility">
+        {{ t('common.retry') }}
+      </button>
+    </span>
     <button
+      v-else
       class="room-visibility-toggle__btn"
-      :class="`room-visibility-toggle__btn--${currentVisibility}`"
+      :class="currentVisibility ? `room-visibility-toggle__btn--${currentVisibility}` : ''"
       type="button"
-      :disabled="loading"
+      :disabled="loading || !currentVisibility"
       data-test="visibility-toggle"
       @click="handleToggle">
       <span class="room-visibility-toggle__indicator" />
       <span class="room-visibility-toggle__text">
-        {{ currentVisibility === 'public' ? t('room.detail.visibility_public') : t('room.detail.visibility_private') }}
+        {{
+          currentVisibility === 'public'
+            ? t('room.detail.visibility_public')
+            : currentVisibility === 'private'
+              ? t('room.detail.visibility_private')
+              : t('common.loading')
+        }}
       </span>
     </button>
   </div>
@@ -29,18 +42,22 @@ const props = defineProps<{
   roomId: string
 }>()
 
-const currentVisibility = ref<'public' | 'private'>('private')
+// null 表示尚未取到真实值：不能用 'private' 冒充，否则失败时会误导用户
+const currentVisibility = ref<'public' | 'private' | null>(null)
 const loading = ref(false)
+const loadFailed = ref(false)
 
 // 加载当前可见性
 const loadVisibility = async () => {
   if (!props.roomId) return
   loading.value = true
+  loadFailed.value = false
+  currentVisibility.value = null
   try {
     currentVisibility.value = await groupStore.getVisibility(props.roomId)
   } catch {
-    // 获取失败默认私密
-    currentVisibility.value = 'private'
+    // 取不到就明确报错并给重试，不猜测可见性
+    loadFailed.value = true
   } finally {
     loading.value = false
   }
@@ -48,7 +65,7 @@ const loadVisibility = async () => {
 
 // 切换可见性
 const handleToggle = async () => {
-  if (loading.value) return
+  if (loading.value || !currentVisibility.value) return
   const next: 'public' | 'private' = currentVisibility.value === 'public' ? 'private' : 'public'
 
   loading.value = true
@@ -89,6 +106,31 @@ watch(() => props.roomId, loadVisibility)
   font-size: 13px;
   color: var(--tjg-text-secondary);
   font-weight: 500;
+}
+
+.room-visibility-toggle__error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--tjg-text-secondary);
+}
+
+.room-visibility-toggle__retry {
+  appearance: none;
+  border: 0;
+  padding: 2px 4px;
+  border-radius: var(--tjg-radius-xs);
+  background: transparent;
+  color: var(--tjg-color-primary-500);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--tjg-color-primary-500);
+    outline-offset: 2px;
+  }
 }
 
 .room-visibility-toggle__btn {

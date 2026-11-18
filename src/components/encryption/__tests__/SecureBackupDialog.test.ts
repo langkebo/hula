@@ -77,27 +77,30 @@ const mountComponent = (show = true) =>
     props: { show },
     global: {
       stubs: {
-        'n-modal': {
+        Modal: {
           template: '<div><slot /></div>'
         },
-        'n-spin': {
+        Spin: {
           template: '<div><slot /></div>'
         },
-        'n-button': true,
-        'n-input': true,
-        'n-alert': true,
-        'n-checkbox': true,
-        'n-descriptions': {
+        Button: {
+          emits: ['click'],
+          template: '<button type="button" @click="$emit(\'click\')"><slot /></button>'
+        },
+        Input: true,
+        Alert: true,
+        Checkbox: true,
+        Descriptions: {
           template: '<div><slot /></div>'
         },
-        'n-descriptions-item': {
+        DescriptionsItem: {
           template: '<div><slot /></div>'
         },
-        'n-popconfirm': {
+        Popconfirm: {
           template: '<div><slot name="trigger" /><slot /></div>'
         },
-        'n-tag': true,
-        'n-divider': true
+        Tag: true,
+        Divider: true
       }
     }
   })
@@ -217,5 +220,36 @@ describe('SecureBackupDialog', () => {
     expect(deleteKeyBackupMock).toHaveBeenCalled()
     expect(vm.backupExists).toBe(false)
     expect(showFeedbackMock).toHaveBeenCalledWith('encryption.secure_backup.delete_success', 'success')
+  })
+
+  it('读取备份状态失败时显示错误态与重试，不显示「未开启备份」', async () => {
+    getKeyBackupInfoMock.mockRejectedValue(new Error('offline'))
+    const wrapper = mountComponent(true)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="secure-backup-status-error"]').exists()).toBe(true)
+    // 读取失败不能落成「未开启备份」，否则会诱导用户重新创建覆盖
+    expect(wrapper.find('.no-backup').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('encryption.secure_backup.no_backup_desc')
+  })
+
+  it('错误态点击重试后恢复真实备份状态', async () => {
+    getKeyBackupInfoMock.mockRejectedValueOnce(new Error('offline'))
+    const wrapper = mountComponent(true)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="secure-backup-status-error"]').exists()).toBe(true)
+
+    getKeyBackupInfoMock.mockResolvedValueOnce({
+      version: 'backup-version-1',
+      algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2',
+      auth_data: {},
+      count: 8
+    })
+    await wrapper.find('[data-testid="secure-backup-status-retry"]').trigger('click')
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as { backupExists: boolean }
+    expect(wrapper.find('[data-testid="secure-backup-status-error"]').exists()).toBe(false)
+    expect(vm.backupExists).toBe(true)
   })
 })

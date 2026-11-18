@@ -11,7 +11,9 @@
           test-id="friend-groups"
           :loading-text="t('mobile_friend_groups.loading')"
           :empty-text="t('mobile_friend_groups.empty')"
-          min-height="240px">
+          :error-text="t('mobile_friend_groups.load_failed')"
+          min-height="240px"
+          @retry="loadGroups">
           <div class="flex flex-col p-16px gap-12px">
             <!-- 分组列表：手风琴减少页面跳转（方案 4.1.2） -->
             <van-collapse v-model="expandedGroups">
@@ -33,7 +35,14 @@
                     :title="member.displayname || member.user_id"
                     :label="member.user_id" />
                   <van-cell
-                    v-if="membersOf(group.group_id).length === 0"
+                    v-if="memberLoadFailed[group.group_id]"
+                    :title="t('mobile_friend_groups.members_load_failed')">
+                    <van-button size="small" plain type="primary" @click="retryMembers(group.group_id)">
+                      {{ t('common.retry') }}
+                    </van-button>
+                  </van-cell>
+                  <van-cell
+                    v-else-if="membersOf(group.group_id).length === 0"
                     :title="t('mobile_friend_groups.no_member')" />
                 </van-cell-group>
 
@@ -103,18 +112,23 @@ const { t } = useI18n()
 
 const loading = ref(false)
 const groups = ref<FriendGroup[]>([])
+/** 读取失败不能落成空分组：那会把「读不到分组」显示成「没有分组」 */
+const loadFailed = ref(false)
 const expandedGroups = ref<string[]>([])
 /** groupId → 成员列表（懒加载后缓存） */
 const membersByGroup = ref<Record<string, Friend[]>>({})
+/** groupId → 成员读取失败标记（失败 ≠ 该分组没有好友） */
+const memberLoadFailed = ref<Record<string, boolean>>({})
 
 const newGroupName = ref('')
 const renameInput = ref('')
 const showRenameDialog = ref(false)
 const renamingGroup = ref<FriendGroup | null>(null)
 
-/** 四态：加载中、空分组、就绪；统一交给 MobileAsyncState 渲染 */
-const asyncState = computed<'loading' | 'empty' | 'ready'>(() => {
+/** 四态：加载中、读取失败、空分组、就绪；统一交给 MobileAsyncState 渲染 */
+const asyncState = computed<'loading' | 'error' | 'empty' | 'ready'>(() => {
   if (loading.value) return 'loading'
+  if (loadFailed.value) return 'error'
   return groups.value.length === 0 ? 'empty' : 'ready'
 })
 
@@ -124,29 +138,44 @@ function membersOf(groupId: string): Friend[] {
 }
 
 async function loadGroups(): Promise<void> {
+  const hasGroups = groups.value.length > 0
   loading.value = true
+  loadFailed.value = false
   try {
     groups.value = await matrixFriendGroups.getFriendGroups()
-    // 分组已被删除时，其成员缓存必须一起失效，否则展开旧分组还能看到幽灵成员
+    // 分组已被删除时，其成员缓存与失败标记必须一起失效，否则展开旧分组还能看到幽灵成员
     const validIds = new Set(groups.value.map((group) => group.group_id))
     const nextCache: Record<string, Friend[]> = {}
     for (const [groupId, members] of Object.entries(membersByGroup.value)) {
       if (validIds.has(groupId)) nextCache[groupId] = members
     }
     membersByGroup.value = nextCache
+    const nextErrors: Record<string, boolean> = {}
+    for (const groupId of Object.keys(memberLoadFailed.value)) {
+      if (validIds.has(groupId)) nextErrors[groupId] = true
+    }
+    memberLoadFailed.value = nextErrors
   } catch (error) {
     logger.error('Failed to load friend groups', error)
+    // 有缓存优先：已有列表时保留旧数据，只有首屏读不到才进错误态
+    if (!hasGroups) {
+      groups.value = []
+      loadFailed.value = true
+    }
     showToast({ type: 'fail', message: t('mobile_friend_groups.load_failed') })
   } finally {
     loading.value = false
   }
 }
 
-/** 分组被删除后清掉对应成员缓存 */
+/** 分组被删除后清掉对应成员缓存与失败标记 */
 function invalidateMembers(groupId: string): void {
   const next = { ...membersByGroup.value }
   delete next[groupId]
   membersByGroup.value = next
+  const nextErrors = { ...memberLoadFailed.value }
+  delete nextErrors[groupId]
+  memberLoadFailed.value = nextErrors
 }
 
 /** 展开分组时懒加载成员 */
@@ -155,9 +184,21 @@ async function loadMembers(groupId: string): Promise<void> {
   try {
     const friends = await matrixFriendGroups.getFriendsInGroup(groupId)
     membersByGroup.value = { ...membersByGroup.value, [groupId]: friends }
+    const nextErrors = { ...memberLoadFailed.value }
+    delete nextErrors[groupId]
+    memberLoadFailed.value = nextErrors
   } catch (error) {
     logger.error(`Failed to load members for group ${groupId}`, error)
+    // 读取失败不能落成「该分组暂无好友」，单独标记并允许原地重试
+    memberLoadFailed.value = { ...memberLoadFailed.value, [groupId]: true }
   }
+}
+
+async function retryMembers(groupId: string): Promise<void> {
+  const nextErrors = { ...memberLoadFailed.value }
+  delete nextErrors[groupId]
+  memberLoadFailed.value = nextErrors
+  await loadMembers(groupId)
 }
 
 async function handleCreate(): Promise<void> {

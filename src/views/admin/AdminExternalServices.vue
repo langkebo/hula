@@ -35,24 +35,17 @@
     <n-spin :show="loading">
       <n-list v-if="services.length" bordered>
         <n-list-item v-for="service in services" :key="service.as_id" data-testid="service-item">
-          <div class="service-row">
-            <div class="service-main">
-              <div class="service-title">
-                <span class="service-name">{{ service.display_name }}</span>
-                <n-tag size="small" :bordered="false">{{ service.service_type }}</n-tag>
-                <n-tag size="small" :type="healthTagType(service.service_id)" data-testid="health-tag">
-                  {{ healthLabel(service.service_id) }}
-                </n-tag>
-              </div>
-              <p class="service-meta">
-                <span>{{ t('admin.externalServices.service_id') }}: {{ service.service_id }}</span>
-                <span>{{ t('admin.externalServices.last_check') }}: {{ lastCheckLabel(service.service_id) }}</span>
-              </p>
-              <p v-if="healthMap[service.service_id]?.last_error" class="service-error">
-                {{ healthMap[service.service_id].last_error }}
-              </p>
-            </div>
-            <div class="service-actions">
+          <AdminServiceRow
+            :name="service.display_name"
+            :meta="serviceMeta(service.service_id)"
+            :error-text="healthMap[service.service_id]?.last_error">
+            <template #tags>
+              <n-tag size="small" :bordered="false">{{ service.service_type }}</n-tag>
+              <n-tag size="small" :type="healthTagType(service.service_id)" data-testid="health-tag">
+                {{ healthLabel(service.service_id) }}
+              </n-tag>
+            </template>
+            <template #actions>
               <n-switch
                 :value="service.is_enabled"
                 size="small"
@@ -74,8 +67,8 @@
                 </template>
                 {{ t('admin.externalServices.delete_confirm', { name: service.display_name }) }}
               </n-popconfirm>
-            </div>
-          </div>
+            </template>
+          </AdminServiceRow>
         </n-list-item>
       </n-list>
       <n-empty v-else-if="!error" :description="t('admin.externalServices.empty')" data-testid="empty-state" />
@@ -93,20 +86,14 @@
       <p class="client-hint">{{ t('admin.externalServices.client_hint') }}</p>
       <n-list v-if="clientServices.length" bordered>
         <n-list-item v-for="item in clientServices" :key="item.id" data-testid="client-service-item">
-          <div class="service-row">
-            <div class="service-main">
-              <div class="service-title">
-                <span class="service-name">{{ item.id }}</span>
-                <n-tag size="small" :bordered="false">{{ item.type }}</n-tag>
-                <n-tag size="small" :type="clientStatusTagType(item.status)" data-testid="client-status">
-                  {{ item.status }}
-                </n-tag>
-              </div>
-              <p class="service-meta">
-                <span>{{ t('admin.externalServices.last_check') }}: {{ clientLastCheckLabel(item.last_check) }}</span>
-              </p>
-            </div>
-            <div class="service-actions">
+          <AdminServiceRow :name="item.id" :meta="clientMeta(item.last_check)">
+            <template #tags>
+              <n-tag size="small" :bordered="false">{{ item.type }}</n-tag>
+              <n-tag size="small" :type="clientStatusTagType(item.status)" data-testid="client-status">
+                {{ item.status }}
+              </n-tag>
+            </template>
+            <template #actions>
               <n-button
                 size="small"
                 :loading="clientMutatingId === item.id"
@@ -129,8 +116,8 @@
                 </template>
                 {{ t('admin.externalServices.delete_confirm', { name: item.id }) }}
               </n-popconfirm>
-            </div>
-          </div>
+            </template>
+          </AdminServiceRow>
         </n-list-item>
       </n-list>
       <n-empty v-else :description="t('admin.externalServices.client_empty')" data-testid="client-empty-state" />
@@ -197,6 +184,7 @@ import {
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminExternalServices } from '@/composables/admin'
+import AdminServiceRow from './AdminServiceRow.vue'
 
 defineOptions({
   name: 'AdminExternalServices'
@@ -265,6 +253,17 @@ function clientLastCheckLabel(ts?: number): string {
   return ts ? new Date(ts).toLocaleString() : t('admin.externalServices.never_checked')
 }
 
+function serviceMeta(serviceId: string): string[] {
+  return [
+    `${t('admin.externalServices.service_id')}: ${serviceId}`,
+    `${t('admin.externalServices.last_check')}: ${lastCheckLabel(serviceId)}`
+  ]
+}
+
+function clientMeta(ts?: number): string[] {
+  return [`${t('admin.externalServices.last_check')}: ${clientLastCheckLabel(ts)}`]
+}
+
 function onFilterChange(value: string) {
   void loadServices(value)
 }
@@ -323,57 +322,6 @@ onMounted(() => {
   width: 200px;
 }
 
-.service-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--tjg-space-4);
-  width: 100%;
-}
-
-.service-main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tjg-space-1, 4px);
-  min-width: 0;
-}
-
-.service-title {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-2);
-  flex-wrap: wrap;
-}
-
-.service-name {
-  font-size: var(--tjg-font-size-base, 14px);
-  font-weight: var(--tjg-font-weight-medium, 500);
-  color: var(--tjg-text-primary);
-}
-
-.service-meta {
-  display: flex;
-  gap: var(--tjg-space-4);
-  margin: 0;
-  font-size: var(--tjg-font-size-sm, 12px);
-  color: var(--tjg-text-secondary);
-  flex-wrap: wrap;
-}
-
-.service-error {
-  margin: 0;
-  font-size: var(--tjg-font-size-sm, 12px);
-  color: var(--tjg-status-offline);
-  word-break: break-word;
-}
-
-.service-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-2);
-  flex-shrink: 0;
-}
-
 .register-modal {
   width: 480px;
   max-width: 90vw;
@@ -414,15 +362,6 @@ onMounted(() => {
 
   .type-filter {
     width: 100%;
-  }
-
-  .service-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .service-actions {
-    justify-content: flex-end;
   }
 }
 </style>

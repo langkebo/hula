@@ -593,6 +593,116 @@ describe('ChatMessageStore', () => {
     })
   })
 
+  it('markLiveFailure 只写 liveFailed，不改动分页态', () => {
+    const store = useChatStore()
+    store.currentMessageOptions = {
+      isLast: false,
+      isLoading: false,
+      cursor: 'cursor-42',
+      hasLoadedOnce: true
+    }
+
+    store.markLiveFailure('room-1', Object.assign(new Error('boom'), { errcode: 'M_UNKNOWN' }))
+
+    expect(store.currentMessageOptions).toMatchObject({
+      isLast: false,
+      isLoading: false,
+      cursor: 'cursor-42',
+      hasLoadedOnce: true,
+      liveFailed: { scope: 'live', reason: 'M_UNKNOWN', category: 'server' }
+    })
+  })
+
+  it('markLiveFailure 在房间还没有分页态时不播种状态（避免骨架屏卡死）', () => {
+    const store = useChatStore()
+
+    store.markLiveFailure('room-cold', new Error('boom'))
+
+    expect(store.messageMap['room-cold']).toBeUndefined()
+    expect(store.currentMessageOptions).toMatchObject({ hasLoadedOnce: false })
+    expect(store.currentMessageOptions.liveFailed).toBeUndefined()
+  })
+
+  it('clearLiveFailure 清除实时帧失败标记', () => {
+    const store = useChatStore()
+    store.currentMessageOptions = {
+      isLast: false,
+      isLoading: false,
+      cursor: '',
+      hasLoadedOnce: true,
+      liveFailed: { scope: 'live', reason: 'boom', category: 'unknown' }
+    }
+
+    store.clearLiveFailure('room-1')
+
+    expect(store.currentMessageOptions.liveFailed).toBeNull()
+  })
+
+  it('首屏补齐全量成功后清除 liveFailed', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = {
+      isLast: true,
+      isLoading: false,
+      cursor: '',
+      hasLoadedOnce: true,
+      liveFailed: { scope: 'live', reason: 'boom', category: 'unknown' }
+    }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
+      messages: [],
+      isLast: true,
+      cursor: ''
+    } as never)
+
+    await store.fetchCurrentRoomRemoteOnce()
+
+    expect(store.currentMessageOptions.liveFailed).toBeNull()
+  })
+
+  it('历史翻页成功后保留 liveFailed：翻页成功不代表实时链路恢复', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = {
+      isLast: false,
+      isLoading: false,
+      cursor: 'cursor-42',
+      hasLoadedOnce: true,
+      liveFailed: { scope: 'live', reason: 'boom', category: 'unknown' }
+    }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
+      messages: [],
+      isLast: false,
+      cursor: 'cursor-21'
+    } as never)
+
+    await store.loadMore()
+
+    expect(store.currentMessageOptions.liveFailed).toEqual({
+      scope: 'live',
+      reason: 'boom',
+      category: 'unknown'
+    })
+  })
+
+  it('翻页失败不清除已有的 liveFailed', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = {
+      isLast: false,
+      isLoading: false,
+      cursor: 'cursor-42',
+      hasLoadedOnce: true,
+      liveFailed: { scope: 'live', reason: 'boom', category: 'unknown' }
+    }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(new Error('network down'))
+
+    await expect(store.loadMore()).rejects.toThrow('network down')
+
+    expect(store.currentMessageOptions.liveFailed).toEqual({
+      scope: 'live',
+      reason: 'boom',
+      category: 'unknown'
+    })
+    expect(store.currentMessageOptions.loadFailed).toMatchObject({ scope: 'history' })
+  })
+
   it('prefers the server errcode as the failure reason', async () => {
     const store = useChatStore()
     store.currentMessageOptions = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }

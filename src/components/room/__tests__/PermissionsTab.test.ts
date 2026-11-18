@@ -12,6 +12,9 @@ vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: {
     getPowerLevels: getPowerLevelsMock,
     setPowerLevels: setPowerLevelsMock
+  },
+  matrixRoomReadFacade: {
+    getRoomPermissions: vi.fn().mockResolvedValue({ status: 'empty' })
   }
 }))
 

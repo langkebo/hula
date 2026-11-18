@@ -32,6 +32,9 @@ const makeAdmin = () =>
     getRoomStatsByRoom: vi.fn(),
     getRoomListings: vi.fn(),
     setRoomPublicListing: vi.fn(),
+    deleteRoomPublicListing: vi.fn(),
+    getRoomTokenSync: vi.fn(),
+    cascadeRedactEvent: vi.fn(),
     getRoomEventContext: vi.fn(),
     searchRoomEvents: vi.fn(),
     searchRooms: vi.fn(),
@@ -144,6 +147,49 @@ describe('AdminRoomService', () => {
   it('getRoomForwardExtremities returns array directly', async () => {
     ;(admin as any).getRoomForwardExtremities.mockResolvedValueOnce([{ event_id: '$a' }])
     expect(await service.getRoomForwardExtremities('!room:server.com')).toEqual([{ event_id: '$a' }])
+  })
+
+  it('setRoomPublicListing 上线走 setRoomPublicListing，下线走 deleteRoomPublicListing', async () => {
+    ;(admin as any).setRoomPublicListing.mockResolvedValueOnce(undefined)
+    ;(admin as any).deleteRoomPublicListing.mockResolvedValueOnce(undefined)
+
+    await service.setRoomPublicListing('!room:server.com', true)
+    await service.setRoomPublicListing('!room:server.com', false)
+
+    expect((admin as any).setRoomPublicListing).toHaveBeenCalledWith('!room:server.com')
+    expect((admin as any).deleteRoomPublicListing).toHaveBeenCalledWith('!room:server.com')
+  })
+
+  it('getRoomTokenSync 返回对象，失败时降级为 null', async () => {
+    ;(admin as any).getRoomTokenSync.mockResolvedValueOnce({ enabled: true, token: 't' })
+    await expect(service.getRoomTokenSync('!room:server.com')).resolves.toEqual({ enabled: true, token: 't' })
+
+    ;(admin as any).getRoomTokenSync.mockRejectedValueOnce(new Error('forbidden'))
+    await expect(service.getRoomTokenSync('!room:server.com')).resolves.toBeNull()
+  })
+
+  it('cascadeRedactEvent 传递可选参数并返回 redacted_count', async () => {
+    ;(admin as any).cascadeRedactEvent.mockResolvedValueOnce({ redacted_count: 3 })
+
+    const count = await service.cascadeRedactEvent('!room:server.com', '$event', {
+      maxDepth: 4,
+      reason: 'spam'
+    })
+
+    expect((admin as any).cascadeRedactEvent).toHaveBeenCalledWith('!room:server.com', {
+      eventId: '$event',
+      maxDepth: 4,
+      reason: 'spam'
+    })
+    expect(count).toBe(3)
+  })
+
+  it('cascadeRedactEvent 省略未提供的可选参数', async () => {
+    ;(admin as any).cascadeRedactEvent.mockResolvedValueOnce({ redacted_count: 0 })
+
+    await service.cascadeRedactEvent('!room:server.com', '$event')
+
+    expect((admin as any).cascadeRedactEvent).toHaveBeenCalledWith('!room:server.com', { eventId: '$event' })
   })
 
   it('deleteRoom maps option keys and response fields', async () => {

@@ -4,6 +4,7 @@
   "empty": "No friend groups yet. Create one to organise your friends.",
   "member_count": "{count} friends",
   "no_member": "No friends in this group",
+  "members_load_failed": "Could not load friends in this group",
   "new_placeholder": "Enter a new group name",
   "create": "Create group",
   "create_success": "Group created",

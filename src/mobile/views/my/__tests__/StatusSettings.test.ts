@@ -80,7 +80,9 @@ function mountComponent() {
 type StatusSettingsVm = {
   currentStatusId: string
   statusMessage: string
+  statusLoadFailed: boolean
   handleSave: () => Promise<void>
+  handleClearStatus: () => Promise<void>
 }
 
 describe('StatusSettings 经由唯一门控 presence 服务上报', () => {
@@ -210,5 +212,45 @@ describe('StatusSettings 经由唯一门控 presence 服务上报', () => {
     const wrapper = mountComponent()
     await flushPromises()
     expect(wrapper.text()).toContain('mobile_status.away_busy_limited')
+  })
+
+  it('回填失败时显示错误提示且禁止写回默认状态', async () => {
+    getCurrentPresenceMock.mockRejectedValueOnce(new Error('boom'))
+
+    const wrapper = mountComponent()
+    await flushPromises()
+    const vm = wrapper.vm as unknown as StatusSettingsVm
+
+    expect(vm.statusLoadFailed).toBe(true)
+    expect(wrapper.find('[data-test="status-load-error"]').exists()).toBe(true)
+
+    await vm.handleSave()
+    await vm.handleClearStatus()
+
+    expect(setPresenceMock).not.toHaveBeenCalled()
+  })
+
+  it('重试成功后恢复回填并允许保存', async () => {
+    getCurrentPresenceMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({
+      user_id: '@alice:matrix.test',
+      presence: 'unavailable',
+      status_msg: '会议中'
+    })
+    setPresenceMock.mockResolvedValue('unavailable')
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    await wrapper.find('[data-test="status-load-retry"]').trigger('click')
+    await flushPromises()
+    const vm = wrapper.vm as unknown as StatusSettingsVm
+
+    expect(vm.statusLoadFailed).toBe(false)
+    expect(wrapper.find('[data-test="status-load-error"]').exists()).toBe(false)
+    expect(vm.statusMessage).toBe('会议中')
+
+    await vm.handleSave()
+
+    expect(setPresenceMock).toHaveBeenCalledWith('unavailable', undefined)
   })
 })

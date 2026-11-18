@@ -66,7 +66,15 @@
 
     <div class="flex-1 min-h-0 flex">
       <!-- 中间栏：空间列表（右侧栏由 layout/right/index.vue 渲染 SpaceChildrenPane） -->
-      <SkeletonSpaceTree v-if="isLoading" :rows="6" :aria-label="t('home.plugins.space_list')" aria-busy="true" />
+      <ErrorState
+        v-if="spacesLoadFailed"
+        class="flex-1"
+        illustration="server-error"
+        :title="t('space.load_failed')"
+        :message="spacesError ?? ''"
+        :retry-text="t('common.retry')"
+        @retry="reloadSpaces" />
+      <SkeletonSpaceTree v-else-if="isLoading" :rows="6" :aria-label="t('home.plugins.space_list')" aria-busy="true" />
       <!-- 层级树视图 -->
       <SpaceTree
         v-else-if="viewMode === 'tree'"
@@ -98,6 +106,7 @@
 
 <script lang="ts" setup name="spaceList">
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import SkeletonSpaceTree from '@/components/common/SkeletonSpaceTree.vue'
 import PublicSpaceDiscoveryDialog from '@/components/space/PublicSpaceDiscoveryDialog.vue'
 import SpaceCreateRoomPane from '@/components/space/SpaceCreateRoomPane.vue'
@@ -125,10 +134,13 @@ const roomStore = useRoomStore()
 const { enterChat: enterChatFn } = useEnterChat()
 
 // 空间列表数据
-const { spaces, loading: spaceLoading, load: reloadSpaces } = useSpaces()
+const { spaces, loading: spaceLoading, error: spacesError, load: reloadSpaces } = useSpaces()
 
 // loading prop 优先于内部 spaceLoading（用于外部强制显示骨架屏）
 const isLoading = computed(() => props.loading || spaceLoading.value)
+
+// 首次加载失败（无缓存数据）才整块替换为错误态：已有数据时保留列表，避免刷新失败覆盖可用内容
+const spacesLoadFailed = computed(() => !!spacesError.value && !isLoading.value && spaces.value.length === 0)
 
 // 选中空间 ID：从路由参数派生（路由为单一真相源）
 const route = useRoute()
@@ -339,7 +351,12 @@ onMounted(async () => {
 
   &--active {
     background: var(--tjg-color-primary-100);
-    color: var(--tjg-color-primary-500);
+    /* primary-500 在 primary-100 浅底上仅 3.2:1，故提亮/压深一档满足 AA */
+    color: var(--tjg-color-primary-600);
+
+    [data-theme='dark'] & {
+      color: var(--tjg-color-primary-300);
+    }
   }
 
   &:focus-visible {

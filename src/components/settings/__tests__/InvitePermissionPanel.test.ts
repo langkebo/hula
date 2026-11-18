@@ -136,14 +136,15 @@ describe('InvitePermissionPanel', () => {
   })
 
   describe('自包含加载与持久化', () => {
-    it('挂载时从 account data 加载策略', async () => {
+    it('挂载时从 account data 读取策略（严格变体）', async () => {
       mount(InvitePermissionPanel)
       await flushPromises()
-      expect(getPolicyMock).toHaveBeenCalled()
+      // 初值必须走严格变体：宽松版会把读取失败折叠成默认策略
+      expect(getPolicyStrictMock).toHaveBeenCalled()
     })
 
     it('把加载到的模式反映到单选项上', async () => {
-      getPolicyMock.mockResolvedValue({
+      getPolicyStrictMock.mockResolvedValue({
         mode: 'blocklist',
         blocklist: ['@spam:evil.org'],
         allowlist: [],
@@ -165,7 +166,7 @@ describe('InvitePermissionPanel', () => {
     })
 
     it('添加用户会写回 account data', async () => {
-      getPolicyMock.mockResolvedValue({
+      getPolicyStrictMock.mockResolvedValue({
         mode: 'blocklist',
         blocklist: [],
         allowlist: [],
@@ -182,7 +183,7 @@ describe('InvitePermissionPanel', () => {
     })
 
     it('同一用户不重复加入名单', async () => {
-      getPolicyMock.mockResolvedValue({
+      getPolicyStrictMock.mockResolvedValue({
         mode: 'blocklist',
         blocklist: ['@dup:example.com'],
         allowlist: [],
@@ -199,7 +200,7 @@ describe('InvitePermissionPanel', () => {
     })
 
     it('移除用户会写回 account data', async () => {
-      getPolicyMock.mockResolvedValue({
+      getPolicyStrictMock.mockResolvedValue({
         mode: 'blocklist',
         blocklist: ['@alice:example.com'],
         allowlist: [],
@@ -214,12 +215,35 @@ describe('InvitePermissionPanel', () => {
       expect(setPolicyMock).toHaveBeenCalledWith(expect.objectContaining({ blocklist: [] }))
     })
 
-    it('加载失败不抛错，退回默认策略', async () => {
-      getPolicyMock.mockRejectedValue(new Error('offline'))
+    it('读取策略失败时渲染错误态与重试，不套用默认策略', async () => {
+      getPolicyStrictMock.mockRejectedValue(new Error('offline'))
       const wrapper = mount(InvitePermissionPanel)
       await flushPromises()
       expect(wrapper.find('.invite-permission-panel').exists()).toBe(true)
-      expect(wrapper.find('[data-test="blocklist-section"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="invite-policy-error"]').exists()).toBe(true)
+      expect(wrapper.find('[data-test="invite-policy-retry"]').exists()).toBe(true)
+      // 读取失败不得把默认的 allow_all 当成账号真实设置渲染出来
+      expect(wrapper.findComponent({ name: 'NRadioGroup' }).exists()).toBe(false)
+    })
+
+    it('错误态点击重试会重新读取并恢复渲染', async () => {
+      getPolicyStrictMock.mockRejectedValueOnce(new Error('offline'))
+      const wrapper = mount(InvitePermissionPanel)
+      await flushPromises()
+      expect(wrapper.find('[data-test="invite-policy-error"]').exists()).toBe(true)
+
+      getPolicyStrictMock.mockResolvedValueOnce({
+        mode: 'blocklist',
+        blocklist: ['@spam:evil.org'],
+        allowlist: [],
+        allowStrangers: true,
+        contacts: []
+      })
+      await wrapper.find('[data-test="invite-policy-retry"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-test="invite-policy-error"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="blocklist-section"]').text()).toContain('@spam:evil.org')
     })
 
     it('保存失败不抛错', async () => {
@@ -236,7 +260,7 @@ describe('InvitePermissionPanel', () => {
      * account data。面板挂载时的快照会过期，写前必须重读最新策略。
      */
     it('写回前重读最新策略，不覆盖另一编辑器的改动', async () => {
-      getPolicyMock.mockResolvedValueOnce({
+      getPolicyStrictMock.mockResolvedValueOnce({
         mode: 'allow_all',
         blocklist: [],
         allowlist: [],

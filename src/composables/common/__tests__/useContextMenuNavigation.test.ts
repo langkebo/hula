@@ -19,7 +19,8 @@ const createHarness = (
   menu: ContextMenuItem[],
   special: ContextMenuItem[] = [],
   content: unknown = {},
-  withResolver = true
+  withResolver = true,
+  onKeyboardDismiss?: () => void
 ) => {
   const visibleMenu = ref(menu)
   const visibleSpecialMenu = ref(special)
@@ -30,7 +31,8 @@ const createHarness = (
     visibleSpecialMenu,
     showMenu,
     onSelect,
-    isItemDisabled: withResolver ? (item) => resolveDisabled(item, content) : undefined
+    isItemDisabled: withResolver ? (item) => resolveDisabled(item, content) : undefined,
+    onKeyboardDismiss
   })
   return { ...navigation, showMenu, onSelect }
 }
@@ -139,5 +141,28 @@ describe('useContextMenuNavigation', () => {
     )
     handleMenuKeydown(press('ArrowDown'))
     expect(focusedIndex.value).toBe(0)
+  })
+
+  it('Escape 关闭后回调键盘 dismiss（用于回收焦点到触发元素）', () => {
+    const dismiss = vi.fn()
+    const { handleMenuKeydown } = createHarness([menuItem('回复')], [], {}, true, dismiss)
+    handleMenuKeydown(press('Escape'))
+    expect(dismiss).toHaveBeenCalledTimes(1)
+  })
+
+  it('Enter 选中后回调键盘 dismiss', () => {
+    const dismiss = vi.fn()
+    const { handleMenuKeydown } = createHarness([menuItem('回复')], [], {}, true, dismiss)
+    handleMenuKeydown(press('ArrowDown'))
+    handleMenuKeydown(press('Enter'))
+    expect(dismiss).toHaveBeenCalledTimes(1)
+  })
+
+  it('方向键移动不触发键盘 dismiss，避免焦点被抢回触发元素', () => {
+    const dismiss = vi.fn()
+    const { handleMenuKeydown } = createHarness([menuItem('回复'), menuItem('复制')], [], {}, true, dismiss)
+    handleMenuKeydown(press('ArrowDown'))
+    handleMenuKeydown(press('ArrowUp'))
+    expect(dismiss).not.toHaveBeenCalled()
   })
 })

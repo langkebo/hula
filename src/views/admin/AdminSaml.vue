@@ -169,6 +169,7 @@ const {
   loadConfig,
   saveConfig,
   loadMappings,
+  loadMappingDetail,
   deleteMapping,
   updateMapping
 } = useAdminSaml()
@@ -218,10 +219,13 @@ const editMappingForm = reactive({
   displayName: ''
 })
 
-function handleEditMapping(row: SamlMapping) {
-  editMappingForm.nameId = row.nameId
-  editMappingForm.userId = row.userId ?? ''
-  editMappingForm.displayName = row.displayName ?? ''
+async function handleEditMapping(row: SamlMapping) {
+  // 编辑前读取单条详情，避免使用列表缓存中的过期字段；失败时回退到行数据。
+  const detail = await loadMappingDetail(row.nameId)
+  const source = detail ?? row
+  editMappingForm.nameId = source.nameId
+  editMappingForm.userId = source.userId ?? ''
+  editMappingForm.displayName = source.displayName ?? ''
   showEditMappingDialog.value = true
 }
 

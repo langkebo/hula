@@ -26,6 +26,9 @@ vi.mock('@/services/matrix/admin', () => ({
     getUserStatsList: vi.fn().mockResolvedValue({ stats: [] }),
     evictUser: vi.fn().mockResolvedValue(undefined),
     logoutUserAll: vi.fn().mockResolvedValue(undefined),
+    security: {
+      samlLogout: vi.fn().mockResolvedValue(undefined)
+    },
     loginUserAs: vi.fn().mockResolvedValue(null),
     batchCreateUsers: vi.fn().mockResolvedValue([])
   }
@@ -258,6 +261,20 @@ describe('useAdminUsers', () => {
     const c = useAdminUsers()
     await expect(c.evictUser('@x:s')).rejects.toThrow('boom')
     expect(c.evicting.value).toBe(false)
+  })
+
+  it('samlLogout 调用 security.samlLogout 并复位 loading', async () => {
+    const c = useAdminUsers()
+    await c.samlLogout('@x:s')
+    expect(adminService.security.samlLogout).toHaveBeenCalledWith('@x:s')
+    expect(c.samlLoggingOut.value).toBe(false)
+  })
+
+  it('samlLogout 失败时抛出错误并复位 loading', async () => {
+    vi.mocked(adminService.security.samlLogout).mockRejectedValueOnce(new Error('boom'))
+    const c = useAdminUsers()
+    await expect(c.samlLogout('@x:s')).rejects.toThrow('boom')
+    expect(c.samlLoggingOut.value).toBe(false)
   })
 
   it('logoutUserAll 调用服务并复位 loading', async () => {

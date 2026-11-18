@@ -7,7 +7,7 @@
  * 覆盖范围（§13.11「键盘可完成全部主流程」的离线可验证子集）：
  * 1. Tab 焦点链：连续 Tab 依次落到不同控件，不丢失焦点；
  * 2. Enter 激活：会话项（`tabindex=0`）回车后选中并进入消息路由；
- * 3. Escape 关闭浮层：右键菜单打开后容器拿到焦点、方向键定位、Escape 关闭；
+ * 3. Escape 关闭浮层：右键菜单打开后容器拿到焦点、方向键定位、Escape 关闭并把焦点还给触发元素；
  * 4. 设置页 tablist：roving tabindex + 方向键切换并同步 `aria-selected`。
  *
  * 边界：mock 会话 + 桌面 Chromium，**不覆盖**真机（iOS/Android 软键盘与焦点链）
@@ -112,6 +112,7 @@ test.describe('Desktop keyboard flows', () => {
 
     await page.keyboard.press('Escape')
     await expect(menu, 'Escape 应关闭右键菜单').toHaveCount(0, { timeout: 5_000 })
+    await expect(item, 'Escape 关闭后焦点应回到触发元素（WCAG 2.4.3）').toBeFocused({ timeout: 5_000 })
 
     expectNoRuntimeIssues(issues)
   })

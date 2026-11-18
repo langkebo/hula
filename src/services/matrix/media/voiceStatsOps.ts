@@ -9,24 +9,40 @@ const logger = createLogger('MatrixVoiceService')
 
 type VoiceManagerInstance = ReturnType<NonNullable<MatrixClient['getVoiceManager']>>
 
+export interface VoiceStats {
+  totalDuration: number
+  totalMessages: number
+  averageDuration: number
+}
+
+function normalizeVoiceStats(result: unknown): VoiceStats {
+  const data = unknownToObject(result) ?? {}
+  return {
+    totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
+    totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0,
+    averageDuration: (data.average_duration as number) ?? (data.average_duration_ms as number) ?? 0
+  }
+}
+
 /** 获取语音统计（传入 roomId 时统计房间维度，否则全局）；失败返回全 0。 */
-export async function fetchVoiceStats(
-  getVoiceMgr: () => VoiceManagerInstance,
-  roomId?: string
-): Promise<{ totalDuration: number; totalMessages: number; averageDuration: number }> {
+export async function fetchVoiceStats(getVoiceMgr: () => VoiceManagerInstance, roomId?: string): Promise<VoiceStats> {
   try {
     const mgr = getVoiceMgr()
     const result = roomId ? await mgr.getRoomVoiceStats(roomId, VendorPrefix) : await mgr.getVoiceStats(VendorPrefix)
-    const data = unknownToObject(result) ?? {}
-    return {
-      totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
-      totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0,
-      averageDuration: (data.average_duration as number) ?? (data.average_duration_ms as number) ?? 0
-    }
+    return normalizeVoiceStats(result)
   } catch (err) {
     logger.warn(`[MatrixVoiceService] getVoiceStats failed: ${err}`)
     return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
   }
+}
+
+/** 严格版房间语音统计：失败抛出，供需要区分「失败」与「空数据」的 UI 使用。 */
+export async function fetchRoomVoiceStatsStrict(
+  getVoiceMgr: () => VoiceManagerInstance,
+  roomId: string
+): Promise<VoiceStats> {
+  const result = await getVoiceMgr().getRoomVoiceStats(roomId, VendorPrefix)
+  return normalizeVoiceStats(result)
 }
 
 /** 获取指定用户的语音统计（总时长/总条数）；失败返回全 0。 */

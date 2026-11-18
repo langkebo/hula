@@ -159,4 +159,19 @@ describe('VoiceMessageSettings（VEN-01 统计/配置 UI）', () => {
 
     expect(mocks.showFeedback).toHaveBeenCalledWith('setting.voice_video.voice_messages.load_failed', 'error')
   })
+
+  it('首屏读取失败时展示错误并隐藏统计行，而不是「暂无语音消息 + 统计归零」', async () => {
+    mocks.getUserVoiceList.mockRejectedValue(new Error('500'))
+
+    const wrapper = await mountSection()
+
+    const vm = wrapper.vm as unknown as { listLoadFailed: boolean }
+    expect(vm.listLoadFailed).toBe(true)
+    expect(wrapper.find('[data-testid="voice-messages-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="error-retry"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="voice-user-stats"]').exists()).toBe(false)
+    expect(wrapper.find('.stats-row').exists()).toBe(false)
+    expect(wrapper.find('.n-empty').exists()).toBe(false)
+    expect(wrapper.findAll('.voice-item')).toHaveLength(0)
+  })
 })

@@ -10,7 +10,10 @@
       </n-input>
 
       <div class="user-list">
-        <n-scrollbar class="max-h-300px">
+        <div v-if="searchFailed" data-test="invite-search-error">
+          <ErrorState compact :title="t('common.load_failed')" :retry-text="t('common.retry')" @retry="retrySearch" />
+        </div>
+        <n-scrollbar v-else class="max-h-300px">
           <div
             v-for="user in filteredUsers"
             :key="user.userId"
@@ -61,6 +64,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
@@ -95,6 +99,8 @@ type SearchUserResult = {
 }
 
 const searchResults = ref<SearchUserResult[]>([])
+// 检索失败不能落成空列表：那会把「搜不到人」显示成「没有匹配结果」
+const searchFailed = ref(false)
 const defaultAvatar = '/logo.png'
 
 const filteredUsers = computed(() => {
@@ -114,16 +120,22 @@ const filteredUsers = computed(() => {
 const searchUsers = async (query: string) => {
   if (!query.trim()) {
     searchResults.value = []
+    searchFailed.value = false
     return
   }
 
+  searchFailed.value = false
   try {
     const results = await matrixSearchService.searchUsers(query)
     searchResults.value = results
   } catch (error) {
     logger.error('Failed to search users:', error)
+    searchResults.value = []
+    searchFailed.value = true
   }
 }
+
+const retrySearch = () => void searchUsers(searchQuery.value)
 
 const toggleUser = (userId: string) => {
   const index = selectedUsers.value.indexOf(userId)
@@ -179,6 +191,7 @@ watch(
       searchQuery.value = ''
       manualUserId.value = ''
       searchResults.value = []
+      searchFailed.value = false
     }
   }
 )

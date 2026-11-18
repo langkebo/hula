@@ -126,7 +126,7 @@ const columns: DataTableColumns<AuditEntry> = [
     title: t('admin.audit.col_type'),
     key: 'type',
     width: 120,
-    render: (row) => h(NTag, { size: 'small', type: getTagType(row.type) }, () => row.type)
+    render: (row) => h(NTag, { size: 'small', type: getTagType(row.type) }, () => row.type || '-')
   },
   { title: t('admin.audit.col_user'), key: 'user_id', width: 200, ellipsis: { tooltip: true } },
   { title: t('admin.audit.col_target'), key: 'target', width: 200, ellipsis: { tooltip: true } },
@@ -147,7 +147,10 @@ const columns: DataTableColumns<AuditEntry> = [
   }
 ]
 
-function getTagType(type: string): 'info' | 'success' | 'warning' | 'error' {
+function getTagType(type?: string | null): 'info' | 'success' | 'warning' | 'error' {
+  // 审计条目来自后端原始 JSON（unknownToObject 仅做类型断言），`type` 可能缺失；
+  // 此处若直接 `type.includes` 会在渲染期抛错，导致 vnode 树损坏、后续路由无法换页。
+  if (!type) return 'info'
   if (type.includes('admin')) return 'warning'
   if (type.includes('auth')) return 'error'
   if (type.includes('room')) return 'success'

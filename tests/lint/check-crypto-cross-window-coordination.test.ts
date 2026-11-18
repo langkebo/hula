@@ -7,7 +7,8 @@ import {
   isExcludedPath,
   scanSources,
   srcRoot,
-  TARGET_FILE
+  TARGET_FILE,
+  TARGET_FILES
 } from '../../scripts/check-crypto-cross-window-coordination.mjs'
 
 /**
@@ -163,21 +164,22 @@ describe('check-crypto-cross-window-coordination: 真实仓库自洽', () => {
   it('本仓 src/ 无跨窗口跳过机制，且 Web Locks 串行化在位', { timeout: SLOW_REAL_REPO_TIMEOUT_MS }, () => {
     const result = scanSources(files())
 
-    // 基数断言：确实扫到了一大批源码 + 目标文件在集合里（避免"空扫 = 通过"）
+    // 基数断言：确实扫到了一大批源码 + 目标文件簇在集合里（避免"空扫 = 通过"）
     expect(result.checkedFiles).toBeGreaterThan(500)
     expect(result.targetFound).toBe(true)
+    expect(result.targetFilesFound).toEqual(expect.arrayContaining(TARGET_FILES))
     expect(result.violations).toEqual([])
     expect(result.missingRequired).toEqual([])
     expect(result.ok).toBe(true)
   })
 
-  it('回归锁：MatrixCryptoStateTracker 里已无跨窗口跳过令牌（取证 2026-10-13 删除）', {
+  it('回归锁：MatrixCryptoStateTracker 文件簇里已无跨窗口跳过令牌（取证 2026-10-13 删除）', {
     timeout: SLOW_REAL_REPO_TIMEOUT_MS
   }, () => {
-    const target = files().find((f) => f.path === TARGET_FILE)
-    expect(target).toBeTruthy()
+    const targets = files().filter((f) => TARGET_FILES.includes(f.path))
+    expect(targets.map((f) => f.path)).toEqual(expect.arrayContaining(TARGET_FILES))
 
-    const content = target?.content ?? ''
+    const content = targets.map((f) => f.content).join('\n')
     for (const token of FORBIDDEN_TOKENS) {
       expect(content, `token=${token}`).not.toContain(token)
     }

@@ -9,15 +9,30 @@
         <div class="flex flex-col p-16px gap-12px">
           <van-search v-model="searchQuery" :placeholder="t('mobile_files.search_placeholder')" shape="round" />
 
-          <div class="flex items-center justify-between">
-            <div v-if="quota" class="text-12px text-[--tjg-text-tertiary]">
-              {{
-                t('mobile_files.quota_used', {
-                  used: formatBytes(quota.storageBytes),
-                  total: formatBytes(quota.limitBytes),
-                  count: quota.mediaCount
-                })
-              }}
+          <div class="flex items-center justify-between gap-8px">
+            <!--
+              配额四态与桌面统一：unsupported 不渲染，unavailable 提示暂不可用 + 重试，
+              loading 占位不显示 0，ready 且有限额时展示用量。
+            -->
+            <div class="text-12px text-[--tjg-text-tertiary] min-w-0">
+              <span v-if="quotaState === 'unavailable'" class="flex items-center gap-6px">
+                <span>{{ t('mobile_files.quota_unavailable') }}</span>
+                <button type="button" class="quota-retry" data-test="mobile-files-quota-retry" @click="loadQuota">
+                  {{ t('common.retry') }}
+                </button>
+              </span>
+              <span v-else-if="quotaState === 'loading'" data-test="mobile-files-quota-loading">
+                {{ t('common.loading') }}
+              </span>
+              <span v-else-if="quota && quota.limitBytes > 0">
+                {{
+                  t('mobile_files.quota_used', {
+                    used: formatBytes(quota.storageBytes),
+                    total: formatBytes(quota.limitBytes),
+                    count: quota.mediaCount
+                  })
+                }}
+              </span>
             </div>
             <van-button size="small" type="primary" :loading="uploading" @click="triggerUpload">
               {{ t('mobile_files.upload') }}
@@ -106,6 +121,7 @@ import { openPath } from '@tauri-apps/plugin-opener'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useMediaQuotaStats } from '@/composables/useMediaQuotaStats'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
@@ -147,15 +163,8 @@ const removedIds = ref<Set<string>>(new Set())
 
 const uploadInputRef = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
-const quota = ref<{ storageBytes: number; mediaCount: number; limitBytes: number } | null>(null)
-
-/** 容量汇总来自服务端配额接口；接口不可用时隐藏该区域，不伪造数据（Y-14） */
-async function loadQuota() {
-  // `getQuotaStats()` 内部已吞错并返回 `{ ok, reason }`，这里不需要再包 try/catch。
-  const result = await matrixMediaService.getQuotaStats()
-  quota.value = result.ok ? result.stats : null
-  if (!result.ok) logger.warn(`Failed to load media quota stats (${result.reason})`)
-}
+/** 配额四态与桌面共用同一判据：unsupported 不渲染，unavailable 提示 + 重试（Y-14） */
+const { state: quotaState, stats: quota, load: loadQuota } = useMediaQuotaStats()
 
 onMounted(() => {
   void loadQuota()
@@ -367,4 +376,13 @@ async function onActionSelect(action: FileAction) {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.quota-retry {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: inherit;
+  color: var(--tjg-color-primary-500);
+}
+</style>

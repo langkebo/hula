@@ -1,6 +1,12 @@
 <template>
   <n-spin :show="loading">
-    <div v-if="unreadNotifications.length > 0" class="notification-list">
+    <div v-if="loadError" class="notification-error" data-testid="notification-error">
+      <span>{{ t('common.load_failed') }}</span>
+      <n-button size="tiny" text type="primary" data-testid="notification-retry" @click="fetchNotifications">
+        {{ t('common.retry') }}
+      </n-button>
+    </div>
+    <div v-else-if="unreadNotifications.length > 0" class="notification-list">
       <div
         v-for="(notif, idx) in unreadNotifications"
         :key="notificationKey(notif, idx)"
@@ -60,6 +66,7 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 const loading = ref(false)
+const loadError = ref(false)
 const notifications = ref<Array<Record<string, unknown>>>([])
 /** 只渲染未读：ack 后条目立即从列表移除，未读计数随之归零 */
 const unreadNotifications = computed(() => filterUnreadNotifications(notifications.value))
@@ -78,11 +85,14 @@ watch(
 
 async function fetchNotifications() {
   loading.value = true
+  loadError.value = false
   try {
     const result = await matrixNotificationService.getNotifications(undefined, 20)
     notifications.value = (result as { notifications?: Array<Record<string, unknown>> })?.notifications ?? []
   } catch (error) {
     logger.warn('Failed to fetch notifications', error)
+    // 失败不能落成「暂无推送历史」：那会让用户以为通知已被清空
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -136,6 +146,14 @@ function formatTimestamp(ts: unknown): string {
 </script>
 
 <style scoped>
+.notification-error {
+  display: flex;
+  align-items: center;
+  gap: var(--tjg-space-2);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-secondary);
+}
+
 .notification-list {
   display: flex;
   flex-direction: column;

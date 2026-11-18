@@ -34,6 +34,8 @@ export function useRoomRetention(config: RoomRetentionConfig) {
   const count = ref<number>(1000)
   const isLoading = ref(false)
   const isSaving = ref(false)
+  /** 读取失败不能落成「不限制」：那会把读不到显示成默认策略并可被保存覆盖 */
+  const loadFailed = ref(false)
 
   /** 配置是否有效 */
   const isConfigValid = computed(() => {
@@ -64,6 +66,7 @@ export function useRoomRetention(config: RoomRetentionConfig) {
    */
   async function loadPolicy(roomId: string): Promise<void> {
     isLoading.value = true
+    loadFailed.value = false
     try {
       const event = await config.getStateEvent(roomId, 'm.room.retention')
       if (event?.content?.max_lifetime) {
@@ -80,7 +83,8 @@ export function useRoomRetention(config: RoomRetentionConfig) {
       logger.info(`[RoomRetention] 加载保留策略: mode=${mode.value}`)
     } catch (err) {
       logger.error('[RoomRetention] 加载保留策略失败:', err)
-      mode.value = 'unlimited'
+      // 保持当前值不动：失败既不落成默认 'unlimited'，也不覆盖已有缓存
+      loadFailed.value = true
     } finally {
       isLoading.value = false
     }
@@ -126,6 +130,7 @@ export function useRoomRetention(config: RoomRetentionConfig) {
     count,
     isLoading,
     isSaving,
+    loadFailed,
     isConfigValid,
     setMode,
     setDays,

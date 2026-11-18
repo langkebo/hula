@@ -124,6 +124,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useSpaceTree } from '@/composables/space/useSpaceTree'
 
 defineOptions({ name: 'SpaceTree' })
 
@@ -161,66 +162,18 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const isRoot = computed(() => props.level === 0)
-
-const hasChildren = (node: SpaceTreeNode): boolean => {
-  const hasSpaces = (node.children?.length ?? 0) > 0
-  const hasRooms = (node.rooms?.length ?? 0) > 0
-  return hasSpaces || hasRooms
-}
-
-const isCollapsed = (node: SpaceTreeNode): boolean => props.collapsedIds.includes(node.spaceId)
-
-const isSelected = (node: SpaceTreeNode): boolean => props.selectedSpaceId === node.spaceId
-
-const childTotal = (node: SpaceTreeNode): number => (node.children?.length ?? 0) + (node.rooms?.length ?? 0)
-
-const avatarInitial = (node: SpaceTreeNode): string => node.name?.charAt(0)?.toUpperCase() || '?'
-
-const handleSelect = (node: SpaceTreeNode) => {
-  emit('select', node.spaceId)
-}
-
-const handleToggle = (node: SpaceTreeNode) => {
-  emit('toggle', node.spaceId)
-}
-
-const handleKeydown = (event: KeyboardEvent, node: SpaceTreeNode) => {
-  switch (event.key) {
-    case 'Enter':
-      event.preventDefault()
-      emit('select', node.spaceId)
-      break
-    case 'ArrowRight':
-      // 折叠态：展开
-      if (hasChildren(node) && isCollapsed(node)) {
-        event.preventDefault()
-        emit('toggle', node.spaceId)
-      }
-      break
-    case 'ArrowLeft':
-      // 展开态：折叠
-      if (hasChildren(node) && !isCollapsed(node)) {
-        event.preventDefault()
-        emit('toggle', node.spaceId)
-      }
-      break
-    default:
-      break
-  }
-}
-
-const handleRoomKeydown = (event: KeyboardEvent, room: { roomId: string }) => {
-  switch (event.key) {
-    case 'Enter':
-    case ' ':
-      event.preventDefault()
-      emit('select-room', room.roomId)
-      break
-    default:
-      break
-  }
-}
+const {
+  isRoot,
+  hasChildren,
+  isCollapsed,
+  isSelected,
+  childTotal,
+  avatarInitial,
+  handleSelect,
+  handleToggle,
+  handleKeydown,
+  handleRoomKeydown
+} = useSpaceTree(props, emit)
 </script>
 
 <style scoped lang="scss">

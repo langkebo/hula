@@ -36,7 +36,13 @@ const { showFeedbackMock, facade, groupStore, state } = vi.hoisted(() => ({
   state: { members: [] as Array<Record<string, unknown>> }
 }))
 
-vi.mock('@/services/matrix/room/RoomFacade', () => ({ matrixRoomActionFacade: facade }))
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
+  matrixRoomActionFacade: facade,
+  matrixRoomReadFacade: {
+    getRecentMemberChanges: vi.fn().mockResolvedValue({ status: 'empty' }),
+    getRoomServiceTypes: vi.fn().mockResolvedValue({ status: 'empty' })
+  }
+}))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({ showFeedback: showFeedbackMock })

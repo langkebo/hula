@@ -56,92 +56,36 @@
             <span v-if="member.is_hero" class="rss-badge">{{ t('room.server_summary.hero') }}</span>
           </li>
         </ul>
-        <p v-else-if="isSectionFailed('room.server_summary.members')" class="rss-empty">
-          {{ t('room.server_summary.unavailable') }}
-        </p>
-        <p v-else class="rss-empty">{{ t('room.server_summary.empty') }}</p>
+        <p v-else class="rss-empty">{{ sectionEmptyText('room.server_summary.members') }}</p>
       </section>
 
       <section class="rss-section">
         <h5 class="rss-section-title">{{ t('room.server_summary.state') }}</h5>
         <ul v-if="states.length" class="rss-list">
-          <li
+          <RoomServerSummaryItem
             v-for="(state, index) in states"
             :key="`${state.event_type}:${state.state_key}`"
-            class="rss-item rss-item--block">
-            <button
-              type="button"
-              class="rss-toggle"
-              :aria-expanded="expandedKey === `state-${index}`"
-              :aria-label="
-                t(expandedKey === `state-${index}` ? 'room.server_summary.collapse' : 'room.server_summary.expand')
-              "
-              @click="toggle(`state-${index}`)">
-              <span class="rss-item-main">
-                <span class="rss-name">{{ state.event_type }}</span>
-                <span class="rss-meta">{{ state.state_key || '-' }}</span>
-              </span>
-              <svg
-                class="rss-chevron"
-                :class="{ 'is-open': expandedKey === `state-${index}` }"
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-            <pre v-if="expandedKey === `state-${index}`" class="rss-json">{{ formatJson(state.content) }}</pre>
-          </li>
+            :name="state.event_type"
+            :meta="state.state_key"
+            :payload="state.content"
+            :expanded="expandedKey === `state-${index}`"
+            @toggle="toggle(`state-${index}`)" />
         </ul>
-        <p v-else-if="isSectionFailed('room.server_summary.state')" class="rss-empty">
-          {{ t('room.server_summary.unavailable') }}
-        </p>
-        <p v-else class="rss-empty">{{ t('room.server_summary.empty') }}</p>
+        <p v-else class="rss-empty">{{ sectionEmptyText('room.server_summary.state') }}</p>
       </section>
 
       <section class="rss-section">
         <h5 class="rss-section-title">{{ t('room.server_summary.ephemeral') }}</h5>
         <ul v-if="ephemeral.length" class="rss-list">
-          <li v-for="(event, index) in ephemeral" :key="`ephemeral-${index}`" class="rss-item rss-item--block">
-            <button
-              type="button"
-              class="rss-toggle"
-              :aria-expanded="expandedKey === `ephemeral-${index}`"
-              :aria-label="
-                t(expandedKey === `ephemeral-${index}` ? 'room.server_summary.collapse' : 'room.server_summary.expand')
-              "
-              @click="toggle(`ephemeral-${index}`)">
-              <span class="rss-item-main">
-                <span class="rss-name">{{ ephemeralType(event) }}</span>
-              </span>
-              <svg
-                class="rss-chevron"
-                :class="{ 'is-open': expandedKey === `ephemeral-${index}` }"
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-            <pre v-if="expandedKey === `ephemeral-${index}`" class="rss-json">{{ formatJson(event) }}</pre>
-          </li>
+          <RoomServerSummaryItem
+            v-for="(event, index) in ephemeral"
+            :key="`ephemeral-${index}`"
+            :name="ephemeralType(event)"
+            :payload="event"
+            :expanded="expandedKey === `ephemeral-${index}`"
+            @toggle="toggle(`ephemeral-${index}`)" />
         </ul>
-        <p v-else-if="isSectionFailed('room.server_summary.ephemeral')" class="rss-empty">
-          {{ t('room.server_summary.unavailable') }}
-        </p>
-        <p v-else class="rss-empty">{{ t('room.server_summary.empty') }}</p>
+        <p v-else class="rss-empty">{{ sectionEmptyText('room.server_summary.ephemeral') }}</p>
       </section>
     </template>
   </div>
@@ -154,6 +98,7 @@ import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import type { RoomSummaryMemberEntry, RoomSummaryStateEntry } from '@/services/matrix/room/AccountDataService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { createLogger } from '@/utils/Logger'
+import RoomServerSummaryItem from './RoomServerSummaryItem.vue'
 
 const props = defineProps<{
   roomId: string
@@ -184,13 +129,8 @@ const toggle = (key: string) => {
   expandedKey.value = expandedKey.value === key ? '' : key
 }
 
-const formatJson = (value: unknown): string => {
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
-}
+const sectionEmptyText = (key: SummarySectionKey) =>
+  isSectionFailed(key) ? t('room.server_summary.unavailable') : t('room.server_summary.empty')
 
 const ephemeralType = (event: Record<string, unknown>): string => {
   const type = event.type
@@ -324,17 +264,6 @@ watch(
   background-color: var(--tjg-surface-subtle);
 }
 
-.rss-item--block {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.rss-item-main {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .rss-name {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-primary);
@@ -360,44 +289,6 @@ watch(
   font-size: var(--tjg-font-size-2xs);
 }
 
-.rss-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--tjg-space-2);
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-}
-
-.rss-chevron {
-  flex-shrink: 0;
-  color: var(--tjg-text-tertiary);
-  transition: transform 0.15s ease;
-
-  &.is-open {
-    transform: rotate(180deg);
-  }
-}
-
-.rss-json {
-  margin: var(--tjg-space-1) 0 0;
-  padding: var(--tjg-space-2);
-  border-radius: var(--tjg-radius-xs);
-  border: 1px solid var(--tjg-border-muted);
-  background-color: var(--tjg-surface-subtle);
-  font-size: var(--tjg-font-size-2xs);
-  color: var(--tjg-text-secondary);
-  white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 200px;
-  overflow: auto;
-}
-
 .rss-empty {
   margin: 0;
   font-size: var(--tjg-font-size-2xs);
@@ -405,8 +296,7 @@ watch(
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rss-refresh,
-  .rss-chevron {
+  .rss-refresh {
     transition: none;
   }
 }

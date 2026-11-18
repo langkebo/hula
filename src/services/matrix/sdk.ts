@@ -26,6 +26,7 @@ export type {
   User
 } from 'matrix-js-sdk'
 export {
+  ConditionKind,
   ContentHelpers,
   createClient,
   Direction,

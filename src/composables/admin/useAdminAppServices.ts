@@ -35,10 +35,12 @@ interface UseAdminAppServicesResult {
   detailLoading: Ref<boolean>
   pingResult: Ref<{ ok: boolean; durationMs?: number | undefined } | null>
   pingLoading: Ref<boolean>
+  registering: Ref<boolean>
 
   loadServices: () => Promise<void>
   selectService: (serviceId: string) => Promise<void>
   pingService: (serviceId: string) => Promise<void>
+  registerService: (asToken: string, config: Record<string, unknown>) => Promise<boolean>
   deleteService: (serviceId: string) => Promise<boolean>
   updateService: (serviceId: string, config: Record<string, unknown>) => Promise<boolean>
   clearSelection: () => void
@@ -52,6 +54,7 @@ export function useAdminAppServices(): UseAdminAppServicesResult {
   const detailLoading = ref(false)
   const pingResult = ref<{ ok: boolean; durationMs?: number | undefined } | null>(null)
   const pingLoading = ref(false)
+  const registering = ref(false)
 
   async function loadServices() {
     servicesLoading.value = true
@@ -94,6 +97,17 @@ export function useAdminAppServices(): UseAdminAppServicesResult {
     }
   }
 
+  async function registerService(asToken: string, config: Record<string, unknown>): Promise<boolean> {
+    registering.value = true
+    try {
+      await adminService.registerApplicationService(asToken, config)
+      await loadServices()
+      return true
+    } finally {
+      registering.value = false
+    }
+  }
+
   async function deleteService(serviceId: string): Promise<boolean> {
     await adminService.deleteApplicationService(serviceId)
     await loadServices()
@@ -124,9 +138,11 @@ export function useAdminAppServices(): UseAdminAppServicesResult {
     detailLoading,
     pingResult,
     pingLoading,
+    registering,
     loadServices,
     selectService,
     pingService,
+    registerService,
     deleteService,
     updateService,
     clearSelection

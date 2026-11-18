@@ -48,6 +48,8 @@
                 :class="{ 'menu-item-danger': isDangerousItem(item), 'menu-item-focused': focusedIndex === index }"
                 role="menuitem"
                 :tabindex="focusedIndex === index ? 0 : -1"
+                :aria-haspopup="shouldShowArrow(item) ? 'menu' : undefined"
+                :aria-expanded="shouldShowArrow(item) ? showSubmenu && focusedIndex === index : undefined"
                 v-else
                 @click="handleClick(item)"
                 @mouseenter="handleMouseEnter(item, index)"
@@ -141,20 +143,27 @@
         </div>
 
         <!-- 二级菜单 -->
-        <div v-if="showSubmenu && activeSubmenu" class="context-submenu" :style="submenuPosition">
+        <div
+          v-if="showSubmenu && activeSubmenu"
+          :ref="setSubmenuEl"
+          class="context-submenu"
+          role="menu"
+          :style="submenuPosition"
+          @keydown="handleSubmenuKeydown">
           <div class="menu-list">
             <div
               v-for="(subItem, subIndex) in activeSubmenu"
               :key="subIndex"
               class="menu-item"
               role="menuitem"
-              tabindex="-1"
-              :class="{ 'menu-item-danger': isDangerousItem(subItem) }">
-              <div
-                class="menu-item-content"
-                @click="handleSubItemClick(subItem)"
-                @keydown.enter.prevent="handleSubItemClick(subItem)"
-                @keydown.space.prevent="handleSubItemClick(subItem)">
+              :tabindex="focusedSubIndex === subIndex ? 0 : -1"
+              :class="{
+                'menu-item-danger': isDangerousItem(subItem),
+                'menu-item-focused': focusedSubIndex === subIndex
+              }"
+              @keydown.enter.prevent
+              @keydown.space.prevent>
+              <div class="menu-item-content" @click="handleSubItemClick(subItem)">
                 <svg class="check-icon" aria-hidden="true">
                   <use :href="`#${getMenuItemProp(subItem, 'icon')}`"></use>
                 </svg>
@@ -169,14 +178,8 @@
 </template>
 
 <script setup lang="ts">
-import { useContextMenu } from '@/composables/common/useContextMenu'
-import { useContextMenuItem } from '@/composables/common/useContextMenuItem'
-import { useContextMenuNavigation } from '@/composables/common/useContextMenuNavigation'
-import { useContextMenuPosition } from '@/composables/common/useContextMenuPosition'
-import { useContextMenuSubmenu } from '@/composables/common/useContextMenuSubmenu'
+import { useContextMenuController } from '@/composables/common/useContextMenuController'
 import type { ContextMenuItem, MenuContent, ReactionEmoji } from '@/composables/common/useContextMenuTypes'
-import { useViewport } from '@/composables/common/useViewport'
-import { useIsMobile } from '@/composables/usePlatform'
 import ContextMenuEmoji from './ContextMenuEmoji.vue'
 
 type Props = {
@@ -193,139 +196,52 @@ const props = withDefaults(defineProps<Props>(), {
   specialMenu: () => []
 })
 
-const isMobileRef = useIsMobile()
-const showAllEmojis = ref(false)
-
-const visibleMenu = computed(() => {
-  return props.menu?.filter((item) => {
-    if (typeof item.visible === 'function') {
-      return item.visible(props.content)
-    }
-    return true
-  })
-})
-
-const visibleSpecialMenu = computed(() => {
-  return props.specialMenu?.filter((item) => {
-    if (typeof item.visible === 'function') {
-      return item.visible(props.content)
-    }
-    return true
-  })
-})
-
-/** 移动端只渲染显式标记 mobile 的扩展项，保持桌面端菜单行为不变 */
-const mobileSpecialMenu = computed(() => {
-  return (
-    visibleSpecialMenu.value?.filter((item) => {
-      if (item.mobile !== true) return false
-      if (typeof item.mobileVisible === 'function') {
-        return item.mobileVisible(props.content)
-      }
-      return true
-    }) ?? []
-  )
-})
-
-const isNull = computed(() => props.menu === void 0)
-const ContextMenuRef = useTemplateRef('ContextMenuRef')
 const emit = defineEmits(['select', 'reply-emoji', 'menu-show'])
-const { x, y, showMenu, handleContextMenu } = useContextMenu(ContextMenuRef, isNull)
 
-// 暴露 show(event) 供外部手动触发（好友列表/会话列表右键），与 slot 包裹自动触发互补。
-defineExpose({ show: handleContextMenu })
-
-watch(
-  () => showMenu.value,
-  (newVal) => {
-    emit('menu-show', newVal)
-  },
-  { immediate: true }
-)
-
-const { vw, vh } = useViewport()
-const contentRef = computed(() => props.content)
-
-function handleClick(item: ContextMenuItem) {
-  if (isMenuItemDisabled(item)) return
-  nextTick(() => {
-    showMenu.value = false
-    emit('select', item)
-  })
-}
-
-function handleReplyEmoji(item: ReactionEmoji) {
-  if (!item) return
-  nextTick(() => {
-    showMenu.value = false
-    emit('reply-emoji', item)
-  })
-}
-
-const { getMenuItemProp, isDangerousItem, isMenuItemDisabled } = useContextMenuItem(contentRef)
-
-const emojiCount = computed(() => props.emoji.length)
-const { pos, emojiMenuPosition, handleSize } = useContextMenuPosition({
-  x,
-  y,
-  vw,
-  vh,
-  showAllEmojis,
-  emojiCount
-})
+const ContextMenuRef = useTemplateRef<HTMLElement>('ContextMenuRef')
+const menuRef = useTemplateRef<HTMLElement>('menuRef')
 
 const {
+  isMobileRef,
+  showAllEmojis,
+  visibleMenu,
+  visibleSpecialMenu,
+  mobileSpecialMenu,
+  showMenu,
+  handleContextMenu,
+  pos,
+  emojiMenuPosition,
+  handleSize,
+  handleClick,
+  handleReplyEmoji,
+  getMenuItemProp,
+  isDangerousItem,
+  isMenuItemDisabled,
   showSubmenu,
   activeSubmenu,
   submenuPosition,
+  setSubmenuEl,
+  focusedSubIndex,
   handleMouseEnter,
   handleMouseLeave,
   handleSubItemClick,
   shouldShowArrow,
-  resetSubmenu
-} = useContextMenuSubmenu({ content: contentRef, vw, vh })
-
-// 菜单容器必须通过模板引用交给键盘导航：不注入时 focusMenu() 的 menuRef 恒为
-// null ⇒ 右键菜单打开后焦点停在触发元素上，ArrowDown / Escape 都不会进到
-// @keydown 处理器（键盘不可用）。
-const menuRef = useTemplateRef<HTMLElement>('menuRef')
-const { focusedIndex, handleMenuKeydown, focusMenu, resetNavigation } = useContextMenuNavigation({
-  visibleMenu,
-  visibleSpecialMenu,
-  showMenu,
-  onSelect: handleClick,
-  // disabled 支持函数式（如「撤回」是否超时），键盘跳过必须与渲染态同源
-  isItemDisabled: isMenuItemDisabled,
-  menuRef
+  handleSubmenuKeydown,
+  focusedIndex,
+  handleMenuKeydown,
+  handleBeforeEnter,
+  handleEnter
+} = useContextMenuController({
+  props,
+  contextMenuRef: ContextMenuRef,
+  menuRef,
+  onSelect: (item) => emit('select', item),
+  onReplyEmoji: (item) => emit('reply-emoji', item),
+  onMenuShow: (show) => emit('menu-show', show)
 })
 
-watch(
-  () => showMenu.value,
-  (newVal) => {
-    if (!newVal) {
-      resetSubmenu()
-      showAllEmojis.value = false
-      resetNavigation()
-    } else {
-      focusMenu()
-    }
-  }
-)
-
-const handleBeforeEnter = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.height = '0'
-}
-
-const handleEnter = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.height = 'auto'
-  const h = element.clientHeight
-  element.style.height = '0'
-  requestAnimationFrame(() => {
-    element.style.height = `${h}px`
-  })
-}
+// 暴露 show(event) 供外部手动触发（好友列表/会话列表右键），与 slot 包裹自动触发互补。
+defineExpose({ show: handleContextMenu })
 </script>
 
 <style scoped lang="scss">

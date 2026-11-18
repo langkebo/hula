@@ -120,7 +120,7 @@ import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { RoomTypeEnum } from '@/enums'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useRightViewDraftStore } from '@/stores/domains/widget/rightViewDraft'
 import { createLogger } from '@/utils/Logger'
 
@@ -137,7 +137,6 @@ const formRef = ref<FormInst>()
 const creating = ref(false)
 const inviting = ref(false)
 const defaultAvatar = '/logo.png'
-const serverDomain = ref('matrix.org')
 
 const handleClose = () => {
   emit('close')
@@ -183,15 +182,6 @@ const joinRuleOptions = computed(() => [
   { label: t('room.create.join_rule_public'), value: 'public' },
   { label: t('room.create.join_rule_restricted'), value: 'restricted' }
 ])
-
-const loadServerDomain = async () => {
-  try {
-    serverDomain.value = await matrixRoomReadFacade.getServerDomain()
-  } catch (error) {
-    logger.error('Failed to get homeserver domain:', error)
-    serverDomain.value = 'matrix.org'
-  }
-}
 
 const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
   try {
@@ -337,8 +327,6 @@ onMounted(() => {
       }
     }, RESTORED_HINT_DURATION)
   }
-
-  void loadServerDomain()
 })
 </script>
 

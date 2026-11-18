@@ -56,6 +56,9 @@ export type Messages = {
     "load_failed_network": "网络连接不可用，请检查网络后重试",
     "load_failed_permission": "没有权限读取该会话的消息",
     "load_failed_server": "服务端暂时无法返回消息，请稍后重试",
+    "live_update_failed": "部分新消息接收失败",
+    "jump_searching": "正在查找消息...",
+    "jump_not_found": "无法找到原始消息，可能已被删除或太久远",
     "unread_divider": "以下为新消息",
     "feature": {
       "coming_soon": "功能开发中"
@@ -134,7 +137,9 @@ export type Messages = {
     "remove_success": "成功踢出 {count} 位成员",
     "remove_failed": "踢出失败，请重试",
     "confirm_remove_title": "确认踢出",
-    "channel_manage_unsupported": "频道不支持管理成员"
+    "channel_manage_unsupported": "频道不支持管理成员",
+    "empty": "暂无可管理的成员",
+    "empty_search": "未找到匹配成员"
   },
   "secret_chat": {
     "title": "私密聊天",
@@ -181,7 +186,6 @@ export type Messages = {
     },
     "quota": {
       "title": "配额",
-      "unavailable": "暂不可用",
       "unavailable_hint": "配额数据暂不可用"
     },
     "favorites": {
@@ -377,7 +381,7 @@ export type Messages = {
       "edit": "编辑资料",
       "message": "发信息",
       "add_friend": "加好友",
-      "mention": "@提及"
+      "mention": "{'@'}提及"
     },
     "notification": {
       "copy_success": "复制成功 {account}",
@@ -494,6 +498,9 @@ export type KeyPaths =
   | "home.chat_main.load_failed_network"
   | "home.chat_main.load_failed_permission"
   | "home.chat_main.load_failed_server"
+  | "home.chat_main.live_update_failed"
+  | "home.chat_main.jump_searching"
+  | "home.chat_main.jump_not_found"
   | "home.chat_main.unread_divider"
   | "home.chat_main.feature.coming_soon"
   | "home.chat_main.translate.empty"
@@ -551,6 +558,8 @@ export type KeyPaths =
   | "home.manage_group_member.remove_failed"
   | "home.manage_group_member.confirm_remove_title"
   | "home.manage_group_member.channel_manage_unsupported"
+  | "home.manage_group_member.empty"
+  | "home.manage_group_member.empty_search"
   | "home.secret_chat.title"
   | "home.secret_chat.no_password"
   | "home.secret_chat.password_incorrect"
@@ -588,7 +597,6 @@ export type KeyPaths =
   | "home.chat_sidebar.actions.retry"
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
-  | "home.chat_sidebar.quota.unavailable"
   | "home.chat_sidebar.quota.unavailable_hint"
   | "home.chat_sidebar.favorites.total"
   | "home.chat_sidebar.favorites.export_md"

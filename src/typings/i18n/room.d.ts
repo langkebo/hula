@@ -183,13 +183,35 @@ export type Messages = {
     "section_sticky_create": "从最近消息创建",
     "section_advanced_options": "高级选项",
     "section_service_types": "房间服务类型",
-    "service_types_hint": "服务器为该房间声明的服务能力",
     "service_types_empty": "当前房间未声明服务类型",
     "service_types_load_failed": "服务类型加载失败",
     "service_types_unsupported": "当前服务器未声明房间服务类型接口",
     "service_type_messaging": "消息服务",
     "service_type_encryption": "加密服务",
     "service_type_directory": "目录服务",
+    "section_event_diagnostics": "事件与回执诊断",
+    "event_diagnostics_hint": "只读，用于排查消息可见性与回执状态",
+    "event_diag_reduced_title": "降采样事件",
+    "event_diag_reduced_summary": "共 {count} 条降采样事件",
+    "event_diag_reduced_total": "降采样前 {total} 条",
+    "event_diag_more": "另有 {count} 条未展示",
+    "event_diag_rendered_title": "渲染结果",
+    "event_diag_rendered_state": "渲染状态：{value}",
+    "event_diag_rendered_true": "已渲染",
+    "event_diag_rendered_false": "未渲染",
+    "event_diag_rendered_unknown": "未知",
+    "event_diag_rendered_events": "事件数：{count}",
+    "event_diag_fragments_title": "我的时间线片段",
+    "event_diag_fragments_count": "{count} 个片段",
+    "event_diag_fragment_limited": "有缺口",
+    "event_diag_receipts_title": "已读回执明细",
+    "event_diag_receipts_event_id": "事件 ID",
+    "event_diag_receipts_query": "查询",
+    "event_diag_receipts_idle": "输入事件 ID 后查询",
+    "event_diag_receipts_count": "{count} 位用户",
+    "event_diag_empty": "无数据",
+    "event_diag_unsupported": "当前服务器不支持该接口",
+    "event_diag_load_failed": "加载失败",
     "membership_history_empty": "暂无成员变更记录",
     "membership_history_load_failed": "成员变更记录加载失败",
     "membership_history_unsupported": "当前服务器未声明成员变更记录接口",
@@ -618,13 +640,35 @@ export type KeyPaths =
   | "room.settings_drawer.section_sticky_create"
   | "room.settings_drawer.section_advanced_options"
   | "room.settings_drawer.section_service_types"
-  | "room.settings_drawer.service_types_hint"
   | "room.settings_drawer.service_types_empty"
   | "room.settings_drawer.service_types_load_failed"
   | "room.settings_drawer.service_types_unsupported"
   | "room.settings_drawer.service_type_messaging"
   | "room.settings_drawer.service_type_encryption"
   | "room.settings_drawer.service_type_directory"
+  | "room.settings_drawer.section_event_diagnostics"
+  | "room.settings_drawer.event_diagnostics_hint"
+  | "room.settings_drawer.event_diag_reduced_title"
+  | "room.settings_drawer.event_diag_reduced_summary"
+  | "room.settings_drawer.event_diag_reduced_total"
+  | "room.settings_drawer.event_diag_more"
+  | "room.settings_drawer.event_diag_rendered_title"
+  | "room.settings_drawer.event_diag_rendered_state"
+  | "room.settings_drawer.event_diag_rendered_true"
+  | "room.settings_drawer.event_diag_rendered_false"
+  | "room.settings_drawer.event_diag_rendered_unknown"
+  | "room.settings_drawer.event_diag_rendered_events"
+  | "room.settings_drawer.event_diag_fragments_title"
+  | "room.settings_drawer.event_diag_fragments_count"
+  | "room.settings_drawer.event_diag_fragment_limited"
+  | "room.settings_drawer.event_diag_receipts_title"
+  | "room.settings_drawer.event_diag_receipts_event_id"
+  | "room.settings_drawer.event_diag_receipts_query"
+  | "room.settings_drawer.event_diag_receipts_idle"
+  | "room.settings_drawer.event_diag_receipts_count"
+  | "room.settings_drawer.event_diag_empty"
+  | "room.settings_drawer.event_diag_unsupported"
+  | "room.settings_drawer.event_diag_load_failed"
   | "room.settings_drawer.membership_history_empty"
   | "room.settings_drawer.membership_history_load_failed"
   | "room.settings_drawer.membership_history_unsupported"

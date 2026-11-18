@@ -25,6 +25,11 @@ export const useContextMenuNavigation = (options: {
    */
   isItemDisabled?: ((item: ContextMenuItem) => boolean) | undefined
   /**
+   * 键盘关闭（Escape / Enter 选中）后回调，用于把焦点还给触发元素。
+   * 指针关闭不触发：鼠标点击别处时不应把焦点抢回菜单 opener。
+   */
+  onKeyboardDismiss?: (() => void) | undefined
+  /**
    * 菜单容器引用。由调用方用 `useTemplateRef` 绑定后注入；未注入时内部自建，
    * 便于单测直接驱动 `focusMenu()`。
    */
@@ -60,6 +65,7 @@ export const useContextMenuNavigation = (options: {
     if (e.key === 'Escape') {
       e.preventDefault()
       showMenu.value = false
+      options.onKeyboardDismiss?.()
       return
     }
 
@@ -102,6 +108,7 @@ export const useContextMenuNavigation = (options: {
         const item = allMenuItems.value[focusedIndex.value]
         if (item && !isDisabled(item)) {
           onSelect(item)
+          options.onKeyboardDismiss?.()
         }
         break
       }

@@ -324,13 +324,50 @@ export class AdminRoomService {
     }
   }
 
-  async setRoomPublicListing(roomId: string, _isPublic: boolean): Promise<void> {
+  async setRoomPublicListing(roomId: string, isPublic: boolean): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.setRoomPublicListing(roomId)
-      logger.info(`[Admin] 房间公开列表已设置: ${roomId}`)
+      if (isPublic) {
+        await admin.setRoomPublicListing(roomId)
+        logger.info(`[Admin] 房间公开列表已设置: ${roomId}`)
+      } else {
+        await admin.deleteRoomPublicListing(roomId)
+        logger.info(`[Admin] 房间公开列表已下线: ${roomId}`)
+      }
     } catch (err) {
-      logger.error(`[Admin] 设置房间公开列表失败: ${err}`)
+      logger.error(`[Admin] ${isPublic ? '设置' : '下线'}房间公开列表失败: ${err}`)
+      throw err
+    }
+  }
+
+  /** 读取房间 token 同步信息（活跃 token 数、设备/用户维度摘要）。 */
+  async getRoomTokenSync(roomId: string): Promise<Record<string, unknown> | null> {
+    try {
+      const admin = await this.sdkAdmin()
+      return unknownToObject(await admin.getRoomTokenSync(roomId))
+    } catch (err) {
+      logger.error(`[Admin] 获取房间 token 同步信息失败: ${err}`)
+      return null
+    }
+  }
+
+  /** 级联撤回：以指定事件为起点，按关联链删除后续事件（max_depth 后端 clamp ≤10）。 */
+  async cascadeRedactEvent(
+    roomId: string,
+    eventId: string,
+    options?: { maxDepth?: number; reason?: string }
+  ): Promise<number> {
+    try {
+      const admin = await this.sdkAdmin()
+      const result = await admin.cascadeRedactEvent(roomId, {
+        eventId,
+        ...(options?.maxDepth === undefined ? {} : { maxDepth: options.maxDepth }),
+        ...(options?.reason ? { reason: options.reason } : {})
+      })
+      logger.info(`[Admin] 级联撤回完成: ${roomId}/${eventId}, 事件数=${result.redacted_count}`)
+      return result.redacted_count
+    } catch (err) {
+      logger.error(`[Admin] 级联撤回失败: ${err}`)
       throw err
     }
   }

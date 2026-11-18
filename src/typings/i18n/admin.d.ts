@@ -969,7 +969,6 @@ export type Messages = {
     "cacheEmpty": "暂无缓存条目",
     "cacheExpiry": "过期时间",
     "cacheKey": "缓存键",
-    "cacheLoadFailed": "加载缓存失败",
     "cacheValue": "值摘要",
     "confirmPendingConfirm": "确定{action}服务器 {server} 吗？",
     "confirmPendingFailed": "更新联邦服务器状态失败",
@@ -997,7 +996,6 @@ export type Messages = {
     "lastSuccessfulTs": "最后成功时间",
     "pending": "待确认",
     "pendingEmpty": "暂无待确认服务器",
-    "pendingLoadFailed": "加载待确认服务器失败",
     "reason": "原因",
     "reasonPlaceholder": "输入加入黑名单的原因",
     "reject": "拒绝",
@@ -1027,7 +1025,6 @@ export type Messages = {
       "rateLimit": "限流状态"
     },
     "validity": {
-      "userId": "用户 ID",
       "userIdPlaceholder": "例如 {'@'}alice:example.org",
       "load": "查询有效期",
       "empty": "暂无该用户的有效期记录",
@@ -1035,7 +1032,6 @@ export type Messages = {
       "set": "保存有效期",
       "renewTitle": "续期",
       "renew": "续期",
-      "renewalToken": "续期令牌",
       "renewalTokenPlaceholder": "从通知邮件或后台获取的续期令牌",
       "fieldExpiration": "到期时间",
       "fieldLastCheck": "最近检查",
@@ -1063,7 +1059,6 @@ export type Messages = {
       "configPlaceholder": "{\"endpoint\":\"https://...\"}",
       "configInvalid": "配置必须是合法 JSON 对象",
       "enabled": "启用",
-      "priority": "优先级",
       "submit": "创建",
       "created": "认证提供方已创建",
       "createFailed": "创建认证提供方失败",
@@ -1090,11 +1085,8 @@ export type Messages = {
       "on": "启用",
       "off": "关闭",
       "checkTitle": "策略检查",
-      "roomId": "房间 ID",
       "roomIdPlaceholder": "例如 !abc:example.org",
-      "userId": "用户 ID",
       "userIdPlaceholder": "例如 {'@'}alice:example.org",
-      "action": "动作",
       "actions": {
         "create": "创建房间",
         "join": "加入房间",
@@ -1104,7 +1096,6 @@ export type Messages = {
       "check": "执行检查",
       "allowed": "策略允许该动作",
       "denied": "策略拒绝该动作",
-      "reason": "原因",
       "required": "请填写房间 ID 与用户 ID",
       "checkFailed": "策略检查失败"
     },
@@ -2364,7 +2355,6 @@ export type KeyPaths =
   | "admin.federation.cacheEmpty"
   | "admin.federation.cacheExpiry"
   | "admin.federation.cacheKey"
-  | "admin.federation.cacheLoadFailed"
   | "admin.federation.cacheValue"
   | "admin.federation.confirmPendingConfirm"
   | "admin.federation.confirmPendingFailed"
@@ -2392,7 +2382,6 @@ export type KeyPaths =
   | "admin.federation.lastSuccessfulTs"
   | "admin.federation.pending"
   | "admin.federation.pendingEmpty"
-  | "admin.federation.pendingLoadFailed"
   | "admin.federation.reason"
   | "admin.federation.reasonPlaceholder"
   | "admin.federation.reject"
@@ -2415,7 +2404,6 @@ export type KeyPaths =
   | "admin.accountPolicy.tabs.providers"
   | "admin.accountPolicy.tabs.policy"
   | "admin.accountPolicy.tabs.rateLimit"
-  | "admin.accountPolicy.validity.userId"
   | "admin.accountPolicy.validity.userIdPlaceholder"
   | "admin.accountPolicy.validity.load"
   | "admin.accountPolicy.validity.empty"
@@ -2423,7 +2411,6 @@ export type KeyPaths =
   | "admin.accountPolicy.validity.set"
   | "admin.accountPolicy.validity.renewTitle"
   | "admin.accountPolicy.validity.renew"
-  | "admin.accountPolicy.validity.renewalToken"
   | "admin.accountPolicy.validity.renewalTokenPlaceholder"
   | "admin.accountPolicy.validity.fieldExpiration"
   | "admin.accountPolicy.validity.fieldLastCheck"
@@ -2449,7 +2436,6 @@ export type KeyPaths =
   | "admin.accountPolicy.providers.configPlaceholder"
   | "admin.accountPolicy.providers.configInvalid"
   | "admin.accountPolicy.providers.enabled"
-  | "admin.accountPolicy.providers.priority"
   | "admin.accountPolicy.providers.submit"
   | "admin.accountPolicy.providers.created"
   | "admin.accountPolicy.providers.createFailed"
@@ -2472,11 +2458,8 @@ export type KeyPaths =
   | "admin.accountPolicy.policy.on"
   | "admin.accountPolicy.policy.off"
   | "admin.accountPolicy.policy.checkTitle"
-  | "admin.accountPolicy.policy.roomId"
   | "admin.accountPolicy.policy.roomIdPlaceholder"
-  | "admin.accountPolicy.policy.userId"
   | "admin.accountPolicy.policy.userIdPlaceholder"
-  | "admin.accountPolicy.policy.action"
   | "admin.accountPolicy.policy.actions.create"
   | "admin.accountPolicy.policy.actions.join"
   | "admin.accountPolicy.policy.actions.invite"
@@ -2484,7 +2467,6 @@ export type KeyPaths =
   | "admin.accountPolicy.policy.check"
   | "admin.accountPolicy.policy.allowed"
   | "admin.accountPolicy.policy.denied"
-  | "admin.accountPolicy.policy.reason"
   | "admin.accountPolicy.policy.required"
   | "admin.accountPolicy.policy.checkFailed"
   | "admin.accountPolicy.rateLimit.hint"

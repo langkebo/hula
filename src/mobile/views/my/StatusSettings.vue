@@ -9,6 +9,16 @@
         <div class="flex flex-col p-16px gap-12px">
           <div class="text-14px text-[var(--tjg-text-secondary)] mb-8px">{{ t('mobile_status.subtitle') }}</div>
 
+          <div
+            v-if="statusLoadFailed"
+            data-test="status-load-error"
+            class="flex items-center justify-between gap-12px rounded-8px px-12px py-8px border border-[--tjg-border-default]">
+            <span class="text-12px text-[--tjg-text-secondary]">{{ t('mobile_status.load_failed') }}</span>
+            <van-button size="small" plain type="primary" data-test="status-load-retry" @click="loadCurrentStatus">
+              {{ t('common.retry') }}
+            </van-button>
+          </div>
+
           <van-cell-group inset>
             <van-cell
               v-for="status in statusOptions"
@@ -58,10 +68,16 @@
           </van-cell-group>
 
           <div class="mt-16px px-16px flex gap-12px">
-            <van-button class="flex-1" block :disabled="loading" @click="handleClearStatus">
+            <van-button class="flex-1" block :disabled="loading || statusLoadFailed" @click="handleClearStatus">
               {{ t('mobile_status.clear_status') }}
             </van-button>
-            <van-button class="flex-1" type="primary" block :loading="loading" @click="handleSave">
+            <van-button
+              class="flex-1"
+              type="primary"
+              block
+              :loading="loading"
+              :disabled="statusLoadFailed"
+              @click="handleSave">
               {{ t('mobile_status.save') }}
             </van-button>
           </div>
@@ -99,6 +115,8 @@ const statusMessage = ref('')
 /** 进入页面时的服务端状态文案：保存时据此判断用户是否真的改过文案 */
 const initialStatusMessage = ref('')
 const loading = ref(false)
+/** 回填失败不能落成默认状态：默认值一旦被保存就会覆盖服务端真实 presence */
+const statusLoadFailed = ref(false)
 const showExpiryPicker = ref(false)
 
 /** 状态有效期档位（秒）；0 表示永久。Matrix 无服务端有效期，由本机计时清除（Y-12） */
@@ -202,14 +220,16 @@ function resolveStatusId(presence: PresenceState): string {
 
 /** 进入页面回填服务端真实 presence 与状态文案，避免把「页面初值」当成用户输入 */
 async function loadCurrentStatus(): Promise<void> {
+  statusLoadFailed.value = false
   try {
     const info = await matrixPresenceService.getCurrentPresence()
     initialStatusMessage.value = info.status_msg ?? ''
     statusMessage.value = initialStatusMessage.value
     currentStatusId.value = resolveStatusId(info.presence)
   } catch (error) {
-    // 回填失败时保持空文案：保存按「未修改」透传 undefined，不会清空服务端已有文案
+    // 回填失败时保持空文案并禁止写回：默认状态会覆盖服务端真实 presence
     logger.warn('Failed to load current presence', error)
+    statusLoadFailed.value = true
   }
 }
 
@@ -233,6 +253,8 @@ onMounted(async () => {
 onUnmounted(clearExpiryTimer)
 
 async function handleSave() {
+  // 错误期间禁止写回：未回填成功时保存会把默认 presence 覆盖到服务端
+  if (statusLoadFailed.value) return
   loading.value = true
   try {
     const targetPresence = resolveTargetPresence()
@@ -279,6 +301,8 @@ async function handleSave() {
 
 /** 清除状态文案与本地有效期；presence 保留为用户当前选择（Y-12） */
 async function handleClearStatus() {
+  // 错误期间禁止写回：未回填成功时清除会按默认 presence 上报
+  if (statusLoadFailed.value) return
   loading.value = true
   try {
     // 服务层约定：传空串表示清空服务端状态文案，传 undefined 才是不改动

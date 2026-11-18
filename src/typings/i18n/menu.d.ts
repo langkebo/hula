@@ -139,7 +139,11 @@ export type Messages = {
   },
   "read_receipts": "已读明细",
   "copy_attachment_url": "复制附件地址",
-  "copy_attachment_url_empty": "该消息没有可复制的附件地址"
+  "copy_attachment_url_empty": "该消息没有可复制的附件地址",
+  "export_message_html": "导出为 HTML",
+  "export_message_html_empty": "该消息没有可导出的文本内容",
+  "export_message_html_success": "已导出为 HTML 文件",
+  "export_message_html_failed": "导出失败"
 }
 
 /**
@@ -270,3 +274,7 @@ export type KeyPaths =
   | "menu.read_receipts"
   | "menu.copy_attachment_url"
   | "menu.copy_attachment_url_empty"
+  | "menu.export_message_html"
+  | "menu.export_message_html_empty"
+  | "menu.export_message_html_success"
+  | "menu.export_message_html_failed"

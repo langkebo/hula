@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomMessageQueuePanel from '../RoomMessageQueuePanel.vue'
 
@@ -73,5 +73,26 @@ describe('RoomMessageQueuePanel — P2-6 房间消息队列状态面板', () => 
     expect(items).toHaveLength(2)
     expect(wrapper.text()).toContain('$e1:hs')
     expect(wrapper.text()).toContain('m.room.message')
+  })
+
+  it('加载失败时显示错误态而不是空状态', async () => {
+    getMessageQueueMock.mockRejectedValue(new Error('boom'))
+    const wrapper = await mountPanel()
+
+    expect(wrapper.find('[data-test="room-message-queue-error"]').exists()).toBe(true)
+    expect(wrapper.find('.n-empty').exists()).toBe(false)
+  })
+
+  it('重试成功后恢复队列列表', async () => {
+    getMessageQueueMock
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ queue: [{ event_id: '$e1:hs', type: 'm.room.message', content: 'hello' }] })
+    const wrapper = await mountPanel()
+
+    await wrapper.find('[data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="room-message-queue-error"]').exists()).toBe(false)
+    expect(wrapper.findAll('.queue-item')).toHaveLength(1)
   })
 })

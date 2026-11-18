@@ -112,7 +112,7 @@ const eventReportColumns = computed<DataTableColumns<EventReport>>(() => [
   {
     title: t('moderation.event_reports.table.actions'),
     key: 'actions',
-    width: 320,
+    width: 480,
     render: (row) =>
       h(NSpace, null, {
         default: () => [
@@ -155,6 +155,27 @@ const eventReportColumns = computed<DataTableColumns<EventReport>>(() => [
               onClick: () => openActionDialog('dismiss', row.id)
             },
             { default: () => t('moderation.event_reports.actions.dismiss') }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              type: 'warning',
+              'data-testid': 'event-report-action-block',
+              disabled: !row.reporter_user_id,
+              onClick: () => handleBlockReporter(row.reporter_user_id)
+            },
+            { default: () => t('moderation.event_reports.actions.blockReporter') }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              'data-testid': 'event-report-action-unblock',
+              disabled: !row.reporter_user_id,
+              onClick: () => handleUnblockReporter(row.reporter_user_id)
+            },
+            { default: () => t('moderation.event_reports.actions.unblockReporter') }
           )
         ]
       })
@@ -272,6 +293,47 @@ function handleDelete(id: number) {
         showFeedback(t('moderation.event_reports.toast.deleteFailed'), 'error')
       } else {
         showFeedback(t('moderation.event_reports.toast.deleteSuccess'), 'success')
+      }
+    }
+  })
+}
+
+/** 拉黑举报人默认封禁时长：24 小时。 */
+const BLOCK_REPORTER_DURATION_MS = 24 * 60 * 60 * 1000
+
+function handleBlockReporter(userId: string) {
+  dialog.warning({
+    title: t('common.tip'),
+    content: t('moderation.event_reports.dialog.blockReporterConfirm'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await matrixEventReportService.blockUser(
+          userId,
+          Date.now() + BLOCK_REPORTER_DURATION_MS,
+          t('moderation.event_reports.dialog.blockReporterReason')
+        )
+        showFeedback(t('moderation.event_reports.toast.blockReporterSuccess'), 'success')
+      } catch {
+        showFeedback(t('moderation.event_reports.toast.blockReporterFailed'), 'error')
+      }
+    }
+  })
+}
+
+function handleUnblockReporter(userId: string) {
+  dialog.warning({
+    title: t('common.tip'),
+    content: t('moderation.event_reports.dialog.unblockReporterConfirm'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await matrixEventReportService.unblockUser(userId)
+        showFeedback(t('moderation.event_reports.toast.unblockReporterSuccess'), 'success')
+      } catch {
+        showFeedback(t('moderation.event_reports.toast.unblockReporterFailed'), 'error')
       }
     }
   })

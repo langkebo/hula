@@ -57,8 +57,8 @@
   --tjg-text-primary: #18181c;
   /* 对比度 8.06:1 AAA @surface-panel（#ffffff） */
   --tjg-text-secondary: #505050;
-  /* 对比度 4.54:1 AA @surface-app（#fafafa）；4.74:1 @surface-panel（#ffffff） */
-  --tjg-text-tertiary: #737373;
+  /* 对比度 5.27:1 AA @surface-panel-muted（#f5f5f5）；5.08:1 @surface-subtle（#f1f1f1）；4.77:1 @surface-search（#eaeaea） */
+  --tjg-text-tertiary: #666666;
   /* 对比度 4.54:1 AA @surface-panel（#ffffff；主场景为设置/面板卡片，侧栏等深底残留走 prefers-contrast 覆盖） */
   --tjg-text-quaternary: #767676;
   --tjg-text-muted: #999999;
@@ -432,10 +432,10 @@ html[data-theme='dark'] {
 
   /* 对比度 18.10:1 AAA @surface-app（#161616） */
   --tjg-text-primary: #ffffff;
-  /* 对比度 6.51:1 AA @surface-app（#161616）、4.55:1 AA @surface-panel（#313338） */
-  --tjg-text-secondary: #9b9b9b;
-  /* 对比度 4.9:1 AA @surface-app */
-  --tjg-text-tertiary: #858585;
+  /* 对比度 5.23:1 AA @surface-panel（#313338）、7.44:1 @surface-app（#161616） */
+  --tjg-text-secondary: #a8a8a8;
+  /* 对比度 4.60:1 AA @surface-panel（#313338）、6.59:1 @surface-app（#161616） */
+  --tjg-text-tertiary: #9c9c9c;
   /* 对比度 5.67:1 AA @surface-app */
   --tjg-text-quaternary: #909090;
   --tjg-text-disabled: #434343;

@@ -28,6 +28,7 @@ interface UseAdminSamlResult {
   loadConfig: () => Promise<void>
   saveConfig: (config: Record<string, unknown>) => Promise<void>
   loadMappings: () => Promise<void>
+  loadMappingDetail: (nameId: string) => Promise<SamlMapping | null>
   deleteMapping: (nameId: string) => Promise<void>
   updateMapping: (nameId: string, updates: Record<string, unknown>) => Promise<void>
 }
@@ -123,28 +124,41 @@ export function useAdminSaml(): UseAdminSamlResult {
     }
   }
 
+  /** 把服务端 snake_case / camelCase 字段归一化为 UI 使用的 SamlMapping。 */
+  function normalizeMapping(raw: Record<string, unknown>): SamlMapping {
+    return {
+      nameId: String(raw.name_id ?? raw.nameId ?? raw.nameid ?? ''),
+      userId: raw.user_id != null ? String(raw.user_id) : raw.userId != null ? String(raw.userId) : undefined,
+      displayName:
+        raw.display_name != null
+          ? String(raw.display_name)
+          : raw.displayName != null
+            ? String(raw.displayName)
+            : undefined,
+      ...raw
+    } as SamlMapping
+  }
+
   async function loadMappings() {
     mappingsLoading.value = true
     try {
       const result = await adminService.security.getSamlMappings()
-      mappings.value = (result.mappings ?? []).map((m) => {
-        const raw = m as Record<string, unknown>
-        return {
-          nameId: String(raw.name_id ?? raw.nameId ?? raw.nameid ?? ''),
-          userId: raw.user_id != null ? String(raw.user_id) : raw.userId != null ? String(raw.userId) : undefined,
-          displayName:
-            raw.display_name != null
-              ? String(raw.display_name)
-              : raw.displayName != null
-                ? String(raw.displayName)
-                : undefined,
-          ...raw
-        } as SamlMapping
-      })
+      mappings.value = (result.mappings ?? []).map(normalizeMapping)
     } catch (e) {
       logger.error('加载 SAML 映射失败', e)
     } finally {
       mappingsLoading.value = false
+    }
+  }
+
+  /** 读取单条映射详情，失败或未命中时返回 null（调用方回退到列表行数据）。 */
+  async function loadMappingDetail(nameId: string): Promise<SamlMapping | null> {
+    try {
+      const raw = await adminService.security.getSamlMapping(nameId)
+      return raw ? normalizeMapping(raw) : null
+    } catch (e) {
+      logger.error('加载 SAML 映射详情失败', e)
+      return null
     }
   }
 
@@ -174,6 +188,7 @@ export function useAdminSaml(): UseAdminSamlResult {
     loadConfig,
     saveConfig,
     loadMappings,
+    loadMappingDetail,
     deleteMapping,
     updateMapping
   }

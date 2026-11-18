@@ -407,4 +407,37 @@ describe('AccountSettings', () => {
     const wrapper = mount(AccountSettings)
     expect((wrapper.vm as any).passwordLoading).toBe(false)
   })
+
+  it('renders an error state instead of empty fields when extended profile load fails', async () => {
+    getExtendedProfileMock.mockRejectedValueOnce(new Error('offline'))
+    const wrapper = mount(AccountSettings)
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="extended-profile-error"]').exists()).toBe(true)
+    // 读取失败时禁用编辑，避免把空值当成账号真实资料写回
+    const inputComponents = wrapper.findAllComponents({ name: 'NInput' })
+    expect(inputComponents.at(2)?.props('disabled')).toBe(true)
+    expect(inputComponents.at(3)?.props('disabled')).toBe(true)
+    expect(inputComponents.at(4)?.props('disabled')).toBe(true)
+  })
+
+  it('recovers from the error state after retrying the extended profile load', async () => {
+    getExtendedProfileMock.mockRejectedValueOnce(new Error('offline'))
+    const wrapper = mount(AccountSettings)
+    await flushPromises()
+    expect(wrapper.find('[data-test="extended-profile-error"]').exists()).toBe(true)
+
+    getExtendedProfileMock.mockResolvedValueOnce({
+      resume: '重试后的简介',
+      sex: 2,
+      region: '上海',
+      birthday: '1999-09-09'
+    })
+    await wrapper.find('[data-test="extended-profile-error"] [data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="extended-profile-error"]').exists()).toBe(false)
+    expect((wrapper.vm as any).formData.about).toBe('重试后的简介')
+    expect((wrapper.vm as any).formData.region).toBe('上海')
+  })
 })

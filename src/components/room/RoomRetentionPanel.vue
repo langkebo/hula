@@ -8,66 +8,75 @@
       <n-spin :show="retention.isLoading.value" size="small">
         <p class="panel-subtitle">{{ t('room.retention.subtitle') }}</p>
 
-        <n-radio-group :value="retention.mode.value" :disabled="!canEdit">
-          <n-radio
-            :radio-value="'unlimited'"
-            :model-value="retention.mode.value"
-            :disabled="!canEdit"
-            data-testid="retention-mode-unlimited"
-            @change="handleModeChange('unlimited')">
-            {{ t('room.retention.mode_unlimited') }}
-          </n-radio>
-          <n-radio
-            :radio-value="'by_days'"
-            :model-value="retention.mode.value"
-            :disabled="!canEdit"
-            data-testid="retention-mode-by-days"
-            @change="handleModeChange('by_days')">
-            {{ t('room.retention.mode_by_days') }}
-          </n-radio>
-          <n-radio
-            :radio-value="'by_count'"
-            :model-value="retention.mode.value"
-            :disabled="!canEdit"
-            data-testid="retention-mode-by-count"
-            @change="handleModeChange('by_count')">
-            {{ t('room.retention.mode_by_count') }}
-          </n-radio>
-        </n-radio-group>
-
-        <div v-if="retention.mode.value === 'by_days'" class="retention-field">
-          <span class="field-label">{{ t('room.retention.days_label') }}</span>
-          <n-input-number
-            :value="retention.days.value"
-            :min="1"
-            :max="3650"
-            :disabled="!canEdit"
-            @update:value="(v: number | null) => retention.setDays(v ?? 1)" />
-          <span class="field-hint">{{ t('room.retention.days_hint') }}</span>
+        <div v-if="retention.loadFailed.value" data-testid="room-retention-error">
+          <ErrorState
+            compact
+            :title="t('room.retention.load_failed')"
+            :retry-text="t('common.retry')"
+            @retry="loadPolicy" />
         </div>
+        <template v-else>
+          <n-radio-group :value="retention.mode.value" :disabled="!canEdit">
+            <n-radio
+              :radio-value="'unlimited'"
+              :model-value="retention.mode.value"
+              :disabled="!canEdit"
+              data-testid="retention-mode-unlimited"
+              @change="handleModeChange('unlimited')">
+              {{ t('room.retention.mode_unlimited') }}
+            </n-radio>
+            <n-radio
+              :radio-value="'by_days'"
+              :model-value="retention.mode.value"
+              :disabled="!canEdit"
+              data-testid="retention-mode-by-days"
+              @change="handleModeChange('by_days')">
+              {{ t('room.retention.mode_by_days') }}
+            </n-radio>
+            <n-radio
+              :radio-value="'by_count'"
+              :model-value="retention.mode.value"
+              :disabled="!canEdit"
+              data-testid="retention-mode-by-count"
+              @change="handleModeChange('by_count')">
+              {{ t('room.retention.mode_by_count') }}
+            </n-radio>
+          </n-radio-group>
 
-        <div v-if="retention.mode.value === 'by_count'" class="retention-field">
-          <span class="field-label">{{ t('room.retention.count_label') }}</span>
-          <n-input-number
-            :value="retention.count.value"
-            :min="1"
-            :max="100000"
-            :disabled="!canEdit"
-            @update:value="(v: number | null) => retention.setCount(v ?? 1)" />
-          <span class="field-hint">{{ t('room.retention.count_hint') }}</span>
-        </div>
+          <div v-if="retention.mode.value === 'by_days'" class="retention-field">
+            <span class="field-label">{{ t('room.retention.days_label') }}</span>
+            <n-input-number
+              :value="retention.days.value"
+              :min="1"
+              :max="3650"
+              :disabled="!canEdit"
+              @update:value="(v: number | null) => retention.setDays(v ?? 1)" />
+            <span class="field-hint">{{ t('room.retention.days_hint') }}</span>
+          </div>
 
-        <div v-if="!canEdit" class="read-only-hint">{{ t('room.retention.read_only_hint') }}</div>
+          <div v-if="retention.mode.value === 'by_count'" class="retention-field">
+            <span class="field-label">{{ t('room.retention.count_label') }}</span>
+            <n-input-number
+              :value="retention.count.value"
+              :min="1"
+              :max="100000"
+              :disabled="!canEdit"
+              @update:value="(v: number | null) => retention.setCount(v ?? 1)" />
+            <span class="field-hint">{{ t('room.retention.count_hint') }}</span>
+          </div>
 
-        <n-button
-          type="primary"
-          size="small"
-          :loading="retention.isSaving.value"
-          :disabled="!canEdit || !retention.isConfigValid.value"
-          data-testid="retention-save-btn"
-          @click="handleSave">
-          {{ t('room.retention.save') }}
-        </n-button>
+          <div v-if="!canEdit" class="read-only-hint">{{ t('room.retention.read_only_hint') }}</div>
+
+          <n-button
+            type="primary"
+            size="small"
+            :loading="retention.isSaving.value"
+            :disabled="!canEdit || !retention.isConfigValid.value"
+            data-testid="retention-save-btn"
+            @click="handleSave">
+            {{ t('room.retention.save') }}
+          </n-button>
+        </template>
       </n-spin>
     </n-card>
   </div>
@@ -76,6 +85,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useRoomRetention } from '@/composables/room/useRoomRetention'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
@@ -102,13 +112,16 @@ const retention = useRoomRetention({
   }
 })
 
-onMounted(async () => {
-  try {
-    await retention.loadPolicy(props.roomId)
-  } catch {
+onMounted(() => {
+  loadPolicy()
+})
+
+async function loadPolicy(): Promise<void> {
+  await retention.loadPolicy(props.roomId)
+  if (retention.loadFailed.value) {
     showFeedback(t('room.retention.load_failed'), 'error')
   }
-})
+}
 
 function handleModeChange(mode: RetentionMode): void {
   retention.setMode(mode)

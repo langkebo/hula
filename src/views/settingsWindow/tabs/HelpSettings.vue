@@ -9,7 +9,9 @@
         <div class="app-info">
           <div class="app-name">Tjg</div>
           <div class="app-version">{{ t('setting.help_about.version') }} {{ appVersion }}</div>
-          <div class="sdk-version">{{ t('setting.help_about.matrix_sdk_version') }} v{{ sdkVersion }}</div>
+          <div class="sdk-version">
+            {{ t('setting.help_about.matrix_sdk_version') }} {{ sdkVersion ? `v${sdkVersion}` : '-' }}
+          </div>
         </div>
       </div>
     </div>
@@ -47,24 +49,9 @@
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.help_about.links') }}</h3>
       <div class="link-list">
-        <div v-clickable class="link-item" @click="openLink('https://matrix.org')">
-          <Icon icon="mdi:web" :width="20" />
-          <span>{{ t('setting.help_about.matrix_website') }}</span>
-          <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
-        </div>
-        <div v-clickable class="link-item" @click="openLink('https://spec.matrix.org')">
-          <Icon icon="mdi:book-open-variant" :width="20" />
-          <span>{{ t('setting.help_about.matrix_spec') }}</span>
-          <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
-        </div>
-        <div v-clickable class="link-item" @click="openLink('https://github.com/nichuanfang/nichuanfang.github.io')">
-          <Icon icon="mdi:github" :width="20" />
-          <span>{{ t('setting.help_about.project_home') }}</span>
-          <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
-        </div>
-        <div v-clickable class="link-item" @click="openLink('https://element-hq.github.io/synapse/latest/')">
-          <Icon icon="mdi:server" :width="20" />
-          <span>{{ t('setting.help_about.synapse_docs') }}</span>
+        <div v-for="link in links" :key="link.url" v-clickable class="link-item" @click="openLink(link.url)">
+          <Icon :icon="link.icon" :width="20" />
+          <span>{{ t(link.label) }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
       </div>
@@ -111,7 +98,7 @@
         </div>
         <div class="tech-item">
           <span class="tech-label">{{ t('setting.help_about.vue_version') }}</span>
-          <span class="tech-value">{{ vueVersion }}</span>
+          <span class="tech-value">{{ vueVersion || '-' }}</span>
         </div>
       </div>
     </div>
@@ -147,13 +134,25 @@ const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const { isDesktop: isDesktopPlatform } = usePlatform()
 
-const appVersion = ref('1.0.0')
-const sdkVersion = ref('37.0.0')
-const vueVersion = ref('3.5.0')
+// 读取失败时保持「未知」，不得回落到伪造版本号
+const appVersion = ref('-')
+const sdkVersion = ref('')
+const vueVersion = ref('')
 const tauriVersion = ref('-')
 const platform = ref('-')
 const checkingUpdate = ref(false)
 const updateInfo = ref<{ hasUpdate: boolean; latestVersion: string } | null>(null)
+
+const links = [
+  { url: 'https://matrix.org', icon: 'mdi:web', label: 'setting.help_about.matrix_website' },
+  { url: 'https://spec.matrix.org', icon: 'mdi:book-open-variant', label: 'setting.help_about.matrix_spec' },
+  {
+    url: 'https://github.com/nichuanfang/nichuanfang.github.io',
+    icon: 'mdi:github',
+    label: 'setting.help_about.project_home'
+  },
+  { url: 'https://element-hq.github.io/synapse/latest/', icon: 'mdi:server', label: 'setting.help_about.synapse_docs' }
+] as const
 
 onMounted(async () => {
   await loadVersionInfo()
@@ -167,15 +166,15 @@ async function loadVersionInfo() {
       try {
         const { getVersion } = await import('@tauri-apps/api/app')
         appVersion.value = await getVersion()
-      } catch {
-        appVersion.value = '1.0.0'
+      } catch (error) {
+        logger.warn('Failed to read app version:', error)
       }
 
       try {
         const { getTauriVersion } = await import('@tauri-apps/api/app')
         tauriVersion.value = await getTauriVersion()
-      } catch {
-        tauriVersion.value = '2.x'
+      } catch (error) {
+        logger.warn('Failed to read tauri version:', error)
       }
     } else {
       tauriVersion.value = '-'
@@ -194,8 +193,9 @@ async function loadVersionInfo() {
       if (pkg.dependencies?.['vue']) {
         vueVersion.value = pkg.dependencies['vue'].replace('^', '')
       }
-    } catch {
-      // package.json 读取失败时保留默认版本号，不视为错误
+    } catch (error) {
+      // package.json 读取失败时保留「未知」，不回落到伪造版本号
+      logger.warn('Failed to read package.json versions:', error)
     }
   } catch (error) {
     logger.error('Failed to load version info:', error)

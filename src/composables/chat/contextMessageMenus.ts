@@ -1,54 +1,21 @@
 import { computed, ref } from 'vue'
-import type { useI18n } from 'vue-i18n'
 import { getSelectedText } from '@/composables/chat/selectionUtils'
-import type { useChatCopy } from '@/composables/chat/useChatCopy'
-import type { useChatFileDownload } from '@/composables/chat/useChatFileDownload'
-import type { useGroupRoleGuard } from '@/composables/chat/useGroupRoleGuard'
-import type { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
-import type { useDownload } from '@/composables/common/useDownload'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, MsgEnum } from '@/enums'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import type { RightMouseMessageItem } from '@/services/types.ts'
-import type { MessageType, useChatStore } from '@/stores/domains/chat/chat'
-import type { useEmojiStore } from '@/stores/domains/chat/emoji'
-import type { useSettingStore } from '@/stores/domains/settings/setting'
-import type { useUserStore } from '@/stores/domains/user/user'
-import type { useGlobalStore } from '@/stores/domains/widget/global'
-import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
+import type { MessageType } from '@/stores/domains/chat/chat'
+import { saveFileAttachmentAs, saveTextFileAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
+import { buildExportFileName, buildMessageHtml } from '@/utils/messageHtmlExport'
 import { isMac } from '@/utils/PlatformConstants'
-import type { ContextMenuHelpers } from './contextMenuHelpers'
 import { deleteLocalMessage, isLocalOrFailedMessage } from './contextMessageLocalActions'
+import type { MessageMenuDeps } from './contextMessageMenuTypes'
 
 const logger = createLogger('ChatContextMenus')
-
-/** 消息菜单列表依赖（通用 / 消息 / 历史模式） */
-export type MessageMenuDeps = {
-  t: ReturnType<typeof useI18n>['t']
-  showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
-  /** 平台事实（`usePlatform.isDesktop()` 取一次）：桌面专属项在构建期就不输出，移动端不渲染 */
-  isDesktop: boolean
-  /** 历史记录模式：specialMenuList 输出复制/转发/另存为，正常模式只输出删除 */
-  isHistoryMode: boolean
-  /** 历史模式下禁用选择/转发动作（多窗口场景） */
-  disableHistoryActions: boolean
-  downloadFile: ReturnType<typeof useDownload>['downloadFile']
-  fileDownload: ReturnType<typeof useChatFileDownload>
-  handleCopy: ReturnType<typeof useChatCopy>['handleCopy']
-  /** 打开删除确认弹窗（由 useMsgDeleteConfirm 提供，正常模式 specialMenuList 的唯一动作） */
-  openDeleteConfirm: (item: MessageType) => void
-  helpers: ContextMenuHelpers
-  chatStore: ReturnType<typeof useChatStore>
-  emojiStore: ReturnType<typeof useEmojiStore>
-  userStore: ReturnType<typeof useUserStore>
-  globalStore: ReturnType<typeof useGlobalStore>
-  settingStore: ReturnType<typeof useSettingStore>
-  groupRoleGuard: ReturnType<typeof useGroupRoleGuard>
-}
 
 /** 通用菜单 + 消息菜单 + 历史模式菜单 */
 export const createMessageMenus = (deps: MessageMenuDeps) => {
@@ -372,6 +339,31 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
             },
             // 仅带附件的消息有可复制的地址
             visible: (item: MessageType) => Boolean(item.message.body?.url)
+          },
+          {
+            label: () => t('menu.export_message_html'),
+            icon: 'download',
+            click: async (item: MessageType) => {
+              // 前端本地生成 HTML：后端 `convert` 只做事件视图投影，不接受输出格式（见账本 ROOM-03 说明）
+              const content = item.message.body?.content ?? ''
+              if (!content) {
+                showFeedback(t('menu.export_message_html_empty'), 'warning')
+                return
+              }
+              await saveTextFileAs({
+                content: buildMessageHtml({
+                  sender: item.fromUser?.username || item.fromUser?.uid || '',
+                  timestamp: item.message.sendTime,
+                  content
+                }),
+                defaultFileName: buildExportFileName(item.message.id, item.message.sendTime),
+                filters: [{ name: 'HTML', extensions: ['html'] }],
+                successMessage: t('menu.export_message_html_success'),
+                errorMessage: t('menu.export_message_html_failed')
+              })
+            },
+            // 仅纯文本消息可导出（媒体/系统消息没有可读正文）
+            visible: (item: MessageType) => item.message.type === MsgEnum.TEXT && Boolean(item.message.body?.content)
           }
         ]
       }

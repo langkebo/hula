@@ -23,10 +23,13 @@
     </div>
     <div class="mx-15px border-b border-[--tjg-border-default]"></div>
     <!-- 公告内容 -->
-    <div v-if="isGroup" v-clickable class="flex flex-col text-14px gap-10px p-15px" @click="goToNotice">
+    <div v-if="isGroup" v-clickable class="flex flex-col text-14px gap-10px p-15px" @click="handleNoticeClick">
       <div>{{ t('mobile_chat_setting.group_notice.title') }}</div>
       <div class="text-[--tjg-text-secondary] line-clamp-2 text-12px line-height-20px">
-        {{ announcements.length > 0 ? announcements[0]?.content : '' }}
+        <span v-if="announcementsError" class="text-[--tjg-color-danger-500]" data-testid="group-notice-error">
+          {{ t('mobile_chat.notice.fetch_failed') }}
+        </span>
+        <template v-else>{{ announcements.length > 0 ? announcements[0]?.content : '' }}</template>
       </div>
     </div>
 
@@ -36,7 +39,17 @@
     <div class="flex justify-between p-15px items-center">
       <div class="text-14px">{{ t('mobile_chat_setting.group_name') }}</div>
       <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
+        <button
+          v-if="groupInfoError"
+          type="button"
+          class="flex items-center gap-6px"
+          data-testid="group-info-error"
+          @click="emit('retryGroupInfo')">
+          <span class="text-[--tjg-color-danger-500]">{{ t('common.load_failed') }}</span>
+          <span class="text-[--tjg-color-primary-500]">{{ t('common.retry') }}</span>
+        </button>
         <van-field
+          v-else
           v-model="nameValue"
           :border="false"
           input-align="right"
@@ -109,6 +122,15 @@ const props = defineProps<{
   groupInfo: MatrixGroupInfo | null
   announcements: Array<{ content?: string }>
   initialRemark: string
+  /** 公告读取失败：展示错误与重试入口，不把失败当成「暂无公告」 */
+  announcementsError?: boolean
+  /** 群资料读取失败：群名不可编辑，展示错误与重试入口 */
+  groupInfoError?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'retryAnnouncements'): void
+  (e: 'retryGroupInfo'): void
 }>()
 
 const logger = createLogger('ChatSettingRoomInfo')
@@ -210,6 +232,15 @@ const goToNotice = () => {
       roomId: globalStore.currentSessionRoomId
     }
   })
+}
+
+/** 公告读取失败时点击整行即重试，避免带着空列表跳到公告页 */
+const handleNoticeClick = () => {
+  if (props.announcementsError) {
+    emit('retryAnnouncements')
+    return
+  }
+  goToNotice()
 }
 
 const handleInfoUpdate = async () => {

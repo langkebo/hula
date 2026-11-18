@@ -85,12 +85,26 @@ describe('RoomMetadataPanel — P2-3 房间元数据面板', () => {
     expect(wrapper.find('.n-empty').exists()).toBe(true)
   })
 
-  it('加载失败时降级显示空状态', async () => {
+  it('加载失败时显示错误态而不是空状态', async () => {
     getRoomMetadataMock.mockRejectedValue(new Error('boom'))
 
     const wrapper = mountPanel()
     await flushPromises()
 
-    expect(wrapper.find('.n-empty').exists()).toBe(true)
+    expect(wrapper.find('[data-test="room-metadata-error"]').exists()).toBe(true)
+    expect(wrapper.find('.n-empty').exists()).toBe(false)
+  })
+
+  it('重试成功后恢复元数据列表', async () => {
+    getRoomMetadataMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(sampleMetadata)
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="room-metadata-error"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('11')
   })
 })

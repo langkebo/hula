@@ -31,7 +31,14 @@
 
         <!-- 好友列表 -->
         <div class="flex-1 min-h-0 overflow-y-auto px-16px mt-10px">
-          <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
+          <MobileAsyncState
+            v-if="memberListState !== 'ready'"
+            :state="memberListState"
+            test-id="invite-member-list"
+            :error-text="t('mobile_chat_setting.member_list_load_failed')"
+            min-height="45vh"
+            @retry="loadGroupMembers" />
+          <van-checkbox-group v-else v-model="selectedList" class="flex flex-col gap-2">
             <div
               v-for="item in filteredContacts"
               :key="item.userId"
@@ -86,7 +93,11 @@
       <!-- 底部操作栏 -->
       <div class="px-16px py-10px border-t border-[--tjg-border-default] flex justify-between items-center">
         <span class="text-14px">{{ t('mobile_chat_setting.selected_count', { count: selectedList.length }) }}</span>
-        <van-button type="primary" :disabled="selectedList.length === 0" :loading="isLoading" @click="handleInvite">
+        <van-button
+          type="primary"
+          :disabled="selectedList.length === 0 || memberListState !== 'ready'"
+          :loading="isLoading"
+          @click="handleInvite">
           {{ t('mobile_chat_setting.invite_button') }}
         </van-button>
       </div>
@@ -98,6 +109,7 @@
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import router from '@/router'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
@@ -126,6 +138,7 @@ const contactDisplayName = (contact: MatrixContact) =>
 const keyword = ref('')
 const selectedList = ref<string[]>([])
 const isLoading = ref(false)
+const memberListState = ref<'loading' | 'error' | 'ready'>('loading')
 
 const allContacts = computed(() => {
   return contactStore.contactsList.filter((item) => {
@@ -176,16 +189,26 @@ const handleInvite = async () => {
   }
 }
 
-onMounted(async () => {
+onMounted(loadGroupMembers)
+
+/** 群成员读取失败时不能把「空成员列表」当成事实，否则已在群内的联系人会被误列 */
+async function loadGroupMembers() {
+  const roomId = globalStore.currentSessionRoomId
+  if (!roomId) {
+    memberListState.value = 'ready'
+    return
+  }
+
+  memberListState.value = 'loading'
   try {
     // 只需要当前群成员列表来排除已在群内的联系人，候选人资料取自 contactsList
-    if (globalStore.currentSessionRoomId) {
-      await groupStore.getGroupUserList(globalStore.currentSessionRoomId)
-    }
+    await groupStore.getGroupUserList(roomId)
+    memberListState.value = 'ready'
   } catch (error) {
     logger.error('Failed to load group members:', error)
+    memberListState.value = 'error'
   }
-})
+}
 </script>
 
 <style scoped lang="scss">

@@ -138,9 +138,28 @@ describe('SessionSettings', () => {
 
   it('shows error when loading devices fails', async () => {
     getDevicesMock.mockRejectedValue(new Error('fail'))
-    mount(SessionSettings)
+    const wrapper = mount(SessionSettings)
     await vi.dynamicImportSettled()
     expect(messageErrorMock).toHaveBeenCalledWith('获取设备列表失败')
+    expect(wrapper.find('[data-test="session-devices-error"]').exists()).toBe(true)
+    // 读失败不能被渲染成「没有其他设备」的假空态
+    expect(wrapper.find('.n-empty').exists()).toBe(false)
+  })
+
+  it('recovers the device list after retrying a failed load', async () => {
+    getDevicesMock.mockRejectedValueOnce(new Error('fail')).mockResolvedValueOnce([
+      { deviceId: 'CURRENT_DEVICE', displayName: 'Current' },
+      { deviceId: 'OTHER_DEVICE', displayName: 'Other' }
+    ])
+    const wrapper = mount(SessionSettings)
+    await vi.dynamicImportSettled()
+    expect(wrapper.find('[data-test="session-devices-error"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="session-devices-error"] [data-testid="error-retry"]').trigger('click')
+    await vi.dynamicImportSettled()
+
+    expect(wrapper.find('[data-test="session-devices-error"]').exists()).toBe(false)
+    expect(getVm(wrapper).otherDevices.map((device) => device.deviceId)).toEqual(['OTHER_DEVICE'])
   })
 
   it('identifies current device', async () => {

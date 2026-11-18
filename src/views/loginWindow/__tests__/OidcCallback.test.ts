@@ -6,6 +6,7 @@ const {
   showFeedbackMock,
   handleCallbackMock,
   exchangeOidcForMatrixTokenMock,
+  getLastCallbackFailureReasonMock,
   restoreWithAccessTokenMock,
   applyDesktopLoginStateMock,
   loggerErrorMock,
@@ -17,6 +18,7 @@ const {
   showFeedbackMock: vi.fn(),
   handleCallbackMock: vi.fn(),
   exchangeOidcForMatrixTokenMock: vi.fn(),
+  getLastCallbackFailureReasonMock: vi.fn(),
   restoreWithAccessTokenMock: vi.fn(),
   applyDesktopLoginStateMock: vi.fn(),
   loggerErrorMock: vi.fn(),
@@ -60,7 +62,9 @@ vi.mock('vue-i18n', () => ({
         ({
           'login.oidc.processing': '正在处理登录',
           'login.oidc.success_title': '登录成功',
-          'login.oidc.login_success': 'OIDC 登录成功'
+          'login.oidc.login_success': 'OIDC 登录成功',
+          'login.oidc.unsupported_title': '服务端未启用 OIDC 登录',
+          'login.oidc.unsupported_message': '当前服务端未提供 OIDC 认证能力'
         }) as Record<string, string>
       )[key] || key
   })
@@ -81,6 +85,7 @@ vi.mock('@/services/matrix/auth/MatrixOidcService', () => ({
   matrixOidcService: {
     handleCallback: handleCallbackMock,
     exchangeOidcForMatrixToken: exchangeOidcForMatrixTokenMock,
+    getLastCallbackFailureReason: getLastCallbackFailureReasonMock,
     getHomeserverUrl: vi.fn(() => 'https://hs.example.com')
   }
 }))
@@ -129,6 +134,7 @@ describe('OidcCallback', () => {
     })
     restoreWithAccessTokenMock.mockResolvedValue(undefined)
     applyDesktopLoginStateMock.mockResolvedValue(undefined)
+    getLastCallbackFailureReasonMock.mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -162,5 +168,17 @@ describe('OidcCallback', () => {
     vi.advanceTimersByTime(1500)
 
     expect(routerPushMock).toHaveBeenCalledWith('/home')
+  })
+
+  it('shows unsupported state without retry when the server has no OIDC', async () => {
+    handleCallbackMock.mockResolvedValue(null)
+    getLastCallbackFailureReasonMock.mockReturnValue('unsupported')
+
+    const wrapper = mount(OidcCallback)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('服务端未启用 OIDC 登录')
+    expect(wrapper.find('[data-testid="error-retry"]').exists()).toBe(false)
+    expect(exchangeOidcForMatrixTokenMock).not.toHaveBeenCalled()
   })
 })

@@ -8,7 +8,12 @@
       <div ref="scrollContainerRef" class="flex flex-col overflow-auto h-full" @scroll.passive="handleScroll">
         <div class="flex flex-col flex-1 gap-15px py-15px px-20px">
           <!-- 空态：群里没有公告时给出明确出路，避免只剩一块空白 -->
-          <MobileAsyncState v-if="isEmptyList" state="empty" min-height="240px">
+          <MobileAsyncState
+            v-if="listState !== 'ready'"
+            :state="listState"
+            test-id="notice-list"
+            min-height="240px"
+            @retry="loadAnnouncementList">
             <template #empty>
               <div class="flex flex-col items-center justify-center gap-12px py-24px text-[--tjg-text-secondary]">
                 <svg
@@ -129,9 +134,22 @@ const scrollContainerRef = ref<HTMLElement | null>(null)
  */
 const READ_STORAGE_PREFIX = 'hula.mobile.notice.read.'
 const listLoaded = ref(false)
+const listLoading = ref(false)
+const listLoadFailed = ref(false)
 
 /** 列表已加载且无公告：展示统一空态 */
 const isEmptyList = computed(() => listLoaded.value && announList.value.length === 0)
+
+/**
+ * 四态：首次加载时给 loading；无缓存数据且失败时给 error + 重试；
+ * 有缓存数据时刷新失败仍保留旧列表，不用整屏错误覆盖可用内容。
+ */
+const listState = computed<'loading' | 'error' | 'empty' | 'ready'>(() => {
+  if (listLoading.value && announList.value.length === 0) return 'loading'
+  if (listLoadFailed.value && announList.value.length === 0) return 'error'
+  if (isEmptyList.value) return 'empty'
+  return 'ready'
+})
 const readIds = ref<Set<string>>(new Set())
 
 const resolveScrollKey = () => String(globalStore.currentSessionRoomId || route.params.roomId || '')
@@ -200,10 +218,13 @@ const canAddAnnouncement = computed(() => {
 })
 
 const loadAnnouncementList = async () => {
+  listLoading.value = true
+  listLoadFailed.value = false
   try {
     const roomId = globalStore.currentSessionRoomId
     if (!roomId) {
       logger.error('No roomId for current session')
+      listLoadFailed.value = true
       return
     }
 
@@ -214,7 +235,9 @@ const loadAnnouncementList = async () => {
     }
   } catch (error) {
     logger.error('Failed to load group announcements:', error)
+    listLoadFailed.value = true
   } finally {
+    listLoading.value = false
     listLoaded.value = true
   }
 }

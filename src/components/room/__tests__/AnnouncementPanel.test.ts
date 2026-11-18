@@ -221,4 +221,35 @@ describe('AnnouncementPanel', () => {
     expect(loggerErrorMock).toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('announcement.toast.createFail', 'error')
   })
+
+  it('加载失败时显示错误态而不是空状态', async () => {
+    getGroupAnnouncementListMock.mockRejectedValueOnce(new Error('load failed'))
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="announcement-error"]').exists()).toBe(true)
+    expect(wrapper.find('.empty-state').exists()).toBe(false)
+  })
+
+  it('重试成功后恢复公告列表', async () => {
+    getGroupAnnouncementListMock.mockRejectedValueOnce(new Error('load failed')).mockResolvedValueOnce({
+      records: [
+        {
+          id: 1,
+          author: '@admin:example.com',
+          timestamp: 1700000000000,
+          top: false,
+          content: '恢复的公告'
+        }
+      ]
+    })
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="announcement-error"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('恢复的公告')
+  })
 })

@@ -27,6 +27,18 @@ describe('mobile tab shell', () => {
   })
 })
 
+describe('mobile keyboard inset', () => {
+  it('键盘弹出时不叠加底部安全区（键盘已覆盖 Home Indicator）', () => {
+    expect(read('src/mobile/components/MobileLayout.vue')).toContain('v-if="safeAreaBottom && keyboardInset === 0"')
+  })
+
+  it('只有 meta.bottomInput 页面按键盘高度整体抬升（X-5）', () => {
+    const layout = read('src/mobile/components/MobileLayout.vue')
+    expect(layout).toContain('route.meta.bottomInput ? keyboardInset.value : 0')
+    expect(layout).toMatch(/paddingBottom:\s*bottomInputInset\.value\s*\?/)
+  })
+})
+
 describe('keep-alive 命名对齐', () => {
   it('keep-alive 白名单命中真实组件名', () => {
     const layout = read('src/mobile/layout/chat-room/ChatRoomLayout.vue')

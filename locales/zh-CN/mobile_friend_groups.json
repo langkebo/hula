@@ -4,6 +4,7 @@
   "empty": "还没有好友分组，创建一个来整理你的好友",
   "member_count": "{count} 位好友",
   "no_member": "该分组暂无好友",
+  "members_load_failed": "获取分组好友失败",
   "new_placeholder": "输入新分组名称",
   "create": "创建分组",
   "create_success": "分组已创建",

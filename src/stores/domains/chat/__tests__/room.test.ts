@@ -76,7 +76,9 @@ const {
     pushMsg: vi.fn(),
     updateMsg: vi.fn(),
     checkMsgExist: vi.fn(),
-    clearRoomMessages: vi.fn()
+    clearRoomMessages: vi.fn(),
+    markLiveFailure: vi.fn(),
+    clearLiveFailure: vi.fn()
   },
   mockLocationStore: {
     restoreActiveBeacons: vi.fn()

@@ -30,6 +30,9 @@
       <n-button size="small" type="error" :loading="loggingOutAll" @click="handleLogoutAll">
         {{ t('admin.users.logoutUserAll') }}
       </n-button>
+      <n-button size="small" type="warning" :loading="samlLoggingOut" @click="handleSamlLogout">
+        {{ t('admin.users.samlLogout') }}
+      </n-button>
       <n-button size="small" type="info" :loading="impersonating" @click="handleLoginAs">
         {{ t('admin.users.loginUserAs') }}
       </n-button>
@@ -79,7 +82,7 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { handleAdminError } = useAdminErrorHandler()
 const dialog = useDialog()
-const { selectedUser, evicting, loggingOutAll, impersonating, impersonationSession } = props.admin
+const { selectedUser, evicting, loggingOutAll, samlLoggingOut, impersonating, impersonationSession } = props.admin
 
 async function handleInvalidateSession() {
   const user = selectedUser.value
@@ -125,6 +128,25 @@ function handleLogoutAll() {
         showFeedback(t('admin.users.logoutAllSuccess'), 'success')
       } catch (err) {
         if (handleAdminError(err)) showFeedback(t('admin.users.logoutAllFailed'), 'error')
+      }
+    }
+  })
+}
+
+function handleSamlLogout() {
+  const user = selectedUser.value
+  if (!user) return
+  dialog.warning({
+    title: t('admin.users.samlLogout'),
+    content: t('admin.users.samlLogoutConfirm', { userId: user.userId }),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await props.admin.samlLogout(user.userId)
+        showFeedback(t('admin.users.samlLogoutSuccess'), 'success')
+      } catch (err) {
+        if (handleAdminError(err)) showFeedback(t('admin.users.samlLogoutFailed'), 'error')
       }
     }
   })

@@ -20,7 +20,8 @@ export type Messages = {
     "search_placeholder": "搜索公开空间",
     "search": "搜索",
     "loading": "加载中…",
-    "children_empty": "该空间暂无子空间"
+    "children_empty": "该空间暂无子空间",
+    "children_load_failed": "获取子空间失败"
   },
   "create": "创建空间",
   "search_sessions_placeholder": "搜索会话",
@@ -116,8 +117,6 @@ export type Messages = {
   "hierarchy_title": "空间层级",
   "hierarchy_hint": "查看此空间的子空间层级结构",
   "view_hierarchy": "查看层级",
-  "join_space": "加入空间",
-  "join_space_success": "加入空间成功",
   "join_space_failed": "加入空间失败",
   "add_room_title": "添加子房间",
   "add_room_placeholder": "请输入房间 ID，如 !room:example.com",
@@ -205,6 +204,7 @@ export type KeyPaths =
   | "space.discover.search"
   | "space.discover.loading"
   | "space.discover.children_empty"
+  | "space.discover.children_load_failed"
   | "space.create"
   | "space.search_sessions_placeholder"
   | "space.filter_all"
@@ -299,8 +299,6 @@ export type KeyPaths =
   | "space.hierarchy_title"
   | "space.hierarchy_hint"
   | "space.view_hierarchy"
-  | "space.join_space"
-  | "space.join_space_success"
   | "space.join_space_failed"
   | "space.add_room_title"
   | "space.add_room_placeholder"

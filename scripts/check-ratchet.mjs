@@ -207,7 +207,8 @@ const INLINE_STYLE_ALLOWLIST = new Map([
 const HARDCODED_COLOR_ALLOWLIST = new Map([
   ['src/styles/naiveTokenSource.ts', 9], // design-tokens.css TS 镜像（同步测试锁定）
   ['src/utils/Logger.ts', 5], // console %c 日志级别色
-  ['src/utils/Console.ts', 3] // console %c 品牌色
+  ['src/utils/Console.ts', 3], // console %c 品牌色
+  ['src/utils/messageHtmlExport.ts', 4] // 导出为独立 HTML 文件，脱离应用样式表后无法解析 CSS 变量
 ])
 
 /**

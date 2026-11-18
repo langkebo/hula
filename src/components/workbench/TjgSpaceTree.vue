@@ -2,6 +2,10 @@
   <div class="tjg-space-tree">
     <div v-if="isInitialLoading" class="tjg-space-tree__loading"><n-spin size="small" /></div>
 
+    <div v-else-if="loadFailed" data-test="space-tree-error">
+      <ErrorState compact :title="t('common.load_failed')" :retry-text="t('common.retry')" @retry="retryLoad" />
+    </div>
+
     <EmptyState v-else-if="isEmpty" compact :description="t('space.empty_tree')" />
 
     <div v-else class="tjg-space-tree__list" :role="treeRole" :aria-label="treeAriaLabel" @keydown="handleKeyDown">
@@ -75,174 +79,36 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { type SpaceInfo, useSpace } from '@/composables/space'
-import { createLogger } from '@/utils/Logger'
+import ErrorState from '@/components/common/ErrorState.vue'
+import type { SpaceInfo } from '@/composables/space'
+import { type TjgSpaceTreeProps, useTjgSpaceTree } from './useTjgSpaceTree'
 
-const props = defineProps<{
-  spaceId?: string
-  depth?: number
-  nested?: boolean
-  selectedSpaceId?: string | undefined
-  suggestedOnly?: boolean | undefined
-  loader?:
-    | ((options: {
-        spaceId: string
-        from?: string
-        limit?: number
-        maxDepth?: number
-        suggestedOnly?: boolean
-      }) => Promise<{ rooms: SpaceInfo[]; next_batch?: string }>)
-    | undefined
-}>()
+const props = defineProps<TjgSpaceTreeProps>()
 
 const emit = defineEmits<{
   select: [room: SpaceInfo]
 }>()
 
-const logger = createLogger('TjgSpaceTree')
 const { t } = useI18n()
-const { getHierarchy } = useSpace(() => props.spaceId!)
-const currentDepth = computed(() => props.depth ?? 0)
-const treeRole = computed(() => (props.nested ? 'group' : 'tree'))
-const treeAriaLabel = computed(() => (props.nested ? undefined : t('space.space_tree_label')))
 
-const rooms = ref<SpaceInfo[]>([])
-const loading = ref(false)
-
-/** 首屏加载中与空结果分离：已有子空间时刷新不遮挡列表 */
-const isInitialLoading = computed(() => loading.value && rooms.value.length === 0)
-const isEmpty = computed(() => rooms.value.length === 0)
-const loadingMore = ref(false)
-const nextBatch = ref<string | undefined>(undefined)
-const expandedIds = ref<Set<string>>(new Set())
-
-const fallbackAvatar = computed(() => '/logo.png')
-const loadHierarchy = async (options: {
-  spaceId: string
-  from?: string
-  limit?: number
-  maxDepth?: number
-  suggestedOnly?: boolean
-}): Promise<{ rooms: SpaceInfo[]; next_batch?: string | undefined }> => {
-  if (props.loader) {
-    return await props.loader(options)
-  }
-
-  const result = await getHierarchy(options)
-
-  return {
-    rooms: result.rooms as typeof result.rooms & SpaceInfo[],
-    next_batch: result.next_batch
-  }
-}
-
-const loadData = async (from?: string) => {
-  if (!props.spaceId) return
-
-  if (from) {
-    loadingMore.value = true
-  } else {
-    loading.value = true
-  }
-
-  try {
-    const result = await loadHierarchy({
-      spaceId: props.spaceId,
-      limit: 20,
-      ...(from !== undefined ? { from } : {}),
-      maxDepth: 1,
-      suggestedOnly: props.suggestedOnly
-    })
-
-    if (from) {
-      rooms.value = [...rooms.value, ...result.rooms]
-    } else {
-      rooms.value = result.rooms
-    }
-    nextBatch.value = result.next_batch
-  } catch (err) {
-    logger.warn('Failed to load space room list:', err)
-  } finally {
-    loading.value = false
-    loadingMore.value = false
-  }
-}
-
-const toggleExpand = (id: string) => {
-  if (expandedIds.value.has(id)) {
-    expandedIds.value.delete(id)
-  } else {
-    expandedIds.value.add(id)
-  }
-}
-
-const handleSelect = (room: SpaceInfo) => {
-  emit('select', room)
-}
-
-const loadMore = () => {
-  if (nextBatch.value) {
-    void loadData(nextBatch.value)
-  }
-}
-
-const handleKeyDown = (event: KeyboardEvent) => {
-  const target = event.target as HTMLElement
-  const currentItem = target.closest('[role="treeitem"]') as HTMLElement
-  if (!currentItem) return
-
-  switch (event.key) {
-    case 'ArrowUp': {
-      event.preventDefault()
-      const prev = currentItem.previousElementSibling as HTMLElement
-      if (prev?.focus) prev.focus()
-      break
-    }
-    case 'ArrowDown': {
-      event.preventDefault()
-      const next = currentItem.nextElementSibling as HTMLElement
-      if (next?.focus) next.focus()
-      break
-    }
-    case 'ArrowRight': {
-      event.preventDefault()
-      const roomId = currentItem.dataset.id
-      if (roomId && !expandedIds.value.has(roomId)) {
-        toggleExpand(roomId)
-      }
-      break
-    }
-    case 'ArrowLeft': {
-      event.preventDefault()
-      const roomId = currentItem.dataset.id
-      if (roomId && expandedIds.value.has(roomId)) {
-        toggleExpand(roomId)
-      }
-      break
-    }
-    case 'Enter':
-    case ' ': {
-      event.preventDefault()
-      const roomId = currentItem.dataset.id
-      const room = rooms.value.find((r) => r.spaceId === roomId)
-      if (room) handleSelect(room)
-      break
-    }
-  }
-}
-
-onMounted(() => void loadData())
-
-// 监听 spaceId 变化重新加载
-watch(
-  () => props.spaceId,
-  () => {
-    rooms.value = []
-    nextBatch.value = undefined
-    expandedIds.value.clear()
-    void loadData()
-  }
-)
+const {
+  rooms,
+  loadFailed,
+  isInitialLoading,
+  isEmpty,
+  loadingMore,
+  nextBatch,
+  expandedIds,
+  currentDepth,
+  treeRole,
+  treeAriaLabel,
+  fallbackAvatar,
+  retryLoad,
+  toggleExpand,
+  handleSelect,
+  loadMore,
+  handleKeyDown
+} = useTjgSpaceTree(props, emit)
 </script>
 
 <style scoped lang="scss">

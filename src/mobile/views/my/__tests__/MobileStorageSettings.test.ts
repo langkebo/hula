@@ -65,6 +65,18 @@ vi.mock('@/services/matrix/MatrixWorkerHost', () => ({
   }
 }))
 
+/**
+ * 服务端媒体配额走 `matrixMediaService`（R1：复用既有服务层）。
+ * 这里整体替换为可控假实现，避免测试真的去碰 MatrixClient。
+ */
+const mediaServiceMock = vi.hoisted(() => ({
+  checkQuota: vi.fn(),
+  getQuotaStats: vi.fn(),
+  getQuotaAlerts: vi.fn()
+}))
+
+vi.mock('@/services/matrix/media/MatrixMediaService', () => ({ matrixMediaService: mediaServiceMock }))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
@@ -76,8 +88,20 @@ vi.mock('@/mobile/components/chat-room/HeaderBar.vue', () => ({
 type MediaCacheKind = 'thumbnails' | 'emojis'
 type MediaCacheUsage = { bytes: number; files: number }
 
+interface ServerQuotaAlertFixture {
+  alert_id: string
+  alert_type: 'quota_warning' | 'quota_exceeded'
+  threshold_percent: number
+  current_usage_bytes: number
+  quota_limit_bytes: number
+  message: string
+  created_ts: number
+  is_read: boolean
+}
+
 interface Vm {
   loading: boolean
+  statsAvailable: boolean
   usage: number
   quota: number
   usagePercent: number
@@ -91,6 +115,15 @@ interface Vm {
   mediaCacheTextFor: (kind: MediaCacheKind) => string
   handleToggleAutoCache: (value: string | number | boolean) => void
   handleClearMedia: (kind: MediaCacheKind) => Promise<void>
+  serverQuotaState: 'loading' | 'available' | 'unavailable'
+  serverQuotaUsed: number
+  serverQuotaLimit: number
+  serverQuotaRemaining: number
+  serverQuotaMediaCount: number | null
+  serverQuotaAlerts: ServerQuotaAlertFixture[]
+  serverQuotaExceeded: boolean
+  loadServerQuota: () => Promise<void>
+  serverQuotaAlertMeta: (alert: ServerQuotaAlertFixture) => string
 }
 
 const mountPage = () => mount(MobileStorageSettings)
@@ -120,6 +153,17 @@ describe('MobileStorageSettings', () => {
       configurable: true,
       value: { estimate: vi.fn().mockResolvedValue({ usage: 2048, quota: 4096 }) }
     })
+    // 服务端配额默认成功：老用例不必关心这一块
+    mediaServiceMock.checkQuota.mockResolvedValue({
+      limit: 4096,
+      used: 1024,
+      remaining: 3072
+    })
+    mediaServiceMock.getQuotaStats.mockResolvedValue({
+      ok: true,
+      stats: { storageBytes: 1024, mediaCount: 7, limitBytes: 4096 }
+    })
+    mediaServiceMock.getQuotaAlerts.mockResolvedValue([])
   })
 
   it('挂载时加载浏览器存储用量（真实数据）', async () => {
@@ -152,27 +196,49 @@ describe('MobileStorageSettings', () => {
     expect(vmOf(wrapper).usagePercent).toBe(0)
   })
 
-  it('navigator.storage 不可用时不崩溃（降级为未知用量）', async () => {
+  it('navigator.storage 不可用时不崩溃，且标记用量不可用（不显示 0 B）', async () => {
     Object.defineProperty(navigator, 'storage', { configurable: true, value: undefined })
 
     const wrapper = mountPage()
     await flushPromises()
 
-    expect(vmOf(wrapper).usage).toBe(0)
+    expect(vmOf(wrapper).statsAvailable).toBe(false)
     expect(vmOf(wrapper).loading).toBe(false)
+    // 不可用时不能把 0 B / 0% 当作真实用量
+    expect(wrapper.html()).toContain('mobile_storage.stats_unavailable')
+    expect(wrapper.find('van-progress').exists()).toBe(false)
   })
 
-  it('estimate 抛错时只记日志，不让 onMounted 抛未捕获错误', async () => {
+  it('estimate 抛错时标记不可用，但媒体缓存统计仍照常加载', async () => {
     Object.defineProperty(navigator, 'storage', {
       configurable: true,
       value: { estimate: vi.fn().mockRejectedValue(new Error('boom')) }
     })
+    mockStatsByKind({ thumbnails: { bytes: 3084, files: 3 }, emojis: { bytes: 0, files: 0 } })
 
     const wrapper = mountPage()
     await flushPromises()
 
     expect(wrapper.exists()).toBe(true)
+    expect(vmOf(wrapper).statsAvailable).toBe(false)
     expect(vmOf(wrapper).loading).toBe(false)
+    expect(vmOf(wrapper).mediaStats.thumbnails).toEqual({ bytes: 3084, files: 3 })
+  })
+
+  it('重试后恢复可用状态并展示真实用量', async () => {
+    Object.defineProperty(navigator, 'storage', { configurable: true, value: undefined })
+    const wrapper = mountPage()
+    await flushPromises()
+    expect(vmOf(wrapper).statsAvailable).toBe(false)
+
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { estimate: vi.fn().mockResolvedValue({ usage: 2048, quota: 4096 }) }
+    })
+    await vmOf(wrapper).loadStats()
+
+    expect(vmOf(wrapper).statsAvailable).toBe(true)
+    expect(vmOf(wrapper).usageText).toBe('2 KB')
   })
 
   it('回归锁：页面不得再碰 worker 的 getStats / clearStores（假数据与假成功已删）', async () => {
@@ -276,5 +342,71 @@ describe('MobileStorageSettings', () => {
     expect(vi.mocked(showToast)).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'fail', message: 'mobile_storage.clear_cache_failed' })
     )
+  })
+
+  it('展示服务端媒体配额（与浏览器存储用量分开）', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const vm = vmOf(wrapper)
+    expect(vm.serverQuotaState).toBe('available')
+    expect(vm.serverQuotaUsed).toBe(1024)
+    expect(vm.serverQuotaLimit).toBe(4096)
+    expect(vm.serverQuotaRemaining).toBe(3072)
+    expect(vm.serverQuotaMediaCount).toBe(7)
+    expect(wrapper.html()).toContain('mobile_storage.server_quota_section')
+    expect(wrapper.html()).toContain('mobile_storage.server_quota_no_alerts')
+  })
+
+  it('配额读取失败时整块标记不可用，不用 0 B 冒充用量；重试后恢复', async () => {
+    mediaServiceMock.checkQuota.mockResolvedValueOnce(null)
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(vmOf(wrapper).serverQuotaState).toBe('unavailable')
+    expect(wrapper.html()).toContain('mobile_storage.server_quota_unavailable')
+
+    await vmOf(wrapper).loadServerQuota()
+
+    expect(vmOf(wrapper).serverQuotaState).toBe('available')
+    expect(vmOf(wrapper).serverQuotaUsed).toBe(1024)
+  })
+
+  it('服务端无配额统计接口时媒体数显示占位，不谎报 0 个', async () => {
+    mediaServiceMock.getQuotaStats.mockResolvedValue({ ok: false, reason: 'unsupported' })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(vmOf(wrapper).serverQuotaMediaCount).toBeNull()
+    expect(wrapper.html()).toContain('mobile_storage.server_quota_partial_desc')
+  })
+
+  it('剩余为 0 时标记配额用尽，未读告警保留原文与类型/阈值副行', async () => {
+    mediaServiceMock.checkQuota.mockResolvedValue({ limit: 4096, used: 4096, remaining: 0 })
+    mediaServiceMock.getQuotaAlerts.mockResolvedValue([
+      {
+        alert_id: 'a-1',
+        alert_type: 'quota_exceeded',
+        threshold_percent: 100,
+        current_usage_bytes: 4096,
+        quota_limit_bytes: 4096,
+        message: 'quota exceeded',
+        created_ts: 1,
+        is_read: false
+      }
+    ])
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const vm = vmOf(wrapper)
+    expect(vm.serverQuotaExceeded).toBe(true)
+    expect(wrapper.find('[data-testid="server-quota-exceeded"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="server-quota-alert"]')).toHaveLength(1)
+    // 未读标记在具名插槽里；van-cell 在本套件是未注册组件（只渲染属性），因此断言数据侧
+    expect(vm.serverQuotaAlerts[0].is_read).toBe(false)
+    expect(vm.serverQuotaAlertMeta(vm.serverQuotaAlerts[0])).toBe('mobile_storage.server_quota_alert_meta')
   })
 })

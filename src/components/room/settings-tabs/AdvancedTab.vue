@@ -34,6 +34,8 @@
 
     <RoomServiceTypesSection :room-id="roomId" />
 
+    <RoomEventDiagnosticsSection :room-id="roomId" />
+
     <section class="rs-tab__section rs-tab__danger">
       <h4 class="rs-tab__section-title rs-tab__danger-title">
         {{ t('room.settings_drawer.section_danger_zone') }}
@@ -81,6 +83,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
+import RoomEventDiagnosticsSection from './RoomEventDiagnosticsSection.vue'
 import RoomServiceTypesSection from './RoomServiceTypesSection.vue'
 
 const props = defineProps<{

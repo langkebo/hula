@@ -7,8 +7,8 @@
       <img src="/tjg.png" class="w-100px h-40px drop-shadow-xl" alt="Tjg" data-tauri-drag-region />
     </n-flex>
 
-    <!-- 登录模式切换 -->
-    <n-flex justify="center" class="mt-12px" data-tauri-drag-region>
+    <!-- 登录模式切换：服务端显式不支持 MSC4108 时不渲染「快速登录」入口 -->
+    <n-flex v-if="quickLoginSupported" justify="center" class="mt-12px" data-tauri-drag-region>
       <n-button-group size="small">
         <n-button :type="loginMode === 'quick' ? 'primary' : 'default'" @click="loginMode = 'quick'">
           {{ t('login.qr.mode.quick') }}
@@ -134,6 +134,7 @@ import {
   type NewDeviceLoginResult,
   type QrLoginStatus
 } from '@/services/matrix/auth/MatrixQrLoginSdkService'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { getEnhancedFingerprint } from '@/services/secure/fingerprint'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -149,6 +150,18 @@ const { t } = useTypedI18n()
 type LoadTextKey = 'loading' | 'refreshing' | 'scan_hint' | 'login' | 'retry' | 'auth_pending'
 type ScanStatusTextKey = 'success' | 'error' | 'auth' | 'expired' | 'fetch_failed' | 'generate_fail' | 'general_error'
 const loginMode = ref<'quick' | 'rendezvous'>('quick')
+/** 能力快照显式声明不支持 MSC4108 时收起快速登录；未知（未加载快照）保持原行为 */
+const { getCapabilityStatus } = useServerCapability()
+const quickLoginSupported = computed(() => getCapabilityStatus('qr-rendezvous') !== 'unsupported')
+watch(
+  quickLoginSupported,
+  (supported) => {
+    if (!supported && loginMode.value === 'quick') {
+      loginMode.value = 'rendezvous'
+    }
+  },
+  { immediate: true }
+)
 const showRendezvousManager = ref(false)
 const loadTextKey = ref<LoadTextKey>('loading')
 const loadText = computed(() => t(`login.qr.load_text.${loadTextKey.value}`))
@@ -338,7 +351,10 @@ onMounted(async () => {
   const clientId = await getEnhancedFingerprint()
   localStorage.setItem('clientId', clientId)
 
-  handleQRCodeLogin()
+  // 服务端显式不支持 MSC4108 时不发起二维码流程，直接走 Rendezvous 面板
+  if (quickLoginSupported.value) {
+    handleQRCodeLogin()
+  }
 })
 </script>
 

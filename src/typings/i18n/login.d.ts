@@ -70,6 +70,8 @@ export type Messages = {
     "missing_params": "缺少必要的登录参数 (code/state)",
     "token_exchange_failed": "OIDC 令牌交换失败",
     "matrix_token_failed": "获取 Matrix 访问令牌失败",
+    "unsupported_title": "服务端未启用 OIDC 登录",
+    "unsupported_message": "当前服务端未提供 OIDC 认证能力，请使用账号密码或二维码登录。",
     "unknown_error": "发生未知错误"
   },
   "status": {
@@ -319,6 +321,8 @@ export type KeyPaths =
   | "login.oidc.missing_params"
   | "login.oidc.token_exchange_failed"
   | "login.oidc.matrix_token_failed"
+  | "login.oidc.unsupported_title"
+  | "login.oidc.unsupported_message"
   | "login.oidc.unknown_error"
   | "login.status.logging_in"
   | "login.status.success_redirect"

@@ -95,6 +95,7 @@ vi.mock('@/composables/space', () => ({
   useSpaces: () => ({
     spaces: computed(() => spacesRef.value),
     loading: ref(false),
+    error: computed(() => null),
     load: loadSpacesMock
   })
 }))

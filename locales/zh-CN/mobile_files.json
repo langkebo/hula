@@ -7,6 +7,7 @@
   "empty": "暂无文件",
   "image_alt": "文件图片",
   "quota_used": "已用 {used} / {total} · {count} 个媒体",
+  "quota_unavailable": "媒体配额暂不可用",
   "upload": "上传",
   "upload_no_room": "请先进入一个会话再上传",
   "upload_success": "文件已发送到当前会话",

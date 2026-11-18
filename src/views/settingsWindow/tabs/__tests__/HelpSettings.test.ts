@@ -200,6 +200,25 @@ describe('HelpSettings', () => {
     expect(vm.platform).toBe('桌面端')
   })
 
+  it('keeps versions unknown instead of faking fallbacks when reads fail', async () => {
+    isDesktopPlatformMock = true
+    getVersionMock.mockRejectedValueOnce(new Error('tauri app unavailable'))
+    getTauriVersionMock.mockRejectedValueOnce(new Error('tauri app unavailable'))
+    fetchMock.mockRejectedValueOnce(new Error('package.json unavailable'))
+
+    const wrapper = mount(HelpSettings)
+    await flushPromises()
+
+    const vm = getVm(wrapper)
+    // 失败不得伪装成 1.0.0 / 2.x 这类看似正常的默认版本
+    expect(vm.appVersion).toBe('-')
+    expect(vm.tauriVersion).toBe('-')
+    expect(vm.sdkVersion).toBe('')
+    expect(vm.vueVersion).toBe('')
+    expect(wrapper.text()).not.toContain('1.0.0')
+    expect(wrapper.text()).not.toContain('2.x')
+  })
+
   it('checks update and reports latest status', async () => {
     vi.useFakeTimers()
     const wrapper = mount(HelpSettings)

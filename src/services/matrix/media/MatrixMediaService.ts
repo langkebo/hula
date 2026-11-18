@@ -1,4 +1,3 @@
-import type { MediaManager, MediaQuotaAlert } from 'matrix-js-sdk/media'
 import {
   type EncryptedAttachmentFile,
   matrixAttachmentEncryptionService
@@ -8,18 +7,8 @@ import { resolveUploadMimeTypeFromFile } from '@/utils/FileType'
 import { formatBytes } from '@/utils/Formatting'
 import { compressImage, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
-import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
-import {
-  deleteMediaById,
-  fetchAuthenticatedMediaConfig,
-  fetchMediaConfig,
-  fetchQuotaAlerts,
-  fetchQuotaStats,
-  fetchQuotaUsage,
-  fetchUrlPreview,
-  type MediaQuotaStatsResult
-} from './mediaConfigOps'
+import { MatrixMediaConfigMethods } from './MatrixMediaConfigMethods'
 import {
   buildSignedMediaDownloadUrl,
   downloadEncryptedFileBytes as dlEncryptedFileBytes,
@@ -35,38 +24,28 @@ import {
   type EncryptedUploadResult,
   MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES,
   type MediaInfo,
-  type MediaUrlPreview,
   type UploadResult
 } from './mediaTypes'
 import { createUploadOptions, uploadContentWithChunkFallback } from './mediaUploadHelpers'
-import { resolveMxcToHttp } from './mxcUrl'
 
 const logger = createLogger('MatrixMediaService')
 
 /**
  * Matrix Media 服务 — 文件上传/下载/媒体配置/配额管理。
  *
- * 实现已拆分为四个子模块：
+ * 实现已拆分为五个子模块：
  * - mediaTypes：类型定义和常量
  * - mediaMetadata：图片/视频/音频元数据提取（纯 DOM 函数）
  * - mediaUploadHelpers：上传选项构造、错误判断、分片回退、直接 XHR 上传
  * - mediaDownloadHelpers：URL 解析、文件下载、加密文件下载
+ * - MatrixMediaConfigMethods：mxc 地址解析、媒体配置/配额端点
  *
- * 本文件保留：上传编排、压缩控制、URL 解析、媒体配置/配额管理。
+ * 本文件保留：上传编排、压缩控制、下载委托。
  */
-class MatrixMediaServiceClass extends BaseMatrixService {
+class MatrixMediaServiceClass extends MatrixMediaConfigMethods {
   private compressOptions: CompressOptions = { ...DEFAULT_COMPRESS_OPTIONS }
   private enableCompression = true
   private enableChunkUpload = true
-
-  protected getMedia(): MediaManager {
-    const client = this.getClient()
-    const fn = (client as { getMediaManager?: () => MediaManager }).getMediaManager
-    if (typeof fn !== 'function') {
-      throw new Error('MatrixClient.getMediaManager is not available; SDK 未初始化')
-    }
-    return fn.call(client)
-  }
 
   /**
    * 上传前置校验：client 未初始化时**立即**失败。
@@ -329,25 +308,6 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
-  // ── URL 解析 ──
-
-  /**
-   * 将 mxc:// 地址解析为 HTTP 地址，可选指定缩略图尺寸。
-   * 解析失败时返回 null。
-   */
-  getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
-    // 统一走 resolveMxcToHttp（优先 client 级 mxcUrlToHttp，ProfileManager 仅回退）
-    return resolveMxcToHttp(this.getClient(), mxcUrl, width, height)
-  }
-
-  /**
-   * 将 mxc:// 地址解析为指定尺寸的缩略图 HTTP 地址。
-   * 解析失败时返回 null。
-   */
-  getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
-    return resolveMxcToHttp(this.getClient(), mxcUrl, width, height)
-  }
-
   // ── 下载（委托 mediaDownloadHelpers）──
 
   /**
@@ -408,45 +368,6 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       logger.error(`[MatrixMedia] 签名媒体下载失败: ${err}`)
       throw err
     }
-  }
-
-  // ── 媒体配置 & 配额（实现在 mediaConfigOps，本类只做访问器绑定）──
-
-  /** 获取媒体上传配置（含 `m.upload.size` 上限）；失败抛出。 */
-  async getMediaConfig(): Promise<{ 'm.upload.size'?: number; [key: string]: unknown }> {
-    return fetchMediaConfig(() => this.getMedia())
-  }
-
-  /** 删除指定服务器上的媒体；成功返回 true，失败抛出。 */
-  async deleteMedia(serverName: string, mediaId: string): Promise<boolean> {
-    const deleted = await deleteMediaById(() => this.getMedia(), serverName, mediaId)
-    if (deleted) notifyMediaQuotaChanged()
-    return deleted
-  }
-
-  /** 获取媒体配额告警列表；失败返回空数组。 */
-  async getQuotaAlerts(): Promise<MediaQuotaAlert[]> {
-    return fetchQuotaAlerts(() => this.getMedia())
-  }
-
-  /** 检查媒体配额（上限/已用/剩余）；失败返回 null。 */
-  async checkQuota(): Promise<{ limit: number; used: number; remaining: number } | null> {
-    return fetchQuotaUsage(() => this.getMedia())
-  }
-
-  /** 获取媒体配额统计；失败时带原因返回（区分「服务端无配额」与「本次取不到」）。 */
-  async getQuotaStats(): Promise<MediaQuotaStatsResult> {
-    return fetchQuotaStats(() => this.getMedia())
-  }
-
-  /** 获取认证媒体配置（是否启用 authenticated_media）；失败返回 null。 */
-  async getAuthenticatedMediaConfig(): Promise<{ authenticated_media: boolean; [key: string]: unknown } | null> {
-    return fetchAuthenticatedMediaConfig(() => this.getMedia())
-  }
-
-  /** 获取链接预览（标题/描述/缩略图）；服务端不支持或抓取失败时返回 null。 */
-  async getUrlPreview(url: string, ts?: number): Promise<MediaUrlPreview | null> {
-    return fetchUrlPreview(() => this.getMedia(), url, ts)
   }
 }
 

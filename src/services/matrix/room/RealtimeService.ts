@@ -1,6 +1,7 @@
 import type { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk'
 import { RoomTypeEnum } from '@/enums'
 import type { RoomInfo } from '@/services/types'
+import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import matrixEventServiceLocal from '../MatrixEventService'
 import { matrixReadStateService } from '../messaging/MatrixReadStateService'
@@ -8,6 +9,8 @@ import { ClientEvent, RoomEvent } from '../sdk'
 import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixRoomCreationService } from './CreationService'
 import { findDmCounterpart, isDirectMessageRoomFromRoom } from './roomTypeUtils'
+
+const logger = createLogger('MatrixRoomRealtimeService')
 
 const ROOM_EVENTS = {
   Timeline: 'Room.timeline',
@@ -155,31 +158,47 @@ export class MatrixRoomRealtimeService {
     }
   }
 
+  /**
+   * 订阅实时帧。
+   *
+   * `onError` 用于把「单帧处理失败」交给上层做局部失败信号：转换 / 投影 / 回调任一步抛错
+   * 都在此兜住，绝不能让异常穿透 SDK 的事件发射器（会中断同事件上的其它监听器）。
+   */
   onTimelineEvent(
     callback: (data: {
       roomId: string
       eventType: string
       roomInfo: RoomInfo
       message: import('@/stores/domains/chat/chat/types').MessageType | null
-    }) => void
+    }) => void,
+    onError?: (payload: { roomId: string; error: unknown }) => void
   ): void {
     this.bindClientListener('timeline', (client) => {
+      const reportError = (roomId: string, error: unknown): void => {
+        logger.error(`处理实时帧失败 roomId=${roomId}:`, error)
+        onError?.({ roomId, error })
+      }
+
       const emitTimelineEvent = (event: MatrixEvent, room: Room): void => {
-        const eventType = event.getType()
-        const roomInfo = matrixRoomCreationService.convertRoomToRoomInfo(room)
-        let message: import('@/stores/domains/chat/chat/types').MessageType | null = null
+        try {
+          const eventType = event.getType()
+          const roomInfo = matrixRoomCreationService.convertRoomToRoomInfo(room)
+          let message: import('@/stores/domains/chat/chat/types').MessageType | null = null
 
-        if (eventType === 'm.room.message') {
-          message = matrixEventServiceLocal.convertEventToMessage(event, room)
-        } else if (eventType === 'm.room.encrypted') {
-          message = matrixEventServiceLocal.convertEventToMessageType(event)
-        } else if (BEACON_EVENT_TYPES.has(eventType)) {
-          message = matrixEventServiceLocal.convertEventToMessage(event, room)
+          if (eventType === 'm.room.message') {
+            message = matrixEventServiceLocal.convertEventToMessage(event, room)
+          } else if (eventType === 'm.room.encrypted') {
+            message = matrixEventServiceLocal.convertEventToMessageType(event)
+          } else if (BEACON_EVENT_TYPES.has(eventType)) {
+            message = matrixEventServiceLocal.convertEventToMessage(event, room)
+          }
+          // m.room.redaction 不在此列：目标事件由 SDK 的 tryApplyRedaction 置为已撤回，
+          // 撤回提示由 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
+
+          callback({ roomId: room.roomId, eventType, roomInfo, message })
+        } catch (error) {
+          reportError(room.roomId, error)
         }
-        // m.room.redaction 不在此列：目标事件由 SDK 的 tryApplyRedaction 置为已撤回，
-        // 撤回提示由 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
-
-        callback({ roomId: room.roomId, eventType, roomInfo, message })
       }
 
       const handler = (
@@ -202,8 +221,12 @@ export class MatrixRoomRealtimeService {
         if (event.getType() === 'm.room.encrypted') {
           for (const delay of [250, 1000, 3000]) {
             setTimeout(() => {
-              if (event.getType() === 'm.room.message' || BEACON_EVENT_TYPES.has(event.getType())) {
-                emitTimelineEvent(event, room)
+              try {
+                if (event.getType() === 'm.room.message' || BEACON_EVENT_TYPES.has(event.getType())) {
+                  emitTimelineEvent(event, room)
+                }
+              } catch (error) {
+                reportError(room.roomId, error)
               }
             }, delay)
           }

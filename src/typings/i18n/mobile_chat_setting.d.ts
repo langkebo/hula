@@ -78,6 +78,7 @@ export type Messages = {
   "create_group_success": "创建群聊成功",
   "create_group_need_two": "至少选择 2 人才能建群",
   "search_contacts_hint": "搜索联系人~",
+  "member_list_load_failed": "群成员读取失败，无法判断哪些联系人已在群内",
   "invite_button": "邀请",
   "select_friends_to_invite": "请选择要邀请的好友",
   "invite_failed": "邀请失败，请重试",
@@ -163,6 +164,7 @@ export type KeyPaths =
   | "mobile_chat_setting.create_group_success"
   | "mobile_chat_setting.create_group_need_two"
   | "mobile_chat_setting.search_contacts_hint"
+  | "mobile_chat_setting.member_list_load_failed"
   | "mobile_chat_setting.invite_button"
   | "mobile_chat_setting.select_friends_to_invite"
   | "mobile_chat_setting.invite_failed"

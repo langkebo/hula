@@ -1,6 +1,7 @@
 {
   "title": "Online Status",
   "subtitle": "Set your online status",
+  "load_failed": "Could not load current status",
   "status_message": "Status Message",
   "status_message_placeholder": "Set a status message (optional)",
   "save": "Save",

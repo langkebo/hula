@@ -76,7 +76,7 @@
           :isAIMode="props.isAIMode"
           :isAIStreaming="props.isAIStreaming"
           :is-sharing="sharing"
-          :delayed-supported="delayedSupported"
+          :delayed-supported="scheduledEntrySupported"
           :send-options="sendOptions"
           @show-location-modal="showLocationModal = true"
           @handle-beacon-click="handleBeaconClick"
@@ -111,7 +111,7 @@
 
     <!-- 定时消息：定时入口与待发列表 -->
     <DelayedMessagesModal
-      v-if="delayedSupported"
+      v-if="scheduledEntrySupported"
       v-model:show="showDelayedModal"
       :items="delayedItems"
       :loading="delayedLoading"
@@ -145,6 +145,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum, type MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import type { UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -349,6 +350,12 @@ const {
   rescheduleDelayed,
   refreshDelayed
 } = useDelayedMessageEntry({ roomId: currentSessionRoomId, delayedMessages, scheduleDelayedMessage })
+
+const { getCapabilityStatus } = useServerCapability()
+/** 能力位显式声明不支持定时消息时收起入口；未知时仍按服务端探测结果放行 */
+const scheduledEntrySupported = computed(
+  () => delayedSupported.value && getCapabilityStatus('scheduled-send') !== 'unsupported'
+)
 
 // 原型对齐项 #3：回复预览条改用 ReplyComposer.vue（绑定 reply ref），替换原内联 #replyDiv DOM 注入
 const replyToInfo = computed<ReplyToInfo | null>(() => {

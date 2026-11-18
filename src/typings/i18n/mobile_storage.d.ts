@@ -26,6 +26,24 @@ export type Messages = {
   "other_data": "其它（会话与加密数据）",
   "other_data_desc": "含登录凭据与加密密钥，随账号登出清理，不在此处删除",
   "unavailable": "当前环境不支持统计本地数据（浏览器限制）",
+  "stats_unavailable": "存储用量暂不可用",
+  "server_quota_section": "服务端媒体配额",
+  "server_quota_used": "已用空间",
+  "server_quota_limit": "配额上限",
+  "server_quota_remaining": "剩余空间",
+  "server_quota_media_count": "媒体文件数",
+  "server_quota_partial": "—",
+  "server_quota_partial_desc": "服务端未提供配额统计接口",
+  "server_quota_exceeded": "媒体配额已用尽，上传将被拒绝",
+  "server_quota_alerts": "配额告警",
+  "server_quota_alert_count": "{count} 条",
+  "server_quota_alert_unread": "未读",
+  "server_quota_alert_type_exceeded": "已超限",
+  "server_quota_alert_type_warning": "接近上限",
+  "server_quota_alert_meta": "{type} · 阈值 {threshold}% · 当次 {used} / {limit}",
+  "server_quota_no_alerts": "暂无告警",
+  "server_quota_loading": "正在读取服务端配额...",
+  "server_quota_unavailable": "服务端配额暂不可用",
   "strategy_section": "缓存策略",
   "auto_cache": "自动缓存媒体",
   "auto_cache_desc": "关闭后聊天中的图片/视频缩略图不再写入本地，直接加载远端地址",
@@ -78,6 +96,24 @@ export type KeyPaths =
   | "mobile_storage.other_data"
   | "mobile_storage.other_data_desc"
   | "mobile_storage.unavailable"
+  | "mobile_storage.stats_unavailable"
+  | "mobile_storage.server_quota_section"
+  | "mobile_storage.server_quota_used"
+  | "mobile_storage.server_quota_limit"
+  | "mobile_storage.server_quota_remaining"
+  | "mobile_storage.server_quota_media_count"
+  | "mobile_storage.server_quota_partial"
+  | "mobile_storage.server_quota_partial_desc"
+  | "mobile_storage.server_quota_exceeded"
+  | "mobile_storage.server_quota_alerts"
+  | "mobile_storage.server_quota_alert_count"
+  | "mobile_storage.server_quota_alert_unread"
+  | "mobile_storage.server_quota_alert_type_exceeded"
+  | "mobile_storage.server_quota_alert_type_warning"
+  | "mobile_storage.server_quota_alert_meta"
+  | "mobile_storage.server_quota_no_alerts"
+  | "mobile_storage.server_quota_loading"
+  | "mobile_storage.server_quota_unavailable"
   | "mobile_storage.strategy_section"
   | "mobile_storage.auto_cache"
   | "mobile_storage.auto_cache_desc"

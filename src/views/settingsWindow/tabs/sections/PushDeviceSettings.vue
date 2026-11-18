@@ -5,7 +5,10 @@
     <p class="section-desc">{{ t('setting.push.device_endpoints.desc') }}</p>
 
     <n-spin :show="loading">
-      <div v-if="devices.length > 0" class="device-list">
+      <div v-if="loadFailed" data-testid="push-devices-error">
+        <ErrorState compact :title="t('common.load_failed')" :retry-text="t('common.retry')" @retry="loadDevices" />
+      </div>
+      <div v-else-if="devices.length > 0" class="device-list">
         <div v-for="device in devices" :key="device.device_id" class="device-item" data-testid="push-device-item">
           <div class="device-details">
             <div class="device-name">{{ device.device_id }}</div>
@@ -80,6 +83,7 @@ import {
 } from 'naive-ui'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import type { IPushDevice } from '@/services/matrix/sdk'
@@ -95,6 +99,8 @@ const { showFeedback } = useActionFeedback()
 
 const devices = ref<IPushDevice[]>([])
 const loading = ref(false)
+/** 读取失败不能落成「暂无设备」：那会把读不到显示成没有设备 */
+const loadFailed = ref(false)
 const registering = ref(false)
 const sendingDeviceId = ref('')
 
@@ -115,12 +121,19 @@ onMounted(() => {
 })
 
 async function loadDevices() {
+  const hasDevices = devices.value.length > 0
   loading.value = true
+  loadFailed.value = false
   try {
     devices.value = await matrixPushService.getPushDevices()
   } catch (error) {
     logger.error('Failed to load push devices', error)
     showFeedback(t('setting.push.device_endpoints.loadFailed'), 'error')
+    // 刷新失败保留已渲染列表，只有首屏失败才进入错误态
+    if (!hasDevices) {
+      devices.value = []
+      loadFailed.value = true
+    }
   } finally {
     loading.value = false
   }

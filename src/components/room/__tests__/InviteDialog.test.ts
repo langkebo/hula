@@ -182,4 +182,52 @@ describe('InviteDialog', () => {
 
     expect(showFeedbackMock).toHaveBeenCalledWith('room.invite.failed', 'error')
   })
+
+  it('检索失败时显示错误态而不是空列表', async () => {
+    searchUsersMock.mockRejectedValue(new Error('boom'))
+    const wrapper = mount(InviteDialog, {
+      props: {
+        show: true,
+        roomId: '!room:example.com'
+      },
+      global: {
+        stubs: {
+          BaseRightDrawer: { template: '<div><slot /><slot name="footer" /></div>' }
+        }
+      }
+    })
+
+    await wrapper.findAll('input')[0]!.setValue('alice')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="invite-search-error"]').exists()).toBe(true)
+    expect(wrapper.findAll('.user-item')).toHaveLength(0)
+  })
+
+  it('重试成功后恢复检索结果', async () => {
+    searchUsersMock
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce([{ userId: '@alice:example.com', displayName: 'Alice' }])
+    const wrapper = mount(InviteDialog, {
+      props: {
+        show: true,
+        roomId: '!room:example.com'
+      },
+      global: {
+        stubs: {
+          BaseRightDrawer: { template: '<div><slot /><slot name="footer" /></div>' }
+        }
+      }
+    })
+
+    await wrapper.findAll('input')[0]!.setValue('alice')
+    await flushPromises()
+    expect(wrapper.find('[data-test="invite-search-error"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="invite-search-error"]').exists()).toBe(false)
+    expect(wrapper.findAll('.user-item')).toHaveLength(1)
+  })
 })

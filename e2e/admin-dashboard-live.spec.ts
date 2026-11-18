@@ -5,84 +5,78 @@
  * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 的 DESKTOP_ONLY_SPECS 逐条比对）。
  */
 /**
- * 管理后台端到端（真后端）：把「admin e2e 命中 0」变成可复跑的主链路。
+ * 管理后台端到端（真后端）：逐页门控 + 提权后面板运行态（报告 §13.11 第 1 项）。
  *
- * 两条判据分开，因为它们的环境依赖不同：
- * 1. **普通账号进 `/admin/dashboard` 必须被拒**（`authGuard` 对 `requiresAdmin` 返回 `'/'`）——
- *    只要有一个能登录的普通账号就能跑，不依赖 MFA。
- * 2. **提权后可见真实面板与用户列表** —— 需要后端允许管理员登录：
- *    后端 `admin_auth.rs::enforce_admin_login_mfa_impl` 在 `security.admin_mfa_required=true` 时
- *    要求管理员登录带 6 位 TOTP（`mfa_code`），本机未配置 TOTP ⇒ 这一条 skip 并给出原因。
+ * 覆盖全部 30 个 `/admin/*` 页面，两类判据：
+ * 1. **普通账号逐页进后台必须被拒**（`authGuard` 对 `requiresAdmin` 返回 `'/'`）——
+ *    自注册普通账号即可，不需要 MFA。
+ * 2. **提权后逐页可见真实面板**（`.admin-layout` 可见、无 `.admin-state-panel`、
+ *    `.admin-content` 有实际子节点、URL 命中目标 path）——
+ *    后端 `security.admin_mfa_required=true` 时管理员登录要 6 位 TOTP，
+ *    脚本从部署侧 `ADMIN_MFA_SHARED_SECRET` 现算 `mfa_code` 换 token，
+ *    再以 `restore-token` 策略注入页面（app 内置密码登录不带 `mfa_code`）。
  *
- * 为什么改库后还要清缓存：`authorize_admin_from_services` 判权限用的是
- * `auth_service.validate_token()` 返回的 `is_admin`，它不是 JWT claim，而是
- * `user:admin:{userId}` 缓存（`ADMIN_CACHE_TTL_SECS=60`）里的库内值。
- * 只改库会被旧缓存覆盖到 TTL 过期，必须同时 `DEL` 该键（Redis 不可用时退化为等 TTL）。
+ * 提权生效链路：`is_admin` 不是 JWT claim，而是 `user:admin:{userId}` 缓存
+ * （`ADMIN_CACHE_TTL_SECS=60`，进程内 L1 + Redis）。改库后必须 `DEL` 该键，
+ * 进程内 L1 只能等 TTL 过期，因此下面用轮询而不是硬 sleep。
  *
- * 环境变量（缺任一必需项时整例 skip）：
- * - `MATRIX_LIVE_E2E=1`、`MATRIX_LIVE_HOMESERVER_URL`、`MATRIX_LIVE_USERNAME` / `MATRIX_LIVE_PASSWORD`
- * - `MATRIX_LIVE_APP_URL` 必须是**桌面** dev server（默认 5210 是移动路由集，`/admin` 会落到 catch-all 404）
- * - 可选：`SYNAPSE_DB_CONTAINER`（默认 `synapse-postgres`）
- *
- * 运行：
+ * 运行（桌面 dev server 必须是 5211；5210 是移动路由集）：
  *   MATRIX_LIVE_E2E=1 MATRIX_LIVE_HOMESERVER_URL=http://127.0.0.1:8008 \
  *   MATRIX_LIVE_APP_URL=http://127.0.0.1:5211 \
- *   MATRIX_LIVE_USERNAME=... MATRIX_LIVE_PASSWORD=... \
  *   CI= npx playwright test e2e/admin-dashboard-live.spec.ts --project=desktop-chromium
  */
-import { execFileSync } from 'node:child_process'
 import { expect, type Page, test } from '@playwright/test'
 import {
-  bootstrapMatrixLivePage,
-  getMatrixLiveSkipReason,
-  loginToMatrixLive,
-  readMatrixLiveEnv,
-  settleLocalUnlockGate
-} from './support/matrixLive'
+  buildLiveEnv,
+  generateTotpCode,
+  getLiveAccountSkipReason,
+  loginLiveAccount,
+  readAdminMfaSecret,
+  readLiveAppUrl,
+  readLiveHomeserverUrl,
+  registerLiveAccount,
+  setLiveAdminFlag
+} from './support/liveAccount'
+import { bootstrapMatrixLivePage, loginToMatrixLive, type MatrixLiveEnv } from './support/matrixLive'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
 
-const matrixLiveEnv = readMatrixLiveEnv()
-const DB_CONTAINER = process.env.SYNAPSE_DB_CONTAINER ?? 'synapse-postgres'
-const REDIS_CONTAINER = process.env.SYNAPSE_REDIS_CONTAINER ?? 'synapse-redis'
 const ROUTER_MODULE_PATH = '/src/router/index.ts'
 const CLIENT_MODULE_PATH = '/src/services/matrix/MatrixClientService.ts'
 const ADMIN_STORE_PATH = '/src/stores/domains/admin/admin.ts'
 
-/**
- * 按 username 改 `is_admin`。
- *
- * 为什么用 username 而不是 userId：登录本身会被 `admin_mfa_required` 拦（admin 登录要 TOTP），
- * 所以**必须在登录前**把账号降级 —— 那时还拿不到 userId，只能按 username 定位。
- */
-const setAdminFlag = (username: string, value: boolean): void => {
-  const escaped = username.replace(/'/g, "''")
-  execFileSync(
-    'docker',
-    [
-      'exec',
-      DB_CONTAINER,
-      'psql',
-      '-U',
-      'synapse',
-      '-d',
-      'synapse',
-      '-tAc',
-      `update users set is_admin = ${value ? 'true' : 'false'} where username = '${escaped}'`
-    ],
-    { encoding: 'utf8', timeout: 20_000 }
-  )
-  // `validate_token` 的 is_admin 走 `user:admin:{userId}` 缓存（ADMIN_CACHE_TTL_SECS=60），
-  // 只改库会被旧值覆盖到 TTL 过期；不清理会稳定复现「库里已提权、管理 API 仍 403」。
-  const serverName = process.env.MATRIX_LIVE_SERVER_NAME ?? 'matrix.test'
-  try {
-    execFileSync('docker', ['exec', REDIS_CONTAINER, 'redis-cli', 'DEL', `user:admin:@${username}:${serverName}`], {
-      encoding: 'utf8',
-      timeout: 20_000
-    })
-  } catch {
-    // Redis 不可用时退化为等 TTL（最多 60s），不阻断用例
-  }
-}
+/** 与 `src/router/routes/desktop.ts` 的 `/admin` 子路由逐条对应。 */
+const ADMIN_ROUTES: readonly string[] = [
+  '/admin/dashboard',
+  '/admin/users',
+  '/admin/rooms',
+  '/admin/federation',
+  '/admin/notices',
+  '/admin/registration-tokens',
+  '/admin/security',
+  '/admin/audit',
+  '/admin/retention',
+  '/admin/server-logs',
+  '/admin/federation-monitor',
+  '/admin/saml',
+  '/admin/maintenance',
+  '/admin/server-config',
+  '/admin/guests',
+  '/admin/spaces',
+  '/admin/notifications',
+  '/admin/app-services',
+  '/admin/telemetry',
+  '/admin/background-updates',
+  '/admin/media',
+  '/admin/moderation',
+  '/admin/account-policy',
+  '/admin/modules',
+  '/admin/external-services',
+  '/admin/callbacks',
+  '/admin/push',
+  '/admin/cleanup',
+  '/admin/invite-policy',
+  '/admin/cas'
+]
 
 const readUserId = (page: Page): Promise<string> =>
   page.evaluate(async (clientPath: string) => {
@@ -114,6 +108,16 @@ const readAdminStatus = (page: Page): Promise<{ isAdmin: boolean; availability: 
 
 /** 路由切换必须走应用内 router（live 登录的 token 只在内存，`goto` 会掉登录） */
 const pushDesktopRoute = async (page: Page, path: string): Promise<void> => {
+  // 给当前视图打标记，用于判定「切换后是否真的换了页面」。
+  // 只断言 `.admin-content` 有子节点不够：渲染期异常会让 Vue 停在旧页面上，
+  // 此时子节点仍然存在（实测 `/admin/audit` 崩溃后 30 页全部停在审计日志）。
+  // 必须用 page.evaluate 而非 locator（后者对不存在的元素会白等 30s action timeout）。
+  await page.evaluate(() => {
+    const container = document.querySelector('.admin-content')
+    for (const child of Array.from(container?.children ?? [])) {
+      child.setAttribute('data-e2e-visited', '1')
+    }
+  })
   await page.evaluate(
     async ({ routerPath, target }: { routerPath: string; target: string }) => {
       const routerModule = (await import(/* @vite-ignore */ routerPath)) as {
@@ -125,58 +129,96 @@ const pushDesktopRoute = async (page: Page, path: string): Promise<void> => {
   )
 }
 
+const resolveDesktopAppUrl = (): string => readLiveAppUrl(test.info().project.use.baseURL ?? undefined)
+
+const openLivePage = async (page: Page, env: MatrixLiveEnv): Promise<void> => {
+  await bootstrapMatrixLivePage(page, env)
+  await loginToMatrixLive(page, env)
+}
+
+/**
+ * 断言当前渲染的管理页处于「就绪且非空」状态。
+ *
+ * 只依赖 `AdminLayout` 的稳定锚点，避免逐页维护 30 个业务 marker：
+ * `.admin-state-panel` 存在即表示导航/可用性探测未就绪；
+ * 视图必须出现**未被打上 data-e2e-visited 标记的新节点**，否则说明还停在上一页。
+ */
+const expectAdminPageReady = async (page: Page, path: string): Promise<void> => {
+  await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('.admin-state-panel')).toHaveCount(0)
+  await expect(page.locator('.admin-content > :not([data-e2e-visited])')).not.toHaveCount(0)
+  await expect(page.locator('.admin-page-title')).not.toHaveText('')
+  expect(new URL(page.url()).pathname, `路由应停在 ${path}`).toBe(path)
+}
+
 test.describe('管理后台（真后端）', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(() => {
     test.skip(test.info().project.name !== 'desktop-chromium', '管理后台只在桌面路由集装配')
-    const skipReason = getMatrixLiveSkipReason(matrixLiveEnv)
+    const skipReason = getLiveAccountSkipReason()
     test.skip(Boolean(skipReason), skipReason ?? '')
-    await bootstrapMatrixLivePage(page, matrixLiveEnv)
-    await loginToMatrixLive(page, matrixLiveEnv)
   })
 
-  test('普通账号进后台被重定向回首页', async ({ page }) => {
+  test('普通账号逐页进后台被重定向回首页', async ({ page }) => {
+    test.setTimeout(180_000)
     const issues = createRuntimeIssueCollector(page)
+    const homeserverUrl = readLiveHomeserverUrl()
+    const account = await registerLiveAccount(homeserverUrl, { prefix: 'e2eadmin' })
+    const env = buildLiveEnv({ account, appUrl: resolveDesktopAppUrl(), homeserverUrl })
+
+    await openLivePage(page, env)
+
     const userId = await readUserId(page)
     expect(userId, '登录后应拿到 userId').not.toBe('')
-
     const status = await readAdminStatus(page)
     expect(status.isAdmin, `非管理员身份判定应为 false（诊断：${JSON.stringify(status)}）`).toBe(false)
 
-    await pushDesktopRoute(page, '/admin/dashboard')
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 30_000 }).not.toContain('/admin')
-    await expect(page.locator('.admin-dashboard')).toHaveCount(0)
+    for (const route of ADMIN_ROUTES) {
+      await pushDesktopRoute(page, route)
+      await expect
+        .poll(() => new URL(page.url()).pathname, { timeout: 30_000, message: `${route} 应被门控拦截` })
+        .not.toMatch(/^\/admin/)
+      await expect(page.locator('.admin-layout'), `${route} 不应渲染后台布局`).toHaveCount(0)
+      await expect(page.locator('.admin-nav-item'), `${route} 不应出现后台导航`).toHaveCount(0)
+    }
 
     expectNoRuntimeIssues(issues)
   })
 
-  test('提权后可见后台面板与真实用户列表（需管理员可登录）', async ({ page }) => {
+  test('提权后逐页可见后台面板与真实数据', async ({ page }) => {
+    test.setTimeout(300_000)
     const issues = createRuntimeIssueCollector(page)
-    const username = matrixLiveEnv.username
-    expect(username, '需要 MATRIX_LIVE_USERNAME 才能提权').not.toBe('')
-    const userId = await readUserId(page)
+    const homeserverUrl = readLiveHomeserverUrl()
+    const account = await registerLiveAccount(homeserverUrl, { prefix: 'e2eops' })
 
-    // 幂等提权：库内 is_admin=true + 清掉 `user:admin:` 缓存键。
-    // 服务端仍可能持有进程内旧值（TTL 60s，命中不续期），所以下面用轮询等它自然过期，
-    // 不硬 sleep——这条链路的唯一异步源就是这个缓存。
-    setAdminFlag(username, true)
+    const mfaSecret = readAdminMfaSecret()
+    test.skip(!mfaSecret, '未取到 ADMIN_MFA_SHARED_SECRET，无法完成管理员 TOTP 登录')
 
-    // 提权只影响后续校验 ⇒ 重新登录（`page.reload` 会掉内存里的 live token）
-    await page.reload()
-    // reload 后 F-10 本地解锁门禁会再次阻断启动，必须先放行再登录
-    await settleLocalUnlockGate(page, matrixLiveEnv)
+    setLiveAdminFlag(account.username, true)
+
+    // app 内置密码登录不带 mfa_code ⇒ 先服务端换 token，再以 restore-token 注入页面
+    let adminSession: Awaited<ReturnType<typeof loginLiveAccount>>
     try {
-      await loginToMatrixLive(page, matrixLiveEnv)
+      adminSession = await loginLiveAccount(homeserverUrl, {
+        username: account.username,
+        password: account.password,
+        mfaCode: () => generateTotpCode(mfaSecret)
+      })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      if (/MFA/i.test(message)) {
-        test.skip(
-          true,
-          `后端 admin_mfa_required=true：管理员登录要求 6 位 TOTP（mfa_code），本机未配置；` +
-            `如需跑这条，请在部署配置里关闭该开关或提供 TOTP。原始报错：${message.slice(0, 120)}`
-        )
-      }
+      test.skip(true, `管理员登录失败（后端 admin_mfa_required 或 TOTP 密钥不匹配）：${message.slice(0, 200)}`)
       throw error
     }
+
+    const env = buildLiveEnv({
+      account: adminSession,
+      appUrl: resolveDesktopAppUrl(),
+      homeserverUrl,
+      authStrategy: 'restore-token'
+    })
+    await openLivePage(page, env)
+
+    const userId = await readUserId(page)
+    expect(userId, '提权账号登录后应拿到 userId').toBe(account.userId)
 
     await expect
       .poll(async () => (await readAdminStatus(page)).isAdmin, {
@@ -186,13 +228,37 @@ test.describe('管理后台（真后端）', () => {
       })
       .toBe(true)
 
-    await pushDesktopRoute(page, '/admin/dashboard')
-    await expect(page.locator('.admin-dashboard')).toBeVisible({ timeout: 30_000 })
-    await expect(page.locator('.admin-state-panel')).toHaveCount(0)
+    for (const route of ADMIN_ROUTES) {
+      await pushDesktopRoute(page, route)
+      await expectAdminPageReady(page, route)
+    }
+
+    // 菜单门控：就绪态应渲染出可选导航项，且全部指向 `/admin/*`
+    const navItems = page.locator('.admin-nav-item')
+    expect(await navItems.count(), '后台导航项应可见').toBeGreaterThan(0)
+    const hrefs = await navItems.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href') ?? ''))
+    for (const href of hrefs) {
+      expect(href.startsWith('/admin/'), `导航项应指向后台路由，实际：${href}`).toBe(true)
+    }
 
     // 用户列表读的是服务端真实数据（列表里应出现当前账号）
     await pushDesktopRoute(page, '/admin/users')
-    await expect(page.locator('.admin-users')).toBeVisible({ timeout: 30_000 })
+    const usersPage = page.locator('.admin-users')
+    try {
+      await expect(usersPage).toBeVisible({ timeout: 30_000 })
+    } catch (error) {
+      const content = await page
+        .locator('.admin-content')
+        .innerText()
+        .catch(() => '<无 .admin-content>')
+      const statePanel = await page
+        .locator('.admin-state-panel')
+        .innerText()
+        .catch(() => '<无 .admin-state-panel>')
+      throw new Error(
+        `用户列表页未渲染：url=${page.url()}\nstatePanel=${statePanel.slice(0, 300)}\ncontent=${content.slice(0, 600)}\n原始错误：${error instanceof Error ? error.message.slice(0, 300) : String(error)}`
+      )
+    }
     await expect.poll(async () => page.locator('body').innerText(), { timeout: 30_000 }).toContain(userId)
 
     expectNoRuntimeIssues(issues)

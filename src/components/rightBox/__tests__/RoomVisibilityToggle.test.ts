@@ -122,4 +122,33 @@ describe('RoomVisibilityToggle', () => {
 
     expect(setVisibilityMock).not.toHaveBeenCalled()
   })
+
+  it('shows an error state instead of guessing private when loading fails', async () => {
+    getVisibilityMock.mockRejectedValue(new Error('offline'))
+    const wrapper = mount(RoomVisibilityToggle, {
+      props: { roomId: '!room-1:server' }
+    })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="visibility-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="visibility-retry"]').exists()).toBe(true)
+    // 读取失败不能渲染成「私密」冒充真实值
+    expect(wrapper.find('[data-test="visibility-toggle"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('room.detail.visibility_private')
+  })
+
+  it('retries and renders the real visibility after a failed load', async () => {
+    getVisibilityMock.mockRejectedValueOnce(new Error('offline'))
+    getVisibilityMock.mockResolvedValueOnce('public')
+    const wrapper = mount(RoomVisibilityToggle, {
+      props: { roomId: '!room-1:server' }
+    })
+    await flushPromises()
+
+    await wrapper.find('[data-test="visibility-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="visibility-error"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('room.detail.visibility_public')
+  })
 })

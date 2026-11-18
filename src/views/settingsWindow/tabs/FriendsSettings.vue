@@ -7,578 +7,95 @@
       :retry-text="t('common.retry')"
       @retry="retryPartialLoads" />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.friends.requests.title') }}</h3>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.friends.requests.allow_label') }}</span>
-          <span class="setting-desc">{{ t('setting.friends.requests.allow_desc') }}</span>
-        </div>
-        <n-switch v-model:value="allowFriendRequests" @update:value="handleToggle" />
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.friends.requests.auto_accept_label') }}</span>
-          <span class="setting-desc">{{ t('setting.friends.requests.auto_accept_desc') }}</span>
-        </div>
-        <n-switch v-model:value="autoAcceptFriends" @update:value="handleToggle" />
-      </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.friends.requests.message_required_label') }}</span>
-          <span class="setting-desc">{{ t('setting.friends.requests.message_required_desc') }}</span>
-        </div>
-        <n-switch v-model:value="requireFriendRequestMessage" @update:value="handleToggle" />
-      </div>
-    </div>
+    <FriendsRequestPolicySection
+      :load-failed="settingsLoadFailed"
+      :allow-friend-requests="allowFriendRequests"
+      :auto-accept-friends="autoAcceptFriends"
+      :require-friend-request-message="requireFriendRequestMessage"
+      @update:allow-friend-requests="allowFriendRequests = $event"
+      @update:auto-accept-friends="autoAcceptFriends = $event"
+      @update:require-friend-request-message="requireFriendRequestMessage = $event"
+      @toggle="handleToggle"
+      @retry="loadSettings" />
 
     <n-divider />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.friends.groups.title') }}</h3>
-      <n-spin :show="loadingGroups">
-        <EmptyState v-if="friendGroups.length === 0" compact :description="t('setting.friends.groups.empty')" />
-        <div v-else class="group-list">
-          <div v-for="group in friendGroups" :key="group.group_id" class="group-item">
-            <div class="group-info">
-              <span class="group-name">{{ group.name }}</span>
-              <span class="group-count">
-                {{ t('setting.friends.groups.member_count', { count: String(group.member_count) }) }}
-              </span>
-            </div>
-            <div class="group-actions">
-              <n-button size="small" quaternary @click="handleEditGroup(group)">
-                {{ t('setting.friends.common.edit') }}
-              </n-button>
-              <n-button size="small" type="error" quaternary @click="handleDeleteGroup(group)">
-                {{ t('setting.friends.common.delete') }}
-              </n-button>
-            </div>
-          </div>
-        </div>
-      </n-spin>
-      <n-button class="create-group-btn" size="small" @click="showCreateGroup = true">
-        {{ t('setting.friends.groups.create_action') }}
-      </n-button>
-    </div>
+    <FriendsGroupsSection
+      :loading="loadingGroups"
+      :groups="friendGroups"
+      @create="showCreateGroup = true"
+      @edit="handleEditGroup"
+      @delete="handleDeleteGroup" />
 
     <n-divider />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.friends.pending.title') }}</h3>
-      <n-spin :show="loadingRequests">
-        <div class="request-section">
-          <h4 class="subsection-title">
-            {{ t('setting.friends.pending.incoming_title', { count: String(incomingRequests.length) }) }}
-          </h4>
-          <EmptyState
-            v-if="incomingRequests.length === 0"
-            compact
-            :description="t('setting.friends.pending.incoming_empty')" />
-          <div v-for="req in incomingRequests" :key="req.user_id" class="request-item">
-            <div class="request-info">
-              <span class="request-user">{{ req.user_id }}</span>
-              <span v-if="req.message" class="request-message">"{{ req.message }}"</span>
-            </div>
-            <div class="request-actions">
-              <n-button size="small" type="primary" @click="handleAcceptRequest(req)">
-                {{ t('setting.friends.pending.accept') }}
-              </n-button>
-              <n-button size="small" @click="handleRejectRequest(req)">
-                {{ t('setting.friends.pending.reject') }}
-              </n-button>
-            </div>
-          </div>
-        </div>
+    <FriendsPendingSection
+      :loading="loadingRequests"
+      :incoming="incomingRequests"
+      :outgoing="outgoingRequests"
+      @accept="handleAcceptRequest"
+      @reject="handleRejectRequest"
+      @cancel="handleCancelRequest" />
 
-        <div class="request-section request-section--second">
-          <h4 class="subsection-title">
-            {{ t('setting.friends.pending.outgoing_title', { count: String(outgoingRequests.length) }) }}
-          </h4>
-          <EmptyState
-            v-if="outgoingRequests.length === 0"
-            compact
-            :description="t('setting.friends.pending.outgoing_empty')" />
-          <div v-for="req in outgoingRequests" :key="req.user_id" class="request-item">
-            <div class="request-info">
-              <span class="request-user">{{ req.user_id }}</span>
-              <span class="request-status">{{ t('setting.friends.pending.waiting') }}</span>
-            </div>
-            <n-button size="small" @click="handleCancelRequest(req)">{{ t('setting.common.cancel') }}</n-button>
-          </div>
-        </div>
-      </n-spin>
-    </div>
-
-    <n-drawer v-model:show="showCreateGroup" placement="right" :width="380">
-      <n-drawer-content :title="t('setting.friends.groups.create_title')" closable>
-        <n-form>
-          <n-form-item :label="t('setting.friends.groups.name_label')">
-            <n-input v-model:value="newGroupName" :placeholder="t('setting.friends.groups.name_placeholder')" />
-          </n-form-item>
-        </n-form>
-        <template #footer>
-          <div class="flex justify-end gap-12px">
-            <n-button @click="showCreateGroup = false">{{ t('setting.common.cancel') }}</n-button>
-            <n-button type="primary" @click="handleCreateGroup">
-              {{ t('setting.friends.groups.create_confirm') }}
-            </n-button>
-          </div>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
-
-    <n-drawer v-model:show="showEditGroup" placement="right" :width="380">
-      <n-drawer-content :title="t('setting.friends.groups.edit_title')" closable>
-        <n-form>
-          <n-form-item :label="t('setting.friends.groups.name_label')">
-            <n-input v-model:value="editGroupName" :placeholder="t('setting.friends.groups.edit_placeholder')" />
-          </n-form-item>
-        </n-form>
-        <template #footer>
-          <div class="flex justify-end gap-12px">
-            <n-button @click="showEditGroup = false">{{ t('setting.common.cancel') }}</n-button>
-            <n-button type="primary" @click="handleSaveGroup">{{ t('setting.common.save') }}</n-button>
-          </div>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
+    <FriendsGroupDrawers
+      :show-create="showCreateGroup"
+      :show-edit="showEditGroup"
+      :new-group-name="newGroupName"
+      :edit-group-name="editGroupName"
+      @update:show-create="showCreateGroup = $event"
+      @update:show-edit="showEditGroup = $event"
+      @update:new-group-name="newGroupName = $event"
+      @update:edit-group-name="editGroupName = $event"
+      @create="handleCreateGroup"
+      @save="handleSaveGroup" />
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  NButton,
-  NDivider,
-  NDrawer,
-  NDrawerContent,
-  NForm,
-  NFormItem,
-  NInput,
-  NSpin,
-  NSwitch,
-  useDialog
-} from 'naive-ui'
-import { computed, onMounted, ref } from 'vue'
+import { NDivider } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
-import { matrixAccountService, matrixFriendGroups, matrixFriendOperations } from '@/services/matrix'
-import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
-import { DEFAULT_INVITE_POLICY, type InvitePolicy, normalizeInvitePolicy } from '@/services/matrix/user/invitePolicy'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('FriendsSettings')
+import { useFriendsSettings } from '@/composables/settings/useFriendsSettings'
+import FriendsGroupDrawers from './components/FriendsGroupDrawers.vue'
+import FriendsGroupsSection from './components/FriendsGroupsSection.vue'
+import FriendsPendingSection from './components/FriendsPendingSection.vue'
+import FriendsRequestPolicySection from './components/FriendsRequestPolicySection.vue'
 
 defineOptions({
   name: 'FriendsSettings'
 })
 
-const { showFeedback } = useActionFeedback()
-const dialog = useDialog()
 const { t } = useI18n()
-const { ensureSessionReady } = useWindowSessionReady()
-
-interface FriendGroup {
-  group_id: string
-  name: string
-  member_count: number
-}
-
-interface FriendRequest {
-  user_id: string
-  message?: string
-}
-
-/**
- * 好友请求三开关的唯一数据源是账号级邀请策略 `im.hula.invite_policy` 的
- * account data。
- *
- * 消费方在 synapse-rust 后端：前端只负责读写，不做本地强制，所以这里读到的值
- * 只是「后端会读到的策略」，不是「功能已生效」的证据。
- */
-const allowFriendRequests = ref(DEFAULT_INVITE_POLICY.allowFriendRequests)
-const autoAcceptFriends = ref(DEFAULT_INVITE_POLICY.autoAcceptFriends)
-const requireFriendRequestMessage = ref(DEFAULT_INVITE_POLICY.requireFriendRequestMessage)
-
-/**
- * 最近一次「成功读入或成功写回」的三个开关值。
- *
- * `n-switch` 是先改本地模型再触发 `handleToggle`：保存失败时若不回滚，
- * 界面会显示成已保存，而账号上的策略其实没变。失败时回滚到这里。
- */
-const persistedFlags = ref({
-  allowFriendRequests: DEFAULT_INVITE_POLICY.allowFriendRequests,
-  autoAcceptFriends: DEFAULT_INVITE_POLICY.autoAcceptFriends,
-  requireFriendRequestMessage: DEFAULT_INVITE_POLICY.requireFriendRequestMessage
-})
-
-const loadingGroups = ref(false)
-const loadingRequests = ref(false)
-const friendGroups = ref<FriendGroup[]>([])
-const incomingRequests = ref<FriendRequest[]>([])
-const outgoingRequests = ref<FriendRequest[]>([])
-
-/**
- * 分组 / 请求列表的读取失败标记。
- *
- * 两处 catch 都把失败吞成空数组，界面会显示成「暂无分组 / 暂无好友申请」，
- * 等于把「读失败」谎报成「确实没有」。这里单独记失败，让页面用 partial 态
- * 说明「部分数据缺失」，而不是伪装成空态。
- */
-const groupsLoadFailed = ref(false)
-const requestsLoadFailed = ref(false)
-const partialFailures = computed(() => Number(groupsLoadFailed.value) + Number(requestsLoadFailed.value))
-
-const showCreateGroup = ref(false)
-const showEditGroup = ref(false)
-const newGroupName = ref('')
-const editGroupName = ref('')
-const editingGroupId = ref('')
-
-onMounted(async () => {
-  // 好友分组/请求与好友请求策略都依赖 MatrixClient（策略存在 account data 上，必须先能读到
-  // 账号上的真实值，否则拿到的是归一化默认值）。恢复统一走 `useWindowSessionReady()`
-  // （幂等、每窗口一次），不再自带 waitForClientReady(10s) 白等。
-  const sessionState = await ensureSessionReady()
-  if (sessionState !== 'ready') {
-    logger.warn(`[FriendsSettings] session state=${sessionState}; friend request policy may fall back to defaults`)
-  }
-  await loadSettings()
-  await loadFriendGroups()
-  await loadFriendRequests()
-})
-
-async function loadSettings() {
-  try {
-    const policy = normalizeInvitePolicy(await matrixAccountService.getInvitePolicy())
-    allowFriendRequests.value = policy.allowFriendRequests
-    autoAcceptFriends.value = policy.autoAcceptFriends
-    requireFriendRequestMessage.value = policy.requireFriendRequestMessage
-    persistedFlags.value = {
-      allowFriendRequests: policy.allowFriendRequests,
-      autoAcceptFriends: policy.autoAcceptFriends,
-      requireFriendRequestMessage: policy.requireFriendRequestMessage
-    }
-  } catch (error) {
-    logger.warn('Failed to load friend request policy:', error)
-  }
-}
-
-/**
- * 写回好友请求策略。
- *
- * **写前必须重读**：同一份 account data 还被 `BlockedUsersSection` 与
- * `InvitePermissionPanel` 编辑（SecuritySettings 同时挂载它们）。若用挂载时的
- * 快照整份写回，对方刚保存的改动会被静默覆盖。这里只覆盖本组件拥有的三个字段。
- *
- * 重读走**严格**变体 `getInvitePolicyStrict()`：读取失败会抛错而不是回落
- * `normalizeInvitePolicy(null)` 的默认策略。否则「读失败 + 写成功」会用
- * `{mode: 'allow_all', blocklist: [], allowlist: []}` 静默删掉用户已有的策略，
- * 还会因为 PUT 成功而弹「已保存」。
- */
-async function saveSettings() {
-  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicyStrict())
-  const next: InvitePolicy = {
-    ...latest,
-    allowFriendRequests: allowFriendRequests.value,
-    autoAcceptFriends: autoAcceptFriends.value,
-    requireFriendRequestMessage: requireFriendRequestMessage.value
-  }
-  await matrixAccountService.setInvitePolicy(next)
-  persistedFlags.value = {
-    allowFriendRequests: next.allowFriendRequests,
-    autoAcceptFriends: next.autoAcceptFriends,
-    requireFriendRequestMessage: next.requireFriendRequestMessage
-  }
-}
-
-async function loadFriendGroups() {
-  loadingGroups.value = true
-  groupsLoadFailed.value = false
-  try {
-    const groups = await matrixFriendGroups.getFriendGroups()
-    friendGroups.value = (groups || []).map((g) => ({
-      group_id: g.group_id,
-      name: g.name,
-      member_count: g.member_count || 0
-    }))
-  } catch {
-    groupsLoadFailed.value = true
-    logger.warn('Failed to load friend groups')
-  } finally {
-    loadingGroups.value = false
-  }
-}
-
-async function loadFriendRequests() {
-  loadingRequests.value = true
-  requestsLoadFailed.value = false
-  try {
-    const [incomingResult, outgoingResult] = await Promise.allSettled([
-      matrixFriendService.getIncomingRequests(),
-      matrixFriendService.getOutgoingRequests()
-    ])
-
-    requestsLoadFailed.value = incomingResult.status === 'rejected' || outgoingResult.status === 'rejected'
-
-    const incoming = incomingResult.status === 'fulfilled' ? incomingResult.value : []
-    const outgoing = outgoingResult.status === 'fulfilled' ? outgoingResult.value : []
-    incomingRequests.value = (incoming || []).map((r) => ({
-      user_id: r.user_id,
-      ...(r.message === undefined ? {} : { message: r.message })
-    }))
-    outgoingRequests.value = (outgoing || []).map((r) => ({
-      user_id: r.user_id
-    }))
-  } catch {
-    logger.error('Failed to load friend requests')
-  } finally {
-    loadingRequests.value = false
-  }
-}
-
-/** partial 态的重试只补读失败的分组与请求，不重发策略写入 */
-function retryPartialLoads() {
-  void Promise.all([loadFriendGroups(), loadFriendRequests()])
-}
-
-async function handleToggle() {
-  try {
-    await saveSettings()
-    showFeedback(t('setting.friends.feedback.settings_updated'), 'success')
-  } catch (error) {
-    logger.error('Failed to save friend request policy:', error)
-    // 保存没有成功：把开关回滚到最近一次确认过的值，不显示成已生效
-    allowFriendRequests.value = persistedFlags.value.allowFriendRequests
-    autoAcceptFriends.value = persistedFlags.value.autoAcceptFriends
-    requireFriendRequestMessage.value = persistedFlags.value.requireFriendRequestMessage
-    showFeedback(t('setting.invite_permission.save_failed'), 'error')
-  }
-}
-
-async function handleCreateGroup() {
-  if (!newGroupName.value.trim()) {
-    showFeedback(t('setting.friends.groups.name_required'), 'warning')
-    return false
-  }
-  try {
-    await matrixFriendGroups.createFriendGroup(newGroupName.value.trim())
-    newGroupName.value = ''
-    showFeedback(t('setting.friends.groups.create_success'), 'success')
-    await loadFriendGroups()
-  } catch {
-    showFeedback(t('setting.friends.groups.create_failed'), 'error')
-  }
-  showCreateGroup.value = false
-}
-
-function handleEditGroup(group: FriendGroup) {
-  editingGroupId.value = group.group_id
-  editGroupName.value = group.name
-  showEditGroup.value = true
-}
-
-async function handleSaveGroup() {
-  if (!editGroupName.value.trim()) {
-    showFeedback(t('setting.friends.groups.name_required'), 'warning')
-    return false
-  }
-  try {
-    await matrixFriendGroups.renameFriendGroup(editingGroupId.value, editGroupName.value.trim())
-    showFeedback(t('setting.friends.groups.rename_success'), 'success')
-    showEditGroup.value = false
-    await loadFriendGroups()
-  } catch {
-    showFeedback(t('setting.friends.groups.rename_failed'), 'error')
-  }
-}
-
-function handleDeleteGroup(group: FriendGroup) {
-  dialog.warning({
-    title: t('setting.friends.groups.delete_title'),
-    content: t('setting.friends.groups.delete_confirm', { name: group.name }),
-    positiveText: t('setting.friends.groups.delete_confirm_action'),
-    negativeText: t('setting.common.cancel'),
-    onPositiveClick: async () => {
-      try {
-        await matrixFriendGroups.deleteFriendGroup(group.group_id)
-        showFeedback(t('setting.friends.groups.delete_success'), 'success')
-        await loadFriendGroups()
-      } catch {
-        showFeedback(t('setting.friends.groups.delete_failed'), 'error')
-      }
-    }
-  })
-}
-
-async function handleAcceptRequest(req: FriendRequest) {
-  try {
-    await matrixFriendOperations.acceptFriendRequest(req.user_id)
-    showFeedback(t('setting.friends.pending.accept_success'), 'success')
-    await loadFriendRequests()
-  } catch {
-    showFeedback(t('setting.friends.pending.accept_failed'), 'error')
-  }
-}
-
-async function handleRejectRequest(req: FriendRequest) {
-  try {
-    await matrixFriendOperations.rejectFriendRequest(req.user_id)
-    showFeedback(t('setting.friends.pending.reject_success'), 'success')
-    await loadFriendRequests()
-  } catch {
-    showFeedback(t('setting.friends.pending.reject_failed'), 'error')
-  }
-}
-
-async function handleCancelRequest(req: FriendRequest) {
-  try {
-    await matrixFriendOperations.cancelFriendRequest(req.user_id)
-    showFeedback(t('setting.friends.pending.cancel_success'), 'success')
-    await loadFriendRequests()
-  } catch {
-    showFeedback(t('setting.friends.pending.cancel_failed'), 'error')
-  }
-}
+const {
+  allowFriendRequests,
+  autoAcceptFriends,
+  requireFriendRequestMessage,
+  settingsLoadFailed,
+  loadingGroups,
+  loadingRequests,
+  friendGroups,
+  incomingRequests,
+  outgoingRequests,
+  partialFailures,
+  showCreateGroup,
+  showEditGroup,
+  newGroupName,
+  editGroupName,
+  loadSettings,
+  retryPartialLoads,
+  handleToggle,
+  handleCreateGroup,
+  handleEditGroup,
+  handleSaveGroup,
+  handleDeleteGroup,
+  handleAcceptRequest,
+  handleRejectRequest,
+  handleCancelRequest
+} = useFriendsSettings()
 </script>
 
 <style scoped>
 .friends-settings {
   padding: 0 var(--tjg-space-2);
-}
-
-.settings-section {
-  margin-bottom: var(--tjg-space-4);
-}
-
-.section-title {
-  font-size: var(--tjg-font-size-lg);
-  font-weight: var(--tjg-font-weight-medium);
-  margin-bottom: var(--tjg-space-3);
-  color: var(--tjg-text-primary);
-}
-
-.subsection-title {
-  font-size: var(--tjg-font-size-base);
-  font-weight: var(--tjg-font-weight-medium);
-  margin: 0 0 var(--tjg-space-2) 0;
-  color: var(--tjg-text-primary);
-}
-
-.setting-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--tjg-space-3) 0;
-  border-bottom: 1px solid var(--tjg-settings-divider);
-}
-
-.setting-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.setting-label {
-  font-size: var(--tjg-font-size-base);
-  color: var(--tjg-text-primary);
-}
-
-.setting-desc {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-quaternary);
-  margin-top: var(--tjg-space-1);
-}
-
-.group-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tjg-space-2);
-}
-
-.group-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px var(--tjg-space-3);
-  background-color: var(--tjg-settings-card-bg);
-  border-radius: var(--tjg-radius-sm);
-}
-
-.group-info {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-2);
-}
-
-.group-name {
-  font-size: var(--tjg-font-size-base);
-  font-weight: var(--tjg-font-weight-medium);
-  color: var(--tjg-text-primary);
-}
-
-.group-count {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-quaternary);
-}
-
-.group-actions {
-  display: flex;
-  gap: var(--tjg-space-1);
-}
-
-.request-section {
-  margin-bottom: var(--tjg-space-2);
-}
-
-.request-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px var(--tjg-space-3);
-  background-color: var(--tjg-settings-card-bg);
-  border-radius: var(--tjg-radius-sm);
-  margin-bottom: 6px;
-}
-
-.request-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.request-user {
-  font-size: var(--tjg-font-size-base);
-  color: var(--tjg-text-primary);
-  word-break: break-all;
-}
-
-.request-message {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-secondary);
-  margin-top: var(--tjg-space-1);
-}
-
-.request-status {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-color-warning-500);
-  margin-top: var(--tjg-space-1);
-}
-
-.request-actions {
-  display: flex;
-  gap: var(--tjg-space-1);
-  flex-shrink: 0;
-  margin-left: var(--tjg-space-3);
-}
-
-.create-group-btn {
-  margin-top: var(--tjg-space-2);
-}
-
-.request-section--second {
-  margin-top: var(--tjg-space-4);
 }
 </style>

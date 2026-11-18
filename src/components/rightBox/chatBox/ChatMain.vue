@@ -17,6 +17,16 @@
       @cancel-sticky="handleCancelSticky"
       @view-sticky-event="handleViewStickyEvent" />
 
+    <!-- 实时帧处理失败：只表达「单帧失败」，连接级问题仍由上面的网络横幅承担 -->
+    <div v-if="liveFailure" data-testid="message-live-failure" class="px-3 pt-2">
+      <PartialStateBanner
+        compact
+        :message="t('home.chat_main.live_update_failed')"
+        :detail="liveFailure.reason"
+        :retry-text="t('common.retry')"
+        @retry="handleRetryLiveFailure" />
+    </div>
+
     <!-- 房间内消息搜索面板（F2） -->
     <ChatRoomSearch
       :is-open="searchIsOpen"
@@ -51,7 +61,7 @@
           aria-live="polite"
           class="message-list min-h-full flex flex-col"
           :class="{ 'private-mode-active': privateModeActive }">
-          <ChatLoadMoreIndicator :loading="isLoadingMore" :error="loadMoreError" @retry="retryLoadMore" />
+          <ChatLoadMoreIndicator :loading="isLoadingMore" :error="loadMoreIndicatorError" @retry="retryLoadMore" />
           <ChatMessageList
             :is-group="isGroup"
             :private-mode-active="privateModeActive"
@@ -118,30 +128,22 @@
 
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useEventListener } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, provide, type Ref, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useAvatarPreloader } from '@/composables/chat/useAvatarPreloader'
 import { useChatDialogs } from '@/composables/chat/useChatDialogs'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
-import { useChatScrollManager } from '@/composables/chat/useChatScrollManager'
-import { useMessageJump } from '@/composables/chat/useMessageJump'
-import { useNewMessageBadge } from '@/composables/chat/useNewMessageBadge'
-import { usePrivateMode } from '@/composables/chat/usePrivateMode'
-import { useRoomSearch } from '@/composables/chat/useRoomSearch'
-import { useWheelScrollLimiter } from '@/composables/chat/useWheelScrollLimiter'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useChatPrivateModeControls } from '@/composables/chat/useChatPrivateModeControls'
+import { useChatRoomSearchPanel } from '@/composables/chat/useChatRoomSearchPanel'
+import { useChatStickyBanner } from '@/composables/chat/useChatStickyBanner'
+import { useChatViewport } from '@/composables/chat/useChatViewport'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
-import { useStickyEvents } from '@/composables/room/useStickyEvents'
-import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum } from '@/enums'
-import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import type { MessageType } from '@/stores/domains/chat/chat'
-import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -172,7 +174,6 @@ const props = withDefaults(
   { mobileInteraction: false }
 )
 const { t } = useI18n()
-const { showFeedback } = useActionFeedback()
 
 type SessionChangedPayload = {
   roomId: string
@@ -182,10 +183,8 @@ type SessionChangedPayload = {
 // Store 实例
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const globalStore = useGlobalStore()
-const chatStore = useChatStore()
 const userStore = useUserStore()
 const networkStatus = useNetworkStatus()
-// const { footerHeight } = useChatLayoutGlobal() // 已移除，不再需要
 useWindow()
 const chatMainContext = useChatMain(false, {
   enableGroupNicknameModal: true,
@@ -211,77 +210,57 @@ const getMessageSenderUid = (message: MessageType): string => {
   return message.fromUser?.uid ?? ''
 }
 
-// ===== 私密模式 =====
+// ===== 滚动/视口管线（滚动、悬浮按钮、消息跳转、公告横幅）=====
+const {
+  isGroup,
+  currentRoomId,
+  isLoadingMore,
+  retryLoadMore,
+  scrollToBottom,
+  shouldShowFloatButton,
+  showScrollbar,
+  handleScroll,
+  liveFailure,
+  loadMoreIndicatorError,
+  handleRetryLiveFailure,
+  stopWheelListener,
+  topAnnouncement,
+  isAnnouncementLoading,
+  initAnnouncementListeners,
+  cleanupAnnouncementListeners,
+  activeReply,
+  jumpToReplyMsg,
+  onNavigateToMessage,
+  clearActiveReply,
+  currentNewMsgCount,
+  newMsgCountLabel,
+  handleFloatButtonClick,
+  floatButtonStyle
+} = useChatViewport({ onScroll: (event) => selfEmit('scroll', event) })
+
+// ===== 私密模式 / 阅后即焚 =====
 const {
   privateModeActive,
   showPrivateConfirm,
   burnEnabled,
-  burnDuration,
   privateModeFeatures,
-  setRoomId,
   togglePrivateMode,
   confirmPrivateMode,
-  cancelPrivateMode
-} = usePrivateMode()
+  cancelPrivateMode,
+  handleBurnToggle,
+  handleBurnDurationChange
+} = useChatPrivateModeControls()
 
-// 跟随当前会话切换：私密模式属于单个房间，切房间必须退出，避免状态泄漏到其他会话
-watch(
-  () => globalStore.currentSessionRoomId,
-  (roomId) => void setRoomId(roomId || ''),
-  { immediate: true }
-)
-
-const burnAfterRead = useBurnAfterRead()
-const capability = useServerCapability()
-
-const handleBurnToggle = async (val: boolean) => {
-  const roomId = globalStore.currentSessionRoomId
-  if (!roomId) return
-  const ok = val
-    ? await burnAfterRead.enableBurn(roomId, burnDuration.value * 1000)
-    : await burnAfterRead.disableBurn(roomId)
-  // 服务失败时不更新本地状态，避免开关与实际配置不一致
-  if (!ok) {
-    showFeedback(t('room.burn.update_failed'), 'error')
-    return
-  }
-  burnEnabled.value = val
-}
-
-const handleBurnDurationChange = async (seconds: number) => {
-  const roomId = globalStore.currentSessionRoomId
-  if (!roomId || !burnEnabled.value) {
-    burnDuration.value = seconds
-    return
-  }
-  const previousSeconds = burnDuration.value
-  const ok = await burnAfterRead.enableBurn(roomId, seconds * 1000)
-  if (!ok) {
-    burnDuration.value = previousSeconds
-    showFeedback(t('room.burn.update_failed'), 'error')
-    return
-  }
-  burnDuration.value = seconds
-}
-
-const onPrivateModeToggleRequest = (payload?: { confirmed: boolean }) => {
-  // 服务端不支持阅后即焚时忽略切换请求，避免进入无法工作的私密模式
-  if (!capability.canUseBurnAfterRead.value) return
-  if (payload?.confirmed) {
-    // 移动端已确认，直接进入私密模式（不弹 PC 对话框）
-    confirmPrivateMode()
-  } else {
-    // 退出私密模式或 PC 端切换
-    togglePrivateMode()
-  }
-}
-
-onMounted(() => {
-  useMitt.on(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST, onPrivateModeToggleRequest)
-})
-onUnmounted(() => {
-  useMitt.off(MittEnum.PRIVATE_MODE_TOGGLE_REQUEST, onPrivateModeToggleRequest)
-})
+// ===== 粘性事件横幅 =====
+const {
+  stickyEvents,
+  canSetSticky,
+  pinSelectorVisible,
+  handleSetSticky,
+  handlePinSelect,
+  handleCancelSticky,
+  handleViewStickyEvent
+} = useChatStickyBanner({ jumpToReplyMsg })
 
 // ===== 线程面板 + 事件举报 =====
 const {
@@ -293,36 +272,22 @@ const {
   eventReportData
 } = useChatDialogs(getMessageSenderUid)
 
-// ===== 粘性事件（MSC4354 横幅）=====
-const stickyFlow = useStickyEvents({ roomId: () => globalStore.currentSessionRoomId ?? null })
-const stickyEvents = stickyFlow.events
-const canSetSticky = stickyFlow.canSetSticky
-
-/** 消息选择器可见性（横幅「设为粘性事件」按钮触发） */
-const pinSelectorVisible = ref(false)
-
-function handleSetSticky() {
-  pinSelectorVisible.value = true
-}
-
-async function handlePinSelect(eventId: string) {
-  const ok = await stickyFlow.setStickyEvent(eventId)
-  showFeedback(ok ? t('pinned_message.pin_success') : t('pinned_message.pin_failed'), ok ? 'success' : 'error')
-  pinSelectorVisible.value = false
-}
-
-async function handleCancelSticky(eventId: string) {
-  // 服务端按 (user, event_type) 存储，取消需回查该条记录的 event_type
-  const eventType = stickyEvents.value.find((item) => item.eventId === eventId)?.eventType
-  if (!eventType) return
-  const ok = await stickyFlow.clearStickyEvent(eventType)
-  showFeedback(ok ? t('pinned_message.unpin_success') : t('pinned_message.unpin_failed'), ok ? 'success' : 'error')
-}
-
-function handleViewStickyEvent(eventId: string) {
-  logger.info('View sticky event:', eventId)
-  jumpToReplyMsg(eventId)
-}
+// ===== 房间内消息搜索（F2）=====
+const {
+  searchIsOpen,
+  searchQuery,
+  searchResults,
+  searchLoading,
+  searchError,
+  searchActiveIndex,
+  handleSearchQueryInput,
+  handleSearchQueryUpdate,
+  handleSearchNavigate,
+  handleSearchSetActive,
+  handleSearchSelectResult,
+  searchRetry,
+  closeRoomSearch
+} = useChatRoomSearchPanel({ jumpToReplyMsg })
 
 // ===== 设备验证对话框（消息锁徽章 → 验证发送方设备）=====
 const { visible: deviceVerifyVisible, target: deviceVerifyTarget, close: closeDeviceVerify } = useDeviceVerifyLauncher()
@@ -342,33 +307,12 @@ defineExpose({
   activeThreadId,
   activeThreadRoomId,
   stickyEvents,
-  canSetSticky
+  canSetSticky,
+  togglePrivateMode
 })
 
-const isGroup = computed<boolean>(() => chatStore.isGroup)
-const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const currentUserId = computed(() => userStore.userInfo?.uid ?? '')
 const currentUserName = computed(() => userStore.userInfo?.name ?? '')
-const currentRoomId = computed(() => globalStore.currentSessionRoomId ?? null)
-
-// 房间切换时重新加载粘性事件
-watch(
-  currentRoomId,
-  (newId) => {
-    if (newId) {
-      stickyFlow.load().catch((e) => logger.error('Failed to load sticky events:', e))
-    }
-  },
-  { immediate: true }
-)
-
-// 监听粘性事件变更事件（设置/清除后刷新横幅）
-const onStickyEventsChanged = (payload: { roomId?: string } | undefined) => {
-  if (payload?.roomId && payload.roomId === currentRoomId.value) {
-    stickyFlow.load().catch((e) => logger.error('Failed to refresh sticky events:', e))
-  }
-}
-useMitt.on(MittEnum.STICKY_EVENTS_CHANGED, onStickyEventsChanged)
 
 const networkBanner = computed(() => {
   if (!networkStatus.browserOnline.value && networkStatus.wsOnline.value !== true) {
@@ -385,125 +329,6 @@ const networkBanner = computed(() => {
 
   return null
 })
-
-const scrollContainerRef = useTemplateRef<HTMLDivElement>('scrollContainer')
-const messageListRef = useTemplateRef<HTMLDivElement>('messageListRef')
-
-const isLastPage = computed(() => chatStore.currentMessageOptions?.isLast ?? false)
-const isLoading = computed(() => chatStore.currentMessageOptions?.isLoading ?? false)
-
-const scrollManager = useChatScrollManager({
-  scrollContainer: scrollContainerRef as Ref<HTMLElement | null>,
-  messageListRef: messageListRef as Ref<HTMLElement | null>,
-  onLoadMore: () => chatStore.loadMore(),
-  isLastPage,
-  isLoading,
-  currentRoomId,
-  clearNewMsgCount: () => chatStore.clearNewMsgCount(),
-  newMessageCountSource: computed(() => chatStore.currentNewMsgCount?.count ?? 0)
-})
-
-const {
-  isLoadingMore,
-  loadMoreError,
-  retryLoadMore,
-  scrollToBottom,
-  scrollToIndex,
-  scrollToMessage,
-  handleScroll: scrollManagerHandleScroll,
-  shouldShowFloatButton
-} = scrollManager
-
-const handleScroll = (event: Event) => {
-  selfEmit('scroll', event)
-  scrollManagerHandleScroll(event)
-}
-
-const showScrollbar = ref<boolean>(true)
-
-const { stop: stopWheelListener } = useWheelScrollLimiter(scrollContainerRef)
-
-const {
-  topAnnouncement,
-  isLoading: isAnnouncementLoading,
-  initListeners: initAnnouncementListeners,
-  cleanupListeners: cleanupAnnouncementListeners
-} = useAnnouncementBanner(currentRoomId, isGroup, scrollContainerRef, scrollToBottom)
-
-// Message jump (find, scroll, highlight)
-const { activeReply, jumpToReplyMsg, onNavigateToMessage, clearActiveReply } = useMessageJump({
-  isLoadingMore,
-  scrollToIndex,
-  scrollToMessage,
-  currentRoomId
-})
-
-// New message count badge + float button
-const { currentNewMsgCount, newMsgCountLabel, handleFloatButtonClick, floatButtonStyle } = useNewMessageBadge({
-  scrollContainerRef,
-  isLoadingMore,
-  shouldShowFloatButton,
-  scrollToBottom,
-  userUid
-})
-
-// ===== 房间内消息搜索（F2）=====
-const searchRoomId = computed(() => globalStore.currentSessionRoomId ?? '')
-const {
-  isOpen: searchIsOpen,
-  query: searchQuery,
-  results: searchResults,
-  loading: searchLoading,
-  error: searchError,
-  activeIndex: searchActiveIndex,
-  onQueryInput: handleSearchQueryInput,
-  openSearch: openRoomSearch,
-  closeSearch: closeRoomSearch,
-  retry: searchRetry,
-  navigateNext: searchNavigateNext,
-  navigatePrev: searchNavigatePrev,
-  selectResult: searchSelectResult
-} = useRoomSearch(searchRoomId)
-
-function handleSearchQueryUpdate(value: string) {
-  searchQuery.value = value
-}
-
-function handleSearchNavigate(direction: 'next' | 'prev') {
-  if (direction === 'next') {
-    searchNavigateNext()
-  } else {
-    searchNavigatePrev()
-  }
-}
-
-function handleSearchSetActive(index: number) {
-  searchActiveIndex.value = index
-}
-
-function handleSearchSelectResult(index: number) {
-  const result = searchSelectResult(index)
-  if (result) {
-    closeRoomSearch()
-    jumpToReplyMsg(result.eventId)
-  }
-}
-
-// F2 快捷键打开搜索面板
-useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.key === 'F2' && !searchIsOpen.value) {
-    const target = event.target as HTMLElement
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-      return
-    }
-    event.preventDefault()
-    openRoomSearch()
-  }
-})
-
-const onOpenRoomSearch = () => {
-  openRoomSearch()
-}
 
 const handleSessionChanged = async ({ roomId, oldRoomId }: SessionChangedPayload) => {
   if (!roomId || roomId === oldRoomId) {
@@ -538,7 +363,6 @@ const handleViewAnnouncement = (): void => {
 
 onMounted(() => {
   useMitt.on(MittEnum.SESSION_CHANGED, handleSessionChanged)
-  useMitt.on(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
   useMitt.on(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
 
   // 初始化公告监听器
@@ -553,76 +377,8 @@ onUnmounted(() => {
   cleanupAnnouncementListeners()
   stopWheelListener()
   timerManager.clearAll()
-  useMitt.off(MittEnum.STICKY_EVENTS_CHANGED, onStickyEventsChanged)
-  useMitt.off(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
   useMitt.off(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
 })
 </script>
 
-<style scoped lang="scss">
-// 原生滚动容器样式
-.scrollbar-container {
-  flex: 1;
-  overflow-y: auto;
-  // P3-4 实验性修复：阻止滚动到边界时链式传播到 body（原生滚动条/页面跳动的来源）
-  overscroll-behavior: contain;
-  // 滚动性能优化
-  -webkit-overflow-scrolling: touch;
-  will-change: scroll-position;
-  transform: translateZ(0);
-
-  /* 滚动条样式 */
-  &::-webkit-scrollbar {
-    width: 6px;
-    transition-property: opacity;
-    transition-duration: var(--tjg-motion-duration-overlay);
-    transition-timing-function: ease;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
-    border-radius: 3px;
-    transition-property: opacity, background-color;
-    transition-duration: var(--tjg-motion-duration-overlay);
-    transition-timing-function: ease;
-    // min-height: 42px;
-    z-index: 999;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent);
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &.hide-scrollbar {
-    &::-webkit-scrollbar {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    // 这里添加一个小的padding，防止mac上会不显示
-    padding-right: 0.01px;
-  }
-}
-
-// 性能优化相关样式
-.message-item {
-  contain: layout style;
-  will-change: auto;
-}
-
-// 拖拽时禁用鼠标事件，避免不必要的监听损耗
-:global(body.dragging-resize) .scrollbar-container {
-  pointer-events: none;
-}
-</style>
+<style scoped lang="scss" src="./ChatMain.scss"></style>

@@ -22,6 +22,13 @@
       </n-tag>
     </div>
 
+    <span v-else-if="loadError" class="parent-spaces-error">
+      {{ t('room.detail.parent_spaces_load_failed') }}
+      <button type="button" class="parent-spaces-retry" data-testid="parent-spaces-retry" @click="loadParentSpaces">
+        {{ t('common.retry') }}
+      </button>
+    </span>
+
     <span v-else class="parent-spaces-empty">{{ t('room.detail.no_parent_spaces') }}</span>
   </div>
 </template>
@@ -41,15 +48,19 @@ const { t } = useI18n()
 const router = useRouter()
 
 const loading = ref(false)
+const loadError = ref(false)
 const parentSpaces = ref<SpaceInfo[]>([])
 
 const loadParentSpaces = async () => {
   if (!props.roomId) return
   loading.value = true
+  loadError.value = false
   try {
     parentSpaces.value = await matrixSpaceService.getRoomParentSpaces(props.roomId)
   } catch {
+    // 失败不能当成「无所属空间」：两者语义相反
     parentSpaces.value = []
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -105,5 +116,22 @@ watch(() => props.roomId, loadParentSpaces, { immediate: true })
   font-size: 12px;
   color: var(--tjg-text-tertiary);
   font-style: italic;
+}
+
+.parent-spaces-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--tjg-text-secondary);
+}
+
+.parent-spaces-retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  color: var(--tjg-color-primary-500);
+  cursor: pointer;
 }
 </style>

@@ -78,6 +78,7 @@ export type Messages = {
     "user_id": "用户ID",
     "user_name": "用户名",
     "unknown": "未知",
+    "load_failed": "获取用户资料失败",
     "moments": "动态",
     "no_moments": "暂无动态内容",
     "moments_unsupported": "Matrix 协议暂不支持朋友圈功能"
@@ -153,6 +154,7 @@ export type KeyPaths =
   | "mobile_contact.friend_info.user_id"
   | "mobile_contact.friend_info.user_name"
   | "mobile_contact.friend_info.unknown"
+  | "mobile_contact.friend_info.load_failed"
   | "mobile_contact.friend_info.moments"
   | "mobile_contact.friend_info.no_moments"
   | "mobile_contact.friend_info.moments_unsupported"

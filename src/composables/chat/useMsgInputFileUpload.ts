@@ -316,8 +316,12 @@ export function useMsgInputFileUpload(
             const hooks: FileUploadHooks | undefined = fileId
               ? {
                   onServerProgress: (progress) => {
-                    const { uploadedChunks, totalChunks } = progress
-                    globalFileUploadQueue.updateFileServerProgress(fileId, uploadedChunks, totalChunks)
+                    const { uploadedChunks, totalChunks, uploadedSize, totalSize, status } = progress
+                    globalFileUploadQueue.updateFileServerProgress(fileId, uploadedChunks, totalChunks, {
+                      uploadedSize,
+                      totalSize,
+                      status
+                    })
                   }
                 }
               : undefined

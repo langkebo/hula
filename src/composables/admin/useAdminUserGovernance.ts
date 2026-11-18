@@ -24,6 +24,7 @@ export interface AdminUserGovernanceState {
   impersonationSession: Ref<ImpersonationSession | null>
   evicting: Ref<boolean>
   loggingOutAll: Ref<boolean>
+  samlLoggingOut: Ref<boolean>
   impersonating: Ref<boolean>
   batchCreating: Ref<boolean>
 
@@ -32,6 +33,7 @@ export interface AdminUserGovernanceState {
   loadUserStatsOverview: () => Promise<void>
   evictUser: (userId: string) => Promise<void>
   logoutUserAll: (userId: string) => Promise<void>
+  samlLogout: (userId: string) => Promise<void>
   loginUserAs: (userId: string) => Promise<ImpersonationSession | null>
   clearImpersonation: () => void
   batchCreateUsers: (users: BatchCreateUserInput[]) => Promise<Array<{ userId: string; success: boolean }>>
@@ -57,6 +59,7 @@ export function useAdminUserGovernance(
   const impersonationSession = ref<ImpersonationSession | null>(null)
   const evicting = ref(false)
   const loggingOutAll = ref(false)
+  const samlLoggingOut = ref(false)
   const impersonating = ref(false)
   const batchCreating = ref(false)
 
@@ -115,6 +118,15 @@ export function useAdminUserGovernance(
     }
   }
 
+  async function samlLogout(userId: string) {
+    samlLoggingOut.value = true
+    try {
+      await adminService.security.samlLogout(userId)
+    } finally {
+      samlLoggingOut.value = false
+    }
+  }
+
   async function loginUserAs(userId: string): Promise<ImpersonationSession | null> {
     impersonating.value = true
     try {
@@ -161,6 +173,7 @@ export function useAdminUserGovernance(
     impersonationSession,
     evicting,
     loggingOutAll,
+    samlLoggingOut,
     impersonating,
     batchCreating,
     refreshUserDetail,
@@ -168,6 +181,7 @@ export function useAdminUserGovernance(
     loadUserStatsOverview,
     evictUser,
     logoutUserAll,
+    samlLogout,
     loginUserAs,
     clearImpersonation,
     batchCreateUsers,

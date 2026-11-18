@@ -18,8 +18,19 @@
     </div>
 
     <!-- 成员列表：唯一滚动容器 -->
-    <div class="flex-1 min-h-0 overflow-y-auto px-16px mt-10px pb-10px">
-      <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
+    <div class="flex-1 min-h-0 overflow-y-auto px-16px mt-10px pb-10px flex flex-col">
+      <MobileAsyncState
+        v-if="loadState !== 'ready'"
+        :state="loadState"
+        test-id="manage-group-member"
+        min-height="240px"
+        @retry="loadMembers" />
+      <van-empty
+        v-else-if="filteredMembers.length === 0"
+        :description="
+          keyword.trim() ? t('home.manage_group_member.empty_search') : t('home.manage_group_member.empty')
+        " />
+      <van-checkbox-group v-else v-model="selectedList" class="flex flex-col gap-2">
         <div
           v-for="item in filteredMembers"
           :key="item.uid"
@@ -81,6 +92,7 @@ import { showConfirmDialog } from 'vant'
 import 'vant/es/dialog/style'
 import { useI18n } from 'vue-i18n'
 import HeaderBar from '#/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '#/components/common/MobileAsyncState.vue'
 import { useSafeBack } from '#/composables/useSafeBack'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
@@ -104,6 +116,7 @@ const { goBack } = useSafeBack()
 const keyword = ref('')
 const selectedList = ref<string[]>([])
 const isLoading = ref(false)
+const loadState = ref<'loading' | 'error' | 'ready'>('loading')
 
 // 请求期间用户可能已手动返回，成功后不能再触发一次返回
 let isUnmounted = false
@@ -202,6 +215,19 @@ const handleMobileRemove = async () => {
   await handleRemove()
 }
 
+const loadMembers = async () => {
+  loadState.value = 'loading'
+  try {
+    if (globalStore.currentSessionRoomId) {
+      await groupStore.getGroupUserList(globalStore.currentSessionRoomId)
+    }
+    loadState.value = 'ready'
+  } catch (error) {
+    logger.error('Failed to load member list:', error)
+    loadState.value = 'error'
+  }
+}
+
 onMounted(async () => {
   if (globalStore.currentSessionRoomId === '1') {
     showFeedback(t('home.manage_group_member.channel_manage_unsupported'), 'warning')
@@ -209,13 +235,7 @@ onMounted(async () => {
     return
   }
 
-  try {
-    if (globalStore.currentSessionRoomId) {
-      await groupStore.getGroupUserList(globalStore.currentSessionRoomId)
-    }
-  } catch (error) {
-    logger.error('Failed to load member list:', error)
-  }
+  await loadMembers()
 })
 </script>
 

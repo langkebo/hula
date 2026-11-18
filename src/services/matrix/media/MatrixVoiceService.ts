@@ -29,7 +29,13 @@ interface RoomLike {
 }
 
 import type { EncryptedAttachmentFile } from '../crypto/MatrixAttachmentEncryptionService'
-import { fetchUserVoiceStats, fetchVoiceConfig, fetchVoiceStats } from './voiceStatsOps'
+import {
+  fetchRoomVoiceStatsStrict,
+  fetchUserVoiceStats,
+  fetchVoiceConfig,
+  fetchVoiceStats,
+  type VoiceStats
+} from './voiceStatsOps'
 import { isVoipCapabilityEnabled } from './voipHelpers'
 
 const logger = createLogger('MatrixVoiceService')
@@ -243,12 +249,14 @@ class MatrixVoiceService extends BaseMatrixService {
   }
 
   /** 获取语音统计（传入 roomId 时统计房间维度，否则全局）；失败返回全 0。 */
-  async getVoiceStats(roomId?: string): Promise<{
-    totalDuration: number
-    totalMessages: number
-    averageDuration: number
-  }> {
+  async getVoiceStats(roomId?: string): Promise<VoiceStats> {
     return fetchVoiceStats(() => this.getVoiceMgr(), roomId)
+  }
+
+  /** 获取房间语音统计（严格版）：失败抛出，供需要区分「失败」与「空数据」的 UI 使用。 */
+  async getRoomVoiceStats(roomId: string): Promise<VoiceStats> {
+    this.requireNonEmpty(roomId, 'roomId')
+    return fetchRoomVoiceStatsStrict(() => this.getVoiceMgr(), roomId)
   }
 
   /** 获取指定用户的语音统计（总时长/总条数）；失败返回全 0。 */

@@ -73,6 +73,13 @@
             <p v-if="hierarchyLoadingId === space.spaceId" class="psd__state">
               {{ t('space.discover.loading') }}
             </p>
+            <div v-if="hierarchyLoadFailedId === space.spaceId" data-testid="psd-children-error">
+              <ErrorState
+                compact
+                :title="t('space.discover.children_load_failed')"
+                :retry-text="t('common.retry')"
+                @retry="retryHierarchy(space)" />
+            </div>
             <EmptyState
               v-else-if="childSpaces.length === 0"
               compact
@@ -146,6 +153,8 @@ const joinedIds = ref<string[]>([])
 const requestedIds = ref<string[]>([])
 const hierarchyId = ref('')
 const hierarchyLoadingId = ref('')
+/** 子空间读取失败不能落成「暂无子空间」：按空间 id 记录失败，可原地重试 */
+const hierarchyLoadFailedId = ref('')
 const childSpaces = ref<SpaceInfo[]>([])
 
 let requestSeq = 0
@@ -209,6 +218,7 @@ const toggleHierarchy = async (space: SpaceInfo) => {
 
   hierarchyId.value = space.spaceId
   hierarchyLoadingId.value = space.spaceId
+  hierarchyLoadFailedId.value = ''
   childSpaces.value = []
   try {
     const { rooms } = await matrixSpaceService.getSpaceHierarchy(space.spaceId, { maxDepth: 2 })
@@ -217,10 +227,19 @@ const toggleHierarchy = async (space: SpaceInfo) => {
       .map(toChildSpace)
       .filter((child): child is SpaceInfo => child !== null && child.spaceId !== space.spaceId)
   } catch {
-    if (hierarchyId.value === space.spaceId) childSpaces.value = []
+    if (hierarchyId.value === space.spaceId) {
+      childSpaces.value = []
+      hierarchyLoadFailedId.value = space.spaceId
+    }
   } finally {
     if (hierarchyLoadingId.value === space.spaceId) hierarchyLoadingId.value = ''
   }
+}
+
+const retryHierarchy = (space: SpaceInfo) => {
+  hierarchyId.value = ''
+  hierarchyLoadFailedId.value = ''
+  void toggleHierarchy(space)
 }
 
 const handleJoin = async (space: SpaceInfo) => {

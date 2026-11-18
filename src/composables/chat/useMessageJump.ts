@@ -1,4 +1,5 @@
 import { nextTick, type Ref, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useTimerManager } from '@/utils/TimerManager'
@@ -22,6 +23,7 @@ export const useMessageJump = ({
 }: UseMessageJumpOptions) => {
   const chatStore = useChatStore()
   const { showFeedback } = useActionFeedback()
+  const { t } = useI18n()
   const timerManager = useTimerManager()
 
   const activeReply = ref<string>('')
@@ -47,7 +49,7 @@ export const useMessageJump = ({
 
     // Set loading flag
     isLoadingMore.value = true
-    showFeedback('正在查找消息...', 'info')
+    showFeedback(t('home.chat_main.jump_searching'), 'info')
 
     // Load history until target found or max attempts reached
     let foundMessage = false
@@ -59,7 +61,8 @@ export const useMessageJump = ({
       try {
         await chatStore.loadMore()
       } catch {
-        showFeedback('加载历史消息失败，请稍后重试', 'error')
+        // 失败提示已由 store（message.load_messages_failed）+ 历史翻页指示器承担：
+        // 这里再弹一次只会造成重复打扰，持久重试入口由 ChatLoadMoreIndicator 提供。
         break
       }
       messageIndex = chatStore.getMsgIndex(key)
@@ -82,7 +85,7 @@ export const useMessageJump = ({
         focusMessage(key, messageIndex)
       })
     } else {
-      showFeedback('无法找到原始消息，可能已被删除或太久远', 'warning')
+      showFeedback(t('home.chat_main.jump_not_found'), 'warning')
     }
   }
 

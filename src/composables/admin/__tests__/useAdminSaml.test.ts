@@ -6,7 +6,8 @@ vi.mock('@/services/matrix/admin', () => ({
     security: {
       getSamlMetadata: vi.fn().mockResolvedValue({}),
       getSpMetadata: vi.fn().mockResolvedValue(''),
-      refreshIdpMetadata: vi.fn().mockResolvedValue({})
+      refreshIdpMetadata: vi.fn().mockResolvedValue({}),
+      getSamlMapping: vi.fn()
     }
   }
 }))
@@ -47,5 +48,26 @@ describe('useAdminSaml', () => {
     expect(c.refreshing.value).toBe(true)
     await p
     expect(c.refreshing.value).toBe(false)
+  })
+
+  it('loadMappingDetail 归一化服务端字段，未命中时返回 null', async () => {
+    vi.mocked(adminService.security.getSamlMapping).mockResolvedValueOnce({
+      name_id: 'alice@idp',
+      user_id: '@alice:server',
+      display_name: 'Alice'
+    })
+    const c = useAdminSaml()
+    await expect(c.loadMappingDetail('alice@idp')).resolves.toEqual({
+      nameId: 'alice@idp',
+      userId: '@alice:server',
+      displayName: 'Alice',
+      name_id: 'alice@idp',
+      user_id: '@alice:server',
+      display_name: 'Alice'
+    })
+    expect(adminService.security.getSamlMapping).toHaveBeenCalledWith('alice@idp')
+
+    vi.mocked(adminService.security.getSamlMapping).mockResolvedValueOnce(null)
+    await expect(c.loadMappingDetail('missing@idp')).resolves.toBeNull()
   })
 })

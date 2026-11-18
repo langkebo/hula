@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import {
   registerAdminApiAvailabilityResolver,
   registerCapabilityStoreResolver
@@ -23,7 +24,10 @@ const translationMap: Record<string, string> = {
   'setting.mjolnir.enter_server_name': '请输入服务器名称',
   'setting.mjolnir.added_room_rule': '已添加房间屏蔽规则',
   'setting.mjolnir.added_user_rule': '已添加用户屏蔽规则',
-  'setting.mjolnir.added_server_rule': '已添加服务器屏蔽规则'
+  'setting.mjolnir.added_server_rule': '已添加服务器屏蔽规则',
+  'common.load_failed': '加载失败',
+  'setting.mjolnir.storage_corrupted': '本地屏蔽规则读取失败，为避免覆盖已损坏的数据，操作区已暂停。',
+  'setting.mjolnir.reset_storage': '重置本地规则'
 }
 
 vi.mock('naive-ui', () => ({
@@ -110,6 +114,32 @@ describe('MjolnirSettings', () => {
     expect((wrapper.vm as any).roomBanList[0].entity).toBe('#room:example.com')
     expect((wrapper.vm as any).userBanList).toHaveLength(1)
     expect((wrapper.vm as any).serverBanList).toHaveLength(1)
+  })
+
+  it('does not pretend there are no bans when local data is corrupted', async () => {
+    localStorage.setItem('tjg-mjolnir-ban-lists', '{broken json')
+
+    const wrapper = mount(MjolnirSettings)
+    await nextTick()
+
+    expect(wrapper.text()).toContain('加载失败')
+    expect(wrapper.text()).not.toContain('暂无房间屏蔽规则')
+    expect(wrapper.text()).not.toContain('暂无用户屏蔽规则')
+    expect(wrapper.text()).not.toContain('暂无服务器屏蔽规则')
+    expect(wrapper.find('[data-testid="error-retry"]').exists()).toBe(true)
+  })
+
+  it('resets corrupted local data only after explicit confirmation', async () => {
+    const corrupted = JSON.stringify({ rooms: 'not-an-array', users: [], servers: [] })
+    localStorage.setItem('tjg-mjolnir-ban-lists', corrupted)
+
+    const wrapper = mount(MjolnirSettings)
+    await nextTick()
+    await wrapper.find('[data-testid="error-retry"]').trigger('click')
+
+    // 显式重置后才可编辑：损坏数据被清掉，列表回到真实的空态
+    expect(localStorage.getItem('tjg-mjolnir-ban-lists')).toBeNull()
+    expect(wrapper.text()).toContain('暂无房间屏蔽规则')
   })
 
   it('saves ban lists to localStorage', () => {

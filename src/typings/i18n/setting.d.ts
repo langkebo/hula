@@ -556,7 +556,6 @@ export type Messages = {
   },
   "encryption": {
     "title": "加密设置",
-    "server_unsupported": "当前服务器未启用端到端加密，本页为只读。",
     "crypto_unavailable": "本地加密模块未初始化，本页为只读。",
     "status": "加密状态",
     "encryption_enabled": "端到端加密",
@@ -1108,8 +1107,6 @@ export type Messages = {
     "three_pid_bind_success": "邮箱绑定成功",
     "three_pid_bind_failed": "邮箱绑定失败",
     "three_pid_unbind_success": "已解绑",
-    "three_pid_unbind_failed": "解绑失败",
-    "three_pid_load_failed": "加载绑定信息失败",
     "three_pid_refresh": "刷新",
     "three_pid_msisdn_unavailable": "手机号绑定暂未开放，如需绑定请联系管理员。"
   },
@@ -1249,6 +1246,8 @@ export type Messages = {
     "no_room_bans": "暂无房间屏蔽规则",
     "no_user_bans": "暂无用户屏蔽规则",
     "no_server_bans": "暂无服务器屏蔽规则",
+    "storage_corrupted": "本地屏蔽规则读取失败，为避免覆盖已损坏的数据，操作区已暂停。",
+    "reset_storage": "重置本地规则",
     "remove": "移除",
     "reason": "原因",
     "reason_optional": "屏蔽原因（可选）",
@@ -1258,17 +1257,8 @@ export type Messages = {
     "add_room_rule": "添加房间屏蔽规则",
     "add_user_rule": "添加用户屏蔽规则",
     "add_server_rule": "添加服务器屏蔽规则",
-    "enter_room_id": "请输入房间 ID",
-    "enter_user_id": "请输入用户 ID",
-    "enter_server_name": "请输入服务器名称",
-    "added_room_rule": "已添加房间屏蔽规则",
-    "added_user_rule": "已添加用户屏蔽规则",
-    "added_server_rule": "已添加服务器屏蔽规则",
     "remove_rule_title": "移除屏蔽规则",
-    "remove_rule_confirm": "确定要移除对 {entity} 的屏蔽吗？",
-    "removed_room_rule": "已移除房间屏蔽规则",
-    "removed_user_rule": "已移除用户屏蔽规则",
-    "removed_server_rule": "已移除服务器屏蔽规则"
+    "remove_rule_confirm": "确定要移除对 {entity} 的屏蔽吗？"
   },
   "private_chat": {
     "title": "私密聊天",
@@ -1691,7 +1681,6 @@ export type KeyPaths =
   | "setting.dialog.groups.advanced"
   | "setting.dialog.groups.other"
   | "setting.encryption.title"
-  | "setting.encryption.server_unsupported"
   | "setting.encryption.crypto_unavailable"
   | "setting.encryption.status"
   | "setting.encryption.encryption_enabled"
@@ -2211,8 +2200,6 @@ export type KeyPaths =
   | "setting.security.three_pid_bind_success"
   | "setting.security.three_pid_bind_failed"
   | "setting.security.three_pid_unbind_success"
-  | "setting.security.three_pid_unbind_failed"
-  | "setting.security.three_pid_load_failed"
   | "setting.security.three_pid_refresh"
   | "setting.security.three_pid_msisdn_unavailable"
   | "setting.burn_after_read.global.title"
@@ -2332,6 +2319,8 @@ export type KeyPaths =
   | "setting.mjolnir.no_room_bans"
   | "setting.mjolnir.no_user_bans"
   | "setting.mjolnir.no_server_bans"
+  | "setting.mjolnir.storage_corrupted"
+  | "setting.mjolnir.reset_storage"
   | "setting.mjolnir.remove"
   | "setting.mjolnir.reason"
   | "setting.mjolnir.reason_optional"
@@ -2341,17 +2330,8 @@ export type KeyPaths =
   | "setting.mjolnir.add_room_rule"
   | "setting.mjolnir.add_user_rule"
   | "setting.mjolnir.add_server_rule"
-  | "setting.mjolnir.enter_room_id"
-  | "setting.mjolnir.enter_user_id"
-  | "setting.mjolnir.enter_server_name"
-  | "setting.mjolnir.added_room_rule"
-  | "setting.mjolnir.added_user_rule"
-  | "setting.mjolnir.added_server_rule"
   | "setting.mjolnir.remove_rule_title"
   | "setting.mjolnir.remove_rule_confirm"
-  | "setting.mjolnir.removed_room_rule"
-  | "setting.mjolnir.removed_user_rule"
-  | "setting.mjolnir.removed_server_rule"
   | "setting.private_chat.title"
   | "setting.private_chat.enable"
   | "setting.private_chat.enable_desc"

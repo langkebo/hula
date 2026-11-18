@@ -67,7 +67,11 @@
             :avatar-mxc="avatarValue"
             :group-info="groupInfo"
             :announcements="announList"
-            :initial-remark="initialRoomRemark" />
+            :initial-remark="initialRoomRemark"
+            :announcements-error="announError"
+            :group-info-error="groupInfoLoadFailed"
+            @retry-announcements="handleLoadGroupAnnoun"
+            @retry-group-info="loadGroupDetails" />
 
           <!-- 设置 -->
           <ChatSettingToggles
@@ -206,6 +210,8 @@ const isAddAnnoun = ref(false)
 const announList = ref<GroupAnnouncementListItem[]>([])
 
 const groupInfo = ref<MatrixGroupInfo | null>(null)
+/** 群资料读取失败标记：失败时不能把 null 当成「无群名」渲染 */
+const groupInfoLoadFailed = ref(false)
 const avatarValue = ref('')
 const initialRoomRemark = ref('')
 const options = ref<Array<{ name: string; src: string }>>([])
@@ -339,14 +345,21 @@ const clickInfo = () => {
 }
 
 const handleLoadGroupAnnoun = async () => {
+  const roomId = globalStore.currentSessionRoomId
+  if (!roomId) {
+    logger.error('No roomId for current session')
+    return
+  }
+  announError.value = false
+  isAddAnnoun.value = isLord.value || isAdmin.value
   try {
-    const roomId = globalStore.currentSessionRoomId
-    if (!roomId) {
-      logger.error('No roomId for current session')
+    const data = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
+    // store 内部吞掉异常、只置失败标志，返回值永远是真值对象，必须读回标志判断
+    announError.value = announcementStore.announError
+    if (announError.value) {
+      // 保留已加载的列表，避免失败时把公告清空伪装成「暂无公告」
       return
     }
-    isAddAnnoun.value = isLord.value || isAdmin.value
-    const data = await announcementStore.getGroupAnnouncementList(roomId, 1, 10)
     if (data) {
       announList.value = data.records
       if (announList.value && announList.value.length > 0) {
@@ -356,13 +369,32 @@ const handleLoadGroupAnnoun = async () => {
         }
       }
       announNum.value = data.total
-      announError.value = false
-    } else {
-      announError.value = false
     }
   } catch (error) {
     logger.error('Failed to load group announcements:', error)
     announError.value = true
+  }
+}
+
+/** 读取群资料与成员；失败或返回空时置错误态，由子组件提供重试入口 */
+const loadGroupDetails = async () => {
+  const roomId = globalStore.currentSessionRoomId
+  groupInfoLoadFailed.value = false
+  try {
+    const response = await groupStore.loadGroupInfo(roomId)
+    await groupStore.loadRoomMembers(roomId, true)
+
+    if (!response) {
+      groupInfoLoadFailed.value = true
+      return
+    }
+
+    groupInfo.value = response
+    avatarValue.value = response.avatar || response.avatarUrl || ''
+    await fetchGroupMembers(roomId)
+  } catch (error) {
+    logger.error('Failed to fetch group details:', error)
+    groupInfoLoadFailed.value = true
   }
 }
 
@@ -392,19 +424,7 @@ const handleSearchChatContent = () => {
 onMounted(async () => {
   await handleLoadGroupAnnoun()
   if (isGroup.value) {
-    try {
-      const roomId = globalStore.currentSessionRoomId
-      const response = await groupStore.loadGroupInfo(roomId)
-      await groupStore.loadRoomMembers(roomId, true)
-
-      if (response) {
-        groupInfo.value = response
-        avatarValue.value = response.avatar || response.avatarUrl || ''
-        await fetchGroupMembers(roomId)
-      }
-    } catch (e: unknown) {
-      logger.error('Failed to fetch group details:', e)
-    }
+    await loadGroupDetails()
   } else {
     initialRoomRemark.value = friend.value?.remark || ''
   }

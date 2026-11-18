@@ -23,22 +23,42 @@
         <span class="text-[length:var(--tjg-font-size-base)]">{{ getNavigationLabel(item) }}</span>
       </div>
     </div>
-    <!-- 媒体存储用量：服务端提供配额时才展示 -->
+    <!--
+      媒体存储用量四态：unsupported 整块隐藏（能力不存在），unavailable 提示暂不可用 + 重试，
+      loading 占位（不把未取到渲染成无配额），ready 且有限额时展示用量。
+    -->
     <div
-      v-if="quota && quota.limitBytes > 0"
+      v-if="showQuotaSection"
       class="storage-usage flex-shrink-0 p-16px border-t border-solid border-[--tjg-border-default]">
-      <div class="flex items-center justify-between gap-8px text-[length:var(--tjg-font-size-xs)]">
-        <span class="text-[--tjg-text-secondary]">{{ t('fileManager.storage.label') }}</span>
-        <span class="text-[--tjg-text-primary]">
-          {{ formatBytes(quota.storageBytes) }} / {{ formatBytes(quota.limitBytes) }}
+      <template v-if="quotaState === 'ready' && quota">
+        <div class="flex items-center justify-between gap-8px text-[length:var(--tjg-font-size-xs)]">
+          <span class="text-[--tjg-text-secondary]">{{ t('fileManager.storage.label') }}</span>
+          <span class="text-[--tjg-text-primary]">
+            {{ formatBytes(quota.storageBytes) }} / {{ formatBytes(quota.limitBytes) }}
+          </span>
+        </div>
+        <div class="storage-usage__track mt-8px">
+          <div class="storage-usage__bar" :style="{ width: quotaPercent }"></div>
+        </div>
+        <div class="mt-6px flex items-center justify-between gap-8px text-[length:var(--tjg-font-size-xs)]">
+          <span class="text-[--tjg-text-secondary]">{{ t('fileManager.storage.count') }}</span>
+          <span class="text-[--tjg-text-primary]">{{ quota.mediaCount }}</span>
+        </div>
+      </template>
+      <div
+        v-else-if="quotaState === 'unavailable'"
+        class="flex flex-col items-start gap-6px"
+        data-testid="side-navigation-quota-unavailable">
+        <span class="text-[length:var(--tjg-font-size-xs)] text-[--tjg-text-secondary]">
+          {{ t('fileManager.storage.unavailable') }}
         </span>
+        <button type="button" class="quota-retry" data-testid="side-navigation-quota-retry" @click="loadQuota">
+          {{ t('fileManager.common.retry') }}
+        </button>
       </div>
-      <div class="storage-usage__track mt-8px">
-        <div class="storage-usage__bar" :style="{ width: quotaPercent }"></div>
-      </div>
-      <div class="mt-6px flex items-center justify-between gap-8px text-[length:var(--tjg-font-size-xs)]">
-        <span class="text-[--tjg-text-secondary]">{{ t('fileManager.storage.count') }}</span>
-        <span class="text-[--tjg-text-primary]">{{ quota.mediaCount }}</span>
+      <div v-else class="flex flex-col gap-8px" data-testid="side-navigation-quota-loading">
+        <div class="quota-placeholder w-2/3"></div>
+        <div class="quota-placeholder w-full"></div>
       </div>
     </div>
   </div>
@@ -46,8 +66,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import type { MediaQuotaStats } from '@/services/matrix/media/mediaConfigOps'
+import { useMediaQuotaStats } from '@/composables/useMediaQuotaStats'
 import { formatBytes } from '@/utils/Formatting'
 
 type NavigationItem = {
@@ -71,17 +90,22 @@ const handleNavigationClick = (key: string) => {
   setActiveNavigation(key)
 }
 
-// 媒体存储配额（服务端无配额接口或本次取不到时均为 null，界面自动隐藏）
-const quota = ref<MediaQuotaStats | null>(null)
+// 媒体存储配额：四态判据统一在 useMediaQuotaStats 内，桌面与移动端共用
+const { state: quotaState, stats: quota, load: loadQuota } = useMediaQuotaStats()
 const quotaPercent = computed(() => {
   if (!quota.value || quota.value.limitBytes <= 0) return '0%'
   const used = Math.min(quota.value.storageBytes / quota.value.limitBytes, 1)
   return `${Math.round(used * 100)}%`
 })
 
-onMounted(async () => {
-  const result = await matrixMediaService.getQuotaStats()
-  quota.value = result.ok ? result.stats : null
+/** unsupported 整块隐藏；ready 但无上限（limitBytes <= 0）也隐藏 */
+const showQuotaSection = computed(() => {
+  if (quotaState.value === 'loading' || quotaState.value === 'unavailable') return true
+  return quotaState.value === 'ready' && !!quota.value && quota.value.limitBytes > 0
+})
+
+onMounted(() => {
+  void loadQuota()
 })
 
 const navigationKeyMap: Record<string, string> = {
@@ -164,5 +188,20 @@ const getNavigationLabel = (item: NavigationItem) => {
   border-radius: inherit;
   background-color: var(--tjg-color-primary-500);
   transition: width var(--tjg-motion-duration-normal) ease;
+}
+
+.quota-placeholder {
+  height: 8px;
+  border-radius: var(--tjg-radius-full);
+  background-color: var(--tjg-surface-sunken);
+}
+
+.quota-retry {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: var(--tjg-font-size-xs);
+  color: var(--tjg-color-primary-500);
 }
 </style>

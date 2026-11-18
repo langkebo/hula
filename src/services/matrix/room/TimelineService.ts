@@ -1,88 +1,27 @@
 import type { Direction } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { resolveMxcToHttp } from '../media/mxcUrl'
+import type {
+  RoomEventMediaUrl,
+  RoomEventMediaUrlOutcome,
+  RoomEventPerspectiveOutcome,
+  RoomFragmentsOutcome,
+  RoomReceiptsOutcome,
+  RoomReducedEventsOutcome,
+  RoomRenderedOutcome
+} from './timelineOutcomes'
+import {
+  normalizeFragments,
+  normalizePerspective,
+  normalizeReceipts,
+  normalizeReducedEvents,
+  normalizeRendered,
+  readErrcode,
+  toMediaEntries
+} from './timelineOutcomes'
 
 const logger = createLogger('TimelineService')
-
-/**
- * 消息视角统计（G-08）。
- *
- * 后端 `GET /_matrix/vendor/v1/rooms/{roomId}/event_perspective` 在 anchor 事件外
- * 附带 `perspective`：anchor 前 99 条 + anchor 的窗口统计。SDK 类型声明里没有
- * 该字段，因此在此归一化。
- */
-export interface RoomEventPerspectiveStats {
-  /** 窗口内事件总数 */
-  eventCount: number
-  /** 窗口内最新事件 ID */
-  latestEventId: string | null
-  /** 发送者活跃度（按条数降序） */
-  senderActivity: Array<{ userId: string; count: number }>
-  /** 事件类型分布（按条数降序） */
-  eventTypes: Array<{ type: string; count: number }>
-}
-
-export type RoomEventPerspectiveOutcome =
-  /** 端点存在且返回了 perspective */
-  | { status: 'ok'; stats: RoomEventPerspectiveStats }
-  /** 端点存在，但响应里没有 perspective 字段 */
-  | { status: 'empty' }
-  /** 端点不存在（该 homeserver 不支持） */
-  | { status: 'unsupported' }
-  /** 端点存在但本次读取失败（如 anchor 不可见、网络错误） */
-  | { status: 'error' }
-
-function toCountMap(value: unknown): Record<string, number> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
-  const entries = Object.entries(value as Record<string, unknown>)
-  return Object.fromEntries(
-    entries.filter(([, count]) => typeof count === 'number' && Number.isFinite(count) && count > 0)
-  ) as Record<string, number>
-}
-
-function toSortedCountRows(map: Record<string, number>): Array<[string, number]> {
-  return Object.entries(map).sort(([, a], [, b]) => b - a)
-}
-
-function normalizePerspective(raw: unknown): RoomEventPerspectiveStats | null {
-  if (typeof raw !== 'object' || raw === null) return null
-  const perspective = (raw as Record<string, unknown>).perspective
-  if (typeof perspective !== 'object' || perspective === null) return null
-  const record = perspective as Record<string, unknown>
-
-  const senderActivity = toSortedCountRows(toCountMap(record.sender_activity)).map(([userId, count]) => ({
-    userId,
-    count
-  }))
-  const eventTypes = toSortedCountRows(toCountMap(record.event_types)).map(([type, count]) => ({ type, count }))
-
-  return {
-    eventCount: typeof record.event_count === 'number' && Number.isFinite(record.event_count) ? record.event_count : 0,
-    latestEventId: typeof record.latest_event_id === 'string' ? record.latest_event_id : null,
-    senderActivity,
-    eventTypes
-  }
-}
-
-/** 从 SDK 抛出的错误中提取 Matrix errcode（部分错误把 errcode 塞在 message 的 JSON 里）。 */
-function readErrcode(err: unknown): string | null {
-  if (typeof err !== 'object' || err === null) return null
-  const record = err as { errcode?: unknown; code?: unknown; message?: unknown }
-  if (typeof record.errcode === 'string') return record.errcode
-  if (typeof record.code === 'string') return record.code
-  if (typeof record.message === 'string') {
-    const jsonMatch = record.message.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]) as { errcode?: unknown }
-        if (typeof parsed.errcode === 'string') return parsed.errcode
-      } catch {
-        return null
-      }
-    }
-  }
-  return null
-}
 
 /**
  * Room timeline / context domain service.
@@ -223,6 +162,119 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
         return { status: 'unsupported' }
       }
       logger.warn(`[MatrixRoom] 获取消息视角统计失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 获取事件附件媒体地址（ROOM-03，只读）。
+   *
+   * 注意：该端点提取的是事件 content 里的媒体地址，不是消息永久链接；
+   * 文本消息没有附件时返回 `empty`，端点缺失归 `unsupported`。
+   */
+  async getRoomEventMediaUrls(roomId: string, eventId: string): Promise<RoomEventMediaUrlOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().eventOps.getRoomEventUrl(roomId, eventId)
+      const seen = new Set<string>()
+      const urls: RoomEventMediaUrl[] = []
+      for (const entry of toMediaEntries(result)) {
+        if (seen.has(entry.url)) continue
+        seen.add(entry.url)
+        urls.push({ ...entry, httpUrl: resolveMxcToHttp(client, entry.url) })
+      }
+      return urls.length > 0 ? { status: 'ok', urls } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持事件媒体地址提取: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取事件媒体地址失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 获取房间降采样事件（ROOM-03，只读）。
+   *
+   * `events` 为空归 `empty`，端点缺失（`M_UNRECOGNIZED`）归 `unsupported`。
+   */
+  async getRoomReducedEvents(roomId: string): Promise<RoomReducedEventsOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().eventOps.getRoomReducedEvents(roomId)
+      const snapshot = normalizeReducedEvents(result)
+      return snapshot ? { status: 'ok', snapshot } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持房间降采样事件查询: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取房间降采样事件失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 获取房间渲染结果（ROOM-03，只读）。
+   *
+   * 只保留 `plain_text` 与逐事件渲染文本，不向前端暴露 `html`
+   * （避免把服务端 HTML 直接注入 DOM）。无任何可展示内容归 `empty`。
+   */
+  async getRoomRendered(roomId: string): Promise<RoomRenderedOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().eventOps.getRoomRendered(roomId)
+      const snapshot = normalizeRendered(result)
+      return snapshot ? { status: 'ok', snapshot } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持房间渲染结果查询: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取房间渲染结果失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 获取指定用户在房间内的时间线片段（ROOM-03，只读）。
+   *
+   * 片段缺 `start` / `end` 视为脏条目丢弃；空列表归 `empty`。
+   */
+  async getRoomFragments(roomId: string, userId: string): Promise<RoomFragmentsOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().eventOps.getRoomFragments(roomId, userId)
+      const snapshot = normalizeFragments(result, userId)
+      return snapshot ? { status: 'ok', snapshot } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持房间时间线片段查询: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取房间时间线片段失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 获取某事件的已读回执明细（ROOM-03，只读）。
+   *
+   * 兼容后端的 `receipts[]` 与 `users` 映射两种形状；无回执用户归 `empty`。
+   */
+  async getRoomReceipts(roomId: string, receiptType: string, eventId: string): Promise<RoomReceiptsOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().eventOps.getRoomReceipts(roomId, receiptType, eventId)
+      const snapshot = normalizeReceipts(result, receiptType, eventId)
+      return snapshot ? { status: 'ok', snapshot } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持已读回执明细查询: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取已读回执明细失败: ${err}`)
       return { status: 'error' }
     }
   }

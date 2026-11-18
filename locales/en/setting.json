@@ -474,7 +474,6 @@
   },
   "encryption": {
     "title": "Encryption Settings",
-    "server_unsupported": "End-to-end encryption is not enabled on this server. This page is read-only.",
     "crypto_unavailable": "Local encryption is not initialized. This page is read-only.",
     "status": "Encryption Status",
     "encryption_enabled": "End-to-End Encryption",
@@ -1026,8 +1025,6 @@
     "three_pid_bind_success": "Email bound successfully",
     "three_pid_bind_failed": "Failed to bind email",
     "three_pid_unbind_success": "Unbound successfully",
-    "three_pid_unbind_failed": "Failed to unbind",
-    "three_pid_load_failed": "Failed to load bound identifiers",
     "three_pid_refresh": "Refresh",
     "three_pid_msisdn_unavailable": "Phone binding is not available yet. Contact an administrator if you need it."
   },
@@ -1167,6 +1164,8 @@
     "no_room_bans": "No room ban rules",
     "no_user_bans": "No user ban rules",
     "no_server_bans": "No server ban rules",
+    "storage_corrupted": "Could not read the local ban rules. The editing area is paused so the corrupted data is not overwritten.",
+    "reset_storage": "Reset local rules",
     "remove": "Remove",
     "reason": "Reason",
     "reason_optional": "Ban reason (optional)",
@@ -1176,17 +1175,8 @@
     "add_room_rule": "Add Room Ban Rule",
     "add_user_rule": "Add User Ban Rule",
     "add_server_rule": "Add Server Ban Rule",
-    "enter_room_id": "Please enter a room ID",
-    "enter_user_id": "Please enter a user ID",
-    "enter_server_name": "Please enter a server name",
-    "added_room_rule": "Room ban rule added",
-    "added_user_rule": "User ban rule added",
-    "added_server_rule": "Server ban rule added",
     "remove_rule_title": "Remove Ban Rule",
-    "remove_rule_confirm": "Are you sure you want to remove the ban for {entity}?",
-    "removed_room_rule": "Room ban rule removed",
-    "removed_user_rule": "User ban rule removed",
-    "removed_server_rule": "Server ban rule removed"
+    "remove_rule_confirm": "Are you sure you want to remove the ban for {entity}?"
   },
   "private_chat": {
     "title": "Private Chat",

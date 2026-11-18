@@ -8,7 +8,11 @@
       <n-spin :show="loading" size="small">
         <p class="panel-subtitle">{{ t('room.encrypted_events.subtitle') }}</p>
 
-        <template v-if="events.length > 0">
+        <div v-if="loadFailed" data-test="room-encrypted-events-error">
+          <ErrorState compact :title="t('common.load_failed')" :retry-text="t('common.retry')" @retry="loadEvents" />
+        </div>
+
+        <template v-else-if="events.length > 0">
           <div class="event-list">
             <div
               v-for="item in events"
@@ -48,6 +52,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { truncateMiddle } from '@/utils/StringUtils'
 
@@ -66,6 +71,8 @@ const { t } = useI18n()
 
 const loading = ref(true)
 const eventsData = ref<Record<string, unknown>>({})
+// 读取失败不能落成 {}：那会把「读不到加密事件」渲染成「本群没有加密事件」
+const loadFailed = ref(false)
 
 const events = computed<EncryptedEvent[]>(() => {
   const list = eventsData.value?.events
@@ -74,10 +81,12 @@ const events = computed<EncryptedEvent[]>(() => {
 
 async function loadEvents() {
   loading.value = true
+  loadFailed.value = false
   try {
     eventsData.value = await matrixRoomReadFacade.getEncryptedEvents(props.roomId)
   } catch {
     eventsData.value = {}
+    loadFailed.value = true
   } finally {
     loading.value = false
   }

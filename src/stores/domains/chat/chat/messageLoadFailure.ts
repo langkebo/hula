@@ -3,8 +3,8 @@ export type MessageLoadFailureCategory = 'network' | 'permission' | 'server' | '
 
 /** 消息加载失败的可见信号 */
 export type MessageLoadFailure = {
-  /** 'history'=翻页失败(游标保留可重试) / 'initial'=首屏失败(显示错误态而非空态) */
-  scope: 'history' | 'initial'
+  /** 'history'=翻页失败(游标保留可重试) / 'initial'=首屏失败(显示错误态而非空态) / 'live'=单帧实时处理失败 */
+  scope: 'history' | 'initial' | 'live'
   /** 失败原因：优先服务端 errcode（如 M_FORBIDDEN），其次 Error.message */
   reason: string
   /** 失败归类（见 classifyLoadFailure），用于按网络/权限/服务端分级展示 */

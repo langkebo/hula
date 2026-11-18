@@ -51,6 +51,9 @@
     "load_failed_network": "Network unavailable. Check your connection and retry",
     "load_failed_permission": "You do not have permission to read this conversation",
     "load_failed_server": "Service temporarily unavailable. Please try again later",
+    "live_update_failed": "Some new messages could not be processed",
+    "jump_searching": "Searching for the message...",
+    "jump_not_found": "Cannot find the original message. It may have been deleted or is too old",
     "unread_divider": "New messages",
     "feature": {
       "coming_soon": "Feature under development"
@@ -129,7 +132,9 @@
     "remove_success": "Removed {count} members",
     "remove_failed": "Failed to remove members, please retry",
     "confirm_remove_title": "Confirm removal",
-    "channel_manage_unsupported": "Channels do not support member management"
+    "channel_manage_unsupported": "Channels do not support member management",
+    "empty": "No members to manage",
+    "empty_search": "No matching members"
   },
   "secret_chat": {
     "title": "Secret Chat",
@@ -176,7 +181,6 @@
     },
     "quota": {
       "title": "Quota",
-      "unavailable": "Unavailable",
       "unavailable_hint": "Quota data unavailable"
     },
     "favorites": {

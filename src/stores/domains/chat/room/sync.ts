@@ -205,27 +205,37 @@ export function createRoomSync(ctx: RoomSyncContext) {
       return typeof typedBody.content === 'string' || typeof typedBody.body === 'string'
     }
 
-    matrixRoomRealtimeService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
-      // 撤回提示不在这里处理：由 SDK 的 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
-      // 时间线里的 m.room.redaction 不产出消息，避免与目标事件的撤回态重复渲染。
-      if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {
-        if (chatStore.checkMsgExist(roomId, message.message.id)) {
-          if (eventType === 'm.room.message' && hasRenderableMessageBody(message.message.body)) {
-            chatStore.updateMsg({
-              msgId: message.message.id,
-              roomId,
-              status: MessageStatusEnum.SUCCESS,
-              body: normalizeMessageBody(message.message.body)
-            })
+    matrixRoomRealtimeService.onTimelineEvent(
+      ({ roomId, eventType, roomInfo, message }) => {
+        // 撤回提示不在这里处理：由 SDK 的 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
+        // 时间线里的 m.room.redaction 不产出消息，避免与目标事件的撤回态重复渲染。
+        if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {
+          if (chatStore.checkMsgExist(roomId, message.message.id)) {
+            if (eventType === 'm.room.message' && hasRenderableMessageBody(message.message.body)) {
+              chatStore.updateMsg({
+                msgId: message.message.id,
+                roomId,
+                status: MessageStatusEnum.SUCCESS,
+                body: normalizeMessageBody(message.message.body)
+              })
+            }
+          } else {
+            chatStore.pushMsg(message)
           }
-        } else {
-          chatStore.pushMsg(message)
         }
-      }
 
-      rooms.value.set(roomId, roomInfo)
-      triggerRef(rooms)
-    })
+        rooms.value.set(roomId, roomInfo)
+        triggerRef(rooms)
+        // 这一帧已完整落地，清掉之前的实时失败标记
+        chatStore.clearLiveFailure(roomId)
+      },
+      ({ roomId, error }) => {
+        // 单帧处理失败不能伪装成「没有新消息」：只标记当前房间的实时失败，
+        // 保留已渲染内容，由列表上方的局部失败横幅提供重试。
+        logger.error(`[RoomStore] 实时帧处理失败 roomId=${roomId}:`, error)
+        chatStore.markLiveFailure(roomId, error)
+      }
+    )
 
     matrixClientService.on('eventDecrypted', (payload: unknown) => {
       const { event, err, room } = payload as {
@@ -237,41 +247,50 @@ export function createRoomSync(ctx: RoomSyncContext) {
         return
       }
 
-      const message = matrixEventService.convertEventToMessage(event, room)
-      if (!message?.message?.id) {
-        return
-      }
+      try {
+        const message = matrixEventService.convertEventToMessage(event, room)
+        if (!message?.message?.id) {
+          return
+        }
 
-      const roomId = message.message.roomId
+        const roomId = message.message.roomId
 
-      // 撤回先于解密到达时，SDK 已清空 content；这里不要用空正文覆盖撤回文案，
-      // 只补齐撤回态，避免加密房里撤回后只剩一个空气泡。
-      if (event.isRedacted()) {
-        void chatStore.updateRecallMsg({ msgId: message.message.id, roomId, recallUid: event.getSender() ?? '' })
+        // 撤回先于解密到达时，SDK 已清空 content；这里不要用空正文覆盖撤回文案，
+        // 只补齐撤回态，避免加密房里撤回后只剩一个空气泡。
+        if (event.isRedacted()) {
+          void chatStore.updateRecallMsg({ msgId: message.message.id, roomId, recallUid: event.getSender() ?? '' })
+          rooms.value.set(roomId, matrixRoomCreationService.convertRoomToRoomInfo(room))
+          triggerRef(rooms)
+          chatStore.clearLiveFailure(roomId)
+          return
+        }
+
+        const body = normalizeMessageBody(message.message.body)
+
+        if (chatStore.checkMsgExist(roomId, message.message.id)) {
+          // 解密成功：以同一事件 ID 原地替换正文，同时同步类型并清除解密失败标记，
+          // 避免重建消息破坏排序与已读回执。
+          chatStore.updateMsg({
+            msgId: message.message.id,
+            roomId,
+            status: MessageStatusEnum.SUCCESS,
+            body,
+            type: message.message.type,
+            isBadEncrypted: false
+          })
+        } else {
+          chatStore.pushMsg(message)
+        }
+
         rooms.value.set(roomId, matrixRoomCreationService.convertRoomToRoomInfo(room))
         triggerRef(rooms)
-        return
+        chatStore.clearLiveFailure(roomId)
+      } catch (error) {
+        // 解密后补发同样属于「单帧处理」：不能冒泡到 SDK 事件总线，
+        // 也不能静默丢帧；失败按房间记到 liveFailed，交给局部失败横幅重试。
+        logger.error(`[RoomStore] 解密后推送消息失败 roomId=${room.roomId}:`, error)
+        chatStore.markLiveFailure(room.roomId, error)
       }
-
-      const body = normalizeMessageBody(message.message.body)
-
-      if (chatStore.checkMsgExist(roomId, message.message.id)) {
-        // 解密成功：以同一事件 ID 原地替换正文，同时同步类型并清除解密失败标记，
-        // 避免重建消息破坏排序与已读回执。
-        chatStore.updateMsg({
-          msgId: message.message.id,
-          roomId,
-          status: MessageStatusEnum.SUCCESS,
-          body,
-          type: message.message.type,
-          isBadEncrypted: false
-        })
-      } else {
-        chatStore.pushMsg(message)
-      }
-
-      rooms.value.set(roomId, matrixRoomCreationService.convertRoomToRoomInfo(room))
-      triggerRef(rooms)
     })
 
     matrixRoomRealtimeService.onRoomNameChange((roomId, name) => {

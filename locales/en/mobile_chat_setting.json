@@ -73,6 +73,7 @@
   "create_group_success": "Group created",
   "create_group_need_two": "Select at least 2 people to create a group",
   "search_contacts_hint": "Search contacts~",
+  "member_list_load_failed": "Could not load group members, so existing members cannot be excluded",
   "invite_button": "Invite",
   "select_friends_to_invite": "Please select friends to invite",
   "invite_failed": "Invitation failed. Please try again.",

@@ -54,12 +54,16 @@ export interface OidcAuthMetadataSummary {
   authorizationEndpoint?: string
 }
 
+/** 回调失败分类（CAP-03）：服务端未启用 OIDC 时不再提供「重试」 */
+export type OidcCallbackFailureReason = 'unsupported' | 'exchange-failed'
+
 const DEFAULT_OIDC_SCOPES = ['openid', 'profile', 'email']
 const OIDC_HOMESERVER_STORAGE_KEY = 'oidc_homeserver_url'
 
 class MatrixOidcService {
   private discovery: OidcDiscoveryDocument | null = null
   private homeserverUrl: string = ''
+  private callbackFailureReason: OidcCallbackFailureReason | null = null
 
   async discoverOidc(homeserverUrl: string): Promise<OidcDiscoveryDocument | null> {
     try {
@@ -81,6 +85,33 @@ class MatrixOidcService {
 
   isOidcEnabled(): boolean {
     return this.discovery !== null && this.resolveHomeserverUrl() !== ''
+  }
+
+  /**
+   * 最近一次回调失败的原因（CAP-03）。
+   * 回调页据此区分「服务端未启用 OIDC」与「令牌交换失败」：
+   * 前者重试无意义，只保留返回登录。
+   */
+  getLastCallbackFailureReason(): OidcCallbackFailureReason | null {
+    return this.callbackFailureReason
+  }
+
+  /**
+   * 识别「服务端未启用 OIDC」类错误。
+   * SDK 在服务端未实现 OIDC 时抛 `OidcNotEnabledError`；部分版本回退为
+   * `M_UNRECOGNIZED` 或 404，这里按 name / errcode / HTTP 状态统一归类。
+   */
+  private isOidcUnsupportedError(err: unknown): boolean {
+    if (!err || typeof err !== 'object') {
+      return false
+    }
+    const candidate = err as { name?: string; errcode?: string; httpStatus?: number; status?: number }
+    return (
+      candidate.name === 'OidcNotEnabledError' ||
+      candidate.errcode === 'M_UNRECOGNIZED' ||
+      candidate.httpStatus === 404 ||
+      candidate.status === 404
+    )
   }
 
   getHomeserverUrl(): string {
@@ -150,6 +181,7 @@ class MatrixOidcService {
   }
 
   async handleCallback(code: string, state: string): Promise<OidcTokenResponse | null> {
+    this.callbackFailureReason = null
     const savedState = sessionStorage.getItem('oidc_state')
     const codeVerifier = sessionStorage.getItem('oidc_code_verifier')
     const homeserverUrl = this.resolveHomeserverUrl()
@@ -191,6 +223,7 @@ class MatrixOidcService {
       return tokenResponse
     } catch (err) {
       logger.error(`[MatrixOidcService] Error handling callback: ${err}`)
+      this.callbackFailureReason = this.isOidcUnsupportedError(err) ? 'unsupported' : 'exchange-failed'
       return null
     }
   }
@@ -279,6 +312,7 @@ class MatrixOidcService {
     oidcAccessToken: string,
     oidcRefreshToken?: string
   ): Promise<{ user_id: string; access_token: string; device_id: string; refresh_token?: string } | null> {
+    this.callbackFailureReason = null
     const homeserverUrl = this.resolveHomeserverUrl()
     if (!homeserverUrl) {
       logger.error('[MatrixOidcService] Missing homeserver URL for OIDC token exchange')
@@ -305,6 +339,7 @@ class MatrixOidcService {
       return result
     } catch (err) {
       logger.error(`[MatrixOidcService] Error exchanging OIDC for Matrix token: ${err}`)
+      this.callbackFailureReason = this.isOidcUnsupportedError(err) ? 'unsupported' : 'exchange-failed'
       return null
     }
   }

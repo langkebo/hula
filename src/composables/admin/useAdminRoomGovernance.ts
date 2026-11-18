@@ -20,7 +20,17 @@ export interface AdminRoomGovernanceState {
   roomListings: Ref<Record<string, unknown> | null>
   listingsLoading: Ref<boolean>
   loadRoomListings: () => Promise<void>
-  setRoomPublicListing: (roomId: string) => Promise<void>
+  /** 发布/下线公开目录；isPublic 缺省为 true（发布） */
+  setRoomPublicListing: (roomId: string, isPublic?: boolean) => Promise<void>
+
+  /** 当前房间 token 同步信息 */
+  roomTokenSync: Ref<Record<string, unknown> | null>
+  tokenSyncLoading: Ref<boolean>
+  loadRoomTokenSync: () => Promise<void>
+
+  /** 级联撤回 */
+  cascadeRedactLoading: Ref<boolean>
+  cascadeRedactEvent: (eventId: string, options?: { maxDepth?: number; reason?: string }) => Promise<number>
 
   /** 事件上下文 */
   roomEventContext: Ref<Record<string, unknown> | null>
@@ -58,6 +68,11 @@ export function useAdminRoomGovernance(
 
   const roomListings = ref<Record<string, unknown> | null>(null)
   const listingsLoading = ref(false)
+
+  const roomTokenSync = ref<Record<string, unknown> | null>(null)
+  const tokenSyncLoading = ref(false)
+
+  const cascadeRedactLoading = ref(false)
 
   const roomEventContext = ref<Record<string, unknown> | null>(null)
   const eventContextLoading = ref(false)
@@ -109,9 +124,29 @@ export function useAdminRoomGovernance(
     }
   }
 
-  async function setRoomPublicListing(roomId: string) {
-    await adminService.setRoomPublicListing(roomId, true)
+  async function setRoomPublicListing(roomId: string, isPublic = true) {
+    await adminService.setRoomPublicListing(roomId, isPublic)
     if (selectedRoom.value?.roomId === roomId) await loadRoomListings()
+  }
+
+  async function loadRoomTokenSync() {
+    if (!selectedRoom.value) return
+    tokenSyncLoading.value = true
+    try {
+      roomTokenSync.value = await adminService.getRoomTokenSync(selectedRoom.value.roomId)
+    } finally {
+      tokenSyncLoading.value = false
+    }
+  }
+
+  async function cascadeRedactEvent(eventId: string, options?: { maxDepth?: number; reason?: string }) {
+    if (!selectedRoom.value || !eventId.trim()) return 0
+    cascadeRedactLoading.value = true
+    try {
+      return await adminService.cascadeRedactEvent(selectedRoom.value.roomId, eventId.trim(), options)
+    } finally {
+      cascadeRedactLoading.value = false
+    }
   }
 
   async function loadRoomEventContext(eventId: string) {
@@ -154,6 +189,7 @@ export function useAdminRoomGovernance(
   function resetGovernance() {
     roomBlockStatus.value = null
     roomListings.value = null
+    roomTokenSync.value = null
     roomEventContext.value = null
     roomSearchResults.value = []
     forwardExtremities.value = []
@@ -172,6 +208,11 @@ export function useAdminRoomGovernance(
     listingsLoading,
     loadRoomListings,
     setRoomPublicListing,
+    roomTokenSync,
+    tokenSyncLoading,
+    loadRoomTokenSync,
+    cascadeRedactLoading,
+    cascadeRedactEvent,
     roomEventContext,
     eventContextLoading,
     loadRoomEventContext,

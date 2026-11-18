@@ -77,7 +77,8 @@ export type Messages = {
   },
   "storage": {
     "label": "媒体存储",
-    "count": "媒体数量"
+    "count": "媒体数量",
+    "unavailable": "媒体配额暂不可用"
   },
   "userList": {
     "searchPlaceholder": {
@@ -163,6 +164,7 @@ export type KeyPaths =
   | "fileManager.common.retry"
   | "fileManager.storage.label"
   | "fileManager.storage.count"
+  | "fileManager.storage.unavailable"
   | "fileManager.userList.searchPlaceholder.default"
   | "fileManager.userList.searchPlaceholder.senders"
   | "fileManager.userList.searchPlaceholder.sessions"

@@ -94,6 +94,37 @@ export const saveVideoAttachmentAs = async (options: SaveAttachmentOptions) => {
   })
 }
 
+/**
+ * 保存纯文本（HTML 等）为文件：复用同一套 Tauri 保存对话框，避免新开裸下载通道。
+ *
+ * 为什么不走 `saveAttachmentAs`：那条路径以 `url` 为入口、需要 `downloadFile`
+ * （媒体域），文本导出既无远端地址也无加密附件。
+ */
+export const saveTextFileAs = async (options: {
+  content: string
+  defaultFileName: string
+  filters?: Array<{ name: string; extensions: string[] }>
+  successMessage?: string
+  errorMessage?: string
+}): Promise<boolean> => {
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
+  try {
+    const savePath = await save({
+      defaultPath: options.defaultFileName,
+      ...(options.filters !== undefined ? { filters: options.filters } : {})
+    })
+    if (!savePath) return false
+    await writeFile(normalizeSavePath(savePath), new TextEncoder().encode(options.content))
+    showFeedback(options.successMessage || t('utils.file_download_success'), 'success')
+    return true
+  } catch (error) {
+    logger.error(options.errorMessage || '保存文本文件失败:', error)
+    showFeedback(options.errorMessage || t('utils.file_save_failed'), 'error')
+    return false
+  }
+}
+
 export const saveFileAttachmentAs = async (options: SaveAttachmentOptions) => {
   const { t } = useI18nGlobal()
   await saveAttachmentAs({

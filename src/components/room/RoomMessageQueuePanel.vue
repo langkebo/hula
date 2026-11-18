@@ -8,7 +8,11 @@
       <n-spin :show="loading" size="small">
         <p class="panel-subtitle">{{ t('room.message_queue.subtitle') }}</p>
 
-        <template v-if="queueItems.length > 0">
+        <div v-if="loadFailed" data-test="room-message-queue-error">
+          <ErrorState compact :title="t('common.load_failed')" :retry-text="t('common.retry')" @retry="loadQueue" />
+        </div>
+
+        <template v-else-if="queueItems.length > 0">
           <div class="queue-list">
             <div v-for="item in queueItems" :key="String(item.event_id)" class="queue-item" data-testid="queue-item">
               <div class="queue-item-row">
@@ -38,6 +42,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { truncateMiddle } from '@/utils/StringUtils'
 
@@ -55,6 +60,8 @@ const { t } = useI18n()
 
 const loading = ref(true)
 const queueData = ref<Record<string, unknown>>({})
+// 读取失败不能落成 {}：那会把「读不到消息队列」渲染成「队列为空」
+const loadFailed = ref(false)
 
 const queueItems = computed<QueueItem[]>(() => {
   const queue = queueData.value?.queue
@@ -73,10 +80,12 @@ function formatContent(content: unknown): string {
 
 async function loadQueue() {
   loading.value = true
+  loadFailed.value = false
   try {
     queueData.value = await matrixRoomReadFacade.getMessageQueue(props.roomId)
   } catch {
     queueData.value = {}
+    loadFailed.value = true
   } finally {
     loading.value = false
   }

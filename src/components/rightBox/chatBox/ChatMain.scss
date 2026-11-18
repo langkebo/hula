@@ -1,0 +1,65 @@
+// 原生滚动容器样式
+.scrollbar-container {
+  flex: 1;
+  overflow-y: auto;
+  // P3-4 实验性修复：阻止滚动到边界时链式传播到 body（原生滚动条/页面跳动的来源）
+  overscroll-behavior: contain;
+  // 滚动性能优化
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+  transform: translateZ(0);
+
+  /* 滚动条样式 */
+  &::-webkit-scrollbar {
+    width: 6px;
+    transition-property: opacity;
+    transition-duration: var(--tjg-motion-duration-overlay);
+    transition-timing-function: ease;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
+    border-radius: 3px;
+    transition-property: opacity, background-color;
+    transition-duration: var(--tjg-motion-duration-overlay);
+    transition-timing-function: ease;
+    // min-height: 42px;
+    z-index: 999;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent);
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &.hide-scrollbar {
+    &::-webkit-scrollbar {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    // 这里添加一个小的padding，防止mac上会不显示
+    padding-right: 0.01px;
+  }
+}
+
+// 性能优化相关样式
+.message-item {
+  contain: layout style;
+  will-change: auto;
+}
+
+// 拖拽时禁用鼠标事件，避免不必要的监听损耗
+:global(body.dragging-resize) .scrollbar-container {
+  pointer-events: none;
+}

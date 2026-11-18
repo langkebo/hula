@@ -341,6 +341,84 @@ describe('MatrixRoomRealtimeService', () => {
       }
     )
 
+    it('onTimelineEvent 转换抛错时不穿透处理器，并回调 onError', () => {
+      const { on } = setupClient()
+      const error = new Error('convert failed')
+      convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
+      convertEventToMessageMock.mockImplementationOnce(() => {
+        throw error
+      })
+      const cb = vi.fn()
+      const onError = vi.fn()
+      service.onTimelineEvent(cb, onError)
+      const handler = on.mock.calls[0][1]
+
+      expect(() => handler({ getType: () => 'm.room.message', getContent: () => ({}) }, makeRoom())).not.toThrow()
+      expect(cb).not.toHaveBeenCalled()
+      expect(onError).toHaveBeenCalledWith({ roomId: '!r:e', error })
+    })
+
+    it('onTimelineEvent 上层回调抛错时同样被兜住并回调 onError', () => {
+      const { on } = setupClient()
+      convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
+      convertEventToMessageMock.mockReturnValueOnce({ id: 'm1' })
+      const error = new Error('callback failed')
+      const cb = vi.fn(() => {
+        throw error
+      })
+      const onError = vi.fn()
+      service.onTimelineEvent(cb, onError)
+      const handler = on.mock.calls[0][1]
+
+      expect(() => handler({ getType: () => 'm.room.message', getContent: () => ({}) }, makeRoom())).not.toThrow()
+      expect(onError).toHaveBeenCalledWith({ roomId: '!r:e', error })
+    })
+
+    it('onTimelineEvent 未传 onError 时只吞掉异常，不向外抛', () => {
+      const { on } = setupClient()
+      convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
+      convertEventToMessageMock.mockImplementationOnce(() => {
+        throw new Error('boom')
+      })
+      service.onTimelineEvent(vi.fn())
+      const handler = on.mock.calls[0][1]
+
+      expect(() => handler({ getType: () => 'm.room.message', getContent: () => ({}) }, makeRoom())).not.toThrow()
+    })
+
+    it('onTimelineEvent 加密重试路径抛错时回调 onError', () => {
+      vi.useFakeTimers()
+      try {
+        const { on } = setupClient()
+        const room = makeRoom()
+        let eventType = 'm.room.encrypted'
+        const event = {
+          getType: () => eventType,
+          getContent: () => ({})
+        }
+        const error = new Error('retry failed')
+
+        convertRoomToRoomInfoMock.mockReturnValue({ roomId: '!r:e' })
+        convertEventToMessageTypeMock.mockReturnValueOnce({ id: 'enc' })
+        convertEventToMessageMock.mockImplementationOnce(() => {
+          throw error
+        })
+
+        const cb = vi.fn()
+        const onError = vi.fn()
+        service.onTimelineEvent(cb, onError)
+        on.mock.calls[0][1](event, room)
+
+        eventType = 'm.room.message'
+        expect(() => vi.advanceTimersByTime(250)).not.toThrow()
+
+        expect(cb).toHaveBeenCalledTimes(1)
+        expect(onError).toHaveBeenCalledWith({ roomId: '!r:e', error })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('onRoomNameChange forwards roomId + name', () => {
       const roomOn = vi.fn()
       const room = makeRoom({ roomId: '!r:e', name: 'N', on: roomOn } as unknown as Partial<Room>)

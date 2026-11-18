@@ -26,6 +26,8 @@ type MessageListOptions = {
   cursor: string
   hasLoadedOnce?: boolean
   loadFailed?: MessageLoadFailure | null
+  /** 实时帧处理失败标记：与 loadFailed 分开，避免把「单帧失败」误写成「首屏/翻页失败」 */
+  liveFailed?: MessageLoadFailure | null
 }
 
 export const useChatStore = defineStore(StoresEnum.CHAT, () => {
@@ -272,8 +274,15 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     clearRoomMessagesExceptTransient
   })
 
-  const { setAllSessionMsgList, loadMore, fetchCurrentRoomRemoteOnce, changeRoom, resetAndRefreshCurrentRoomMessages } =
-    loading
+  const {
+    setAllSessionMsgList,
+    loadMore,
+    fetchCurrentRoomRemoteOnce,
+    changeRoom,
+    resetAndRefreshCurrentRoomMessages,
+    markLiveFailure,
+    clearLiveFailure
+  } = loading
 
   const checkMsgExist = (roomId: string, msgId: string) => {
     const current = messageMap[roomId]
@@ -389,6 +398,8 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     resetAndRefreshCurrentRoomMessages,
     clearAllMessages,
     fetchCurrentRoomRemoteOnce,
+    markLiveFailure,
+    clearLiveFailure,
     getGroupSessions,
     removeSession,
     changeRoom,

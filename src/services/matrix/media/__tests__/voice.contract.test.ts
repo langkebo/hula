@@ -215,6 +215,17 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(result.totalMessages).toBe(3)
   })
 
+  it('getRoomVoiceStats (strict) hits /voice/room/:roomId/stats with same shape', async () => {
+    const result = await matrixVoiceService.getRoomVoiceStats('!room:hs')
+
+    const calls = seenUrls.filter((u) => u.url.includes('/voice/room/'))
+    expect(calls).toHaveLength(1)
+    expect(calls[0].method).toBe('GET')
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/room/!room%3Ahs/stats`)
+    expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
+    expect(result.totalMessages).toBe(3)
+  })
+
   it('getUserVoiceStats hits /voice/user/:userId/stats (no V1 double-prefix)', async () => {
     const result = await matrixVoiceService.getUserVoiceStats('@alice:hs')
 

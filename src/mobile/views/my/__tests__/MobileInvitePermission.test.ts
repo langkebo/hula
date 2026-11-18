@@ -449,11 +449,15 @@ describe('MobileInvitePermission', () => {
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
   })
 
-  it('surfaces a toast when loading fails', async () => {
+  it('读取失败时展示错误态与重试，不渲染默认策略表单', async () => {
     getConfigMock.mockRejectedValue(new Error('boom'))
-    mountPage()
+    const wrapper = mountPage()
     await flushPromises()
-    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
+
+    expect(wrapper.find('[data-test="invite-permission-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="async-state-retry"]').exists()).toBe(true)
+    // 失败不能把 allow_all 默认表单冒充成账号真实策略
+    expect(wrapper.find('[data-testid="invite-mode-group"]').exists()).toBe(false)
   })
 
   it('stops loading even when the config load fails', async () => {
@@ -461,5 +465,6 @@ describe('MobileInvitePermission', () => {
     const wrapper = mountPage()
     await flushPromises()
     expect((wrapper.vm as any).loading).toBe(false)
+    expect((wrapper.vm as any).loadFailed).toBe(true)
   })
 })

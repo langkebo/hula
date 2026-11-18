@@ -8,7 +8,17 @@
     </template>
 
     <n-spin :show="loading" size="small">
-      <template v-if="!isEncrypted">
+      <n-flex v-if="loadFailed" vertical :size="8" align="center" data-test="encryption-error">
+        <Icon icon="mdi:shield-alert-outline" class="text-32px color-[--tjg-text-tertiary]" />
+        <span class="text-[length:var(--tjg-font-size-md)] text-[--tjg-text-secondary]">
+          {{ t('encryption.room_settings.load_failed') }}
+        </span>
+        <n-button size="small" :disabled="loading" data-test="encryption-retry" @click="loadEncryptionStatus">
+          {{ t('common.retry') }}
+        </n-button>
+      </n-flex>
+
+      <template v-else-if="!isEncrypted">
         <n-flex vertical :size="12" align="center">
           <Icon icon="mdi:shield-off-outline" class="text-32px color-[--tjg-text-tertiary]" />
           <span class="text-[length:var(--tjg-font-size-md)] text-gray-500">
@@ -65,6 +75,8 @@ const encryption = useEncryption()
 
 const loading = ref(false)
 const enabling = ref(false)
+// 读取失败时不能落到「未加密」分支，否则会把未知状态当成可加密房间
+const loadFailed = ref(false)
 const isEncrypted = ref(false)
 const encryptionSettings = ref<{
   algorithm?: string
@@ -75,15 +87,17 @@ const encryptionSettings = ref<{
 const loadEncryptionStatus = async () => {
   if (!props.roomId) return
   loading.value = true
+  loadFailed.value = false
+  isEncrypted.value = false
+  encryptionSettings.value = null
   try {
     isEncrypted.value = await encryption.isRoomEncrypted(props.roomId)
     if (isEncrypted.value) {
       const settings = await encryption.getEncryptionSettings(props.roomId)
       encryptionSettings.value = settings
-    } else {
-      encryptionSettings.value = null
     }
   } catch {
+    loadFailed.value = true
     isEncrypted.value = false
     encryptionSettings.value = null
   } finally {
@@ -121,6 +135,7 @@ watch(
     if (newId) {
       loadEncryptionStatus()
     } else {
+      loadFailed.value = false
       isEncrypted.value = false
       encryptionSettings.value = null
     }

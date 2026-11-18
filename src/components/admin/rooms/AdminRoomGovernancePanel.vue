@@ -31,9 +31,20 @@
     <!-- 公开目录 -->
     <n-card size="small" :title="t('admin.rooms.listings')">
       <template #header-extra>
-        <n-button size="small" type="primary" :loading="publishing" @click="handlePublishListing">
-          {{ t('admin.rooms.publishListing') }}
-        </n-button>
+        <n-space :size="8">
+          <n-button
+            v-if="rooms.roomListings.value"
+            size="small"
+            type="error"
+            secondary
+            :loading="unpublishing"
+            @click="handleUnpublishListing">
+            {{ t('admin.rooms.unpublishListing') }}
+          </n-button>
+          <n-button size="small" type="primary" :loading="publishing" @click="handlePublishListing">
+            {{ t('admin.rooms.publishListing') }}
+          </n-button>
+        </n-space>
       </template>
       <n-spin :show="rooms.listingsLoading.value">
         <n-descriptions v-if="rooms.roomListings.value" bordered :column="1" label-placement="left" size="small">
@@ -43,6 +54,46 @@
         </n-descriptions>
         <n-empty v-else :description="t('admin.rooms.listingsEmpty')" class="py-16px" />
       </n-spin>
+    </n-card>
+
+    <!-- token 同步 -->
+    <n-card size="small" :title="t('admin.rooms.tokenSync')">
+      <template #header-extra>
+        <n-button size="small" :loading="rooms.tokenSyncLoading.value" @click="reloadTokenSync">
+          {{ t('admin.common.refresh') }}
+        </n-button>
+      </template>
+      <n-spin :show="rooms.tokenSyncLoading.value">
+        <pre v-if="rooms.roomTokenSync.value" class="governance-json">{{
+          JSON.stringify(rooms.roomTokenSync.value, null, 2)
+        }}</pre>
+        <n-empty v-else :description="t('admin.rooms.tokenSyncEmpty')" class="py-16px" />
+      </n-spin>
+    </n-card>
+
+    <!-- 级联撤回 -->
+    <n-card size="small" :title="t('admin.rooms.cascadeRedact')">
+      <n-space vertical :size="8">
+        <n-input
+          v-model:value="cascadeEventId"
+          :placeholder="t('admin.rooms.cascadeRedactEventPlaceholder')"
+          @keyup.enter="handleCascadeRedact" />
+        <n-space align="center" :size="8">
+          <n-input-number
+            v-model:value="cascadeDepth"
+            :min="1"
+            :max="10"
+            :placeholder="t('admin.rooms.cascadeRedactDepth')"
+            class="w-[140px]" />
+          <n-input
+            v-model:value="cascadeReason"
+            :placeholder="t('admin.rooms.cascadeRedactReasonPlaceholder')"
+            class="flex-1" />
+          <n-button size="small" type="error" :loading="rooms.cascadeRedactLoading.value" @click="handleCascadeRedact">
+            {{ t('admin.rooms.cascadeRedactAction') }}
+          </n-button>
+        </n-space>
+      </n-space>
     </n-card>
 
     <!-- 事件上下文 -->
@@ -120,6 +171,7 @@ import {
   NDescriptionsItem,
   NEmpty,
   NInput,
+  NInputNumber,
   NSpace,
   NSpin,
   NTag,
@@ -144,6 +196,10 @@ const dialog = useDialog()
 const eventId = ref('')
 const searchTerm = ref('')
 const publishing = ref(false)
+const unpublishing = ref(false)
+const cascadeEventId = ref('')
+const cascadeDepth = ref<number | null>(5)
+const cascadeReason = ref('')
 
 const listingEntries = computed(() =>
   Object.entries(props.rooms.roomListings.value ?? {})
@@ -197,6 +253,67 @@ function handlePublishListing() {
         if (handleAdminError(err)) showFeedback(t('admin.rooms.publishListingFailed'), 'error')
       } finally {
         publishing.value = false
+      }
+    }
+  })
+}
+
+function handleUnpublishListing() {
+  const room = props.rooms.selectedRoom.value
+  if (!room) return
+  dialog.warning({
+    title: t('admin.rooms.unpublishListing'),
+    content: t('admin.rooms.unpublishListingConfirm', { name: room.name || room.roomId }),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      unpublishing.value = true
+      try {
+        await props.rooms.setRoomPublicListing(room.roomId, false)
+        showFeedback(t('admin.rooms.unpublishListingSuccess'), 'success')
+      } catch (err) {
+        if (handleAdminError(err)) showFeedback(t('admin.rooms.unpublishListingFailed'), 'error')
+      } finally {
+        unpublishing.value = false
+      }
+    }
+  })
+}
+
+async function reloadTokenSync() {
+  try {
+    await props.rooms.loadRoomTokenSync()
+    if (!props.rooms.roomTokenSync.value) {
+      showFeedback(t('admin.rooms.tokenSyncFailed'), 'error')
+    }
+  } catch (err) {
+    if (handleAdminError(err)) showFeedback(t('admin.rooms.tokenSyncFailed'), 'error')
+  }
+}
+
+function handleCascadeRedact() {
+  const targetEventId = cascadeEventId.value.trim()
+  if (!targetEventId) {
+    showFeedback(t('admin.rooms.cascadeRedactRequired'), 'warning')
+    return
+  }
+  const reason = cascadeReason.value.trim()
+  dialog.error({
+    title: t('admin.rooms.cascadeRedact'),
+    content: t('admin.rooms.cascadeRedactConfirm', { eventId: targetEventId }),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        const count = await props.rooms.cascadeRedactEvent(targetEventId, {
+          maxDepth: cascadeDepth.value ?? 5,
+          ...(reason ? { reason } : {})
+        })
+        showFeedback(t('admin.rooms.cascadeRedactSuccess', { count }), 'success')
+        cascadeEventId.value = ''
+        cascadeReason.value = ''
+      } catch (err) {
+        if (handleAdminError(err)) showFeedback(t('admin.rooms.cascadeRedactFailed'), 'error')
       }
     }
   })

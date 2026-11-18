@@ -3,7 +3,7 @@
     <h3 class="section-title">{{ t('setting.voice_video.voice_messages.title') }}</h3>
     <p class="section-desc">{{ t('setting.voice_video.voice_messages.desc') }}</p>
 
-    <div class="stats-row">
+    <div v-if="!listLoadFailed" class="stats-row">
       <div class="stat-item">
         <span class="stat-value">{{ stats.totalMessages }}</span>
         <span class="stat-label">{{ t('setting.voice_video.voice_messages.total_messages') }}</span>
@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <div class="stats-row" data-testid="voice-user-stats">
+    <div v-if="!listLoadFailed" class="stats-row" data-testid="voice-user-stats">
       <div class="stat-item">
         <span class="stat-value">{{ userStats.totalMessages }}</span>
         <span class="stat-label">{{ t('setting.voice_video.voice_messages.my_total_messages') }}</span>
@@ -67,7 +67,14 @@
     </div>
 
     <n-spin :show="loading">
-      <div v-if="messages.length > 0" class="voice-list">
+      <div v-if="listLoadFailed" data-testid="voice-messages-error">
+        <ErrorState
+          compact
+          :title="t('setting.voice_video.voice_messages.load_failed')"
+          :retry-text="t('common.retry')"
+          @retry="loadMessages" />
+      </div>
+      <div v-else-if="messages.length > 0" class="voice-list">
         <div v-for="message in messages" :key="message.media_id" class="voice-item">
           <div class="voice-main">
             <span class="voice-id">{{ message.media_id }}</span>
@@ -101,6 +108,7 @@
 import { NButton, NEmpty, NInput, NPopconfirm, NSpin } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
@@ -119,6 +127,8 @@ const { showFeedback } = useActionFeedback()
 
 const loading = ref(false)
 const messages = ref<VoiceMessageRow[]>([])
+/** 读取失败不能落成「暂无语音消息 + 统计归零」：那会把读不到显示成没有数据 */
+const listLoadFailed = ref(false)
 const roomFilter = ref('')
 const stats = ref({ totalDuration: 0, totalMessages: 0, averageDuration: 0 })
 const userStats = ref({ totalDuration: 0, totalMessages: 0 })
@@ -144,7 +154,9 @@ async function loadConfig() {
 async function loadMessages() {
   const userId = matrixClientService.getUserId()
   if (!userId) return
+  const hasMessages = messages.value.length > 0
   loading.value = true
+  listLoadFailed.value = false
   try {
     const [page, voiceStats, ownStats] = await Promise.all([
       roomFilter.value.trim()
@@ -159,6 +171,11 @@ async function loadMessages() {
   } catch (error) {
     logger.error('Failed to load voice messages', error)
     showFeedback(t('setting.voice_video.voice_messages.load_failed'), 'error')
+    // 刷新失败保留已渲染列表与统计，只有首屏失败才进入错误态
+    if (!hasMessages) {
+      messages.value = []
+      listLoadFailed.value = true
+    }
   } finally {
     loading.value = false
   }

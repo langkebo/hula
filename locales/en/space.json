@@ -15,7 +15,8 @@
     "search_placeholder": "Search public spaces",
     "search": "Search",
     "loading": "Loading…",
-    "children_empty": "This space has no subspaces"
+    "children_empty": "This space has no subspaces",
+    "children_load_failed": "Could not load subspaces"
   },
   "create": "Create Space",
   "search_sessions_placeholder": "Search sessions",
@@ -111,8 +112,6 @@
   "hierarchy_title": "Space Hierarchy",
   "hierarchy_hint": "View the child space hierarchy of this space",
   "view_hierarchy": "View Hierarchy",
-  "join_space": "Join Space",
-  "join_space_success": "Joined space",
   "join_space_failed": "Failed to join space",
   "add_room_title": "Add Child Room",
   "add_room_placeholder": "Room ID, e.g. !room:example.com",

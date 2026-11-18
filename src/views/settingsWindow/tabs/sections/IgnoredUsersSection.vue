@@ -2,7 +2,13 @@
   <div class="settings-section">
     <h3 class="section-title">{{ t('setting.security.ignored_users') }}</h3>
     <n-spin :show="loadingIgnored">
-      <div v-if="ignoredUsers.length > 0" class="ignored-list">
+      <div v-if="loadError" class="ignored-error">
+        <span>{{ t('common.load_failed') }}</span>
+        <n-button size="tiny" text type="primary" data-testid="ignored-users-retry" @click="loadIgnoredUsers">
+          {{ t('common.retry') }}
+        </n-button>
+      </div>
+      <div v-else-if="ignoredUsers.length > 0" class="ignored-list">
         <div v-for="user in ignoredUsers" :key="user" class="ignored-item">
           <span class="user-id">{{ user }}</span>
           <n-button size="tiny" @click="handleUnignore(user)">{{ t('setting.security.unignore') }}</n-button>
@@ -34,6 +40,7 @@ const { getIgnoredUsers, setIgnoredUsers } = useAccount()
 const { ensureSessionReady } = useWindowSessionReady()
 
 const loadingIgnored = ref(false)
+const loadError = ref(false)
 const ignoredUsers = ref<string[]>([])
 
 onMounted(async () => {
@@ -48,10 +55,13 @@ onMounted(async () => {
 
 async function loadIgnoredUsers() {
   loadingIgnored.value = true
+  loadError.value = false
   try {
     ignoredUsers.value = await getIgnoredUsers()
   } catch (error) {
     logger.warn('Failed to fetch ignored users', error)
+    // 读取失败不能渲染成「无忽略用户」：那会让用户以为屏蔽列表已被清空
+    loadError.value = true
   } finally {
     loadingIgnored.value = false
   }
@@ -85,6 +95,14 @@ async function handleUnignore(userId: string) {
   display: flex;
   flex-direction: column;
   gap: var(--tjg-space-2);
+}
+
+.ignored-error {
+  display: flex;
+  align-items: center;
+  gap: var(--tjg-space-2);
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-secondary);
 }
 
 .ignored-item {

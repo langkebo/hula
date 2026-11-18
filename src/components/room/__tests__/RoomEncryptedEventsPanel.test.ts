@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomEncryptedEventsPanel from '../RoomEncryptedEventsPanel.vue'
 
@@ -84,5 +84,26 @@ describe('RoomEncryptedEventsPanel — P2-9 房间加密事件列表面板', () 
     expect(wrapper.text()).toContain('$e1:hs')
     expect(wrapper.text()).toContain('m.megolm.v1.aes-sha2')
     expect(wrapper.text()).toContain('sess1')
+  })
+
+  it('加载失败时显示错误态而不是空状态', async () => {
+    getEncryptedEventsMock.mockRejectedValue(new Error('boom'))
+    const wrapper = await mountPanel()
+
+    expect(wrapper.find('[data-test="room-encrypted-events-error"]').exists()).toBe(true)
+    expect(wrapper.find('.n-empty').exists()).toBe(false)
+  })
+
+  it('重试成功后恢复加密事件列表', async () => {
+    getEncryptedEventsMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({
+      events: [{ event_id: '$e1:hs', algorithm: 'm.megolm.v1.aes-sha2', session_id: 'sess1' }]
+    })
+    const wrapper = await mountPanel()
+
+    await wrapper.find('[data-testid="error-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="room-encrypted-events-error"]').exists()).toBe(false)
+    expect(wrapper.findAll('.encrypted-event-item')).toHaveLength(1)
   })
 })

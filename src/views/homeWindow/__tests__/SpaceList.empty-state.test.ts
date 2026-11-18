@@ -42,6 +42,7 @@ const spacesRef = ref<
   Array<{ spaceId: string; name: string; topic?: string; childCount: number; memberCount: number; avatarUrl?: string }>
 >([])
 const loadingRef = ref(false)
+const errorRef = ref<string | null>(null)
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ name: 'space', path: '/space', params: {}, query: {} }),
@@ -88,6 +89,7 @@ vi.mock('@/composables/space', () => ({
   useSpaces: () => ({
     spaces: computed(() => spacesRef.value),
     loading: computed(() => loadingRef.value),
+    error: computed(() => errorRef.value),
     load: loadSpacesMock
   })
 }))
@@ -117,6 +119,7 @@ describe('SpaceListView M-2: 空状态渲染（test1 无空间场景）', () => 
     // 模拟 test1：无任何空间
     spacesRef.value = []
     loadingRef.value = false
+    errorRef.value = null
     roomHasTagMock.mockReturnValue(false)
     loadSpacesMock.mockResolvedValue(undefined)
   })
@@ -177,17 +180,32 @@ describe('SpaceListView M-2: 空状态渲染（test1 无空间场景）', () => 
     expect(createBtn.exists()).toBe(true)
   })
 
-  it('getSpaces 抛错时，spaces 仍为空，应显示空状态（而非白屏）', async () => {
-    // 模拟 useSpaces.load 内部捕获错误后：spaces 保持空、loading 完成
-    // （真实 useSpaces.load 会 catch 错误并设置 error.value，不会向外抛出）
+  it('getSpaces 抛错时，应显示错误态与重试按钮，而不是「暂无空间」空态', async () => {
+    // 真实 useSpaces.load 会 catch 错误写入 error.value 并保持 spaces 为空
     spacesRef.value = []
     loadingRef.value = false
-    loadSpacesMock.mockResolvedValue(undefined)
+    errorRef.value = 'network down'
 
     const wrapper = mount(SpaceListView)
     await flushPromises()
 
-    // 即使加载失败，空状态也应显示（不应白屏）
-    expect(wrapper.find('.empty-state').exists()).toBe(true)
+    expect(wrapper.find('.error-state').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="error-retry"]').exists()).toBe(true)
+    // 失败不能被伪装成「暂无空间」
+    expect(wrapper.find('.empty-state').exists()).toBe(false)
+  })
+
+  it('已有空间数据时刷新失败，应保留列表而不是整块替换为错误态', async () => {
+    spacesRef.value = [{ spaceId: '!a:server', name: 'A', childCount: 0, memberCount: 1 }]
+    loadingRef.value = false
+    errorRef.value = 'refresh failed'
+
+    const wrapper = mount(SpaceListView)
+    await flushPromises()
+
+    expect(wrapper.find('.error-state').exists()).toBe(false)
+    expect(wrapper.find('.empty-state').exists()).toBe(false)
+    // 列表视图仍在（SpaceListPane 被渲染），说明未整块替换为错误态
+    expect(wrapper.find('[data-test="space-list-pane"]').exists()).toBe(true)
   })
 })

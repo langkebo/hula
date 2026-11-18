@@ -7,6 +7,7 @@
   "empty": "No files",
   "image_alt": "File image",
   "quota_used": "{used} / {total} used · {count} media items",
+  "quota_unavailable": "Media quota unavailable",
   "upload": "Upload",
   "upload_no_room": "Open a chat before uploading",
   "upload_success": "File sent to the current chat",

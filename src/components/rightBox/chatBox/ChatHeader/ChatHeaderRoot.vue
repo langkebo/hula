@@ -155,10 +155,10 @@ const isGroup = computed(() => activeItem.value?.type === RoomTypeEnum.GROUP)
 const isBotUser = computed(() => activeItem.value?.account === 'BOT')
 const roomType = computed(() => activeItem.value?.type)
 const roomName = computed(() => activeItem.value?.name || '')
-const joinedMemberCount = ref(0)
+const joinedMemberCount = ref<number | null>(null)
 let joinedMemberCountRequestId = 0
 // 成员数优先使用 SDK 的 joined 成员总数；成员列表是分页加载的子集，仅作为下限兜底
-const memberCount = computed(() => Math.max(joinedMemberCount.value, groupStore.userList.length))
+const memberCount = computed(() => joinedMemberCount.value ?? groupStore.userList.length)
 const currentUserAvatar = computed(() => activeItem.value?.avatar || '')
 const isPinned = computed(() => activeItem.value?.top || false)
 
@@ -431,7 +431,7 @@ watch(
   () => currentSessionRoomId.value,
   async (roomId) => {
     const requestId = ++joinedMemberCountRequestId
-    joinedMemberCount.value = 0
+    joinedMemberCount.value = null
     if (!roomId) {
       return
     }
@@ -442,9 +442,7 @@ watch(
         joinedMemberCount.value = count
       }
     } catch (err) {
-      if (requestId === joinedMemberCountRequestId) {
-        joinedMemberCount.value = 0
-      }
+      // 读取失败不落成 0，回落到已加载成员列表长度（0 会把「读不到」显示成「没有成员」）
       logger.warn('Failed to read joined member count:', err)
     }
   },

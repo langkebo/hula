@@ -134,5 +134,9 @@
   },
   "read_receipts": "Read receipts",
   "copy_attachment_url": "Copy attachment URL",
-  "copy_attachment_url_empty": "This message has no attachment URL"
+  "copy_attachment_url_empty": "This message has no attachment URL",
+  "export_message_html": "Export as HTML",
+  "export_message_html_empty": "This message has no text content to export",
+  "export_message_html_success": "Exported as HTML",
+  "export_message_html_failed": "Export failed"
 }

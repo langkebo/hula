@@ -9,6 +9,7 @@ export type Messages = {
   "empty": "还没有好友分组，创建一个来整理你的好友",
   "member_count": "{count} 位好友",
   "no_member": "该分组暂无好友",
+  "members_load_failed": "获取分组好友失败",
   "new_placeholder": "输入新分组名称",
   "create": "创建分组",
   "create_success": "分组已创建",
@@ -41,6 +42,7 @@ export type KeyPaths =
   | "mobile_friend_groups.empty"
   | "mobile_friend_groups.member_count"
   | "mobile_friend_groups.no_member"
+  | "mobile_friend_groups.members_load_failed"
   | "mobile_friend_groups.new_placeholder"
   | "mobile_friend_groups.create"
   | "mobile_friend_groups.create_success"

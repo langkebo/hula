@@ -201,6 +201,24 @@ describe('MatrixOidcService — handleCallback migrated to SDK OidcManager.token
     const result = await matrixOidcService.handleCallback('code-123', 'test-state')
 
     expect(result).toBeNull()
+    expect(matrixOidcService.getLastCallbackFailureReason()).toBe('exchange-failed')
+  })
+
+  it('should mark failure as unsupported when SDK reports OidcNotEnabledError', async () => {
+    sessionStorage.setItem('oidc_state', 'test-state')
+    sessionStorage.setItem('oidc_code_verifier', 'test-verifier')
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
+
+    const notEnabledError = Object.assign(new Error('OIDC not enabled'), { name: 'OidcNotEnabledError' })
+    const mockToken = vi.fn().mockRejectedValue(notEnabledError)
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getOidcManager: () => ({ token: mockToken })
+    } as any)
+
+    const result = await matrixOidcService.handleCallback('code-123', 'test-state')
+
+    expect(result).toBeNull()
+    expect(matrixOidcService.getLastCallbackFailureReason()).toBe('unsupported')
   })
 })
 
@@ -250,5 +268,17 @@ describe('MatrixOidcService — exchangeOidcForMatrixToken 经 MatrixHttpClient.
     const result = await matrixOidcService.exchangeOidcForMatrixToken('oidc-access-token-value')
 
     expect(result).toBeNull()
+    expect(matrixOidcService.getLastCallbackFailureReason()).toBe('exchange-failed')
+  })
+
+  it('should mark failure as unsupported when token exchange endpoint is missing', async () => {
+    sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
+
+    mockRequest.mockRejectedValue(Object.assign(new Error('Not Found'), { httpStatus: 404 }))
+
+    const result = await matrixOidcService.exchangeOidcForMatrixToken('oidc-access-token-value')
+
+    expect(result).toBeNull()
+    expect(matrixOidcService.getLastCallbackFailureReason()).toBe('unsupported')
   })
 })

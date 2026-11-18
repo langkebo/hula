@@ -105,7 +105,17 @@
 
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.voice_video.rtc_section') }}</h3>
-      <n-descriptions v-if="rtcEntries.length" :column="1" size="small" bordered>
+      <div v-if="rtcUnsupported" data-testid="rtc-transports-unsupported">
+        <n-empty :description="t('setting.voice_video.rtc_empty')" size="small" />
+      </div>
+      <div v-else-if="rtcLoadFailed" data-testid="rtc-transports-error">
+        <ErrorState
+          compact
+          :title="t('common.load_failed')"
+          :retry-text="t('common.retry')"
+          @retry="loadRtcTransports" />
+      </div>
+      <n-descriptions v-else-if="rtcEntries.length" :column="1" size="small" bordered>
         <n-descriptions-item v-for="entry in rtcEntries" :key="entry.key" :label="entry.key">
           {{ entry.value }}
         </n-descriptions-item>
@@ -123,8 +133,10 @@
 import { NButton, NDescriptions, NDescriptionsItem, NDivider, NEmpty, NSelect, NSwitch } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMediaDeviceSettings } from '@/composables/settings/useMediaDeviceSettings'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { createLogger } from '@/utils/Logger'
 import VoiceMessageSettings from './sections/VoiceMessageSettings.vue'
@@ -139,6 +151,11 @@ const { t } = useI18n()
 
 const videoPreviewRef = ref<HTMLVideoElement>()
 const rtcTransports = ref<Record<string, unknown>>({})
+/** 读取失败不能落成「暂无 RTC 传输」：那会把读不到显示成没有配置 */
+const rtcLoadFailed = ref(false)
+const { getCapabilityStatus } = useServerCapability()
+/** 能力位显式声明不支持时不再请求，避免把「未启用」显示成读取失败 */
+const rtcUnsupported = computed(() => getCapabilityStatus('rtc-transports') === 'unsupported')
 
 const rtcEntries = computed(() =>
   Object.entries(rtcTransports.value).map(([key, value]) => ({
@@ -147,13 +164,26 @@ const rtcEntries = computed(() =>
   }))
 )
 
-onMounted(async () => {
+onMounted(() => {
+  if (!rtcUnsupported.value) {
+    loadRtcTransports()
+  }
+})
+
+async function loadRtcTransports() {
+  const hasTransports = Object.keys(rtcTransports.value).length > 0
+  rtcLoadFailed.value = false
   try {
     rtcTransports.value = await matrixVoiceService.getRtcTransports()
   } catch (error) {
     logger.warn('Failed to load RTC transports', error)
+    // 刷新失败保留已渲染配置，只有首屏失败才进入错误态
+    if (!hasTransports) {
+      rtcTransports.value = {}
+      rtcLoadFailed.value = true
+    }
   }
-})
+}
 
 // 设备枚举、偏好持久化、麦克风测试与预览统一走共享 composable，桌面只保留 Naive UI 呈现
 const {

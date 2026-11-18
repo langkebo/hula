@@ -164,4 +164,52 @@ describe('NoticeEdit 草稿回填与清理', () => {
     expect(pushMock).not.toHaveBeenCalled()
     wrapper.unmount()
   })
+
+  it('编辑态详情读取失败时进入错误态，不渲染空表单', async () => {
+    getAnnouncementByIdMock.mockRejectedValue(new Error('network down'))
+
+    const wrapper = mountNoticeEdit()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="notice-detail-error"]').exists()).toBe(true)
+    // 失败时不能展示一张空表单让用户误以为公告没有内容
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    expect(showFeedbackMock).toHaveBeenCalledWith('mobile_chat.notice.fetch_failed', 'error')
+    wrapper.unmount()
+  })
+
+  it('错误态重试成功后渲染表单并回填详情', async () => {
+    let attempt = 0
+    getAnnouncementByIdMock.mockReset()
+    getAnnouncementByIdMock.mockImplementation(() => {
+      attempt += 1
+      return attempt === 1
+        ? Promise.reject(new Error('network down'))
+        : Promise.resolve({ content: '重试后的内容', isPinned: true })
+    })
+
+    const wrapper = mountNoticeEdit()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="notice-detail-error"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="async-state-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="notice-detail-error"]').exists()).toBe(false)
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('重试后的内容')
+    wrapper.unmount()
+  })
+
+  it('新增模式不请求详情，仍直接回填本地草稿', async () => {
+    route.params = {}
+    const newDraftKey = buildNoticeDraftKey('!room:hs', undefined)
+    saveNoticeDraft(newDraftKey, { content: '新增草稿', top: true })
+
+    const wrapper = mountNoticeEdit()
+    await flushPromises()
+
+    expect(getAnnouncementByIdMock).not.toHaveBeenCalled()
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('新增草稿')
+    wrapper.unmount()
+  })
 })

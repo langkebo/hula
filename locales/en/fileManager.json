@@ -72,7 +72,8 @@
   },
   "storage": {
     "label": "Media storage",
-    "count": "Media count"
+    "count": "Media count",
+    "unavailable": "Media quota unavailable"
   },
   "userList": {
     "searchPlaceholder": {

@@ -2,6 +2,7 @@ import { flushPromises, shallowMount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive, ref } from 'vue'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
@@ -118,7 +119,13 @@ let chatStore: ReturnType<
     shouldShowNoMoreMessage: boolean
     chatMessageList: unknown[]
     currentSessionInfo: { roomId: string } | null
-    currentMessageOptions: { hasLoadedOnce: boolean; isLast: boolean; isLoading: boolean } | null
+    currentMessageOptions: {
+      hasLoadedOnce: boolean
+      isLast: boolean
+      isLoading: boolean
+      loadFailed?: { scope: 'initial' | 'history' | 'live'; reason: string; category: string } | null
+      liveFailed?: { scope: 'initial' | 'history' | 'live'; reason: string; category: string } | null
+    } | null
     currentNewMsgCount: null
     isMsgMultiChoose: boolean
     msgMultiChooseMode: string
@@ -128,6 +135,7 @@ let chatStore: ReturnType<
     clearNewMsgCount: ReturnType<typeof vi.fn>
     clearRedundantMessages: ReturnType<typeof vi.fn>
     resetAndRefreshCurrentRoomMessages: ReturnType<typeof vi.fn>
+    fetchCurrentRoomRemoteOnce: ReturnType<typeof vi.fn>
   }>
 >
 let globalStore: ReturnType<typeof reactive<{ currentSessionRoomId: string }>>
@@ -208,6 +216,8 @@ vi.mock('@/composables/chat/useChatScrollManager', () => ({
     scrollToIndex: scrollToIndexMock,
     handleScroll: vi.fn(),
     loadMore: vi.fn(),
+    loadMoreError: ref(false),
+    retryLoadMore: vi.fn(),
     shouldShowFloatButton: ref(false)
   })
 }))
@@ -375,7 +385,9 @@ describe('ChatMain', () => {
       currentMessageOptions: {
         hasLoadedOnce: true,
         isLast: false,
-        isLoading: false
+        isLoading: false,
+        loadFailed: null,
+        liveFailed: null
       },
       currentNewMsgCount: null,
       isMsgMultiChoose: false,
@@ -385,7 +397,8 @@ describe('ChatMain', () => {
       getMsgIndex: vi.fn(() => -1),
       clearNewMsgCount: vi.fn(),
       clearRedundantMessages: vi.fn(),
-      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined)
+      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined),
+      fetchCurrentRoomRemoteOnce: vi.fn(async () => undefined)
     })
 
     appWindowListenMock.mockResolvedValue(vi.fn())
@@ -406,9 +419,9 @@ describe('ChatMain', () => {
     await (wrapper.vm as unknown as { jumpToReplyMsg: (key: string) => Promise<void> }).jumpToReplyMsg('$reply')
     await flushPromises()
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('正在查找消息...', 'info')
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_main.jump_searching', 'info')
     expect(scrollToIndexMock).toHaveBeenCalledWith(3, 'instant')
-    expect(showFeedbackMock).not.toHaveBeenCalledWith('无法找到原始消息，可能已被删除或太久远', 'warning')
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('home.chat_main.jump_not_found', 'warning')
   })
 
   it('uses action feedback when reply message cannot be found after retries', async () => {
@@ -420,9 +433,55 @@ describe('ChatMain', () => {
     await (wrapper.vm as unknown as { jumpToReplyMsg: (key: string) => Promise<void> }).jumpToReplyMsg('$missing')
     await flushPromises()
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('正在查找消息...', 'info')
-    expect(showFeedbackMock).toHaveBeenCalledWith('无法找到原始消息，可能已被删除或太久远', 'warning')
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_main.jump_searching', 'info')
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_main.jump_not_found', 'warning')
     expect(chatStore.loadMore).toHaveBeenCalledTimes(5)
+  })
+
+  it('实时帧失败时渲染局部失败横幅，重试走远端补齐', async () => {
+    chatStore.currentMessageOptions = {
+      hasLoadedOnce: true,
+      isLast: false,
+      isLoading: false,
+      loadFailed: null,
+      liveFailed: { scope: 'live', reason: 'decrypt failed', category: 'unknown' }
+    }
+
+    const wrapper = mountComponent()
+    const banner = wrapper.find('[data-testid="message-live-failure"]')
+
+    expect(banner.exists()).toBe(true)
+    wrapper.findComponent(PartialStateBanner).vm.$emit('retry')
+
+    expect(chatStore.fetchCurrentRoomRemoteOnce).toHaveBeenCalledTimes(1)
+  })
+
+  it('首屏失败时不叠加实时帧失败横幅', () => {
+    chatStore.currentMessageOptions = {
+      hasLoadedOnce: true,
+      isLast: false,
+      isLoading: false,
+      loadFailed: { scope: 'initial', reason: 'network down', category: 'network' },
+      liveFailed: { scope: 'live', reason: 'decrypt failed', category: 'unknown' }
+    }
+
+    const wrapper = mountComponent()
+
+    expect(wrapper.find('[data-testid="message-live-failure"]').exists()).toBe(false)
+  })
+
+  it('翻页失败（含跳转定位触发）即使 scrollManager 未置错，也把错误传给加载提示', () => {
+    chatStore.currentMessageOptions = {
+      hasLoadedOnce: true,
+      isLast: false,
+      isLoading: false,
+      loadFailed: { scope: 'history', reason: 'network down', category: 'network' },
+      liveFailed: null
+    }
+
+    const wrapper = mountComponent()
+
+    expect(wrapper.findComponent({ name: 'ChatLoadMoreIndicator' }).props('error')).toBe(true)
   })
 
   it('does not crash when sender info or current user info is temporarily missing', async () => {
@@ -480,7 +539,9 @@ describe('ChatMain private mode', () => {
       currentMessageOptions: {
         hasLoadedOnce: true,
         isLast: false,
-        isLoading: false
+        isLoading: false,
+        loadFailed: null,
+        liveFailed: null
       },
       currentNewMsgCount: null,
       isMsgMultiChoose: false,
@@ -490,7 +551,8 @@ describe('ChatMain private mode', () => {
       getMsgIndex: vi.fn(() => -1),
       clearNewMsgCount: vi.fn(),
       clearRedundantMessages: vi.fn(),
-      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined)
+      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined),
+      fetchCurrentRoomRemoteOnce: vi.fn(async () => undefined)
     })
 
     appWindowListenMock.mockResolvedValue(vi.fn())
@@ -639,7 +701,9 @@ describe('ChatMain sticky events', () => {
       currentMessageOptions: {
         hasLoadedOnce: true,
         isLast: false,
-        isLoading: false
+        isLoading: false,
+        loadFailed: null,
+        liveFailed: null
       },
       currentNewMsgCount: null,
       isMsgMultiChoose: false,
@@ -649,7 +713,8 @@ describe('ChatMain sticky events', () => {
       getMsgIndex: vi.fn(() => -1),
       clearNewMsgCount: vi.fn(),
       clearRedundantMessages: vi.fn(),
-      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined)
+      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined),
+      fetchCurrentRoomRemoteOnce: vi.fn(async () => undefined)
     })
 
     appWindowListenMock.mockResolvedValue(vi.fn())
@@ -765,7 +830,9 @@ describe('ChatMain BurnAfterReadToggle service integration', () => {
       currentMessageOptions: {
         hasLoadedOnce: true,
         isLast: false,
-        isLoading: false
+        isLoading: false,
+        loadFailed: null,
+        liveFailed: null
       },
       currentNewMsgCount: null,
       isMsgMultiChoose: false,
@@ -775,7 +842,8 @@ describe('ChatMain BurnAfterReadToggle service integration', () => {
       getMsgIndex: vi.fn(() => -1),
       clearNewMsgCount: vi.fn(),
       clearRedundantMessages: vi.fn(),
-      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined)
+      resetAndRefreshCurrentRoomMessages: vi.fn(async () => undefined),
+      fetchCurrentRoomRemoteOnce: vi.fn(async () => undefined)
     })
 
     appWindowListenMock.mockResolvedValue(vi.fn())

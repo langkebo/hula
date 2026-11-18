@@ -49,6 +49,10 @@
           </n-flex>
         </div>
 
+        <div v-else-if="searchFailed" data-test="dm-search-error">
+          <ErrorState compact :title="t('common.load_failed')" :retry-text="t('common.retry')" @retry="handleSearch" />
+        </div>
+
         <n-empty v-else-if="hasSearched" :description="t('dm.create.not_found')" />
 
         <div v-else class="search-hint">
@@ -93,6 +97,7 @@
 import { useI18n } from 'vue-i18n'
 import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
@@ -107,6 +112,8 @@ const emit = defineEmits<(e: 'created', roomId: string) => void>()
 
 const searchValue = ref('')
 const searchResult = ref<MatrixContact | null>(null)
+// 检索失败不能落成「未找到用户」：那会把读失败显示成查无此人
+const searchFailed = ref(false)
 const encrypted = ref(false)
 const loading = ref(false)
 const creating = ref(false)
@@ -124,12 +131,14 @@ const handleSearch = async () => {
 
   loading.value = true
   hasSearched.value = true
+  searchFailed.value = false
 
   try {
     const profile = await contactStore.getUserProfile(userId)
     searchResult.value = profile
-  } catch (err) {
+  } catch {
     searchResult.value = null
+    searchFailed.value = true
   } finally {
     loading.value = false
   }
@@ -166,6 +175,7 @@ const handleCancel = () => {
 const resetForm = () => {
   searchValue.value = ''
   searchResult.value = null
+  searchFailed.value = false
   encrypted.value = false
   hasSearched.value = false
 }

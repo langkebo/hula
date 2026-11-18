@@ -30,6 +30,7 @@ interface MessageLoadingDeps {
       cursor: string
       hasLoadedOnce?: boolean
       loadFailed?: MessageLoadFailure | null
+      liveFailed?: MessageLoadFailure | null
     }
   >
   replyMapping: Record<string, Record<string, string[]>>
@@ -41,6 +42,7 @@ interface MessageLoadingDeps {
       cursor: string
       hasLoadedOnce?: boolean
       loadFailed?: MessageLoadFailure | null
+      liveFailed?: MessageLoadFailure | null
     }
   }
   currentReplyMap: { value: Record<string, string[]> }
@@ -122,7 +124,9 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         cursor: result.cursor,
         hasLoadedOnce: true,
         // 成功即清空失败标记（service 只在「无任何可渲染事件」时抛错，走到这里说明拿到了内容）
-        loadFailed: null
+        loadFailed: null,
+        // 只有首屏 / 远端补齐成功才复位实时帧失败标记：历史翻页成功不代表实时链路恢复
+        liveFailed: cursor === '' ? null : (fallbackOptions.liveFailed ?? null)
       }
       if (showLoadingBar) {
         finishLoading()
@@ -147,7 +151,9 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
           scope: cursor ? 'history' : 'initial',
           reason: describeLoadFailure(err),
           category: classifyLoadFailure(err)
-        }
+        },
+        // 翻页/首屏失败与实时帧失败是两条独立链路，互不覆盖
+        liveFailed: fallbackOptions.liveFailed ?? null
       }
       // 翻页失败必须重新抛出：`useChatScrollManager.loadMore` 靠它置 `loadMoreError`，
       // 才能渲染「加载历史消息失败 + 重试」。吞掉异常会让翻页失败静默成「没有更多」。
@@ -274,7 +280,8 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
           isLoading: false,
           cursor: failedOptions?.cursor ?? '',
           hasLoadedOnce: true,
-          loadFailed: failedOptions?.loadFailed ?? null
+          loadFailed: failedOptions?.loadFailed ?? null,
+          liveFailed: failedOptions?.liveFailed ?? null
         }
       }
     }
@@ -330,9 +337,37 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
           isLoading: false,
           cursor: '',
           hasLoadedOnce: true,
-          loadFailed: messageOptions[requestRoomId]?.loadFailed ?? null
+          loadFailed: messageOptions[requestRoomId]?.loadFailed ?? null,
+          liveFailed: messageOptions[requestRoomId]?.liveFailed ?? null
         }
       }
+    }
+  }
+
+  /**
+   * 记录实时帧处理失败。
+   *
+   * 只写 `liveFailed`，不动分页态（isLast / isLoading / cursor / hasLoadedOnce）：
+   * 单帧处理失败不等于「没有更多历史」，也不该让列表退回骨架屏。
+   * 房间尚未建立分页态时直接忽略——此时没有可展示的列表，首屏加载会给出自己的失败信号。
+   */
+  const markLiveFailure = (roomId: string, error: unknown) => {
+    const options = messageOptions[roomId]
+    if (!options) {
+      logger.debug(`[markLiveFailure] 房间无分页态，忽略实时帧失败 roomId=${roomId}`)
+      return
+    }
+    options.liveFailed = {
+      scope: 'live',
+      reason: describeLoadFailure(error),
+      category: classifyLoadFailure(error)
+    }
+  }
+
+  const clearLiveFailure = (roomId: string) => {
+    const options = messageOptions[roomId]
+    if (options?.liveFailed) {
+      options.liveFailed = null
     }
   }
 
@@ -343,6 +378,8 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     loadMore,
     fetchCurrentRoomRemoteOnce,
     changeRoom,
-    resetAndRefreshCurrentRoomMessages
+    resetAndRefreshCurrentRoomMessages,
+    markLiveFailure,
+    clearLiveFailure
   }
 }

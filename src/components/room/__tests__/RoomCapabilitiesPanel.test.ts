@@ -62,6 +62,20 @@ const samplePermissions = {
   redact: 50
 }
 
+const samplePermissionsOutcome = {
+  status: 'ok' as const,
+  permissions: {
+    roomId: '!room:hs',
+    powerLevel: 50,
+    canSend: true,
+    canInvite: false,
+    canKick: true,
+    canBan: false,
+    canRedact: true,
+    raw: samplePermissions
+  }
+}
+
 describe('RoomCapabilitiesPanel — P2-2 房间能力/权限面板', () => {
   beforeEach(() => {
     fetchCapabilitiesMock.mockReset()
@@ -76,7 +90,7 @@ describe('RoomCapabilitiesPanel — P2-2 房间能力/权限面板', () => {
 
   it('挂载时加载房间能力和权限', async () => {
     fetchCapabilitiesMock.mockResolvedValue(sampleCapabilities)
-    getPermissionsMock.mockResolvedValue(samplePermissions)
+    getPermissionsMock.mockResolvedValue(samplePermissionsOutcome)
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -88,7 +102,7 @@ describe('RoomCapabilitiesPanel — P2-2 房间能力/权限面板', () => {
 
   it('显示房间版本和加入规则', async () => {
     fetchCapabilitiesMock.mockResolvedValue(sampleCapabilities)
-    getPermissionsMock.mockResolvedValue(samplePermissions)
+    getPermissionsMock.mockResolvedValue(samplePermissionsOutcome)
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -99,7 +113,7 @@ describe('RoomCapabilitiesPanel — P2-2 房间能力/权限面板', () => {
 
   it('能力数据为空时显示空状态', async () => {
     fetchCapabilitiesMock.mockResolvedValue(null)
-    getPermissionsMock.mockResolvedValue({})
+    getPermissionsMock.mockResolvedValue({ status: 'empty' })
 
     const wrapper = mountPanel()
     await flushPromises()

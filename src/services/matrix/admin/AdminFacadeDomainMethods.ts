@@ -220,6 +220,20 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
     return this.rooms.setRoomPublicListing(roomId, isPublic)
   }
 
+  /** 读取房间 token 同步信息。 */
+  async getRoomTokenSync(roomId: string): Promise<Record<string, unknown> | null> {
+    return this.rooms.getRoomTokenSync(roomId)
+  }
+
+  /** 级联撤回指定事件及其关联链，返回被删除事件数。 */
+  async cascadeRedactEvent(
+    roomId: string,
+    eventId: string,
+    options?: { maxDepth?: number; reason?: string }
+  ): Promise<number> {
+    return this.rooms.cascadeRedactEvent(roomId, eventId, options)
+  }
+
   /** 获取指定事件的上下文（前后事件）。 */
   async getRoomEventContext(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
     return this.rooms.getRoomEventContext(roomId, eventId)
