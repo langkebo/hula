@@ -129,7 +129,7 @@
     },
     {
       "file": "src/components/encryption/KeyRotationDialog.vue",
-      "lines": 543
+      "lines": 547
     },
     {
       "file": "src/components/encryption/E2EEBootstrapWizard.vue",
