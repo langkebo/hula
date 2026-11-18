@@ -110,6 +110,13 @@ export type {
 } from 'matrix-js-sdk/notifications'
 export type { IPresenceEvent } from 'matrix-js-sdk/presence'
 export type {} from 'matrix-js-sdk/rendezvous'
+// 服务端能力真值（S-01/CAP-08）：SDK 的 `./server-capabilities` **确实**在 package exports 里，
+// 之前「未暴露」的注释是错的。测试用它做漂移校验，避免能力映射表与 SDK 常量各写一份。
+export {
+  SYNAPSE_RUST_CAPABILITY_ALIASES,
+  SYNAPSE_RUST_FEATURE_FALLBACK,
+  SynapseRustFeature
+} from 'matrix-js-sdk/server-capabilities'
 export type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 // 以下类型由 MatrixClient 访问器派生：SDK 的 package exports 未提供
 // `./cas` 与 `./invite-blocklist` 子路径，只能经客户端访问器取回管理器类型。

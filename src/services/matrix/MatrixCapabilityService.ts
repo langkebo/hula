@@ -58,11 +58,13 @@ export type CapabilityStatus = 'supported' | 'unsupported' | 'unknown'
 /**
  * 能力位与服务端 key 的映射。
  *
- * 说明（R1）：SDK 的 `SynapseRustFeature` 常量位于 `lib/server-capabilities`，
- * 未通过 matrix-js-sdk 的 package exports 暴露，无法直接派生；此处按服务端
- * 实际声明补齐，并与 SDK `SYNAPSE_RUST_FEATURE_FALLBACK` 的兼容 key 保持一致。
+ * 说明（S-01 订正 2026-11-18）：SDK 的 `./server-capabilities` **已在 package exports 中**
+ * （52 条 exports 之一），`SynapseRustFeature` / `SYNAPSE_RUST_CAPABILITY_ALIASES` 可直接派生；
+ * 本节此前声称「未暴露、无法派生」是错的。映射表仍保留在本地（Tjg 的 14 个能力位与 SDK 的
+ * feature 集合不是一一对应），但**由 `MatrixCapabilityService.drift.test.ts` 对其做真值漂移校验**：
+ * 任一别名在 SDK 常量中消失（或值被改名）该测试即红。
  */
-const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
+export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
     unstable: ['org.matrix.msc3886.sliding_sync', 'org.matrix.msc3575', 'org.matrix.simplified_msc3575'],
     capabilities: ['io.hula.sliding_sync']
