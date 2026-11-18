@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSettingsTabStore } from '@/stores/domains/settings/settingsTab'
 import { createI18nMock } from '~/tests/i18n-messages'
-import { useServiceCapabilityItems } from '../useServiceCapabilityItems'
+import { resolveProbeHint, useServiceCapabilityItems } from '../useServiceCapabilityItems'
 
 vi.mock('vue-i18n', () => createI18nMock())
 
@@ -23,6 +23,19 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
 
 vi.mock('@/composables/usePlatform', () => ({
   usePlatform: () => platform
+}))
+
+vi.mock('@/services/matrix/capabilityProbe', () => ({
+  canProbeCapability: () => false,
+  probeCapabilities: vi.fn(async () => ({}))
+}))
+
+vi.mock('@/stores/domains/user/user', () => ({
+  useUserStore: () => ({ userInfo: { uid: '@me:hs' } })
+}))
+
+vi.mock('@/stores/domains/widget/global', () => ({
+  useGlobalStore: () => ({ currentSessionRoomId: '!r:hs' })
 }))
 
 describe('useServiceCapabilityItems', () => {
@@ -93,5 +106,33 @@ describe('useServiceCapabilityItems', () => {
 
     expect(items.value.some((item) => item.key === 'admin-api')).toBe(false)
     expect(items.value).toHaveLength(13)
+  })
+})
+
+describe('resolveProbeHint（宣告 vs 路由的冲突提示）', () => {
+  const t = (key: string) => key
+  const probe = (outcome: 'route-present' | 'route-missing' | 'inconclusive') =>
+    ({ capability: 'rtc-transports', outcome, route: '', httpStatus: 0, errcode: '', reason: '', at: 0 }) as const
+
+  it('未宣告但路由存在 → 提示「宣告与实现不一致」', () => {
+    expect(resolveProbeHint('unsupported', probe('route-present'), t)).toBe(
+      'common.capability.hint.probeDeclaredMissing'
+    )
+  })
+
+  it('已宣告但路由 404 → 提示「入口可能点不开」', () => {
+    expect(resolveProbeHint('supported', probe('route-missing'), t)).toBe(
+      'common.capability.hint.probeDeclaredButMissing'
+    )
+  })
+
+  it('一致时不额外提示（未宣告且路由缺失 / 已宣告且路由存在）', () => {
+    expect(resolveProbeHint('unsupported', probe('route-missing'), t)).toBeUndefined()
+    expect(resolveProbeHint('supported', probe('route-present'), t)).toBeUndefined()
+  })
+
+  it('inconclusive 与无探测结果都不提示（不冤枉服务端）', () => {
+    expect(resolveProbeHint('unsupported', probe('inconclusive'), t)).toBeUndefined()
+    expect(resolveProbeHint('unsupported', undefined, t)).toBeUndefined()
   })
 })

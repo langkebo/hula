@@ -62,7 +62,7 @@ export type Messages = {
     "remove_failed": "移除失败",
     "permissions": "权限",
     "no_permissions": "暂无授权用户",
-    "permission_user_placeholder": "用户 ID，如 @alice:example.com",
+    "permission_user_placeholder": "用户 ID，如 {'@'}alice:example.com",
     "permission_user_required": "请填写用户 ID",
     "permission_scope_required": "请选择至少一项权限",
     "permission_read": "读取",
@@ -86,6 +86,13 @@ export type Messages = {
     "session_user": "用户",
     "session_created": "创建时间",
     "session_last_active": "最后活跃",
+    "session_detail": "详情",
+    "session_detail_hide": "收起",
+    "session_device": "设备",
+    "session_expires": "过期时间",
+    "session_status": "状态",
+    "session_status_active": "活跃",
+    "session_status_inactive": "已失效",
     "terminate_session": "终止会话",
     "terminate_session_confirm": "确定要终止此会话吗？",
     "session_terminated": "会话已终止",
@@ -146,7 +153,9 @@ export type Messages = {
     "hint": {
       "unknown": "能力快照尚未加载，点击重试重新探测",
       "unsupported": "服务端未声明 {keys}",
-      "unsupported_client": "该能力由客户端状态判定，当前未启用"
+      "unsupported_client": "该能力由客户端状态判定，当前未启用",
+      "probeDeclaredMissing": "服务端未宣告该能力，但对应路由实际存在（宣告与实现不一致）",
+      "probeDeclaredButMissing": "服务端已宣告该能力，但对应路由返回 404（入口可能点不开）"
     }
   },
   "load_more": "加载更多",
@@ -259,6 +268,13 @@ export type KeyPaths =
   | "common.widget.session_user"
   | "common.widget.session_created"
   | "common.widget.session_last_active"
+  | "common.widget.session_detail"
+  | "common.widget.session_detail_hide"
+  | "common.widget.session_device"
+  | "common.widget.session_expires"
+  | "common.widget.session_status"
+  | "common.widget.session_status_active"
+  | "common.widget.session_status_inactive"
   | "common.widget.terminate_session"
   | "common.widget.terminate_session_confirm"
   | "common.widget.session_terminated"
@@ -313,6 +329,8 @@ export type KeyPaths =
   | "common.capability.hint.unknown"
   | "common.capability.hint.unsupported"
   | "common.capability.hint.unsupported_client"
+  | "common.capability.hint.probeDeclaredMissing"
+  | "common.capability.hint.probeDeclaredButMissing"
   | "common.load_more"
   | "common.saving"
   | "common.unknownUser"

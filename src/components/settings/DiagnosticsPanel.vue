@@ -98,7 +98,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { NAlert, NButton, NCard, NGi, NGrid, NStatistic } from 'naive-ui'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ServiceCapabilityPanel from '@/components/common/ServiceCapabilityPanel.vue'
 import { useServiceCapabilityItems } from '@/composables/settings/useServiceCapabilityItems'
@@ -115,11 +115,18 @@ const capabilityStore = useCapabilityStore()
 
 const snapshot = ref(getMetricsSnapshot())
 
+// 打开诊断面板时做一次「路由实体」探测：只在提示层标注「宣告/实现不一致」，
+// 不改变能力位判定（探测失败一律 inconclusive）。见 services/matrix/capabilityProbe.ts
+onMounted(() => {
+  void probeRouting()
+})
+
 const {
   items: capabilityItems,
   settingsKeys: capabilitySettingsKeys,
   refresh: refreshCapabilities,
-  openSettings: openCapabilitySettings
+  openSettings: openCapabilitySettings,
+  probeRouting
 } = useServiceCapabilityItems()
 
 function handleCapabilityRetry(): void {

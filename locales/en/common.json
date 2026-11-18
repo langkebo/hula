@@ -57,7 +57,7 @@
     "remove_failed": "Failed to remove widget",
     "permissions": "Permissions",
     "no_permissions": "No authorized users",
-    "permission_user_placeholder": "User ID, e.g. @alice:example.com",
+    "permission_user_placeholder": "User ID, e.g. {'@'}alice:example.com",
     "permission_user_required": "User ID is required",
     "permission_scope_required": "Select at least one permission",
     "permission_read": "Read",
@@ -81,6 +81,13 @@
     "session_user": "User",
     "session_created": "Created",
     "session_last_active": "Last Active",
+    "session_detail": "Details",
+    "session_detail_hide": "Hide",
+    "session_device": "Device",
+    "session_expires": "Expires",
+    "session_status": "Status",
+    "session_status_active": "Active",
+    "session_status_inactive": "Expired",
     "terminate_session": "Terminate",
     "terminate_session_confirm": "Are you sure you want to terminate this session?",
     "session_terminated": "Session terminated",
@@ -141,7 +148,9 @@
     "hint": {
       "unknown": "Capability snapshot is not loaded yet. Retry to probe again.",
       "unsupported": "The homeserver does not advertise {keys}",
-      "unsupported_client": "This capability is decided by client state and is currently disabled"
+      "unsupported_client": "This capability is decided by client state and is currently disabled",
+      "probeDeclaredMissing": "Server does not advertise this capability, but the route exists (advertisement/implementation mismatch)",
+      "probeDeclaredButMissing": "Server advertises this capability, but its route returns 404 (entry may be dead)"
     }
   },
   "load_more": "Load More",
