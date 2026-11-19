@@ -2,11 +2,12 @@ import { Direction } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { resolveMxcToHttp } from '../media/mxcUrl'
+import type { RoomFilesOutcome } from './timelineFileOutcomes'
+import { normalizeRoomFilesPage } from './timelineFileOutcomes'
 import type {
   RoomEventMediaUrl,
   RoomEventMediaUrlOutcome,
   RoomEventPerspectiveOutcome,
-  RoomFilesOutcome,
   RoomFragmentsOutcome,
   RoomReceiptsOutcome,
   RoomReducedEventsOutcome,
@@ -18,7 +19,6 @@ import {
   normalizeReceipts,
   normalizeReducedEvents,
   normalizeRendered,
-  normalizeRoomFilesPage,
   readErrcode,
   toMediaEntries
 } from './timelineOutcomes'

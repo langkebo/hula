@@ -7072,6 +7072,58 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 
 ---
 
+### 19.98 超限文件拆分｜timelineOutcomes / ChatSidebarFiles / EncryptionSettings（2026-11-19）
+
+#### 19.98.1 问题
+
+`check:file-size` 在 2026-11-19 实测报出 3 项失败，均由前两轮功能改动引入：
+
+| 文件 | 行数 | 失败类型 | 引入来源 |
+| :--- | ---: | :--- | :--- |
+| `src/services/matrix/room/timelineOutcomes.ts` | 479 | 新文件超 400 行硬限 | §19.95 文件页签新增 `encryptedFile` 描述符与文件归一化 |
+| `src/components/rightBox/chatBox/ChatSidebarFiles.vue` | 447 | 新文件超 400 行硬限 | §19.95 缩略图 / 下载 / 跳转原消息 |
+| `src/views/settingsWindow/tabs/EncryptionSettings.vue` | 639 | 既有基线 638 行，增长 1 行 | 本地 crypto 不可用时的只读锁 |
+
+三者都不能靠更新 baseline 或删注释「过线」，按约定采用拆分。
+
+#### 19.98.2 改动
+
+| 文件 | 变更 | 内容 |
+| :--- | :--- | :--- |
+| `src/services/matrix/room/timelineFileOutcomes.ts` | 新增 121 行 | 文件附件领域独立成模块：`RoomFileEntry` / `RoomFilesPage` / `RoomFilesOutcome`、`normalizeRoomFileEvent`、`normalizeRoomFilesPage`、`FILE_MESSAGE_KINDS` |
+| `src/services/matrix/room/timelineOutcomes.ts` | 479 → 362 行 | 移除文件附件段；`readUrlField` / `toOptionalString` / `toOptionalFiniteNumber` 改为导出并补 JSDoc，供文件模块复用，避免复制解析逻辑 |
+| `src/services/matrix/room/TimelineService.ts` | 调整导入 | `RoomFilesOutcome` 类型与 `normalizeRoomFilesPage` 改从 `./timelineFileOutcomes` 引入，其余不变 |
+| `src/components/rightBox/chatBox/useChatSidebarFiles.ts` | 新增 221 行 | 文件列表 composable：分页扫描、缩略图生成与失败回落、下载前置校验与 store 复用、跳转原消息、切房间丢弃在途响应 |
+| `src/components/rightBox/chatBox/ChatSidebarFiles.vue` | 447 → 279 行 | 只保留模板与配额逻辑；文件相关状态与动作由 composable 提供，模板 `data-test` 与行为不变 |
+| `src/views/settingsWindow/tabs/sections/EncryptionInfoSection.vue` | 新增 62 行 | 「加密信息」区（算法 / 已验证 / 未验证设备数）按既有 `sections/` 子组件模式下沉 |
+| `src/views/settingsWindow/tabs/EncryptionSettings.vue` | 639 → 596 行 | 该区替换为 `<EncryptionInfoSection>`，对应样式一并迁出；表格其余区块与只读锁逻辑不变 |
+
+拆分不改变对外行为：`TimelineService.getRoomFiles()` 返回结构、侧栏模板的 `data-test` 选择器、设置页文案与 i18n key 均保持原样。
+
+#### 19.98.3 验证表
+
+| 命令 / 用例 | 结果 |
+| :--- | :--- |
+| `node scripts/check-file-size.mjs` | `OK — oversized file count 100 (baseline 100)`；`all 1610 source files within size constraints` |
+| `pnpm vitest run ChatSidebarFiles.test.ts TimelineService.test.ts EncryptionSettings.test.ts` | 通过 |
+| `pnpm test:run`（全量） | `Test Files 1113 passed (1113)`、`Tests 12311 passed (12311)`，`EXIT=0` |
+| `npx vue-tsc --noEmit` | 0 错误 |
+| `pnpm check` | `EXIT=0`（biome + i18n / token / aria / dead-handlers / capabilities-sync 全通过） |
+| `pnpm check:ratchet` | 各指标均与 baseline 一致 |
+| `pnpm check:doc-coverage` | `OK — no regressions vs baseline`（新增导出均带 JSDoc） |
+| `pnpm check:doc-paths` | `.rules` 35 个路径引用全部存在 |
+| `pnpm check:sdk-boundary` | `OK — no regressions vs baseline`（解析未跨层） |
+| `pnpm quality:no-raw-fetch` | `OK: 所有裸请求均在白名单内` |
+| `pnpm check:integration-map-freshness` | `OK — 22 项指标与代码/台账一致`（`matrix_service_files` 271 → 272，标记块与正文已同步） |
+
+#### 19.98.4 边界
+
+- **R1**：拆分仅移动既有解析与调用代码，未新增 HTTP 请求、协议状态机或平行服务；媒体下载继续复用 `fileDownload` store 与 `MatrixMediaService`，文件扫描继续走 `TimelineService`。
+- **R2**：改动集中在桌面设置页与右侧栏组件，未新增 admin／AI 入口或移动端代码，移动端产物不受影响。
+- **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮为纯模块搬迁，无路由与运行时依赖新增，移动端条件分支未改动。
+
+---
+
 ## 附录 A｜参数映射表
 
 | 原始建议参数 | 本项目 token | 说明 |

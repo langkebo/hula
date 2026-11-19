@@ -174,27 +174,10 @@
 
     <n-divider />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.encryption.info_section') }}</h3>
-      <div class="encryption-info">
-        <div class="info-item">
-          <span class="info-label">{{ t('setting.encryption.algorithm_label') }}</span>
-          <span class="info-value">{{ encryptionAlgorithm }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">{{ t('setting.encryption.verified_devices_label') }}</span>
-          <span class="info-value">
-            {{ t('setting.encryption.device_count', { count: String(verifiedDevicesCount) }) }}
-          </span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">{{ t('setting.encryption.unverified_devices_label') }}</span>
-          <span class="info-value">
-            {{ t('setting.encryption.device_count', { count: String(unverifiedDevicesCount) }) }}
-          </span>
-        </div>
-      </div>
-    </div>
+    <EncryptionInfoSection
+      :algorithm="encryptionAlgorithm"
+      :verified-count="verifiedDevicesCount"
+      :unverified-count="unverifiedDevicesCount" />
 
     <SecureBackupDialog v-model:show="showSecureBackupDialog" @success="handleSecureBackupSuccess" />
 
@@ -260,6 +243,7 @@ import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 import CrossSigningSection from './sections/CrossSigningSection.vue'
 import DehydratedDeviceSection from './sections/DehydratedDeviceSection.vue'
+import EncryptionInfoSection from './sections/EncryptionInfoSection.vue'
 import KeyBackupSection from './sections/KeyBackupSection.vue'
 import RoomKeyRequestsSection from './sections/RoomKeyRequestsSection.vue'
 
@@ -525,32 +509,6 @@ function handleE2EEBootstrapSkip() {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
   margin-top: var(--tjg-space-1);
-}
-
-.encryption-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tjg-space-3);
-  padding: var(--tjg-space-4);
-  background-color: var(--tjg-settings-card-bg);
-  border-radius: var(--tjg-radius-sm);
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.info-label {
-  font-size: var(--tjg-font-size-base);
-  color: var(--tjg-text-secondary);
-}
-
-.info-value {
-  font-size: var(--tjg-font-size-base);
-  font-weight: var(--tjg-font-weight-medium);
-  color: var(--tjg-text-primary);
 }
 
 .device-key-display {
