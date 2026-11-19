@@ -44,6 +44,31 @@ import {
 } from '../MatrixCapabilityService'
 import capabilitySnapshot from './fixtures/capabilities.snapshot.json'
 
+/**
+ * CAP-08：真实后端快照（2026-11-19 本地 synapse-rust 原始响应）。
+ * 能力位用例的输入 key 一律从「别名表 ∩ 快照」推导，不在测试里手写 key 字面量。
+ */
+const snapshotUnstable: Record<string, boolean> = {
+  ...(capabilitySnapshot.capabilities.unstable_features as Record<string, boolean>),
+  ...capabilitySnapshot.versions.unstable_features
+}
+const snapshotCapabilities = capabilitySnapshot.capabilities.capabilities as Record<string, unknown>
+
+// e2ee / admin-api 不由服务端宣告，单独由客户端状态判定
+const serverDeclared = (Object.keys(HULA_CAPABILITY_ALIASES) as TjgCapability[]).filter(
+  (capability) => capability !== 'e2ee' && capability !== 'admin-api'
+)
+
+/** 取某能力位「服务端真实宣告过」的 key（只看是否出现，不要求值为 true） */
+function declaredAliasBits(source: 'unstable' | 'capabilities'): Array<[TjgCapability, string]> {
+  const declared = new Set(Object.keys(source === 'unstable' ? snapshotUnstable : snapshotCapabilities))
+  return serverDeclared.flatMap((capability) =>
+    HULA_CAPABILITY_ALIASES[capability][source]
+      .filter((key) => declared.has(key))
+      .map((key): [TjgCapability, string] => [capability, key])
+  )
+}
+
 describe('MatrixCapabilityService §16.5.3 gates', () => {
   beforeEach(() => {
     const pinia = createPinia()
@@ -146,28 +171,18 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
 
   // CAP-01: 三态口径与 14 个能力位（§12.3.1 / §12.3.2）
   describe('CAP-01 能力三态与别名矩阵', () => {
-    const unstableBits: Array<[TjgCapability, string]> = [
-      ['sliding-sync', 'org.matrix.msc3886.sliding_sync'],
-      ['dehydrated-device', 'org.matrix.msc3814'],
-      ['sticky-events', 'org.matrix.msc4354'],
-      ['scheduled-send', 'org.matrix.msc4140'],
-      ['rtc-transports', 'org.matrix.msc4143'],
-      ['extended-profile', 'uk.tcpip.msc4133'],
-      ['qr-rendezvous', 'org.matrix.msc4108'],
-      ['mutual-rooms', 'uk.half-shot.msc2666.query_mutual_rooms']
-    ]
-
-    const capabilityBits: Array<[TjgCapability, string]> = [
-      ['voip', 'm.voice'],
-      ['friend-list', 'io.hula.friends'],
-      ['burn-after-read', 'io.hula.burn_after_read'],
-      ['account-status', 'org.matrix.msc3720.account_status'],
-      ['extended-profile', 'm.profile_fields']
-    ]
+    // CAP-08：输入 key 由「别名表 ∩ 真实快照」推导，别名表或服务端改名时这里立刻红
+    const unstableBits = declaredAliasBits('unstable')
+    const capabilityBits = declaredAliasBits('capabilities')
 
     it('reports unknown before the snapshot is loaded', () => {
       expect(matrixCapabilityService.getCapabilityStatus('sticky-events')).toBe('unknown')
       expect(matrixCapabilityService.hasCapability('sticky-events')).toBe(false)
+    })
+
+    it('推导出的输入覆盖全部 12 个服务端宣告位', () => {
+      const covered = new Set([...unstableBits, ...capabilityBits].map(([capability]) => capability))
+      expect([...covered].sort()).toEqual([...serverDeclared].sort())
     })
 
     it.each(unstableBits)('maps %s to unstable feature %s', (capability, key) => {
@@ -414,17 +429,6 @@ function isCapabilityEnabled(value: unknown): boolean {
  * 测试仍会全绿；改为快照输入后，key 漂移会直接反映到断言结果。
  */
 describe('CAP-08 真实后端快照驱动的能力真值表', () => {
-  const snapshotUnstable: Record<string, boolean> = {
-    ...(capabilitySnapshot.capabilities.unstable_features as Record<string, boolean>),
-    ...capabilitySnapshot.versions.unstable_features
-  }
-  const snapshotCapabilities = capabilitySnapshot.capabilities.capabilities as Record<string, unknown>
-
-  // e2ee / admin-api 不由服务端宣告，单独由客户端状态判定
-  const serverDeclared = (Object.keys(HULA_CAPABILITY_ALIASES) as TjgCapability[]).filter(
-    (capability) => capability !== 'e2ee' && capability !== 'admin-api'
-  )
-
   beforeEach(() => {
     const pinia = createPinia()
     setActivePinia(pinia)

@@ -5765,7 +5765,7 @@ npx playwright test e2e/glass-poc.spec.ts --project=desktop-chromium --project=m
 
 #### 4 项债务仍成立
 
-`CAP-08` 夹具 23 处手写字面量（已于 §19.91 用真实后端快照清偿）、`S-01`／`N-08` 子路径 0 真实 import、`augmentation` 686 行未收敛、联调报告与 §19.57 实测口径冲突（已在报告顶部加时效声明）。
+`CAP-08` 夹具 23 处手写字面量（已于 §19.91 用真实后端快照清偿，§19.92 再把 CAP-01 别名矩阵输入改为「别名表 ∩ 快照」推导）、`S-01`／`N-08` 子路径 0 真实 import、`augmentation` 686 行未收敛、联调报告与 §19.57 实测口径冲突（已在报告顶部加时效声明）。
 
 `N-03`（文档超前）**已清偿**：本节台账已改为 0 条开放，§12.5／§19.22 的陈旧表述同日订正，收口取证见 §19.82。
 
@@ -6835,6 +6835,37 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R3 第 3 项**：未执行 Android / iOS 构建；仅测试与夹具变化，不进入产物。
 - **口径说明**：分支用例（关闭某位、fetch 失败、并发去重等）仍保留手写输入，这是覆盖分支所需的最小构造；「全量真值表」的正向输入已统一改为真实快照。
 - **未闭环**：快照为单环境（本地 synapse-rust）采集，多后端版本差异未覆盖；重抓流程写在 fixture 的 `meta.note` 中。
+
+### 19.92 CAP-08 能力位矩阵输入改为「别名表 ∩ 真实快照」推导（2026-11-19）
+
+#### 19.92.1 问题
+
+- §19.91 已把能力真值表输入改为真实后端快照，但 `MatrixCapabilityService.test.ts` 的 CAP-01 别名矩阵仍保留手写 key 字面量（8 个 unstable + 5 个 capability，共 13 处）。
+- 服务端 key 改名时，这些 `it.each` 用例本身不会红，只会在「逐位推导」用例里以状态不符间接暴露，定位需要二次比对，不满足「夹具不再手写」的目标。
+
+#### 19.92.2 改动
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/__tests__/MatrixCapabilityService.test.ts` | 快照常量、`serverDeclared` 上提为文件级；新增 `declaredAliasBits(source)`，按「`HULA_CAPABILITY_ALIASES` ∩ 快照实际出现的 key」生成 `it.each` 输入；CAP-01 的两张手写矩阵替换为推导结果；CAP-08 describe 复用同一份常量；新增「推导覆盖全部 12 个服务端宣告位」用例，快照缺 key 或别名表改名时直接红 |
+
+#### 19.92.3 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run src/services/matrix/__tests__/MatrixCapabilityService.test.ts src/services/matrix/__tests__/MatrixCapabilityService.drift.test.ts` | 2 个文件 / 46 个用例全通过（较 §19.91 的 42 增加 4 个由快照推导出的别名组合） |
+| `pnpm test:run`（全量） | `TEST_EXIT=0` — 1113 个文件 / 12300 个用例全通过（较上轮 12296 增加 4 个） |
+| `pnpm vue-tsc --noEmit` | `EXIT=0` |
+| `npx biome check`（改动文件） | `No fixes applied` |
+| `pnpm check:doc-coverage` / `pnpm check:doc-paths` / `pnpm check:ratchet` | `OK` / 全部路径存在 / `EXIT=0` |
+
+#### 19.92.4 边界
+
+- **R1**：纯测试输入构造，无 HTTP / 平行实现，服务层与别名表零改动。
+- **R2**：改动面仅 `src/services/matrix/__tests__/MatrixCapabilityService.test.ts`；无 admin / AI 引用。
+- **R3 第 3 项**：未执行 Android / iOS 构建；仅测试文件变化，不进入产物。
+- **仍保留手写的情形**：负向用例（旧错误 key 不命中）、分支用例（单侧关闭、并发去重、fetch 失败、store 未注册）仍为覆盖分支所需的最小构造；正向矩阵输入已全部由真实快照推导。
+- **未闭环**：快照仍为单环境（本地 synapse-rust）采集，多后端版本差异未覆盖。
 
 ---
 
