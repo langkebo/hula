@@ -1,3 +1,4 @@
+// fixture-literal-ok-file: 本文件的 mock 全是**内部转换函数**的返回值（convertRoomToRoomInfo / convertEventToMessage 等，结构由本仓定义），与后端 wire 响应无关；后端契约类夹具见 admin/__tests__/fixtures/*.ts。
 import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'

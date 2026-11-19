@@ -51,6 +51,12 @@ const LITERAL_MOCK = /\bmock(?:Resolved|Returned|Return)?(?:ValueOnce|ResolvedVa
 /** 默认桩（不阻断，仅统计） */
 const LITERAL_STUB = /\bmock(?:Resolved|Returned|Return)?(?:Value|ResolvedValue)\s*\(\s*\{/g
 const EXEMPT_MARK = /fixture-literal-ok\s*:\s*\S+/
+/**
+ * 文件级豁免：整个文件的 mock 都是**内部结构**（如内部转换函数的返回值），
+ * 与后端响应无关。必须带理由，避免变成「整文件绕过」的口子。
+ *   // fixture-literal-ok-file: RealtimeService 的 mock 全是内部转换函数，非后端响应
+ */
+const EXEMPT_FILE = /fixture-literal-ok-file\s*:\s*\S+/
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -92,7 +98,9 @@ export function scan(roots = SCAN_ROOTS) {
       continue
     }
     for (const f of files) {
-      const n = countLiterals(readFileSync(f, 'utf8'))
+      const source = readFileSync(f, 'utf8')
+      if (EXEMPT_FILE.test(source)) continue
+      const n = countLiterals(source)
       if (n > 0) counts[path.relative(ROOT, f)] = n
     }
   }
