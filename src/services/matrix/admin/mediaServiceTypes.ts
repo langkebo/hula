@@ -57,7 +57,13 @@ export type LegacyMediaResult = Omit<MediaPage, 'media'> & {
 export interface AdminMediaListItem {
   mediaId: string
   mediaType: string
-  contentUri: string
+  /**
+   * ⚠️ **没有 `contentUri`**：后端 `get_all_media` 只返回 8 个字段
+   * （`media_id`/`media_type`/`upload_name`/`created_ts`/`last_access_ts`/
+   * `media_length`/`user_id`/`quarantined`），既不返回 `content_uri`，也不返回
+   * `server_name` —— 所以前端也构造不出 `mxc://<server>/<id>`。
+   * 此前这里有个 `contentUri: m.content_uri ?? ''`，**恒为空串**，属无效字段。
+   */
   createdAt: number
   uploadName?: string | undefined
   mediaLength?: number | undefined

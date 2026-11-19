@@ -36,7 +36,7 @@ describe('useAdminMedia', () => {
 
   it('loadLibrary 首次加载写入列表与游标', async () => {
     vi.mocked(adminService.getMediaList).mockResolvedValueOnce(
-      makeMediaListPage([{ mediaId: 'm1', contentUri: 'mxc://a.example/m1', createdAt: 1700000000000 }], 'cursor-2')
+      makeMediaListPage([{ mediaId: 'm1', createdAt: 1700000000000 }], 'cursor-2')
     )
 
     const c = useAdminMedia()
@@ -55,7 +55,6 @@ describe('useAdminMedia', () => {
           {
             mediaId: 'm1',
             mediaType: 'image/png',
-            contentUri: '',
             createdAt: 1
           }
         ],
@@ -66,7 +65,6 @@ describe('useAdminMedia', () => {
           {
             mediaId: 'm2',
             mediaType: 'video/mp4',
-            contentUri: '',
             createdAt: 2
           }
         ]

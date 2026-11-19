@@ -107,7 +107,6 @@ describe('AdminMediaService', () => {
         {
           mediaId: 'm1',
           mediaType: 'image/png',
-          contentUri: 'mxc://hs/m1',
           createdAt: 100,
           uploadName: 'a.png',
           mediaLength: 2048,
@@ -194,7 +193,6 @@ describe('AdminMediaService', () => {
       {
         mediaId: 'm2',
         mediaType: 'image/png',
-        contentUri: '',
         createdAt: 1,
         uploadName: undefined,
         mediaLength: undefined

@@ -16,7 +16,6 @@ import type { AdminMediaListItem, AdminMediaListPage } from '../../mediaServiceT
 export const adminMediaListItemFixture: AdminMediaListItem = {
   mediaId: 'm1',
   mediaType: 'image/png',
-  contentUri: 'mxc://server.test/abc123',
   createdAt: 1795000000000,
   uploadName: 'photo.png',
   mediaLength: 20480,

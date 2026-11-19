@@ -12,6 +12,7 @@ import type {
   UserMediaQuarantineResponse
 } from '@/services/matrix/sdk'
 import { AdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
+import type { AdminMediaListPage } from './mediaServiceTypes'
 
 /**
  * AdminFacadeService 的媒体（media）方法片段。
@@ -26,18 +27,7 @@ export abstract class AdminFacadeMediaMethods extends AdminFacadeOpsMethods {
     from?: string,
     orderBy?: string,
     search?: string
-  ): Promise<{
-    media: Array<{
-      mediaId: string
-      mediaType: string
-      contentUri: string
-      createdAt: number
-      uploadName?: string | undefined
-      mediaLength?: number | undefined
-      quarantined?: boolean | undefined
-    }>
-    nextToken?: string | undefined
-  }> {
+  ): Promise<AdminMediaListPage> {
     return this.media.getMediaList(limit, from, orderBy, search)
   }
 
