@@ -57,7 +57,15 @@ export const baseVitestConfig: UserConfig = {
       // 进程在 close 阶段超时退出，若不开启此选项覆盖率报告将不会被写出（CI artifact 为空）。
       reportOnFailure: true,
       include: ['src/**/*.{vue,js,jsx,ts,tsx}'],
-      exclude: ['src/**/*.{test,spec}.{js,ts}', 'src/types/**', 'src/**/*.d.ts'],
+      exclude: [
+        'src/**/*.{test,spec}.{js,ts}',
+        // `__tests__/` 整目录都是测试资产（fixtures / helpers 不叫 *.test.ts 但同样不是
+        // 生产代码）。此前只排除文件名，于是新增的夹具被计入分母（0 覆盖）拉低整体数字。
+        // 与 check-matrix-service-layering、check-integration-map-freshness 的口径保持一致。
+        'src/**/__tests__/**',
+        'src/types/**',
+        'src/**/*.d.ts'
+      ],
       // 覆盖率地板：以 2026-10-12 全量实测值向下取整。权威登记见 scripts/coverage-floor.json，
       // 由 scripts/check-coverage-floor.mjs 做「只升不降」的棘轮断言。此处为第二道防线，
       // 保证 vitest 自身在低于阈值时即以非零码退出。
