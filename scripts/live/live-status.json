@@ -254,10 +254,25 @@
       "note": "2026-11-19 10:35 14 项通过 / 3 info：D5 越权兑现被拒(403)+本人兑现 200+DB 落库、D16 notifications 产生且 ack 后 read=true、D17 burn 房间级生效、跨用户同 device_id 登录允许"
     },
     "d5-key-request": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "缺前置：roomId 取自 argv[2] 或当前 URL 的 chatMain/<roomId>，探针本身不建房也不导航；App 停在登录页时直接抛「拿不到 roomId」。补跑需：注册账号 → 创建带 m.room.encryption 的房间 → App 登录该账号并进入该房（或 node scripts/d5-key-request-probe.mjs <roomId>），之后才谈得上比对 e2ee_key_requests / to_device_messages 的增量"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": "2026-11-19T10:48:27"
+      },
+      "result": {
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "info": 2,
+        "duration_s": 70
+      },
+      "note": "2026-11-19 11:56 6 项全过（前置由一次性脚本补齐：从 App 内 client 取 userId+accessToken → 用该账号建带 m.room.encryption 的房 → 等 client.getRoom 出现 → 传 roomId 给探针）。取证：伪造不可解密事件 ⇒ 客户端标记 UTD（timeline=6，UTD=1）、performCheck 的 undecryptableMessageCount=1、createRoomKeyRequest 请求已发出、服务端 e2ee_key_requests 73→75（+2）、to_device %room_key% 3530→3532。⚠️ 前置脚本踩坑：playwright connectOverCDP 会持有活跃句柄，不显式 process.exit(0) 则 Node 进程不退出，命令替换会一直挂着（曾卡 20 分钟）"
     },
     "forward": {
       "status": "passed",
