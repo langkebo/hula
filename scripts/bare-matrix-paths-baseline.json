@@ -1,17 +1,35 @@
 {
-  "generatedAt": "2026-10-19T14:34:38.561Z",
-  "routeSources": ["sdk-contract(installed): 986", "backend-authority(sibling-manifest): 826（并入判据面 +56）"],
+  "generatedAt": "2026-11-19T04:20:32.394Z",
+  "routeSources": ["sdk-contract(installed): 928", "backend-authority(sibling-manifest): 777（并入判据面 +49）"],
   "note": "knownDefects = 当前未修的裸调 404 缺陷（须为 0 或显式登记；--strict 时失败）。history = 已修缺陷沿革（仅记录，不参与豁免）。",
   "defectEvidence": "每条缺陷已回源 synapse-rust 后端源码/守卫测试复核（证据见各条 reason 字段）。",
   "inventory": {
+    "/_matrix/client/unstable/org.matrix.msc3814.v1/dehydrated_device/status": {
+      "files": ["src/services/matrix/capabilityProbe.ts"]
+    },
+    "/_matrix/client/unstable/org.matrix.msc4140/delayed_events": {
+      "files": ["src/services/matrix/capabilityProbe.ts"]
+    },
+    "/_matrix/client/unstable/org.matrix.msc4143/rtc/transports": {
+      "files": ["src/services/matrix/capabilityProbe.ts"]
+    },
+    "/_matrix/client/unstable/org.matrix.msc4354/rooms/{roomId}/sticky_events": {
+      "files": ["src/services/matrix/capabilityProbe.ts"]
+    },
     "/_matrix/client/unstable/org.matrix.simplified_msc3575/sync": {
       "files": ["src/services/matrix/paths/sync.ts"]
+    },
+    "/_matrix/client/unstable/uk.half-shot.msc2666/user/mutual_rooms": {
+      "files": ["src/services/matrix/capabilityProbe.ts"]
     },
     "/_matrix/client/v1/config/client": {
       "files": ["src/services/matrix/paths/clientConfig.ts"]
     },
     "/_matrix/client/v1/login/qr_token": {
       "files": ["src/services/matrix/paths/auth.ts"]
+    },
+    "/_matrix/client/v3/account/3pid/email/submitToken": {
+      "files": ["src/services/matrix/user/accountThreePids.ts"]
     },
     "/_matrix/client/v3/account/password": {
       "files": ["src/services/matrix/auth/authHelpers.ts"]
@@ -64,13 +82,6 @@
     "/_matrix/client/v4/sync": {
       "files": ["src/services/matrix/paths/sync.ts"]
     },
-    "/_matrix/client/versions": {
-      "files": [
-        "src/services/matrix/MatrixCapabilityService.ts",
-        "src/utils/MatrixDiagnostics.ts",
-        "src/workers/workerProbeHandlers.ts"
-      ]
-    },
     "/_matrix/vendor/v1/friends": {
       "files": ["src/services/matrix/paths/friends.ts"]
     },
@@ -113,9 +124,6 @@
     "/_matrix/vendor/v1/invites/one-time": {
       "files": ["src/services/matrix/paths/invites.ts"]
     },
-    "/_matrix/vendor/v1/my_rooms": {
-      "files": ["src/services/matrix/user/MatrixAccountService.ts"]
-    },
     "/_matrix/vendor/v1/rooms/{p}/report/{p}/scanner_info": {
       "files": ["src/services/matrix/paths/room.ts"]
     },
@@ -125,16 +133,7 @@
     "/_matrix/vendor/v1/voice/config": {
       "files": ["src/services/matrix/paths/voice.ts"]
     },
-    "/_matrix/vendor/v1/voice/convert": {
-      "files": ["src/services/matrix/paths/voice.ts"]
-    },
-    "/_matrix/vendor/v1/voice/optimize": {
-      "files": ["src/services/matrix/paths/voice.ts"]
-    },
     "/_matrix/vendor/v1/voice/room/{p}": {
-      "files": ["src/services/matrix/paths/voice.ts"]
-    },
-    "/_matrix/vendor/v1/voice/transcription": {
       "files": ["src/services/matrix/paths/voice.ts"]
     },
     "/_matrix/vendor/v1/voice/upload": {
@@ -171,15 +170,6 @@
       "files": ["src/services/matrix/paths/notification.ts"]
     },
     "/voice/config": {
-      "files": ["src/services/matrix/paths/voice.ts"]
-    },
-    "/voice/convert": {
-      "files": ["src/services/matrix/paths/voice.ts"]
-    },
-    "/voice/optimize": {
-      "files": ["src/services/matrix/paths/voice.ts"]
-    },
-    "/voice/transcription": {
       "files": ["src/services/matrix/paths/voice.ts"]
     },
     "/voice/upload": {
@@ -281,15 +271,21 @@
     "/_matrix/client/unstable",
     "/_matrix/client/v1",
     "/_matrix/client/v3",
+    "/_matrix/client/versions",
     "/_matrix/vendor/v1",
     "/mobile/mobileMy",
     "https://api.siliconflow.cn",
+    "hula.mobile.notice.read.",
+    "lock-screen:",
     "matrix-js-sdk::sync::",
     "pbkdf2-sha256",
     "pbkdf2-sha256-64",
+    "setting.dialog.search_root",
     "sha256:",
     "tjg-crypto-storage-password",
+    "tjg.mobile.notice.draft",
     "tjg.persistedDeviceId:",
+    "tjg:msg-input-draft",
     "tjg:privateRooms:",
     "tjg:v2:",
     "windowChat--"

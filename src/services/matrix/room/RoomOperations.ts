@@ -142,9 +142,16 @@ export class RoomOperations extends RoomOperationsModerationMethods {
    * 因此按 event_type 清除等价于清除该条。
    */
   async clearStickyEvent(roomId: string, eventType: string): Promise<void> {
-    await safeDelete(`/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`, undefined, {
-      prefix: `${PREFIX_UNSTABLE}/org.matrix.msc4354`
-    })
+    // MSC 段放在**路径**里、`prefix` 只给根常量：`prefix + path` 是字符串拼接，
+    // 请求 URL 与原先 `prefix: `${PREFIX_UNSTABLE}/org.matrix.msc4354`` 完全一致，
+    // 但这样 `check:bare-matrix-paths` 才能用根前缀拼出完整路径去比对后端台账；
+    // 否则「前缀里混了路径段」既不是根前缀也不是完整路径，会被判成未登记缺陷
+    // （2026-11-19：这正是 check:release 唯一红的那一条）。
+    await safeDelete(
+      `/org.matrix.msc4354/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`,
+      undefined,
+      { prefix: PREFIX_UNSTABLE }
+    )
   }
 
   // --- MemberProfile (was MemberProfileService) ---

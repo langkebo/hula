@@ -53,13 +53,18 @@ const MOBILE_PLATFORMS = new Set(['iOS', 'android'])
  * label 为精确字符串，或以 `*` 结尾的 glob（动态族）。
  * 每条都要有**可复现的取证理由（文件:行）**；新增窗口请补登记，否则守卫会判红。
  *
- * 说明：`settings` / `lockScreen` / `modal-secretChat` 目前**无建窗点**
- * （settings 走 router.push、lockScreen 是 home 内 modal、modal-secretChat 为未接线路由），
- * 因此**不在此登记**；它们仅作为兜底 label 出现在 capabilities 的 windows 数组里（多写无害）。
+ * 说明：`lockScreen` / `modal-secretChat` 目前**无建窗点**（lockScreen 是 home 内 modal、
+ * modal-secretChat 为未接线路由），因此**不在此登记**。
+ *
+ * ⚠️ `settings` 原先也被归入「无建窗点」（注释称其走 router.push），但 `caed98250`（11-14）
+ * 在 `src/composables/common/useWindow.ts:136` 加了真正的建窗点 —— `createWebviewWindow`
+ * 的 label 是第 2 参数，此前的扫描规则只认显式 label，于是长期漏报。
+ * 2026-11-19 补登记；它的 capability 覆盖本来就在（`default.json` / `autostart.json` / `network.json`）。
  */
 export const WINDOW_LABEL_REGISTRY = [
   // —— 桌面：精确 label ——
   { label: 'home', platform: 'desktop', rationale: '主窗口（src/services/matrix/auth/DesktopSessionTransition.ts:61、SessionLogoutService:82/149 的 getByLabel 亦引用）' },
+  { label: 'settings', platform: 'desktop', rationale: '设置窗口（src/composables/common/useWindow.ts:136 的 createWebviewWindow、:129 的 getByLabel；capability 已覆盖）' },
   { label: 'login', platform: 'desktop', rationale: '登录窗口（src/services/matrix/auth/SessionLogoutService.ts:149；桌面静态窗口 tauri.macos/windows.conf.json）' },
   { label: 'tray', platform: 'desktop', rationale: '托盘窗口（src-tauri/src/desktops/tray.rs:28 的唯一 Rust 侧建窗点；tauri.linux.conf.json 亦为静态窗口）' },
   { label: 'checkupdate', platform: 'desktop', rationale: '检查更新窗（src/composables/common/windowRtc.ts:124 ensureDesktopWindowInstance；tauri.linux.conf.json 亦为静态窗口）' },

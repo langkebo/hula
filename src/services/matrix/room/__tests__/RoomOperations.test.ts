@@ -695,9 +695,19 @@ describe('RoomOperations', () => {
     it('calls safeDelete with the MSC4354 unstable prefix', async () => {
       await ops.clearStickyEvent('!r', 'm.room.message')
 
-      expect(safeDeleteMock).toHaveBeenCalledWith('/rooms/!r/sticky_events/m.room.message', undefined, {
-        prefix: '/_matrix/client/unstable/org.matrix.msc4354'
-      })
+      // prefix 只给根常量、MSC 段在路径里（`prefix + path` 是字符串拼接）。
+      // 这样 check:bare-matrix-paths 才能用根前缀拼出完整路径比对后端台账；
+      // 若把 MSC 段塞进 prefix，「前缀既不是根也不是完整路径」会被判成未登记缺陷。
+      //
+      // 两条断言合起来锁定了最终 URL：`/_matrix/client/unstable` +
+      // `/org.matrix.msc4354/rooms/!r/sticky_events/m.room.message`，与改造前逐字一致。
+      // （不额外解构 mock.calls 做拼接断言：它的类型是空元组，强转会触发
+      //  `as unknown as`，而 check-ratchet 把 as_unknown_as 钉在 0。）
+      expect(safeDeleteMock).toHaveBeenCalledWith(
+        '/org.matrix.msc4354/rooms/!r/sticky_events/m.room.message',
+        undefined,
+        { prefix: '/_matrix/client/unstable' }
+      )
     })
   })
 
