@@ -1,0 +1,12 @@
+// ⚠️ 生成物，请勿手改。
+export * from './sub-managers-admin-cleanup-manager'
+export * from './sub-managers-admin-config-types'
+export * from './sub-managers-admin-external-service-manager'
+export * from './sub-managers-admin-federation-types'
+export * from './sub-managers-admin-notification-manager'
+export * from './sub-managers-admin-policy-manager'
+export * from './sub-managers-admin-push-manager'
+export * from './sub-managers-admin-report-manager'
+export * from './sub-managers-admin-room-types'
+export * from './sub-managers-admin-server-types'
+export * from './sub-managers-admin-user-types'

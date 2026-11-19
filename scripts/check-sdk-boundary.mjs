@@ -368,7 +368,11 @@ export async function collectViolations(rootDir) {
     const isTest = TEST_PATTERN.test(rel)
 
     const imports = scanFileText(text)
-    if (imports.length > 0 && !ALLOWED_BOUNDARY_FILES.has(rel)) {
+    // ⚠️ 此前这一支**漏了 `!isTest`**（另外三条 channel 都有），于是 `__tests__/` 下的
+    // 裸引也被计为违规 —— 与文件头「Test files (`__tests__/`) are excluded by the scanner」
+    // 直接矛盾。实测 156 条基线里有 **86 条在 `__tests__/`**（55%）。
+    // 测试要 mock SDK 就必须引类型，这与生产代码不该同一标准。
+    if (imports.length > 0 && !isTest && !ALLOWED_BOUNDARY_FILES.has(rel)) {
       for (const imp of imports) {
         const classification = classifySpecifier(imp.specifier, imp.dynamic)
         violations.push({
