@@ -1,6 +1,6 @@
 {
   "comment": "夹具字面量棘轮：测试里 mock 直接传对象字面量的处数，按文件计，只降不升。合理例外用行内 `// fixture-literal-ok: <理由>` 豁免。",
-  "updated_at": "2026-11-19T08:49:34.094Z",
+  "updated_at": "2026-11-19T09:33:00.816Z",
   "counts": {
     "src/common/__tests__/errors.test.ts": 3,
     "src/components/dm/__tests__/CreateDmDialog.test.ts": 1,
@@ -114,7 +114,6 @@
     "src/services/matrix/rendezvous/__tests__/MatrixRendezvousService.test.ts": 5,
     "src/services/matrix/room/__tests__/MatrixAnnouncementService.test.ts": 2,
     "src/services/matrix/room/__tests__/MatrixDirectMessageService.test.ts": 2,
-    "src/services/matrix/room/__tests__/MembershipService.test.ts": 11,
     "src/services/matrix/room/__tests__/SummaryService.test.ts": 1,
     "src/services/matrix/user/__tests__/MatrixPresenceService.test.ts": 3,
     "src/services/matrix/user/__tests__/MatrixProfileService.test.ts": 8,

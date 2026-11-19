@@ -407,6 +407,28 @@ const counters = {
     strip: stripCommentsOnly
   },
   /**
+   * `as never` —— 与 `as unknown as` **同等**的类型逃逸手段：`never` 可赋给任何类型，
+   * 所以 `x as never` 之后赋值给谁都不报错，编译期检查被完全绕过。
+   *
+   * 为什么之前漏了：ratchet 只盯 `as unknown as` 这一种写法，而 `as never` 更短、
+   * 更隐蔽，且不会被 linter 抱怨。实测**生产代码 36 处**（测试内另有 603 处，
+   * 属 mock 简写，不计入）。
+   *
+   * 已经不是纯理论：`components/atomic/MessageLockBadge.stories.ts:79` 的注释记着
+   * 一次真实事故——早前传 `'plain' as never`，三态 `v-else-if` 全不匹配，
+   * 页面上渲染出**没有图标的空徽章**，而 `vue-tsc` 全程无感。
+   *
+   * 收敛策略：新代码禁止再用；存量优先在 `services/matrix` 与 `composables` 热点就近
+   * 换成正经类型 / 类型守卫 / 泛型约束。计数只降不升。
+   */
+  as_never: {
+    pattern: /as\s+never\b/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly
+  },
+  /**
    * Rust 侧（src-tauri/src 下所有 .rs）的中文**字符串字面量**。
    *
    * 判据本意：后端不该把面向用户的文案写死成中文 —— 正确形态是「返回错误码/英文 +

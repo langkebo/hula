@@ -1,3 +1,4 @@
+// fixture-literal-ok-file: 本文件的 mock 全是**内部桩**（matrixClientService.getClient / joinRoom 等），结构由本仓定义，与后端 wire 响应无关。
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
