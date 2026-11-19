@@ -45,3 +45,27 @@ export type LegacyMediaResult = Omit<MediaPage, 'media'> & {
   media?: Array<MediaInfo & { content_uri?: string }>
   next_token?: string
 }
+
+/**
+ * 媒体列表条目 —— `AdminMediaService.getMediaList` **映射后**的前端模型（camelCase）。
+ *
+ * 此前它是 `getMediaList` 签名里的**内联匿名类型**：无法复用、夹具没法标注、
+ * 也不受任何门禁检查。提出来的同时保留字段语义：
+ * - `createdAt` 来自 wire 的 `created_ts`（后端 `media.rs:132/162/246` 确认用这个键）
+ * - `quarantined` 仅 `get_all_media` / `get_media_info` 返回
+ */
+export interface AdminMediaListItem {
+  mediaId: string
+  mediaType: string
+  contentUri: string
+  createdAt: number
+  uploadName?: string | undefined
+  mediaLength?: number | undefined
+  quarantined?: boolean | undefined
+}
+
+/** 媒体列表页 —— `{ media, nextToken }` */
+export interface AdminMediaListPage {
+  media: AdminMediaListItem[]
+  nextToken?: string | undefined
+}

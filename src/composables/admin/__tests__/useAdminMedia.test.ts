@@ -26,6 +26,7 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminService } from '@/services/matrix/admin'
+import { makeMediaListPage, mediaInfoFixture } from '@/services/matrix/admin/__tests__/fixtures/media'
 import { useAdminMedia } from '../useAdminMedia'
 
 describe('useAdminMedia', () => {
@@ -34,17 +35,9 @@ describe('useAdminMedia', () => {
   })
 
   it('loadLibrary 首次加载写入列表与游标', async () => {
-    vi.mocked(adminService.getMediaList).mockResolvedValueOnce({
-      media: [
-        {
-          mediaId: 'm1',
-          mediaType: 'image/png',
-          contentUri: 'mxc://a.example/m1',
-          createdAt: 1700000000000
-        }
-      ],
-      nextToken: 'cursor-2'
-    })
+    vi.mocked(adminService.getMediaList).mockResolvedValueOnce(
+      makeMediaListPage([{ mediaId: 'm1', contentUri: 'mxc://a.example/m1', createdAt: 1700000000000 }], 'cursor-2')
+    )
 
     const c = useAdminMedia()
     await c.loadLibrary()
@@ -103,12 +96,13 @@ describe('useAdminMedia', () => {
   })
 
   it('openMediaDetail 写入详情，返回 null 时置空', async () => {
-    vi.mocked(adminService.getMediaInfo).mockResolvedValueOnce({ media_id: 'm1', media_type: 'image/png' })
+    vi.mocked(adminService.getMediaInfo).mockResolvedValueOnce(mediaInfoFixture)
 
     const c = useAdminMedia()
     await c.openMediaDetail('m1')
 
-    expect(c.selectedMedia.value).toEqual({ media_id: 'm1', media_type: 'image/png' })
+    // 原样透传 service 返回值，所以断言就用同一份夹具（此前只写 2 个键，掩盖了其余字段是否真的透传）
+    expect(c.selectedMedia.value).toEqual(mediaInfoFixture)
     expect(c.detailLoading.value).toBe(false)
 
     vi.mocked(adminService.getMediaInfo).mockResolvedValueOnce(null)
@@ -117,16 +111,13 @@ describe('useAdminMedia', () => {
   })
 
   it('openMediaDetailByServer 走按服务器查询并写入详情', async () => {
-    vi.mocked(adminService.getMediaInfoByServer).mockResolvedValueOnce({
-      media_id: 'm1',
-      media_type: 'image/png'
-    })
+    vi.mocked(adminService.getMediaInfoByServer).mockResolvedValueOnce(mediaInfoFixture)
 
     const c = useAdminMedia()
     await c.openMediaDetailByServer('hs.example', 'm1')
 
     expect(adminService.getMediaInfoByServer).toHaveBeenCalledWith('hs.example', 'm1')
-    expect(c.selectedMedia.value).toEqual({ media_id: 'm1', media_type: 'image/png' })
+    expect(c.selectedMedia.value).toEqual(mediaInfoFixture)
     expect(c.detailLoading.value).toBe(false)
 
     vi.mocked(adminService.getMediaInfoByServer).mockResolvedValueOnce(null)

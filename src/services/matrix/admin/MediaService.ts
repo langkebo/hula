@@ -12,7 +12,7 @@ import type {
   UserMediaQuarantineResponse
 } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import type { LegacyMediaResult, MediaDomainSdkGetter } from './mediaServiceTypes'
+import type { AdminMediaListPage, LegacyMediaResult, MediaDomainSdkGetter } from './mediaServiceTypes'
 
 const logger = createLogger('MediaService')
 
@@ -27,18 +27,7 @@ export class AdminMediaService {
     from?: string,
     _orderBy?: string,
     _search?: string
-  ): Promise<{
-    media: Array<{
-      mediaId: string
-      mediaType: string
-      contentUri: string
-      createdAt: number
-      uploadName?: string | undefined
-      mediaLength?: number | undefined
-      quarantined?: boolean | undefined
-    }>
-    nextToken?: string | undefined
-  }> {
+  ): Promise<AdminMediaListPage> {
     try {
       const admin = await this.sdkAdmin()
       const result = (await admin.getMedia(limit, from)) as LegacyMediaResult
