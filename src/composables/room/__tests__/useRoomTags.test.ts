@@ -1,3 +1,4 @@
+// fixture-literal-ok-file: 本文件 mock 的是 RoomOperations 返回的 **tag Map**（`{ 'm.favourite': { order } }`），是本仓的抽象结构，不是后端 wire；后端返回的是 `{ tags: {...} }`。
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockGetTags, mockSetTag, mockRemoveTag, mockShowFeedback } = vi.hoisted(() => ({
