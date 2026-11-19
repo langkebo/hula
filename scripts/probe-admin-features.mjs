@@ -216,5 +216,36 @@ if (EMIT_JSON) {
   console.log('')
 }
 
+/**
+ * 退出码语义（2026-11-19 修正）。
+ *
+ * 这个脚本的用途是**探测后端能力并给出 banner 建议**，所以「后端没实现」是它要交付的
+ * **有效事实**，不是它自身的失败。原实现用 `results.every(ready)` 判定，导致
+ * `Security` / `ServerLogs` 两个域（后端台账里确实没有 `/security/events`、
+ * `/security/ip/blocks`、`/admin/v1/logs`）永远把退出码压成 1 ⇒ `test:probe` 恒红，
+ * 且真失败（超时／5xx）与「预期内的 not_found」混在一起，反而看不出问题。
+ *
+ * 现在分层：
+ * - 有效事实（exit 0）：`ready`（能力可用）、`not_found`（后端未实现，建议 KEEP banner）、
+ *   `empty`（端点存在但当前无数据）
+ * - 真失败（exit 1）：`timeout`、`network`、`unauthorized`、`server_error`、`other`
+ * - `--strict`：恢复原行为（全部 ready 才 0），供需要「全绿才算过」的场景使用
+ */
+const FATAL_CLASSIFICATIONS = new Set(['timeout', 'network', 'unauthorized', 'server_error', 'other'])
+const fatal = results.filter((r) => FATAL_CLASSIFICATIONS.has(r.classification))
 const allReady = results.every((r) => r.classification === 'ready')
-process.exit(allReady ? 0 : 1)
+const strict = process.argv.includes('--strict')
+
+if (fatal.length > 0) {
+  console.log(`❌ ${fatal.length} 个探针真的失败（超时／网络／鉴权／5xx）：`)
+  for (const r of fatal) console.log(`   ${r.domain} ${r.name} → ${r.classification}（${r.summary}）`)
+} else if (!allReady) {
+  const notReady = results.filter((r) => r.classification !== 'ready')
+  console.log(
+    `ℹ️ 探测完成：${notReady.length} 个端点未就绪（后端未实现或无数据），` +
+      `按 banner 建议处理即可，不算探针失败${strict ? '（--strict 下仍会失败）' : ''}`
+  )
+}
+
+process.exit(fatal.length > 0 || (strict && !allReady) ? 1 : 0)
+

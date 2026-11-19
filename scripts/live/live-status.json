@@ -233,64 +233,124 @@
       "note": "2026-11-18 21:01 建空间→建子房间→树形渲染→进入 全通"
     },
     "backend-redeploy": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "无历史记录可考"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0,
+        "info": 3,
+        "duration_s": 34
+      },
+      "note": "2026-11-19 10:35 14 项通过 / 3 info：D5 越权兑现被拒(403)+本人兑现 200+DB 落库、D16 notifications 产生且 ack 后 read=true、D17 burn 房间级生效、跨用户同 device_id 登录允许"
     },
     "d5-key-request": {
       "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "无历史记录可考"
+      "note": "需 SYNAPSE_DB_CONTAINER + CDP_A（连 127.0.0.1:9222 上模拟器里的 App）；本机无模拟器 ⇒ run-probe 现已 fail-fast exit 2"
     },
     "forward": {
-      "status": "stale",
+      "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "联调报告 §六（2026-11-14）9 passed/0；未留四元组"
+      "note": "需 ADB_SERIAL + CDP_A（adb reverse 5210/8008）；本机 adb 无 emulator-5554 ⇒ exit 2"
     },
     "friends-shard": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "无历史记录可考"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "info": 0,
+        "duration_s": 62
+      },
+      "note": "2026-11-19 10:35 无依赖直跑，8 项全过：增量写入后立即读（1/2/3 人无缓存穿透）、同 shard 并集与 version 单调、shard 路由 state_key 一致、M_UNKNOWN 带 meaning 且非 UNKNOWN 响应形状不变"
     },
     "msg-relations-upgrade": {
-      "status": "stale",
-      "last_run": null,
-      "result": null,
-      "note": "联调报告 §六（2026-11-14）23 passed/0/1 skip；未留四元组"
-    },
-    "probe-admin-features": {
       "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "无历史记录可考"
+      "note": "需 E2EE_BASE + ADB_SERIAL（设备上跑 E2EE 关系升级流程）；无设备 ⇒ exit 2"
+    },
+    "probe-admin-features": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "info": 0,
+        "duration_s": 20
+      },
+      "note": "2026-11-19 10:47 4 端点探测完成：SAML getSamlConfig=200 ready（建议 REMOVE banner）；getSecurityEvents/getIpBlocks/getServerLogs 均 404（后端台账 978 条里确无这三个端点，建议 KEEP banner）。判定已修正：404 是有效事实不算探针失败，--strict 可恢复原语义"
     },
     "push-delivery": {
-      "status": "stale",
-      "last_run": null,
-      "result": null,
-      "note": "联调报告 §六（2026-11-14）8 passed/0；未留四元组"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "info": 0,
+        "duration_s": 48
+      },
+      "note": "2026-11-19 10:38 8 项全过：data.url 必须 https、SSRF 拒绝本机/私网、落库 pusher 后后端真实发起投递、接收端 0 命中（投递侧同样过 SSRF 守卫）、自发不自推、is_enabled=false 不投递"
     },
     "room-appear-live": {
-      "status": "stale",
+      "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "联调报告 §六（2026-11-14）8/0；未留四元组"
+      "note": "需 ADB_SERIAL_A/B + CDP_A/B（双设备投递可见性）⇒ exit 2"
     },
     "search-burn": {
-      "status": "stale",
+      "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "联调报告 §六（2026-11-14）17 passed/0；未留四元组"
+      "note": "需 SYNAPSE_DB_CONTAINER + E2EE_BASE + ADB_SERIAL；无设备 ⇒ exit 2"
     },
     "session-persist": {
       "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "无历史记录可考"
+      "note": "需 ADB_SERIAL_A（真机/模拟器会话保持）⇒ exit 2"
     }
   }
 }

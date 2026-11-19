@@ -371,7 +371,7 @@
       "name": "d5-key-request",
       "file": "scripts/d5-key-request-probe.mjs",
       "category": "server",
-      "requires": ["SYNAPSE_DB_CONTAINER"],
+      "requires": ["SYNAPSE_DB_CONTAINER", "CDP_A"],
       "oracle": "db",
       "covers": ["e2ee-key-request"]
     },
@@ -379,7 +379,7 @@
       "name": "forward",
       "file": "scripts/forward-probe.mjs",
       "category": "server",
-      "requires": [],
+      "requires": ["ADB_SERIAL", "CDP_A"],
       "oracle": "server-events",
       "covers": ["forward"]
     },
@@ -395,7 +395,7 @@
       "name": "msg-relations-upgrade",
       "file": "scripts/msg-relations-upgrade-probe.mjs",
       "category": "server",
-      "requires": ["E2EE_BASE"],
+      "requires": ["E2EE_BASE", "ADB_SERIAL"],
       "oracle": "server-events",
       "covers": ["relations"]
     },
@@ -403,7 +403,7 @@
       "name": "probe-admin-features",
       "file": "scripts/probe-admin-features.mjs",
       "category": "server",
-      "requires": [],
+      "requires": ["HOMESERVER_URL", "ADMIN_ACCESS_TOKEN"],
       "oracle": "server-api",
       "covers": ["ADM"]
     },
@@ -427,7 +427,7 @@
       "name": "search-burn",
       "file": "scripts/search-burn-probe.mjs",
       "category": "server",
-      "requires": ["SYNAPSE_DB_CONTAINER", "E2EE_BASE"],
+      "requires": ["SYNAPSE_DB_CONTAINER", "E2EE_BASE", "ADB_SERIAL"],
       "oracle": "db",
       "covers": ["search", "burn"]
     },
@@ -441,7 +441,12 @@
     }
   ],
   "manual": [
-    { "name": "语音消息录制与播放", "reason": "需真机麦克风权限；浏览器不可替代", "owner": "chat", "priority": "P2" },
+    {
+      "name": "语音消息录制与播放",
+      "reason": "需真机麦克风权限；浏览器不可替代",
+      "owner": "chat",
+      "priority": "P2"
+    },
     {
       "name": "音视频通话 + 强制 TURN relay",
       "reason": "需两台真机 + coturn --force-relay",
