@@ -1,5 +1,11 @@
 import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  AuditEventFixture,
+  AuditEventPageFixture,
+  FeatureFlagFixture,
+  FeatureFlagPageFixture
+} from '@/services/matrix/__tests__/fixtures/generated'
 import { AdminSecurityService } from '../SecurityService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -72,8 +78,10 @@ describe('AdminSecurityService', () => {
 
   it('maps audit log query and response', async () => {
     // 游标键是 `next_batch`（SDK `AuditEventPage{events, total, next_batch}`）。
+    // 用 codegen 夹具（结构真值来自 SDK 的 AuditEventPage），只覆盖测试关心的字段
     ;(admin as any).listAuditEvents.mockResolvedValueOnce({
-      events: [{ event_id: '$e1' }],
+      ...AuditEventPageFixture,
+      events: [{ ...AuditEventFixture, event_id: '$e1' }],
       total: 1,
       next_batch: 'next'
     })
@@ -86,17 +94,34 @@ describe('AdminSecurityService', () => {
       actor_id: '@u:server',
       action: 'login'
     })
+    // getAuditLog 原样透传（unknownToObject），所以断言就是同一份夹具 ——
+    // 此前只写 { event_id } 一个键，掩盖了其余字段是否真的透传
     expect(result).toEqual({
-      logs: [{ event_id: '$e1' }],
+      logs: [{ ...AuditEventFixture, event_id: '$e1' }],
       next_batch: 'next'
     })
   })
 
   it('normalizes experimental features from feature flag list response', async () => {
+    // 用 FeatureFlagPage 夹具展开，只覆盖本用例关心的字段
     ;(admin as any).listFeatureFlags.mockResolvedValueOnce({
+      ...FeatureFlagPageFixture,
       flags: [
-        { flag_key: 'mscA', status: 'enabled', reason: 'for testing', rollout_percent: 100, target_scope: 'global' },
-        { flag_key: 'mscB', status: 'disabled', rollout_percent: 0, target_scope: 'user' }
+        {
+          ...FeatureFlagFixture,
+          flag_key: 'mscA',
+          status: 'enabled',
+          reason: 'for testing',
+          rollout_percent: 100,
+          target_scope: 'global'
+        },
+        {
+          ...FeatureFlagFixture,
+          flag_key: 'mscB',
+          status: 'disabled',
+          rollout_percent: 0,
+          target_scope: 'user'
+        }
       ]
     })
 

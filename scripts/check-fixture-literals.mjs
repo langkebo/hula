@@ -82,6 +82,12 @@ export function countLiterals(source) {
       if (!(lines[i + 1] ?? '').trimStart().startsWith('{')) continue
     }
     if (EXEMPT_MARK.test(line) || EXEMPT_MARK.test(lines[i + 1] ?? '')) continue
+    // 展开式（`{ ...SomeFixture, ... }`）是**用了夹具**，不该计入「手写字面量」。
+    // 判据：`{` 之后第一个非空白字符是 `.`（即 `...`）。
+    const rest = line.slice(line.search(/\{\s*(?=\.\.\.)?/) + 1)
+    const nextLine = (lines[i + 1] ?? '').trim()
+    const isSpread = /^\.\.\./.test(nextLine) || /^\{\s*\.\.\./.test(line.slice(line.indexOf('{')))
+    if (isSpread) continue
     count += 1
   }
   return count
