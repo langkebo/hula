@@ -1,6 +1,6 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
-import type { RoomInfo } from '@/services/matrix/admin/AdminTypes'
+import type { AdminRoomTokenSync, RoomInfo } from '@/services/matrix/admin/AdminTypes'
 import type { RoomStatsOverview } from '@/services/matrix/sdk'
 
 export interface AdminRoomGovernanceState {
@@ -24,7 +24,7 @@ export interface AdminRoomGovernanceState {
   setRoomPublicListing: (roomId: string, isPublic?: boolean) => Promise<void>
 
   /** 当前房间 token 同步信息 */
-  roomTokenSync: Ref<Record<string, unknown> | null>
+  roomTokenSync: Ref<AdminRoomTokenSync | null>
   tokenSyncLoading: Ref<boolean>
   loadRoomTokenSync: () => Promise<void>
 
@@ -69,7 +69,7 @@ export function useAdminRoomGovernance(
   const roomListings = ref<Record<string, unknown> | null>(null)
   const listingsLoading = ref(false)
 
-  const roomTokenSync = ref<Record<string, unknown> | null>(null)
+  const roomTokenSync = ref<AdminRoomTokenSync | null>(null)
   const tokenSyncLoading = ref(false)
 
   const cascadeRedactLoading = ref(false)

@@ -3,7 +3,7 @@ import type { MatrixClient, RoomStatsOverview } from '@/services/matrix/sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
-import type { RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'
+import type { AdminRoomTokenSync, RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'
 
 const logger = createLogger('RoomService')
 
@@ -341,10 +341,10 @@ export class AdminRoomService {
   }
 
   /** 读取房间 token 同步信息（活跃 token 数、设备/用户维度摘要）。 */
-  async getRoomTokenSync(roomId: string): Promise<Record<string, unknown> | null> {
+  async getRoomTokenSync(roomId: string): Promise<AdminRoomTokenSync | null> {
     try {
       const admin = await this.sdkAdmin()
-      return unknownToObject(await admin.getRoomTokenSync(roomId))
+      return unknownToObject<AdminRoomTokenSync>(await admin.getRoomTokenSync(roomId))
     } catch (err) {
       logger.error(`[Admin] 获取房间 token 同步信息失败: ${err}`)
       return null

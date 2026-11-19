@@ -301,3 +301,54 @@ export interface EventReport {
   resolved_by: string | null
   resolution_reason: string | null
 }
+
+/**
+ * `GET /_synapse/admin/v1/rooms/{room_id}/token_sync` 的单条记录。
+ *
+ * 逐字对照后端 `AdminRoomTokenSyncEntry`（18 键）。此前本层用 `Record<string, unknown>`
+ * 把结构抹平了，UI 只能 `JSON.stringify` 整块 —— 字段名一改、界面也不会报错。
+ */
+export interface AdminRoomTokenSyncEntry {
+  user_id: string
+  device_id: string
+  conn_id: string | null
+  list_key: string | null
+  pos: number | null
+  token_created_ts: number | null
+  token_expires_at: number | null
+  /** 缺失时后端回填 0 */
+  room_timestamp: number
+  room_updated_ts: number
+  /** 缺失时后端回填 0 */
+  bump_stamp: number
+  highlight_count: number
+  notification_count: number
+  is_dm: boolean
+  is_encrypted: boolean
+  is_tombstoned: boolean
+  /** 后端键名是 `invited`，值来自 `is_invited` */
+  invited: boolean
+  name: string | null
+  avatar: string | null
+  is_expired: boolean
+}
+
+export interface AdminRoomTokenSyncSummary {
+  active_token_count: number
+  expired_token_count: number
+  distinct_users: number
+  distinct_devices: number
+}
+
+/**
+ * `GET /_synapse/admin/v1/rooms/{room_id}/token_sync` 的响应。
+ *
+ * ⚠️ 不是 `{stream_ordering}` 之类：后端返回的是**分页 token 列表 + 汇总统计**。
+ */
+export interface AdminRoomTokenSync {
+  room_id: string
+  results: AdminRoomTokenSyncEntry[]
+  total: number
+  next_batch: string | null
+  summary: AdminRoomTokenSyncSummary
+}

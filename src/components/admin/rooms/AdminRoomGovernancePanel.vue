@@ -56,20 +56,8 @@
       </n-spin>
     </n-card>
 
-    <!-- token 同步 -->
-    <n-card size="small" :title="t('admin.rooms.tokenSync')">
-      <template #header-extra>
-        <n-button size="small" :loading="rooms.tokenSyncLoading.value" @click="reloadTokenSync">
-          {{ t('admin.common.refresh') }}
-        </n-button>
-      </template>
-      <n-spin :show="rooms.tokenSyncLoading.value">
-        <pre v-if="rooms.roomTokenSync.value" class="governance-json">{{
-          JSON.stringify(rooms.roomTokenSync.value, null, 2)
-        }}</pre>
-        <n-empty v-else :description="t('admin.rooms.tokenSyncEmpty')" class="py-16px" />
-      </n-spin>
-    </n-card>
+    <!-- token 同步（抽出为子组件，见 sections/AdminRoomTokenSyncCard.vue） -->
+    <AdminRoomTokenSyncCard :rooms="rooms" />
 
     <!-- 级联撤回 -->
     <n-card size="small" :title="t('admin.rooms.cascadeRedact')">
@@ -182,6 +170,7 @@ import { useI18n } from 'vue-i18n'
 import type { UseAdminRoomsResult } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminErrorHandler } from '@/views/admin/useAdminError'
+import AdminRoomTokenSyncCard from './sections/AdminRoomTokenSyncCard.vue'
 
 const props = defineProps<{
   /** 父页面持有的房间管理 composable 实例；本组件不自行创建，避免状态分叉。 */
@@ -278,17 +267,6 @@ function handleUnpublishListing() {
       }
     }
   })
-}
-
-async function reloadTokenSync() {
-  try {
-    await props.rooms.loadRoomTokenSync()
-    if (!props.rooms.roomTokenSync.value) {
-      showFeedback(t('admin.rooms.tokenSyncFailed'), 'error')
-    }
-  } catch (err) {
-    if (handleAdminError(err)) showFeedback(t('admin.rooms.tokenSyncFailed'), 'error')
-  }
 }
 
 function handleCascadeRedact() {

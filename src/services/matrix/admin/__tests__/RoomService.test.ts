@@ -161,8 +161,40 @@ describe('AdminRoomService', () => {
   })
 
   it('getRoomTokenSync 返回对象，失败时降级为 null', async () => {
-    ;(admin as any).getRoomTokenSync.mockResolvedValueOnce({ enabled: true, token: 't' })
-    await expect(service.getRoomTokenSync('!room:server.com')).resolves.toEqual({ enabled: true, token: 't' })
+    // 用**与后端一致的结构**：之前这里 mock 的是 `{enabled, token}` —— 后端根本不返回这两个键，
+    // 测试却一直是绿的（夹具手写字面量 ⇒ 测的是不存在的响应）。字段见
+    // `AdminRoomTokenSync`（18 键条目 + total/next_batch + summary 四项）。
+    const tokenSyncFixture = {
+      room_id: '!room:server.com',
+      results: [
+        {
+          user_id: '@u:server.com',
+          device_id: 'DEVICE1',
+          conn_id: null,
+          list_key: null,
+          pos: 1,
+          token_created_ts: 1795000000000,
+          token_expires_at: null,
+          room_timestamp: 0,
+          room_updated_ts: 1795000000000,
+          bump_stamp: 0,
+          highlight_count: 0,
+          notification_count: 0,
+          is_dm: false,
+          is_encrypted: false,
+          is_tombstoned: false,
+          invited: false,
+          name: null,
+          avatar: null,
+          is_expired: false
+        }
+      ],
+      total: 1,
+      next_batch: null,
+      summary: { active_token_count: 1, expired_token_count: 0, distinct_users: 1, distinct_devices: 1 }
+    }
+    ;(admin as any).getRoomTokenSync.mockResolvedValueOnce(tokenSyncFixture)
+    await expect(service.getRoomTokenSync('!room:server.com')).resolves.toEqual(tokenSyncFixture)
 
     ;(admin as any).getRoomTokenSync.mockRejectedValueOnce(new Error('forbidden'))
     await expect(service.getRoomTokenSync('!room:server.com')).resolves.toBeNull()

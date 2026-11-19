@@ -1,7 +1,7 @@
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import type { RoomStatsOverview } from '@/services/matrix/sdk'
 import { AdminFacadeMediaMethods } from './AdminFacadeMediaMethods'
-import type { UserInfo } from './AdminTypes'
+import type { AdminRoomTokenSync, UserInfo } from './AdminTypes'
 import type { AdminRoomService } from './RoomService'
 
 /**
@@ -221,7 +221,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 读取房间 token 同步信息。 */
-  async getRoomTokenSync(roomId: string): Promise<Record<string, unknown> | null> {
+  async getRoomTokenSync(roomId: string): Promise<AdminRoomTokenSync | null> {
     return this.rooms.getRoomTokenSync(roomId)
   }
 
