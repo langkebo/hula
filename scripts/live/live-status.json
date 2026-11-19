@@ -257,7 +257,7 @@
       "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "2026-11-19 11:00 首次尝试超时（480s 未完成，EXIT=124）。它不含本次修的选择器问题（tab-ambiguous=0），登录路径与其余探针不同，需单独排查其 CDP 交互耗时点"
+      "note": "缺前置：roomId 取自 argv[2] 或当前 URL 的 chatMain/<roomId>，探针本身不建房也不导航；App 停在登录页时直接抛「拿不到 roomId」。补跑需：注册账号 → 创建带 m.room.encryption 的房间 → App 登录该账号并进入该房（或 node scripts/d5-key-request-probe.mjs <roomId>），之后才谈得上比对 e2ee_key_requests / to_device_messages 的增量"
     },
     "forward": {
       "status": "passed",
@@ -365,10 +365,25 @@
       "note": "2026-11-19 10:38 8 项全过：data.url 必须 https、SSRF 拒绝本机/私网、落库 pusher 后后端真实发起投递、接收端 0 命中（投递侧同样过 SSRF 守卫）、自发不自推、is_enabled=false 不投递"
     },
     "room-appear-live": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "需双设备（ADB_SERIAL_A/B + CDP_A/B）；本轮只起了 Medium_Phone 一台，Medium_Phone_B 未启动"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": "2026-11-19T10:48:27"
+      },
+      "result": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "info": 1,
+        "duration_s": 91
+      },
+      "note": "2026-11-19 11:13 双设备（Medium_Phone@5554/CDP 9222 + Medium_Phone_B@5556/CDP 9224）8 项全过：A 建房邀请 B ⇒ B 侧 **1143ms** 不重启即出现会话（判据 <30000ms）；A 房内发消息 ⇒ B 侧 **1120ms** 收到（判据 <10000ms）。基线 B 侧 0 房间"
     },
     "search-burn": {
       "status": "passed",
