@@ -183,7 +183,14 @@ export function collectActual({ root = repoRoot, requireManifest = false } = {})
   // —— 服务面 ——
   const servicesRoot = resolve(root, 'src/services/matrix')
   const isTest = (p) => /\.(test|spec)\.[cm]?ts$/.test(p)
-  actual.matrix_service_files = countFiles(servicesRoot, (p) => p.endsWith('.ts') && !isTest(p))
+  // 与 check-matrix-service-layering 口径对齐：`__tests__/` 下的**所有**文件都是测试资产
+  // （fixtures / helpers 不叫 *.test.ts 但同样不是服务面）。两个门禁此前对同一指标算出
+  // 两个数字（272 vs 273），只因为一个排除目录、一个只排除文件名。
+  const inTestsDir = (p) => p.split(/[\\/]/).includes('__tests__')
+  actual.matrix_service_files = countFiles(
+    servicesRoot,
+    (p) => p.endsWith('.ts') && !isTest(p) && !inTestsDir(p)
+  )
   actual.matrix_service_tests = countFiles(servicesRoot, (p) => isTest(p))
   actual.base_matrix_service_subclasses = countFiles(
     servicesRoot,

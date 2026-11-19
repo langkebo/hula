@@ -128,12 +128,13 @@
     "test:probe:list": "node scripts/live/run-probe.mjs --list",
     "test:touch-targets": "playwright test e2e/mobile-touch-targets.spec.ts --project=mobile-chromium",
     "check:a11y": "node scripts/check-a11y.mjs",
-    "check:release": "pnpm check:ratchet && pnpm check:file-size && pnpm check:live-manifest && pnpm typecheck && pnpm check:sdk-types && pnpm check:sdk-aliases && pnpm check:v-html && pnpm check:doc-coverage && pnpm check:doc-paths && pnpm check:sdk-boundary && pnpm check:bare-matrix-paths && pnpm check:contract-coverage && pnpm quality:no-raw-fetch && pnpm check:icon-colors && pnpm check:guard-patterns && pnpm check:settings-wiring && pnpm check:component-contracts && pnpm check:i18n-dead-keys && pnpm check:dependency-audit && pnpm check:vendor-runtime-deps && pnpm check:http-allowlist && pnpm check:tauri-permissions && pnpm check:tauri-plugin-parity && pnpm check:crypto-cross-window && pnpm check:tauri-window-coverage && pnpm check:sdk-crypto-teardown && pnpm check:window-registry && pnpm check:integration-map-freshness && pnpm check:window-session-entry && pnpm check:worker-client-boundary && pnpm check:sdk-unstable-methods && pnpm check:matrix-layering && pnpm check:mobile-css && pnpm check:coverage",
+    "check:release": "pnpm check:ratchet && pnpm check:file-size && pnpm check:live-manifest && pnpm typecheck && pnpm check:sdk-types && pnpm check:sdk-aliases && pnpm check:v-html && pnpm check:doc-coverage && pnpm check:doc-paths && pnpm check:sdk-boundary && pnpm check:bare-matrix-paths && pnpm check:contract-coverage && pnpm quality:no-raw-fetch && pnpm check:icon-colors && pnpm check:guard-patterns && pnpm check:fixture-literals && pnpm check:settings-wiring && pnpm check:component-contracts && pnpm check:i18n-dead-keys && pnpm check:dependency-audit && pnpm check:vendor-runtime-deps && pnpm check:http-allowlist && pnpm check:tauri-permissions && pnpm check:tauri-plugin-parity && pnpm check:crypto-cross-window && pnpm check:tauri-window-coverage && pnpm check:sdk-crypto-teardown && pnpm check:window-registry && pnpm check:integration-map-freshness && pnpm check:window-session-entry && pnpm check:worker-client-boundary && pnpm check:sdk-unstable-methods && pnpm check:matrix-layering && pnpm check:mobile-css && pnpm check:coverage",
     "check:release:all": "node scripts/check-release-all.mjs",
     "check:generated-typings": "node scripts/check-generated-typings.mjs",
     "check:mobile-css": "node scripts/check-mobile-css.mjs",
     "check:sdk-lib": "node scripts/check-installed-sdk-lib.mjs",
-    "live:status": "node scripts/live/gen-live-status.mjs"
+    "live:status": "node scripts/live/gen-live-status.mjs",
+    "check:fixture-literals": "node scripts/check-fixture-literals.mjs"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
