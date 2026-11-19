@@ -37,8 +37,19 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const BASELINE_PATH = path.join(ROOT, 'scripts/fixture-literal-baseline.json')
 const SCAN_ROOTS = ['src']
 
-/** mock 后紧跟对象字面量（跨一行空白也算），`mockResolvedValueOnce({` / `mockReturnValue({` 等 */
-const LITERAL_MOCK = /\bmock(?:Resolved|Returned|Return)?(?:Value|ValueOnce|ResolvedValue|ResolvedValueOnce)\s*\(\s*\{/g
+/**
+ * **只**拦「一次性返回」的字面量：`mockResolvedValueOnce({...})` / `mockReturnValueOnce({...})`。
+ *
+ * 口径说明（2026-11-19 修正）：早先把 `mockResolvedValue({...})` 也算进来，结果 2147 处里
+ * 绝大多数是文件顶部的**默认桩**（`vi.fn().mockResolvedValue({ rooms: [], next_token: undefined })`），
+ * 它们的作用只是「没被显式设置时别炸」，不是测试断言的输入。真正会造出「测不存在的响应」
+ * 的是 `...Once({...})` —— 那才是测试数据。
+ *
+ * 默认桩另行统计（`LITERAL_STUB`），只上报不阻断，逐步收敛。
+ */
+const LITERAL_MOCK = /\bmock(?:Resolved|Returned|Return)?(?:ValueOnce|ResolvedValueOnce)\s*\(\s*\{/g
+/** 默认桩（不阻断，仅统计） */
+const LITERAL_STUB = /\bmock(?:Resolved|Returned|Return)?(?:Value|ResolvedValue)\s*\(\s*\{/g
 const EXEMPT_MARK = /fixture-literal-ok\s*:\s*\S+/
 
 function walk(dir, out = []) {

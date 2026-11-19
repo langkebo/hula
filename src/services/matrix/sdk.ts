@@ -43,6 +43,7 @@ export {
 } from 'matrix-js-sdk'
 // ---- 扩展管理器与子模块 ----
 export type {
+  AdminAccountDetails,
   AdminCleanupManager,
   AdminConfigManager,
   AdminFederationCache,

@@ -1,6 +1,7 @@
 import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminUserService } from '../UserService'
+import { adminAccountDetailsFixture } from './fixtures/user'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -122,27 +123,22 @@ describe('AdminUserService', () => {
   })
 
   it('getUserById returns mapped user info from SDK', async () => {
-    ;(admin as any).getUserById.mockResolvedValueOnce({
-      name: '@bob:server.com',
-      displayname: 'Bob Test',
-      avatar_url: 'mxc://bob-avatar',
-      admin: false,
-      deactivated: false,
-      is_guest: false,
-      created_ts: 789
-    })
+    // 夹具来自 fixtures/user.ts（类型 AdminAccountDetails，经 sdk.ts 边界导入）。
+    // 注意夹具用的是 `creation_ts` —— 后端用户主查询返回的正是这个键；
+    // 此前这里用 `created_ts`，测试绿但线上 createdTs 恒 undefined。
+    ;(admin as any).getUserById.mockResolvedValueOnce(adminAccountDetailsFixture)
 
-    const result = await service.getUserById('@bob:server.com')
+    const result = await service.getUserById(adminAccountDetailsFixture.name ?? '')
 
-    expect((admin as any).getUserById).toHaveBeenCalledWith('@bob:server.com', false)
+    expect((admin as any).getUserById).toHaveBeenCalledWith('@bob:server.test', false)
     expect(result).toEqual({
-      userId: '@bob:server.com',
-      name: '@bob:server.com',
-      avatarUrl: 'mxc://bob-avatar',
+      userId: '@bob:server.test',
+      name: '@bob:server.test',
+      avatarUrl: 'mxc://server.test/bob-avatar',
       admin: false,
       deactivated: false,
       isGuest: false,
-      createdTs: 789,
+      createdTs: 1795000000000,
       displayname: 'Bob Test'
     })
   })

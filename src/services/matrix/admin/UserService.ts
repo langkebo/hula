@@ -589,7 +589,7 @@ export class AdminUserService {
       admin: user.admin,
       deactivated: user.deactivated,
       isGuest: user.is_guest,
-      createdTs: user.created_ts,
+      createdTs: user.creation_ts ?? user.created_ts, // 后端键名并存：用户主查询用 creation_ts，另几处 created_ts
       displayname: user.displayname
     }
   }
