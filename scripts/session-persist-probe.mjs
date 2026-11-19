@@ -175,7 +175,7 @@ async function login(cdp, username) {
   await sleep(500)
   await cdp.evaluate(`
     (() => {
-      const b = [...document.querySelectorAll('button, .van-button')].find((x) => (x.innerText || '').trim() === '登录');
+      const b = [...document.querySelectorAll('button, .van-button')].find((x) => (x.innerText || '').trim() === '登录' && !String(x.className || '').includes('login-tab'));
       b?.click();
       return true;
     })()

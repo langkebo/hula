@@ -224,8 +224,38 @@ async function loginApp(cdp, account) {
   `)
   if (!filled?.ok) return { ok: false, reason: `填表失败 ${JSON.stringify(filled)}` }
   await sleep(600)
+  // ⚠️ 登录页上有**两个**「登录」文本：「登录/注册」切换 tab（class 含 `login-tab`）和真正的
+  // 提交按钮。原先用 `innerText === '登录'` 的 `.find()` 取到的是**第一个 —— 那个 tab**，
+  // 点它只是切 tab，永远不提交，表现成「登录后仍未切到目标账号」（2026-11-19 定位）。
+  // `e2e/support/androidDevice.ts` 用 `[data-testid="mobile-login-submit"]` 所以它不受影响。
+  // 这里改为 testid 优先，兜底再用文本并排除 tab。
+  const SUBMIT_FINDER = `
+    const findBtn = () => {
+      const byTestId = document.querySelector('[data-testid="mobile-login-submit"]');
+      if (byTestId) return byTestId;
+      return [...document.querySelectorAll('button, .van-button')].find(
+        (x) => (x.innerText || '').trim() === '登录' && !String(x.className || '').includes('login-tab')
+      );
+    };`
+  const gate = await cdp.evaluate(`
+    (() => {
+      ${SUBMIT_FINDER}
+      const disabled = (b) => Boolean(b && (b.disabled === true || b.classList.contains('van-button--disabled') || b.getAttribute('aria-disabled') === 'true'));
+      const btn = findBtn();
+      if (!btn) return 'no-button';
+      if (!disabled(btn)) return 'ready';
+      const icon = document.querySelector('.van-checkbox__icon') || document.querySelector('.van-checkbox');
+      if (!icon) return 'disabled-no-checkbox';
+      icon.click();
+      return disabled(findBtn()) ? 'still-disabled' : 'unlocked';
+    })()
+  `)
+  await sleep(500)
+  if (gate === 'no-button' || gate === 'disabled-no-checkbox' || gate === 'still-disabled') {
+    return { ok: false, reason: `登录按钮不可点（${gate}）` }
+  }
   await cdp.evaluate(`
-    (() => { const b = [...document.querySelectorAll('button, .van-button')].find((x) => (x.innerText || '').trim() === '登录'); b?.click(); return true })()
+    (() => { ${SUBMIT_FINDER} findBtn()?.click(); return true })()
   `)
   for (let i = 0; i < 45; i += 1) {
     await sleep(1000)

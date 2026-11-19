@@ -342,7 +342,7 @@ async function loginViaUi(cdp, { username, password, serverUrl }) {
   const clicked = await cdp.eval(`
     (() => {
       const btn = [...document.querySelectorAll('button, .van-button')]
-        .find((b) => (b.innerText || '').trim() === '登录');
+        .find((b) => (b.innerText || '').trim() === '登录' && !String(b.className || '').includes('login-tab'));
       if (!btn) return { ok: false, reason: '找不到登录按钮' };
       btn.click();
       return { ok: true };

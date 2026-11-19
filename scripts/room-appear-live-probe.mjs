@@ -229,7 +229,7 @@ async function loginApp(cdp, account) {
   if (!filled?.ok) return { ok: false, reason: `填表失败 ${JSON.stringify(filled)}` }
   await sleep(600)
   await cdp.evaluate(`
-    (() => { const b = [...document.querySelectorAll('button, .van-button')].find((x) => (x.innerText || '').trim() === '登录'); b?.click(); return true })()
+    (() => { const b = [...document.querySelectorAll('button, .van-button')].find((x) => (x.innerText || '').trim() === '登录' && !String(x.className || '').includes('login-tab')); b?.click(); return true })()
   `)
   for (let i = 0; i < 45; i += 1) {
     await sleep(1000)

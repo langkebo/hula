@@ -257,13 +257,28 @@
       "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "需 SYNAPSE_DB_CONTAINER + CDP_A（连 127.0.0.1:9222 上模拟器里的 App）；本机无模拟器 ⇒ run-probe 现已 fail-fast exit 2"
+      "note": "2026-11-19 11:00 首次尝试超时（480s 未完成，EXIT=124）。它不含本次修的选择器问题（tab-ambiguous=0），登录路径与其余探针不同，需单独排查其 CDP 交互耗时点"
     },
     "forward": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "需 ADB_SERIAL + CDP_A（adb reverse 5210/8008）；本机 adb 无 emulator-5554 ⇒ exit 2"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": "2026-11-19T10:48:27"
+      },
+      "result": {
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0,
+        "info": 0,
+        "duration_s": 56
+      },
+      "note": "2026-11-19 11:08 9 项全过：源房发消息→客户端同步→调用转发 success→目标房出现副本→协议为 m.reference 且指向源事件→源事件未 redact→带 file.key 的消息被拒转发明文房（不泄露解密密钥）"
     },
     "friends-shard": {
       "status": "passed",
@@ -287,10 +302,25 @@
       "note": "2026-11-19 10:35 无依赖直跑，8 项全过：增量写入后立即读（1/2/3 人无缓存穿透）、同 shard 并集与 version 单调、shard 路由 state_key 一致、M_UNKNOWN 带 meaning 且非 UNKNOWN 响应形状不变"
     },
     "msg-relations-upgrade": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "需 E2EE_BASE + ADB_SERIAL（设备上跑 E2EE 关系升级流程）；无设备 ⇒ exit 2"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": "2026-11-19T10:48:27"
+      },
+      "result": {
+        "passed": 23,
+        "failed": 0,
+        "skipped": 1,
+        "info": 0,
+        "duration_s": 120
+      },
+      "note": "2026-11-19 11:10 23 项通过 / 1 skip：thread 回复可发且 /relations m.thread 可查、客户端识别 thread 归属与计数、房间版本 default=12 可选=12、通知记录含提及、ACK 按 notification_id 且 ACK 后 read=true（列表不删）、运行中 client 未置空"
     },
     "probe-admin-features": {
       "status": "passed",
@@ -338,19 +368,49 @@
       "status": "never-run",
       "last_run": null,
       "result": null,
-      "note": "需 ADB_SERIAL_A/B + CDP_A/B（双设备投递可见性）⇒ exit 2"
+      "note": "需双设备（ADB_SERIAL_A/B + CDP_A/B）；本轮只起了 Medium_Phone 一台，Medium_Phone_B 未启动"
     },
     "search-burn": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "需 SYNAPSE_DB_CONTAINER + E2EE_BASE + ADB_SERIAL；无设备 ⇒ exit 2"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": "2026-11-19T10:48:27"
+      },
+      "result": {
+        "passed": 17,
+        "failed": 0,
+        "skipped": 0,
+        "info": 0,
+        "duration_s": 130
+      },
+      "note": "2026-11-19 11:11 17 项全过：焚毁通道发送（expires_in=5000）、发送方标记自己被拒 403、房间级 burn 设置生效、接收方标记 200 且 pending 按读者登记（delete_ts-created_ts=5000）、到期后 processed、服务端未 redact（符合 burn 不物理删）"
     },
     "session-persist": {
-      "status": "never-run",
-      "last_run": null,
-      "result": null,
-      "note": "需 ADB_SERIAL_A（真机/模拟器会话保持）⇒ exit 2"
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": "2026-11-19T10:48:27"
+      },
+      "result": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "info": 0,
+        "duration_s": 110
+      },
+      "note": "2026-11-19 10:50 模拟器 arm64（API 37）+ dev 壳 APK 装包后通过：会话跨冷启动已恢复（D2 已修）"
     }
   }
 }
