@@ -36,11 +36,13 @@ vi.mock('../network/runtimeFetch', () => ({
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import {
   CapabilityUnavailableError,
+  HULA_CAPABILITY_ALIASES,
   matrixCapabilityService,
   registerAdminApiAvailabilityResolver,
   registerCapabilityStoreResolver,
   type TjgCapability
 } from '../MatrixCapabilityService'
+import capabilitySnapshot from './fixtures/capabilities.snapshot.json'
 
 describe('MatrixCapabilityService §16.5.3 gates', () => {
   beforeEach(() => {
@@ -391,5 +393,126 @@ describe('Phase 2 ⑥: capability 探测并发去重（SingleFlight）', () => {
     )
     const r2 = await matrixCapabilityService.fetchCapabilities()
     expect(r2?.unstable_features['io.hula.friends']).toBe(true)
+  })
+})
+
+/** capabilities 条目既可能是 boolean，也可能是 `{ enabled }`，与 store 的判定口径一致 */
+function isCapabilityEnabled(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (value && typeof value === 'object' && 'enabled' in value) {
+    return (value as { enabled?: unknown }).enabled === true
+  }
+  return false
+}
+
+/**
+ * CAP-08：真值表改由真实后端快照驱动。
+ *
+ * 快照来源：2026-11-19 对本地 synapse-rust 实例的 `GET /_matrix/client/versions` 与
+ * `GET /_matrix/client/v3/capabilities` 原始响应（fixtures/capabilities.snapshot.json）。
+ * 此前每个能力位都在本文件手写 key 字面量，服务端 key 改名（msc4133 / msc2666 等）时
+ * 测试仍会全绿；改为快照输入后，key 漂移会直接反映到断言结果。
+ */
+describe('CAP-08 真实后端快照驱动的能力真值表', () => {
+  const snapshotUnstable: Record<string, boolean> = {
+    ...(capabilitySnapshot.capabilities.unstable_features as Record<string, boolean>),
+    ...capabilitySnapshot.versions.unstable_features
+  }
+  const snapshotCapabilities = capabilitySnapshot.capabilities.capabilities as Record<string, unknown>
+
+  // e2ee / admin-api 不由服务端宣告，单独由客户端状态判定
+  const serverDeclared = (Object.keys(HULA_CAPABILITY_ALIASES) as TjgCapability[]).filter(
+    (capability) => capability !== 'e2ee' && capability !== 'admin-api'
+  )
+
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    registerCapabilityStoreResolver(() => useCapabilityStore())
+    registerAdminApiAvailabilityResolver(null)
+    cryptoContextMock.isCryptoEnabled = false
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+    useCapabilityStore().setCapabilities({
+      unstable_features: snapshotUnstable,
+      capabilities: snapshotCapabilities
+    })
+  })
+
+  it('快照覆盖 12 个服务端宣告位，逐位按真实 key 推导命中结果', () => {
+    expect(serverDeclared).toHaveLength(12)
+
+    for (const capability of serverDeclared) {
+      const aliases = HULA_CAPABILITY_ALIASES[capability]
+      const supported =
+        aliases.unstable.some((key) => snapshotUnstable[key] === true) ||
+        aliases.capabilities.some((key) => isCapabilityEnabled(snapshotCapabilities[key]))
+      expect(matrixCapabilityService.getCapabilityStatus(capability), `${capability} 的命中结果与快照不一致`).toBe(
+        supported ? 'supported' : 'unsupported'
+      )
+      expect(matrixCapabilityService.hasCapability(capability)).toBe(supported)
+    }
+  })
+
+  it('真实快照下 11 位 supported，account-status 因 enabled=false 为 unsupported', () => {
+    const statuses = Object.fromEntries(
+      serverDeclared.map((capability) => [capability, matrixCapabilityService.getCapabilityStatus(capability)])
+    )
+
+    expect(statuses).toEqual({
+      'sliding-sync': 'supported',
+      voip: 'supported',
+      'friend-list': 'supported',
+      'burn-after-read': 'supported',
+      'dehydrated-device': 'supported',
+      'sticky-events': 'supported',
+      'scheduled-send': 'supported',
+      'rtc-transports': 'supported',
+      'account-status': 'unsupported',
+      'extended-profile': 'supported',
+      'qr-rendezvous': 'supported',
+      'mutual-rooms': 'supported'
+    })
+  })
+
+  it('快照包含四处曾写错的真实 key，且不含旧错误 key', () => {
+    // 曾写错并修复的四个 key（CAP-08 回归锚点）
+    expect(snapshotUnstable['uk.tcpip.msc4133']).toBe(true)
+    expect(snapshotUnstable['uk.half-shot.msc2666.query_mutual_rooms']).toBe(true)
+    expect(snapshotUnstable['org.matrix.msc3814']).toBe(true)
+    expect(snapshotCapabilities['org.matrix.msc3720.account_status']).toBeDefined()
+
+    // 旧错误 key 不得出现在真实快照里，否则说明别名表又在兼容不存在的形态
+    expect(snapshotUnstable['org.matrix.msc4133']).toBeUndefined()
+    expect(snapshotUnstable['org.matrix.msc2666']).toBeUndefined()
+    expect(snapshotCapabilities['org.matrix.msc3720']).toBeUndefined()
+  })
+
+  it('仅声明旧错误 key 时不命中（防止别名回退）', () => {
+    useCapabilityStore().setCapabilities({
+      unstable_features: {
+        'org.matrix.msc4133': true,
+        'org.matrix.msc2666': true
+      },
+      capabilities: {
+        'm.room.encryption': { enabled: true },
+        'org.matrix.msc3720': { enabled: true }
+      }
+    })
+
+    expect(matrixCapabilityService.getCapabilityStatus('extended-profile')).toBe('unsupported')
+    expect(matrixCapabilityService.getCapabilityStatus('mutual-rooms')).toBe('unsupported')
+    expect(matrixCapabilityService.getCapabilityStatus('account-status')).toBe('unsupported')
+    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unsupported')
+  })
+
+  it('真实快照不含 m.room.encryption，e2ee 与 admin-api 仍由客户端状态判定', () => {
+    expect(snapshotCapabilities['m.room.encryption']).toBeUndefined()
+    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unsupported')
+    expect(matrixCapabilityService.getCapabilityStatus('admin-api')).toBe('unsupported')
+
+    cryptoContextMock.isCryptoEnabled = true
+    registerAdminApiAvailabilityResolver(() => true)
+    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('supported')
+    expect(matrixCapabilityService.getCapabilityStatus('admin-api')).toBe('supported')
   })
 })

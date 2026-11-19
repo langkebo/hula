@@ -172,6 +172,19 @@ nav {
   backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
 }
 
+/* Toast 由函数式调用渲染并 teleport 到 body，拿不到页面级包裹，只能按全局类名接线。
+ * 与 sheet 共用玻璃底色；Vant 默认白字落在浅色玻璃上不可读，文字与加载图标改用正文语义色。 */
+.van-toast {
+  --van-toast-background: var(--tjg-glass-sheet-bg);
+  --van-toast-text-color: var(--tjg-text-primary);
+  --van-toast-loading-icon-color: var(--tjg-text-secondary);
+
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
+}
+
 /* 弹层遮罩跟随设计 token，避免 Vant 默认的高不透明度黑罩压暗玻璃 */
 :root {
   --van-overlay-background: var(--tjg-overlay-mask-default);
@@ -202,6 +215,12 @@ nav {
     --van-popup-background: var(--tjg-surface-elevated);
     --van-action-sheet-item-background: var(--tjg-surface-elevated);
     --van-picker-background: var(--tjg-surface-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .van-toast {
+    --van-toast-background: var(--tjg-surface-elevated);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -239,6 +258,12 @@ nav {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+
+  .van-toast {
+    --van-toast-background: var(--tjg-surface-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* 降级 3：中等性能设备（触屏 / 中配，performanceTier 启动期写入 html.medium-perf）
@@ -266,7 +291,8 @@ html.low-perf {
   .tjg-glass--input,
   .bubble,
   .bubble-oneself,
-  .van-popup--bottom {
+  .van-popup--bottom,
+  .van-toast {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -276,6 +302,10 @@ html.low-perf {
     --van-popup-background: var(--tjg-surface-elevated);
     --van-action-sheet-item-background: var(--tjg-surface-elevated);
     --van-picker-background: var(--tjg-surface-elevated);
+  }
+
+  .van-toast {
+    --van-toast-background: var(--tjg-surface-elevated);
   }
 }
 

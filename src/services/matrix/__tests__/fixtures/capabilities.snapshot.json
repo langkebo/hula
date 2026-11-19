@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "captured_at": "2026-11-19T07:40:00+08:00",
+    "source": "http://localhost:8008",
+    "homeserver": "synapse-rust",
+    "endpoints": ["GET /_matrix/client/versions", "GET /_matrix/client/v3/capabilities"],
+    "note": "真实响应快照，用于 CAP-08 能力真值表；/client_config 返回 404 M_UNRECOGNIZED，故 client_config 视为空对象。重新抓取时保持字段原样，不要手改 key。"
+  },
+  "versions": {
+    "unstable_features": {
+      "io.hula.burn_after_read": true,
+      "io.hula.friends": true,
+      "m.lazy_load_members": true,
+      "m.require_identity_server": false,
+      "m.supports_login_via_phone_number": false,
+      "org.matrix.msc1763": true,
+      "org.matrix.msc3245": true,
+      "org.matrix.msc3266": true,
+      "org.matrix.msc3814": true,
+      "org.matrix.msc3873": true,
+      "org.matrix.msc3882": true,
+      "org.matrix.msc3886.sliding_sync": true,
+      "org.matrix.msc3912": true,
+      "org.matrix.msc3981": true,
+      "org.matrix.msc3981.stable": true,
+      "org.matrix.msc3983": true,
+      "org.matrix.msc4108": true,
+      "org.matrix.msc4140": true,
+      "org.matrix.msc4143": true,
+      "org.matrix.msc4155": true,
+      "org.matrix.msc4186": true,
+      "org.matrix.msc4354": true,
+      "org.matrix.msc4445.initial_sync_timeline_topological_ordering": true,
+      "org.matrix.msc4446": true,
+      "org.matrix.simplified_msc3575": true,
+      "uk.half-shot.msc2666.query_mutual_rooms": true,
+      "uk.tcpip.msc4133": true
+    },
+    "versions": [
+      "v1.1",
+      "v1.2",
+      "v1.3",
+      "v1.4",
+      "v1.5",
+      "v1.6",
+      "v1.7",
+      "v1.8",
+      "v1.9",
+      "v1.10",
+      "v1.11",
+      "v1.12",
+      "v1.13",
+      "v1.14",
+      "v1.15",
+      "v1.16",
+      "v1.17"
+    ]
+  },
+  "capabilities": {
+    "capabilities": {
+      "io.element.msc4452.preview_url": { "enabled": false },
+      "m.3pid_changes": { "enabled": true },
+      "m.change_password": { "enabled": true },
+      "m.forget_forced_upon_leave": { "enabled": true },
+      "m.hula.privacy": { "server_holds_room_keys": false },
+      "m.preview_url": { "enabled": false },
+      "m.profile_fields": { "enabled": true },
+      "m.room.suggested": { "enabled": true },
+      "m.room.summary": { "enabled": true },
+      "m.room_versions": { "available": { "12": "stable" }, "default": "12" },
+      "m.set_avatar_url": { "enabled": true },
+      "m.set_displayname": { "enabled": true },
+      "m.thread": { "enabled": true },
+      "m.voice": { "enabled": true },
+      "org.matrix.msc3720.account_status": { "enabled": false }
+    },
+    "unstable_features": {
+      "io.hula.burn_after_read": true,
+      "io.hula.friends": true,
+      "org.matrix.msc3245.voice": true,
+      "org.matrix.msc3873": true,
+      "org.matrix.msc3886.sliding_sync": true,
+      "org.matrix.msc3983.thread": true,
+      "org.matrix.msc4108": true,
+      "org.matrix.msc4155": true,
+      "org.matrix.msc4186": true,
+      "org.matrix.simplified_msc3575": true,
+      "uk.tcpip.msc4133": true
+    }
+  }
+}

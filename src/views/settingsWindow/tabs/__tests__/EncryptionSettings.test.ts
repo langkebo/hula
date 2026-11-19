@@ -115,9 +115,10 @@ const {
   getPendingVerificationsMock: vi.fn(),
   cancelVerificationMock: vi.fn(),
   encryptionStoreState: {
-    // CAP-08：只读判定改由本地 crypto 状态（loaded + encryptionEnabled）驱动
+    // CAP-08：只读判定只看「尝试初始化且失败」（cryptoInitFailed），不看 loaded/是否已启用
     loaded: true,
     encryptionEnabled: true,
+    cryptoInitFailed: false,
     securityKeyConfigured: true,
     crossSigningSetup: true,
     // R-2：私钥存储（4S）状态；默认「未在 4S 且本机没有私钥」= 不提示
@@ -487,6 +488,7 @@ describe('EncryptionSettings', () => {
     })
     encryptionStoreState.loaded = true
     encryptionStoreState.encryptionEnabled = true
+    encryptionStoreState.cryptoInitFailed = false
     encryptionStoreState.securityKeyConfigured = true
     encryptionStoreState.crossSigningSetup = true
     encryptionStoreState.crossSigningKeysInSecretStorage = false
@@ -831,12 +833,12 @@ describe('EncryptionSettings', () => {
 
   /**
    * CAP-08：E2EE 属客户端能力，服务端 /capabilities 不宣告 m.room.encryption。
-   * 只读判定改为「本地 crypto 未初始化」，且必须在加密状态加载完成后才生效，
-   * 避免登录初期把整页误锁。
+   * 只读只认「尝试初始化且失败」（cryptoInitFailed）。仅"还没初始化完"（登录初期 /
+   * startClient 在途）不是失败，据此锁页会把整页 inert 且无法自愈。
    */
   describe('E2EE 只读降级（本地 crypto 判定）', () => {
-    it('crypto 未初始化且状态已加载 ⇒ 显示只读提示并 inert 阻断交互', async () => {
-      encryptionStoreState.loaded = true
+    it('crypto 初始化尝试过且失败 ⇒ 显示只读提示并 inert 阻断交互', async () => {
+      encryptionStoreState.cryptoInitFailed = true
       encryptionStoreState.encryptionEnabled = false
 
       const wrapper = mountComponent()
@@ -848,7 +850,7 @@ describe('EncryptionSettings', () => {
     })
 
     it('crypto 已初始化 ⇒ 不显示只读提示，也不阻断交互', async () => {
-      encryptionStoreState.loaded = true
+      encryptionStoreState.cryptoInitFailed = false
       encryptionStoreState.encryptionEnabled = true
 
       const wrapper = mountComponent()
@@ -858,9 +860,10 @@ describe('EncryptionSettings', () => {
       expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(false)
     })
 
-    it('加密状态未加载完成 ⇒ 不进入只读（避免登录初期误锁）', async () => {
-      encryptionStoreState.loaded = false
+    it('crypto 尚未初始化完成（未尝试 / 在途）⇒ 不进入只读，避免登录初期误锁', async () => {
+      encryptionStoreState.loaded = true
       encryptionStoreState.encryptionEnabled = false
+      encryptionStoreState.cryptoInitFailed = false
 
       const wrapper = mountComponent()
       await flushPromises()
@@ -872,6 +875,7 @@ describe('EncryptionSettings', () => {
     it('服务端未宣告 m.room.encryption 但本地 crypto 就绪 ⇒ 仍可编辑', async () => {
       encryptionStoreState.loaded = true
       encryptionStoreState.encryptionEnabled = true
+      encryptionStoreState.cryptoInitFailed = false
 
       const wrapper = mountComponent()
       await flushPromises()

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-11-18T16:15:54.125Z",
+  "updated_at": "2026-11-18T23:00:06.742Z",
   "schema": {
     "status": ["passed", "failed", "stale", "never-run", "manual"],
     "meaning": {
@@ -125,12 +125,12 @@
         "apk_mtime": null
       },
       "result": {
-        "passed": 5,
-        "failed": 1,
+        "passed": 3,
+        "failed": 3,
         "skipped": 0,
-        "duration_s": 240
+        "duration_s": 282
       },
-      "note": "2026-11-19 00:15 5/6：存储管理从 3.0m 超时变为 27.2s 通过（同根因）；仅“推送设置”失败——pushMobileRoute 未真正跳转（停在消息页），而 spec 不校验落点，表现为 dnd-switch 找不到"
+      "note": "**FLAKY，非产品缺陷**。2026-11-18/19 共 6 次真机跑，失败点持续漂移：4/6（路由不可达）→5/6（存储管理超时）→5/6（推送设置未跳转）→6/6→5/6（首条九宫格登录 180s）→3/6（设置/推送/好友隐私，同因“登录表单未渲染出 3 个输入框”）。根因：浏览器态没有系统密钥库 ⇒ 每次登录触发“设置/输入本地解锁密码”门禁，弹层与登录表单渲染竞争；真机有密钥库不会触发。落点校验（FE-F5）已加且 6 次跑中 0 次误伤"
     },
     "notification-unread-live": {
       "status": "passed",

@@ -77,6 +77,9 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
 
   // === Actions ===
   async function loadEncryptionStatus() {
+    // CAP-08：只读降级只看「尝试初始化且失败」（cryptoInitFailed）。
+    // 设置窗口会独立于聊天窗口挂载，这里先同步刷新一次诊断，避免用到过期值。
+    loadCryptoInitStatus()
     if (loading.value) return
     loading.value = true
 

@@ -199,7 +199,7 @@
 
 #### 3.5.4 D1 准入结论
 
-1. **D1 已按「平台分层」口径闭环**：12 项中 9 项完全通过（1/2/3/4/5/6/7/8/11，其中 4/6/7/11 为本次临时 POC 运行态取证）、2 项有条件通过（9 需接受常驻全局 style；10 需 `GlassEngine` 适配器在挂载前拦截）、1 项部分通过（12 阴影色不可完全去库化）。按裁决后的分平台判据，D1 不再阻塞 D2 评估；产品侧仍维持「不引入」。
+1. **D1 已按「平台分层」口径闭环**：12 项中 9 项完全通过（1/2/3/4/5/6/7/8/11，其中 4/6/7/11 为本次临时 POC 运行态取证）、2 项有条件通过（9 需接受常驻全局 style；10 需 `GlassEngine` 适配器在挂载前拦截）、1 项部分通过（12 阴影色不可完全去库化）。按裁决后的分平台判据，D1 不再阻塞 D2 评估；产品侧仍维持「不引入」（D2 于 2026-11-19 改为「建议加、未排期」，见 §19.90）。
 2. **第 7 项判据改写为「分平台验收」**：Windows（WebView2）/ Android（Chromium WebView）走真折射；macOS / Linux / iOS（WKWebView / WebKitGTK）回落 CSS 近似，验收要求是「无错位、无闪烁、与基座视觉连续」，不再要求三端同效果。WebKit 强制折射的退化表现（无可见位移 + 红色残影）已在 §19.62 留证，作为回落策略的依据。
 3. **第 10 项只能由适配器补齐**：库内无 `matchMedia`，须在挂载前判断 `prefers-reduced-transparency` 与用户偏好，并叠加既有的三重门（`advancedRefraction=false` / `tier !== 'high'` / `mode !== 'auto'` 一律回落 CSS）。
 4. **当前决策**：不新增依赖——POC 使用的 `vitrio@0.1.2` devDependency、根目录 POC 页面与 spec 已全部删除，`package.json` / `pnpm-lock.yaml` 回到基线；`TjGlass` 的 `engine` 槽位保持空实现，不写生产适配器。
@@ -412,7 +412,7 @@ const classes = computed(() => [
 | 输入坞 | `mobile/views/message/index.vue` 已实现 | 保持手写 `-webkit-` 前缀写法 |
 | 底部抽屉 / Sheet | 已实现 | 补降级；确认圆角只在顶部 |
 | 列表行 | 使用 soft 模糊（**存量**） | 保留但不再新增；后续按预算替换为纯色 |
-| Toast / ActionSheet | 未接入 | 阶段 C 评估，默认不加玻璃 |
+| Toast / ActionSheet | 已接入 | 移动端统一玻璃面：ActionSheet 走 `.van-popup--bottom`（阶段 C2 已接线），Toast 走 `.van-toast`（§19.90）；含能力 / 降低透明度 / 低性能三层回落 |
 
 ### 6.3 Vant 主题变量映射
 
@@ -580,7 +580,7 @@ main.ts
 | # | 任务 | 完成标准 | 2026-11-17 状态 |
 | :--- | :--- | :--- | :--- |
 | D1 | vitrio POC | §3.4 全 12 项通过才进入 D2；否则关闭候选 | **已闭环（平台分层口径）**：9 项完全通过（含运行态 4/6/7/11）、2 项有条件通过（9/10）、1 项部分通过（12）；详见 §3.5.3 / §3.5.4 / §19.62 |
-| D2 | vitrio 接入登录页 / 引导页（单视图 1 处） | 关闭开关后视觉与 CSS 基座一致 | **待评估**：D1 已闭环，但产品侧仍维持「不引入依赖」，未排期 |
+| D2 | vitrio 接入登录页 / 引导页（单视图 1 处） | 关闭开关后视觉与 CSS 基座一致 | **建议加、未排期**：产品侧建议接入；前置为 C3 真机取证 + §4.2 `GlassEngine` 适配器，且平台分层下 macOS/Linux/iOS 仍回落 CSS 近似（§19.90） |
 | D3 | ~~liquid-glass.io 对照 POC~~ | 与 D2 同场景 A/B 截图对比 | **作废**：域名待售、npm 无包（§3.5.2） |
 | D4 | ~~nmorph 评估~~ | 仅在出现「批量组件皮肤」需求时启动 | **作废**：npm 404、同名站点无关（§3.5.2） |
 
@@ -719,7 +719,7 @@ main.ts
 | `TjgCapability` 扩展 | 完成 | 6 项 → 14 项，新增 `dehydrated-device` / `sticky-events` / `scheduled-send` / `rtc-transports` / `account-status` / `extended-profile` / `qr-rendezvous` / `mutual-rooms` |
 | 别名表订正 | 完成 | `e2ee.unstable` 移除 `org.matrix.msc3814`；`voip` 主 key 改为 `org.matrix.msc3245.voice`；8 个新能力位按 §12.3.1 落表 |
 | 三态判定 | 完成 | 新增 `CapabilityStatus`；`getCapabilityStatus()` 为唯一判定实现，`hasCapability()` 与各 `canUseXxx()` 全部委托；快照未加载返回 `unknown` |
-| E2EE fail-open | 已删除 | `canUseE2EE()` 仅认 `m.room.encryption`；`EncryptionSettings` 已有 `isLoaded` 守卫，不会在探测完成前误锁。**遗留**：该 key 后端从不宣告，快照加载后会把加密设置误锁为只读，由 CAP-08 改为客户端 crypto 判定 |
+| E2EE fail-open | 已删除 | `canUseE2EE()` 仅认 `m.room.encryption`；`EncryptionSettings` 的只读判定已改为客户端 crypto 诊断（`cryptoInitFailed`），不再依赖该 key，误锁问题由 §19.89 清偿 |
 | 消费层统一 | 完成 | `useServerCapability().capabilityCheckers` 补齐 14 项，新增导出 `getCapabilityStatus`；`PermissionGuard.vue` 删除本地 6 项硬编码映射，改为调用 `isCapabilityAvailable` |
 | 单测 | 完成 | 并入既有 `MatrixCapabilityService.test.ts`（不新建重复文件）：`unstableBits` 9 项 + `capabilityBits` 5 项 `it.each`，含 unknown 前置、SDK 兼容 fallback、`dehydrated-device` 不构成 E2EE 信号；文件 32 用例通过 |
 | 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`biome check` 改动文件无告警；`MatrixCapabilityService` + `PermissionGuard` 合计 38 用例通过 |
@@ -4240,7 +4240,7 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 
 结论：
 
-1. **D1 已按「平台分层」口径闭环**（原「待真机 4/6/7/11 + 未通过 10」已由 §19.62 的临时 POC 取证替代）：9 项完全通过、2 项有条件通过、1 项部分通过。分平台判据下不再阻塞 D2 评估；D3 与 D4 因候选作废直接关闭。
+1. **D1 已按「平台分层」口径闭环**（原「待真机 4/6/7/11 + 未通过 10」已由 §19.62 的临时 POC 取证替代）：9 项完全通过、2 项有条件通过、1 项部分通过。分平台判据下不再阻塞 D2 评估（D2 已改为「建议加、未排期」，见 §19.90）；D3 与 D4 因候选作废直接关闭。
 2. 第 10 项由适配器补齐；第 7 项按裁决改写为「Windows/Android 真折射、macOS/Linux/iOS CSS 近似，无错位无闪烁」，不再要求三端同效果。
 3. 当前决策：维持「不引入依赖」，`TjGlass` 的 `engine` 槽位保持空实现，不写生产适配器；POC 依赖与页面已删除，lockfile 回到基线。真机 WebView 复核归 C3。
 
@@ -5765,7 +5765,7 @@ npx playwright test e2e/glass-poc.spec.ts --project=desktop-chromium --project=m
 
 #### 4 项债务仍成立
 
-`CAP-08` 夹具 23 处手写字面量、`S-01`／`N-08` 子路径 0 真实 import、`augmentation` 686 行未收敛、联调报告与 §19.57 实测口径冲突（已在报告顶部加时效声明）。
+`CAP-08` 夹具 23 处手写字面量（已于 §19.91 用真实后端快照清偿）、`S-01`／`N-08` 子路径 0 真实 import、`augmentation` 686 行未收敛、联调报告与 §19.57 实测口径冲突（已在报告顶部加时效声明）。
 
 `N-03`（文档超前）**已清偿**：本节台账已改为 0 条开放，§12.5／§19.22 的陈旧表述同日订正，收口取证见 §19.82。
 
@@ -6312,7 +6312,7 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R1**：本轮无新增 HTTP / 平行实现。移动端配额继续走 `matrixMediaService.checkQuota()` / `getQuotaStats()` / `getQuotaAlerts()`；`TimelineService` 拆分只做同模块函数外移，未复制 SDK 逻辑。
 - **R2**：改动面为 `src/services/matrix/room/**`、`src/mobile/views/my/**` 与文档；`src/mobile/**` 未新增 admin／AI 引用。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；移动端改动为既有页面的组件与 composable 拆分，无路由／菜单／模块装配期变化。
-- **未闭环**：`C3` 运行态与真机取证、`CAP-08`（23 处手写夹具）、`S-01`／`N-08`（0 真实 import）、`augmentation` 686 行未拆分（已由 §19.83 拆分，本条为滞后台账）、Storybook 自动截图 diff、D2 vitrio 接入，均不在本轮范围；`getQuotaAlerts()` 失败回落空数组语义已由 §19.87 清偿；`ChatSidebarFiles.vue` 文件列表缺数据源已由 §19.88 清偿。
+- **未闭环**：`C3` 运行态与真机取证、`CAP-08` 剩余 23 处手写夹具、`S-01`／`N-08`（0 真实 import）、`augmentation` 686 行未拆分（已由 §19.83 拆分，本条为滞后台账）、Storybook 自动截图 diff、D2 vitrio 接入（已改为「建议加、未排期」，见 §19.90），均不在本轮范围；`CAP-08` 的 `EncryptionSettings` 只读误锁已由 §19.89 清偿；`getQuotaAlerts()` 失败回落空数组语义已由 §19.87 清偿；`ChatSidebarFiles.vue` 文件列表缺数据源已由 §19.88 清偿。
 
 ---
 
@@ -6719,6 +6719,122 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R2**：改动面为 `src/components/rightBox/chatBox/**`、`src/services/matrix/room/**`、`locales/**`、`src/typings/i18n/**`；未新增 admin／AI 入口与逻辑，移动端产物不含新增路径。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化，仅桌面侧边栏组件与服务层方法。
 - **未闭环**：文件列表只提供扫描与展示，未接入缩略图、下载、跳转到原消息（后续如需，应复用 `MatrixMediaService` 与时间线定位服务，不另起实现）。
+
+---
+
+### 19.89 CAP-08 收尾｜加密设置只读误锁修复（2026-11-19）
+
+#### 19.89.1 问题
+
+`EncryptionSettings` 的只读判定为 `encryptionStore.loaded && !encryptionEnabled`：
+
+- `encryptionEnabled` 取自 `MatrixEncryptionContextService.getCurrentSessionContext().isCryptoEnabled`，本质是 `!!client.getCrypto()`；
+- `loaded` 在 `loadEncryptionStatus()` 中无论 crypto 是否就绪都会置 `true`；
+- 按 ADR-003 乐观渲染，登录后 `startClient()` / `ensureCrypto()` 是在途异步。此时打开设置页会得到 `loaded=true + encryptionEnabled=false`，整页被 `inert` 锁死；而页内「重试」按钮也在 inert 容器内，无法自救，只能切页重挂载。
+
+根因是把「还没初始化完」误判成「初始化失败」。真正的失败信号已由 store 的 `cryptoInitFailed` 维护（`getRustCryptoDebugState().attempted && !initialized`，并排除未登录等正常跳过）。
+
+#### 19.89.2 改动
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/views/settingsWindow/tabs/EncryptionSettings.vue` | `isReadOnly` 改为 `computed(() => encryptionStore.cryptoInitFailed)`；注释写明「未初始化完 ≠ 失败」 |
+| `src/stores/domains/settings/encryption.ts` | `loadEncryptionStatus()` 入口同步调用 `loadCryptoInitStatus()`（同步、无网络请求），保证设置窗口独立挂载时 `cryptoInitFailed` 不过期 |
+| `src/views/settingsWindow/tabs/__tests__/EncryptionSettings.test.ts` | 夹具增加 `cryptoInitFailed`；4 个用例改为「失败才只读 / 就绪可编辑 / 在途不锁页 / 服务端不宣告但本地就绪可编辑」 |
+| `src/stores/domains/settings/__tests__/encryption.test.ts` | 新增 2 例：`attempted && !initialized` → `cryptoInitFailed=true`；未尝试（未登录 / 在途）→ `false` |
+
+#### 19.89.3 验证表
+
+| 命令 / 用例 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run`（EncryptionSettings + encryption store） | 2 个文件全部通过 |
+| `pnpm vue-tsc --noEmit` | `EXIT=0` |
+| `pnpm test:run`（全量） | `Test Files 1113 passed (1113)`、`Tests 12290 passed (12290)`、`Duration 516.70s` |
+| `pnpm check:ratchet` | `OK — no regressions`（`handwritten_empty_state: 0`） |
+| `pnpm check:doc-coverage` | `OK — no regressions vs baseline` |
+| `pnpm check:doc-paths` | `OK：全部路径存在` |
+| `pnpm check:sdk-boundary` | 154（基线 156）→ `OK — no regressions vs baseline` |
+| `pnpm quality:no-raw-fetch` | 白名单 3 项，`EXIT=0` |
+| `pnpm check` | 通过（Biome + i18n + capability/svg/dead-handler 守门均 OK） |
+
+#### 19.89.4 边界
+
+- **R1**：未新增 HTTP / 平行实现；只读判定消费既有 `matrixClientService.getRustCryptoDebugState()` 诊断，未自写 crypto 探测。
+- **R2**：改动面为 `src/views/settingsWindow/**`、`src/stores/domains/settings/**`；移动端无 admin / AI 引用新增。
+- **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮仅桌面设置页判定逻辑，无路由／菜单／模块装配期变化。
+- **未闭环**：CAP-08 的「23 处测试手写夹具」已在 §19.91 用真实后端快照清偿；本轮只清偿「只读误锁」这一条。
+
+### 19.90 移动端 Toast / ActionSheet 玻璃化与 vitrio D2 登记（2026-11-19）
+
+#### 19.90.1 问题
+
+- §6.2 把 Toast / ActionSheet 标为「未接入，默认不加玻璃」，移动端弹层材质与 nav / tabbar / sheet 不一致。
+- ActionSheet 本身走 `.van-popup--bottom`，阶段 C2 已随底部弹层接线，真正缺的是 Toast。
+- Toast 由 `showToast()` 函数式渲染并 teleport 到 body，拿不到页面级包裹，只能按全局类名接线；若直接换成浅色玻璃底，Vant 默认的白字 / 白色加载图标会不可读。
+
+#### 19.90.2 改动
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/styles/scss/global/mobile.scss` | 新增 `.van-toast` 玻璃面：底色复用 `--tjg-glass-sheet-bg`，文字 / 加载图标改 `--tjg-text-primary` / `--tjg-text-secondary`；手写 `-webkit-backdrop-filter` 前缀对；`@supports not` 与 `prefers-reduced-transparency` 回落 `--tjg-surface-elevated`，`html.low-perf` 只关模糊 |
+| `src/utils/__tests__/performanceTier.test.ts` | 新增契约用例：`.van-toast` 必须走 token、无颜色字面量、前缀成对，且三种降级都覆盖 |
+| `meta/ratchet-baseline.json` | `backdrop_filter_raw` 60 → 62：本轮新增 1 个玻璃面（1 对前缀声明），其余计数不变 |
+| `docs/UI优化方案-v2.4.md` | §6.2 状态改「已接入」；阶段 D 的 D2 由「待评估」改为「建议加、未排期」 |
+
+#### 19.90.3 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run src/utils/__tests__/performanceTier.test.ts src/mobile/layout/__tests__/mobileCssGuards.test.ts src/styles/__tests__/liquid-glass.test.ts` | 3 个文件 / 54 个用例全通过（`low-perf` 拆分修正后复跑） |
+| `pnpm test:run`（全量） | `TEST_EXIT=0` — 1113 个文件 / 12291 个用例全通过（417.59s；该轮启动于 `low-perf` 拆分修正前，修正后已用上方聚焦三文件复跑覆盖） |
+| `pnpm vue-tsc --noEmit` | `EXIT=0` |
+| `node scripts/check-ratchet.mjs` | `EXIT=0`（`backdrop_filter_raw: 62`，与更新后的基线一致） |
+| `node scripts/check-mobile-css.mjs` | OK，183 个文件（模糊前缀齐备） |
+| `pnpm check:doc-coverage` / `pnpm check:doc-paths` | OK — no regressions / 全部路径存在 |
+| `pnpm check:sdk-boundary` | `OK — no regressions vs baseline`（顺带收敛 2 处） |
+| `pnpm quality:no-raw-fetch` | OK，全部在白名单内 |
+| `biome check`（本轮 6 个代码文件） | 通过；全仓唯一既有报错 `scripts/live/live-status.json` 数组换行格式已于 2026-11-19 用 `biome check --write` 修复，`pnpm check` 现全仓 `EXIT=0` |
+
+#### 19.90.4 边界
+
+- **R1**：纯样式接线，无 HTTP / 平行实现；消费既有 `--tjg-glass-*` token 与 Vant 变量，未自研弹层。
+- **R2**：改动面为 `src/styles/scss/global/mobile.scss`、对应测试与 ratchet 基线；无 admin / AI 引用。
+- **R3 第 3 项**：未执行 Android / iOS 构建；只改全局 CSS 与测试基线，无路由 / 菜单 / 装配期变化。
+- **vitrio D2 登记口径**：改为「建议加、未排期」。前置条件是 C3 真机取证 + §4.2 `GlassEngine` 适配器；平台分层下 macOS/Linux/iOS 无真折射，本机不可见效果。
+- **未闭环**：移动端真机截图取证仍归 C3；Toast 视觉对比度只有 token 级保障，未做运行态测量。
+
+### 19.91 CAP-08 能力真值表改用真实后端快照（2026-11-19）
+
+#### 19.91.1 问题
+
+- §19 的 4 项债务中，CAP-08 仍剩「23 处手写夹具」：`MatrixCapabilityService.test.ts` 每个能力位都在测试内手写 key 字面量，服务端真实 key 改名（如 `uk.tcpip.msc4133` / `uk.half-shot.msc2666.query_mutual_rooms`）时测试仍会全绿。
+- 2026-11-19 复核：本地 synapse-rust 实例在线，`GET /_matrix/client/versions` 与 `GET /_matrix/client/v3/capabilities` 可直接取到真实响应；`GET /_matrix/client/v3/config` 返回 404 `M_UNRECOGNIZED`，服务层此前已按空对象处理，无需改动。
+
+#### 19.91.2 改动
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/__tests__/fixtures/capabilities.snapshot.json` | 新增：2026-11-19 本地 synapse-rust 原始响应快照（`versions` + `capabilities`），`meta` 记录采集时间、端点与「重抓时保持字段原样」要求 |
+| `src/services/matrix/__tests__/MatrixCapabilityService.test.ts` | 新增「CAP-08 真实后端快照驱动的能力真值表」5 个用例：12 个服务端宣告位逐位由快照推导；快照真实状态表（11 supported + account-status unsupported）；4 个曾写错 key 的回归锚点与旧错误 key 不存在的断言；仅声明旧 key 时不命中；`e2ee` / `admin-api` 仍由客户端状态判定 |
+
+#### 19.91.3 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run src/services/matrix/__tests__/MatrixCapabilityService.test.ts src/services/matrix/__tests__/MatrixCapabilityService.drift.test.ts` | 2 个文件 / 42 个用例全通过（含新增 5 个） |
+| `pnpm test:run`（全量） | `TEST_EXIT=0` — 1113 个文件 / 12296 个用例全通过（333.08s；较上轮 12291 增加本轮 5 个） |
+| `pnpm vue-tsc --noEmit` | `EXIT=0` |
+| `npx biome check`（2 个改动文件） | `No fixes applied` |
+| `node scripts/check-ratchet.mjs` | `EXIT=0`，14 项计数均与基线一致（夹具 JSON 不参与计数） |
+| `pnpm check:doc-coverage` / `pnpm check:doc-paths` | `OK — no regressions` / 全部路径存在 |
+
+#### 19.91.4 边界
+
+- **R1**：纯测试夹具与断言，无 HTTP / 平行实现；快照取自既有服务端端点，服务层零改动。
+- **R2**：改动面仅 `src/services/matrix/__tests__/**`；无 admin / AI 引用。
+- **R3 第 3 项**：未执行 Android / iOS 构建；仅测试与夹具变化，不进入产物。
+- **口径说明**：分支用例（关闭某位、fetch 失败、并发去重等）仍保留手写输入，这是覆盖分支所需的最小构造；「全量真值表」的正向输入已统一改为真实快照。
+- **未闭环**：快照为单环境（本地 synapse-rust）采集，多后端版本差异未覆盖；重抓流程写在 fixture 的 `meta.note` 中。
 
 ---
 

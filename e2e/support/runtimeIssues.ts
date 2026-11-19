@@ -59,7 +59,10 @@ export const createRuntimeIssueCollector = (page: Page): RuntimeIssueCollector =
 }
 
 export interface ExpectNoRuntimeIssuesOptions {
-  /** 需要过滤的已知 Vite HMR 时序问题关键词；默认 `HMR_LAZY_LOAD_FILTER`，传 `[]` 可关闭 */
+  /**
+   * 需要忽略的懒加载错误关键词。默认取 `HMR_LAZY_LOAD_FILTER`，而它现在是**空数组**——
+   * 即默认严格校验（2026-11-19 起；原因见该常量的注释）。仅在确有「非缺陷」关键词时显式传值。
+   */
   filterLazyLoadErrors?: string[]
   /** 自定义组件解析失败断言消息 */
   componentResolveErrorMessage?: string

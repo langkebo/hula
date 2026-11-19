@@ -189,6 +189,11 @@ describe('useEncryptionStore · loadEncryptionStatus', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    getRustCryptoDebugStateMock.mockReturnValue({ attempted: true, initialized: true, skippedReason: null })
+    getCryptoLifecycleDiagnosticsMock.mockReturnValue({
+      staleCryptoReuseWarning: null,
+      lastBindingReleaseRejection: null
+    })
   })
 
   it('加密未开启时仅设置 encryptionEnabled 与 loaded，不调用子加载器', async () => {
@@ -256,6 +261,36 @@ describe('useEncryptionStore · loadEncryptionStatus', () => {
 
     // 进入时 loading=true 应直接 return，不会调用 context
     expect(getCurrentSessionContextMock).not.toHaveBeenCalled()
+  })
+
+  it('crypto 尝试初始化且失败 ⇒ cryptoInitFailed=true（CAP-08 只读判定依据）', async () => {
+    getCurrentSessionContextMock.mockReturnValue({ isCryptoEnabled: false })
+    getRustCryptoDebugStateMock.mockReturnValue({
+      attempted: true,
+      initialized: false,
+      error: 'indexeddb-blocked',
+      skippedReason: null
+    })
+
+    const store = useEncryptionStore()
+    await store.loadEncryptionStatus()
+
+    expect(store.cryptoInitFailed).toBe(true)
+    expect(store.cryptoInitError).toBe('indexeddb-blocked')
+  })
+
+  it('crypto 尚未尝试初始化（如未登录 / 在途）⇒ 不算失败，避免误锁只读', async () => {
+    getCurrentSessionContextMock.mockReturnValue({ isCryptoEnabled: false })
+    getRustCryptoDebugStateMock.mockReturnValue({
+      attempted: false,
+      initialized: false,
+      skippedReason: 'missing-client-or-access-token'
+    })
+
+    const store = useEncryptionStore()
+    await store.loadEncryptionStatus()
+
+    expect(store.cryptoInitFailed).toBe(false)
   })
 })
 

@@ -316,9 +316,10 @@ const {
 } = useEncryptionSettings()
 
 // E2EE 属客户端能力，服务端 /capabilities 不宣告（CAP-08）。
-// 仅当本地 crypto 未初始化时降级为只读；状态加载完成前不做判定，避免登录初期误锁。
+// 只读只认「尝试初始化且失败」（cryptoInitFailed）：仅"还没初始化完"（登录初期 / startClient 在途）
+// 不是失败，若据此锁页会把整页 inert 且无法自愈。
 const encryptionStore = useEncryptionStore()
-const isReadOnly = computed(() => encryptionStore.loaded && !encryptionEnabled.value)
+const isReadOnly = computed(() => encryptionStore.cryptoInitFailed)
 
 const keyStatus = computed(() => {
   if (!encryptionEnabled.value) {
