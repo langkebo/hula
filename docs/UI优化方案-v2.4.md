@@ -7031,6 +7031,47 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 
 ---
 
+### 19.97 死依赖清理｜`vite-plugin-vue-setup-extend` 及同类排查（2026-11-19）
+
+#### 19.97.1 问题
+
+`vite-plugin-vue-setup-extend@^0.4.0` 自 `TjgSpaceTree` 500 故障修复后已从 `vite.config.*` 移除（业务代码全量改用 Vue 原生 `defineOptions({ name })`），但 `package.json` 的 `devDependencies` 一直保留声明：`pnpm install` 仍会下载并解析其传递依赖，`knip` 与锁文件却无人复核。该类「声明但零引用」依赖会持续放大安装体积、扩大供应链面，并让审计脚本的真值失真。
+
+#### 19.97.2 改动
+
+| 文件 | 变更 | 内容 |
+| :--- | :--- | :--- |
+| `package.json` | -1 行 | 删除 `devDependencies.vite-plugin-vue-setup-extend`（`^0.4.0`） |
+| `pnpm-lock.yaml` | -102 行 | `pnpm remove -D` 后锁文件移除该包与其独占依赖：`vite-plugin-vue-setup-extend@0.4.0`、`magic-string@0.25.9`、`postcss@8.5.23`（重复解析版本）、`sourcemap-codec@1.4.8`，合计 80 条包定义与快照记录，无新增条目 |
+
+#### 19.97.3 同类问题排查
+
+| 手段 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 声明但未使用 | `pnpm exec knip --include dependencies` | 清理前仅命中 1 项（即本品）；清理后 0 项 |
+| 使用但未声明 | `pnpm exec knip --include dependencies,unlisted` | `unlisted` 0 项；剩余 3 条为 `knip.config.ts` 配置提示（`ignoreBinaries: adb / python3`、`ignoreUnresolved: ^/src/`），属脚本目录未纳入 `project` 口径的保守白名单，**非死依赖**，本轮不动 |
+| 语法级残留 | `grep "<script setup ... name="` 全仓 `.vue` | 0 命中，确认无插件专属语法残留 |
+| 文本级残留 | `grep vite-plugin-vue-setup-extend`（排除 `node_modules`） | 仅剩 `docs/**` 与 `e2e/support/runtimeIssues.ts` 的**历史注释/报告**，无 import 与构建配置引用 |
+
+#### 19.97.4 验证表
+
+| 命令 / 用例 | 结果 |
+| :--- | :--- |
+| `git diff --stat` | `package.json` 1 处删除、`pnpm-lock.yaml` 102 行删除，无代码文件改动 |
+| `pnpm typecheck` | `EXIT=0`（`check-generated-typings` OK，`vue-tsc --noEmit` 0 错误） |
+| `pnpm check` | `EXIT=0`（biome 3065 文件；i18n / token / aria / dead-handlers / capabilities-sync 全通过） |
+| `pnpm test:run`（全量） | `Test Files 1113 passed (1113)`、`Tests 12311 passed (12311)`，`EXIT=0` |
+| `pnpm exec knip --include dependencies,unlisted` | 未使用依赖 0、未声明依赖 0 |
+
+#### 19.97.5 边界
+
+- **R1**：仅删除构建期 devDependency，未触碰 Matrix 协议链路、服务层与 SDK 集成，无平行实现。
+- **R2**：改动为 `package.json` / `pnpm-lock.yaml`，未新增 admin／AI 入口与移动端代码；`<script setup name>` 已清零，移动端构建不依赖该插件。
+- **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无运行时与路由变化，依赖图仅做减法。
+- **未闭环**：`knip.config.ts` 的 3 条配置提示与 `scripts/` 目录未纳入扫描口径的问题保留；建议后续将 `scripts/**` 加入 `project` 后再回收白名单。
+
+---
+
 ## 附录 A｜参数映射表
 
 | 原始建议参数 | 本项目 token | 说明 |
