@@ -1,3 +1,4 @@
+import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { unknownToObject } from '@/utils/typeGuard'
 
 /**
@@ -382,6 +383,13 @@ export interface RoomFileEntry {
   kind: 'file' | 'image' | 'video' | 'audio'
   /** 是否为加密附件（E2EE 房间的 `content.file`） */
   encrypted: boolean
+  /**
+   * E2EE 附件的解密描述符（`content.file` 原样透出）；非加密附件为 null。
+   *
+   * 下载加密媒体必须把该描述符交给 `MatrixAttachmentDecryptionService`，
+   * 只凭 mxc 地址无法解密，因此不能在这里丢弃。
+   */
+  encryptedFile: MatrixEncryptedAttachmentLike | null
 }
 
 /** 单页扫描结果：`nextToken` 非空表示还有更早的历史可继续翻。 */
@@ -429,7 +437,6 @@ export function normalizeRoomFileEvent(
   const encryptedFile = unknownToObject(content.file)
   const url = readUrlField(encryptedFile ?? content, ['url'])
   if (!url) return null
-
   const info = unknownToObject(content.info)
   return {
     eventId,
@@ -441,7 +448,8 @@ export function normalizeRoomFileEvent(
     size: toOptionalFiniteNumber(info?.size) ?? toOptionalFiniteNumber(encryptedFile?.size),
     mimeType: toOptionalString(info?.mimetype),
     kind,
-    encrypted: encryptedFile !== null
+    encrypted: encryptedFile !== null,
+    encryptedFile
   }
 }
 

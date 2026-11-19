@@ -456,6 +456,25 @@ describe('ChatMain', () => {
     expect(chatStore.fetchCurrentRoomRemoteOnce).toHaveBeenCalledTimes(1)
   })
 
+  it.each([
+    ['network', 'home.chat_main.live_update_failed_network'],
+    ['permission', 'home.chat_main.live_update_failed_permission'],
+    ['server', 'home.chat_main.live_update_failed_server'],
+    ['unknown', 'home.chat_main.live_update_failed']
+  ] as const)('实时帧失败按 %s 归类给出对应文案', (category, message) => {
+    chatStore.currentMessageOptions = {
+      hasLoadedOnce: true,
+      isLast: false,
+      isLoading: false,
+      loadFailed: null,
+      liveFailed: { scope: 'live', reason: 'boom', category }
+    }
+
+    const wrapper = mountComponent()
+
+    expect(wrapper.findComponent(PartialStateBanner).props('message')).toBe(message)
+  })
+
   it('首屏失败时不叠加实时帧失败横幅', () => {
     chatStore.currentMessageOptions = {
       hasLoadedOnce: true,

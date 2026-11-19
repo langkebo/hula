@@ -52,6 +52,9 @@
     "load_failed_permission": "You do not have permission to read this conversation",
     "load_failed_server": "Service temporarily unavailable. Please try again later",
     "live_update_failed": "Some new messages could not be processed",
+    "live_update_failed_network": "New messages were not received due to network issues. Check your connection and retry",
+    "live_update_failed_permission": "You do not have permission to receive new messages in this conversation",
+    "live_update_failed_server": "The server failed to process new messages. Please try again later",
     "jump_searching": "Searching for the message...",
     "jump_not_found": "Cannot find the original message. It may have been deleted or is too old",
     "unread_divider": "New messages",
@@ -187,7 +190,12 @@
       "load_failed": "Failed to load files",
       "load_more": "Load more",
       "unnamed": "Unnamed file",
-      "scope_hint": "No attachments on this page; load earlier messages to keep looking"
+      "scope_hint": "No attachments on this page; load earlier messages to keep looking",
+      "download": "Download",
+      "jump_to_message": "Jump to original message",
+      "download_success": "Download started",
+      "reveal_failed": "Downloaded, but could not reveal the file",
+      "download_unavailable": "Download address is currently unavailable"
     },
     "favorites": {
       "total": "{count} favorite(s)",

@@ -566,7 +566,8 @@ describe('MatrixRoomTimelineService', () => {
               size: 2048,
               mimeType: 'application/pdf',
               kind: 'file',
-              encrypted: false
+              encrypted: false,
+              encryptedFile: null
             }
           ],
           nextToken: 'p1'
@@ -612,7 +613,9 @@ describe('MatrixRoomTimelineService', () => {
               // content.info 缺失时不编造 MIME
               mimeType: null,
               kind: 'image',
-              encrypted: true
+              encrypted: true,
+              // 解密描述符必须原样透出，否则下载端无法解密
+              encryptedFile: { url: 'mxc://hs.test/enc1', key: 'k', iv: 'v', size: 4096 }
             }
           ],
           // end 为 null 表示已到房间开头

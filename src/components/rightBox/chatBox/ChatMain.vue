@@ -21,7 +21,7 @@
     <div v-if="liveFailure" data-testid="message-live-failure" class="px-3 pt-2">
       <PartialStateBanner
         compact
-        :message="t('home.chat_main.live_update_failed')"
+        :message="liveFailureMessage"
         :detail="liveFailure.reason"
         :retry-text="t('common.retry')"
         @retry="handleRetryLiveFailure" />
@@ -237,6 +237,20 @@ const {
   handleFloatButtonClick,
   floatButtonStyle
 } = useChatViewport({ onScroll: (event) => selfEmit('scroll', event) })
+
+/** 实时帧失败按归类给出可行动文案；无法归类时回落通用描述，不猜原因 */
+const liveFailureMessage = computed(() => {
+  switch (liveFailure.value?.category) {
+    case 'network':
+      return t('home.chat_main.live_update_failed_network')
+    case 'permission':
+      return t('home.chat_main.live_update_failed_permission')
+    case 'server':
+      return t('home.chat_main.live_update_failed_server')
+    default:
+      return t('home.chat_main.live_update_failed')
+  }
+})
 
 // ===== 私密模式 / 阅后即焚 =====
 const {

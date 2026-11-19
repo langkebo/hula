@@ -57,6 +57,9 @@ export type Messages = {
     "load_failed_permission": "没有权限读取该会话的消息",
     "load_failed_server": "服务端暂时无法返回消息，请稍后重试",
     "live_update_failed": "部分新消息接收失败",
+    "live_update_failed_network": "网络波动导致新消息接收失败，请检查网络后重试",
+    "live_update_failed_permission": "没有权限接收该会话的新消息",
+    "live_update_failed_server": "服务端处理新消息失败，请稍后重试",
     "jump_searching": "正在查找消息...",
     "jump_not_found": "无法找到原始消息，可能已被删除或太久远",
     "unread_divider": "以下为新消息",
@@ -192,7 +195,12 @@ export type Messages = {
       "load_failed": "加载文件列表失败",
       "load_more": "加载更多",
       "unnamed": "未命名文件",
-      "scope_hint": "本页没有附件，可继续加载更早的消息"
+      "scope_hint": "本页没有附件，可继续加载更早的消息",
+      "download": "下载",
+      "jump_to_message": "跳转到原消息",
+      "download_success": "已开始下载",
+      "reveal_failed": "下载完成，但无法在文件夹中显示",
+      "download_unavailable": "暂时无法获取下载地址"
     },
     "favorites": {
       "total": "收藏消息 {count} 条",
@@ -505,6 +513,9 @@ export type KeyPaths =
   | "home.chat_main.load_failed_permission"
   | "home.chat_main.load_failed_server"
   | "home.chat_main.live_update_failed"
+  | "home.chat_main.live_update_failed_network"
+  | "home.chat_main.live_update_failed_permission"
+  | "home.chat_main.live_update_failed_server"
   | "home.chat_main.jump_searching"
   | "home.chat_main.jump_not_found"
   | "home.chat_main.unread_divider"
@@ -608,6 +619,11 @@ export type KeyPaths =
   | "home.chat_sidebar.files.load_more"
   | "home.chat_sidebar.files.unnamed"
   | "home.chat_sidebar.files.scope_hint"
+  | "home.chat_sidebar.files.download"
+  | "home.chat_sidebar.files.jump_to_message"
+  | "home.chat_sidebar.files.download_success"
+  | "home.chat_sidebar.files.reveal_failed"
+  | "home.chat_sidebar.files.download_unavailable"
   | "home.chat_sidebar.favorites.total"
   | "home.chat_sidebar.favorites.export_md"
   | "home.chat_sidebar.favorites.export_txt"

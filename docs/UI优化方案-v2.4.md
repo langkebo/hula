@@ -3381,7 +3381,7 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 1. 本次 `--update` 记录的是当前实测体量：20 个超基线文件与 9 个未登记的超 400 行文件一并登记，其中除 `SpaceChildrenPane`（+22，P0-10 引入）与 `message.ts`（+8，本批新增类型与注释）外，其余为 742bc5c7 之后的历史漂移；后续批次应回到「只降不升」。
 2. `SpaceChildrenPane.vue` 505 行仍在基线内，未做拆分；`>800` 红线维持 0 个文件。
 3. MIME 映射只覆盖相册扫描白名单扩展名，非白名单统一回退 `application/octet-stream`，不做类型猜测。
-4. `loadFailed.reason` 只做文本留存，尚未据此做网络 / 权限 / 服务端的分级文案；`scope` 仍只有 `history` / `initial` 两种。
+4. `loadFailed.reason` 只做文本留存，尚未据此做网络 / 权限 / 服务端的分级文案；`scope` 仍只有 `history` / `initial` 两种。2026-11-19 收尾：`initial` / `history` 分级由 §19.35 落地，`live` 作用域由 §19.73 补齐，§19.93 再把实时帧横幅接入分级文案，本节边界已全部闭环。
 5. `clearGroupStore` 仅改名不改行为（内部仍调 group store 的 `clearAllData()`）；§19.19 里出现的旧名保留为当时记录。2026-11-17 收尾：`SessionOrchestrator` 实现处的「名字沿用 port 契约」过渡注释已删除，§19.19 已知边界 2 已标注由本节闭环。
 6. 体量合并保留后出现的 `surface-sidebar-hover`，与原层叠结果一致；被删的 `surface-list-hover` 是同选择器下被覆盖的旧值，视觉无变化。
 
@@ -5765,7 +5765,7 @@ npx playwright test e2e/glass-poc.spec.ts --project=desktop-chromium --project=m
 
 #### 4 项债务仍成立
 
-`CAP-08` 夹具 23 处手写字面量（已于 §19.91 用真实后端快照清偿，§19.92 再把 CAP-01 别名矩阵输入改为「别名表 ∩ 快照」推导）、`S-01`／`N-08` 子路径 0 真实 import、`augmentation` 686 行未收敛、联调报告与 §19.57 实测口径冲突（已在报告顶部加时效声明）。
+`CAP-08` 夹具 23 处手写字面量（已于 §19.91 用真实后端快照清偿，§19.92 再把 CAP-01 别名矩阵输入改为「别名表 ∩ 快照」推导）、`S-01`／`N-08` 子路径 0 真实 import（已由 §19.94 清偿：`sdk.ts` 真实 re-export SDK 真值 + 漂移测试守护）、`augmentation` 686 行未收敛、联调报告与 §19.57 实测口径冲突（已在报告顶部加时效声明）。
 
 `N-03`（文档超前）**已清偿**：本节台账已改为 0 条开放，§12.5／§19.22 的陈旧表述同日订正，收口取证见 §19.82。
 
@@ -6312,7 +6312,7 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R1**：本轮无新增 HTTP / 平行实现。移动端配额继续走 `matrixMediaService.checkQuota()` / `getQuotaStats()` / `getQuotaAlerts()`；`TimelineService` 拆分只做同模块函数外移，未复制 SDK 逻辑。
 - **R2**：改动面为 `src/services/matrix/room/**`、`src/mobile/views/my/**` 与文档；`src/mobile/**` 未新增 admin／AI 引用。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；移动端改动为既有页面的组件与 composable 拆分，无路由／菜单／模块装配期变化。
-- **未闭环**：`C3` 运行态与真机取证、`CAP-08` 剩余 23 处手写夹具、`S-01`／`N-08`（0 真实 import）、`augmentation` 686 行未拆分（已由 §19.83 拆分，本条为滞后台账）、Storybook 自动截图 diff、D2 vitrio 接入（已改为「建议加、未排期」，见 §19.90），均不在本轮范围；`CAP-08` 的 `EncryptionSettings` 只读误锁已由 §19.89 清偿；`getQuotaAlerts()` 失败回落空数组语义已由 §19.87 清偿；`ChatSidebarFiles.vue` 文件列表缺数据源已由 §19.88 清偿。
+- **未闭环**：`C3` 运行态与真机取证、`CAP-08` 剩余 23 处手写夹具（已由 §19.91／§19.92 清偿）、`S-01`／`N-08`（0 真实 import，已由 §19.94 清偿）、`augmentation` 686 行未拆分（已由 §19.83 拆分，本条为滞后台账）、Storybook 自动截图 diff、D2 vitrio 接入（已改为「建议加、未排期」，见 §19.90），均不在本轮范围；`CAP-08` 的 `EncryptionSettings` 只读误锁已由 §19.89 清偿；`getQuotaAlerts()` 失败回落空数组语义已由 §19.87 清偿；`ChatSidebarFiles.vue` 文件列表缺数据源已由 §19.88 清偿。
 
 ---
 
@@ -6455,7 +6455,7 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R1**：未新增 HTTP 通道、未自建协议状态机。好友策略/分组/请求仍走既有 `matrixAccountService` / `matrixFriendService`；空间仍走 `useSpaces` / `useSpace*` + `matrixSpaceService`；能力探测复用 `MatrixRequestHelper.safeGet` 单适配器。
 - **R2**：改动面为 `src/views/settingsWindow/**`、`src/composables/settings/**`、`src/mobile/views/space/**`、`src/services/matrix/{capabilityProbe,paths}`；未新增 admin／AI 入口与逻辑，移动端仅拆分既有空间页。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化。
-- **未闭环**：`SpaceDetailSheet` 的头像裁剪与详情层动效未做 Storybook 视觉抽查；台账既有的 `CAP-08`（手写夹具）、`S-01`／`N-08`、augmentation 拆分仍待处理。
+- **未闭环**：`SpaceDetailSheet` 的头像裁剪与详情层动效未做 Storybook 视觉抽查；台账既有的 `CAP-08`（手写夹具）已由 §19.91／§19.92 清偿，`S-01`／`N-08` 已由 §19.94 清偿，augmentation 拆分仍待处理。
 
 ---
 
@@ -6606,7 +6606,7 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R1**：未新增 HTTP 通道或协议实现。房间状态/权限沿用 SDK `Room` / `RoomState` / push manager；crypto 初始化仍走 SDK `initRustCrypto`；账号服务仍走 SDK `DeviceManager` / account data / `/events` 适配器。仅补 barrel 导出，无平行实现。
 - **R2**：改动面为 `src/services/matrix/{room,user}/**`、`src/services/matrix/MatrixCryptoStateTracker*.ts`、`src/services/matrix/sdk.ts`；未新增 admin／AI 入口与逻辑，移动端产物不含新增路径。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化，仅服务层文件拆分。
-- **未闭环**：`MatrixCryptoStateTracker` 的 `doEnsureCrypto` 仍集中了 storageKey 获取与 IndexedDB 清理重试两条路径（219 行，已低于 400 门槛）；如后续继续下沉，需同步评估 crypto 相关契约测试的源码断言。
+- **未闭环**：`MatrixCryptoStateTracker` 的 `doEnsureCrypto` 仍集中了 storageKey 获取与 IndexedDB 清理重试两条路径（219 行，已低于 400 门槛）；如后续继续下沉，需同步评估 crypto 相关契约测试的源码断言。—— **已由 §19.96 清偿**。
 
 ---
 
@@ -6718,7 +6718,7 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R1**：未新增 HTTP / 平行实现，附件扫描经 `EventManager.createMessagesRequest`；`Filter` 与 `contains_url` 的不可用已在 §19.88.2 记录，非自研协议。
 - **R2**：改动面为 `src/components/rightBox/chatBox/**`、`src/services/matrix/room/**`、`locales/**`、`src/typings/i18n/**`；未新增 admin／AI 入口与逻辑，移动端产物不含新增路径。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化，仅桌面侧边栏组件与服务层方法。
-- **未闭环**：文件列表只提供扫描与展示，未接入缩略图、下载、跳转到原消息（后续如需，应复用 `MatrixMediaService` 与时间线定位服务，不另起实现）。
+- **未闭环**：文件列表只提供扫描与展示，未接入缩略图、下载、跳转到原消息——**已由 §19.95 清偿**。
 
 ---
 
@@ -6866,6 +6866,168 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R3 第 3 项**：未执行 Android / iOS 构建；仅测试文件变化，不进入产物。
 - **仍保留手写的情形**：负向用例（旧错误 key 不命中）、分支用例（单侧关闭、并发去重、fetch 失败、store 未注册）仍为覆盖分支所需的最小构造；正向矩阵输入已全部由真实快照推导。
 - **未闭环**：快照仍为单环境（本地 synapse-rust）采集，多后端版本差异未覆盖。
+
+### 19.93 实时帧失败横幅接入分级文案（2026-11-19）
+
+#### 19.93.1 问题
+
+- §19.35 已实现 `initial` 作用域按网络 / 权限 / 服务端分级出文案，`ChatLoadMoreIndicator` 覆盖 `history`，§19.73 补齐 `live` 作用域的失败信号。
+- 但 `ChatMain.vue` 顶部的实时帧失败横幅仍固定使用 `home.chat_main.live_update_failed`（「部分新消息接收失败」），`MessageLoadFailure.category` 已算出却未消费 —— 断网、无权限、服务端异常三种成因在界面上完全同形，用户无法判断该检查网络还是等重试。
+
+#### 19.93.2 改动
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/components/rightBox/chatBox/ChatMain.vue` | 新增 `liveFailureMessage` computed，按 `liveFailure.category` 取 `network` / `permission` / `server` 文案；`unknown` 或缺失回落原通用文案（不猜原因）。横幅 `:message` 由固定 key 改为该 computed |
+| `locales/zh-CN/home.json`、`locales/en/home.json` | `chat_main` 下新增 `live_update_failed_network` / `live_update_failed_permission` / `live_update_failed_server` 三个 key，与既有 `load_failed_*` 的措辞口径一致 |
+| `src/typings/i18n/home.d.ts` | 由 `pnpm gen:i18n` 生成，未手改 |
+| `src/components/rightBox/chatBox/__tests__/ChatMain.test.ts` | 新增参数化用例 4 条：`network` / `permission` / `server` / `unknown` 分别断言横幅 `message` 为对应 i18n key |
+
+#### 19.93.3 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run src/components/rightBox/chatBox/__tests__/ChatMain.test.ts` | 36 个用例全通过（较原 32 增加 4 个分级用例） |
+| `pnpm test:run`（全量） | `TEST_EXIT=0` — 1113 个文件 / 12304 个用例全通过（较上轮 12300 增加本轮 4 个） |
+| `pnpm vue-tsc --noEmit` | `EXIT=0` |
+| `npx biome check`（改动文件） | `No fixes applied` |
+| `node scripts/check-ratchet.mjs` | `EXIT=0`（无新增硬编码颜色，仅新增 i18n 文案） |
+| `pnpm check:doc-coverage` / `pnpm check:doc-paths` | `OK — no regressions` / 全部路径存在 |
+| `check-i18n` / `check-i18n-refs` / `check-i18n-dead-keys` | 三项 `EXIT=0`（孤儿 key 0，维持基线） |
+
+#### 19.93.4 边界
+
+- **R1**：复用既有 `MessageLoadFailure.category` 与 `classifyLoadFailure`，只做文案映射，未新增分类逻辑、未自建错误解析，无平行实现。
+- **R2**：改动面为桌面端 `ChatMain.vue` 与共享 i18n 文案；移动端聊天入口未改动，未引入 admin / AI 入口。
+- **R3 第 3 项**：未执行 Android / iOS 构建；仅桌面组件与文案变化，不涉及路由 / 菜单 / 装配期。
+- **口径说明**：`unknown` 保留通用文案而非硬猜成因，避免把未知错误误报成网络问题。
+- **未闭环**：`src/views/chatHistory/index.vue` 的本地 SQLite 查询失败走布尔 `loadError`，与网络语义无关，未纳入分级；移动端深链会话列表加载失败仍为独立 toast 语义。
+
+---
+
+### 19.94 S-01／N-08 能力映射表接入 SDK 真值（2026-11-19）
+
+#### 19.94.1 结论先行
+
+审计项「能力映射表 0 真实 import、仍为文档态」在当前 HEAD 已不成立：`sdk.ts` 咽喉点已从 `matrix-js-sdk/server-capabilities` 真实 re-export SDK 真值，并由漂移测试逐项校验能力映射表。本轮只做取证与台账闭合，未新增运行时代码。
+
+#### 19.94.2 现状取证
+
+| 位置 | 事实 |
+| :--- | :--- |
+| `src/services/matrix/sdk.ts` L114-120 | `export { SYNAPSE_RUST_CAPABILITY_ALIASES, SYNAPSE_RUST_FEATURE_FALLBACK, SynapseRustFeature } from 'matrix-js-sdk/server-capabilities'`，应用侧唯一子路径入口 |
+| `src/services/matrix/__tests__/MatrixCapabilityService.drift.test.ts` | 5 条漂移用例：SDK 已绑定能力的全部认可串必须在别名表内、未绑定能力必须登记理由、留空位白名单、fallback 覆盖、`MSC3245` 真实 key 断言 |
+| `src/services/matrix/MatrixCapabilityService.ts` L58-64 | 映射表本地保留（14 个能力位 vs SDK 8 个 feature，非一一对应），注释标明由漂移测试守护 |
+
+#### 19.94.3 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run src/services/matrix/__tests__/MatrixCapabilityService.drift.test.ts src/services/matrix/__tests__/MatrixCapabilityService.test.ts` | 46 个用例全通过 |
+| `pnpm check:sdk-boundary` | `OK` — 154/156 基线，2 处违规已在引入该咽喉点时消解 |
+| `pnpm check:doc-coverage` / `pnpm check:doc-paths` | 均 `EXIT=0` |
+
+#### 19.94.4 边界
+
+- **R1**：只消费 `matrix-js-sdk/server-capabilities` 子路径（经 `sdk.ts` 咽喉点），未自建能力常量或平行探测；运行期映射表仍保留本地，理由是同 14 能力位与 SDK 8 feature 非 1:1，映射关系由漂移测试而非运行期派生守护。
+- **R2**：本轮无移动端改动，未引入 admin／AI 入口与逻辑。
+- **R3 第 3 项**：未执行 Android／iOS 构建；无路由、菜单、模块装配期变化。
+- **未闭环**：映射表为「本地表 + 测试守护」而非运行期从 SDK 派生；若后续 SDK 补齐 14 项登记，可再收敛为直接派生。
+
+---
+
+### 19.95 文件页签后续能力｜缩略图 / 下载 / 跳转原消息（2026-11-19）
+
+承接 §19.88.5 遗留项：文件页签只具备扫描与展示，附件行无法预览、无法下载、无法回到原消息。本节补齐这三项，全部复用既有链路，不新建媒体或定位实现。
+
+#### 19.95.1 改动表
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/room/timelineOutcomes.ts` | `RoomFileEntry` 新增 `encryptedFile: MatrixEncryptedAttachmentLike \| null`；`normalizeRoomFileEvent()` 把已解析的 `content.file` 描述符原样透出（此前解析后丢弃，导致 E2EE 附件拿到 mxc 也无法解密） |
+| `src/components/rightBox/chatBox/ChatSidebarFiles.vue` | 附件行新增：未加密图片的 64×64 缩略图（`matrixMediaService.getThumbnailUrl`）、下载按钮（`useFileDownloadStore().downloadFile / downloadEncryptedFile` + `revealItemInDir`）、跳转原消息按钮（`useMitt.emit(MittEnum.NAVIGATE_TO_MESSAGE)`）；缩略图失败自动回落类型图标 |
+| `locales/{zh-CN,en}/home.json` | 新增 `chat_sidebar.files.{download,jump_to_message,download_success,reveal_failed,download_unavailable}`；`pnpm gen:i18n` 重新生成 typings |
+| `src/services/matrix/room/__tests__/TimelineService.test.ts` | 两处 `toEqual` 断言补 `encryptedFile`：非加密为 `null`，加密为原始描述符 |
+| `src/components/rightBox/chatBox/__tests__/ChatSidebarFiles.test.ts` | 新增 7 例：缩略图（加密不出图）、缩略图失败回落、普通下载、加密下载、缺下载信息、定位失败降级、跳转原消息 |
+
+#### 19.95.2 关键约束
+
+1. **R1 合规链路**：缩略图走 `matrixMediaService.getThumbnailUrl()`（内部 `resolveMxcToHttp`）；下载走 `fileDownload` store 既有的 `downloadFile` / `downloadEncryptedFile`（内部 `HttpClient.downloadBytes` / `downloadSignedFileBytes` / `downloadEncryptedFileBytes`）；跳转走既有 `MittEnum.NAVIGATE_TO_MESSAGE`，由 `ChatMain` 的 `useMessageJump` 做历史翻页定位与高亮。未新增 HTTP、未复制解密或定位逻辑。
+2. **E2EE 必须带描述符**：加密附件只凭 mxc 地址无法解密，`normalizeRoomFileEvent()` 现在把 `content.file` 原样透出为 `encryptedFile`；组件在缺少描述符时如实提示「暂时无法获取下载地址」，不发起必然失败的下载。
+3. **缩略图只对未加密图片**：为列表预取解密成本过高，加密图片一律回落类型图标；`getThumbnailUrl` 返回 `null` 或 `<img>` 触发 `error` 时同样回落，不显示破图。
+4. **失败反馈不重复**：下载失败由 store 内部提示，组件只处理成功反馈与「定位失败」降级（`reveal_failed` warning），避免双重 toast。
+5. **并发保护**：同一 `eventId` 下载期间按钮 `disabled`，重复点击直接短路。
+6. **主题与图标合规**：新增按钮颜色全部用 `--tjg-*` token，图标复用既有 sprite（`#download` / `#message`），无硬编码色与 div 图标。
+
+#### 19.95.3 用例补强
+
+| 测试 | 新增 / 调整 |
+| :--- | :--- |
+| `ChatSidebarFiles.test.ts` | 新增 mock（`getThumbnailUrl` / `fileDownload` store / `useMitt` / `useActionFeedback` / `@tauri-apps/plugin-opener`）与 7 例：① 未加密图片按 64×64 取缩略图、加密图片不出图；② 缩略图 `error` 后回落图标；③ 普通附件走 `downloadFile(httpUrl, name)` 并 `revealItemInDir`；④ 加密附件把描述符原样交给 `downloadEncryptedFile`；⑤ 缺描述符 / 缺 HTTP 地址时不发起下载、提示 `download_unavailable`；⑥ 定位失败只降级提示；⑦ 跳转发 `NAVIGATE_TO_MESSAGE` 且携带 `roomId + eventId` |
+| `TimelineService.test.ts` | 附件归一化断言补 `encryptedFile`（`null` / 原始描述符），锁定「描述符不得丢弃」 |
+
+#### 19.95.4 验证表
+
+| 命令 / 用例 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run`（ChatSidebarFiles + TimelineService） | `Test Files 2 passed (2)`、`Tests 80 passed (80)` |
+| `pnpm test:run`（全量） | `Test Files 1113 passed (1113)`、`Tests 12311 passed (12311)`，`EXIT=0`（耗时 352.90s） |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm check` | `EXIT=0`（biome 3064 文件 / i18n 完整性与引用 / 令牌 / 图标 aria / dead-handlers / capabilities-sync 全通过） |
+| `pnpm check:ratchet` | `OK — no regressions`（首轮命中 `zh_literal_vue`，log 文案改英文后通过） |
+| `pnpm check:doc-coverage` / `pnpm check:doc-paths` | 均 `EXIT=0` |
+| `pnpm check:sdk-boundary` | 154（基线 156）→ `OK — no regressions vs baseline` |
+| `pnpm quality:no-raw-fetch` | 3 项均在白名单内，`EXIT=0` |
+
+#### 19.95.5 边界
+
+- **R1**：缩略图 / 下载 / 跳转分别复用 `MatrixMediaService`、`fileDownload` store、`MittEnum.NAVIGATE_TO_MESSAGE`；未自建媒体请求或消息定位状态机。
+- **R2**：改动面为 `src/components/rightBox/chatBox/**`、`src/services/matrix/room/**`、`locales/**`、`src/typings/i18n/**`；未新增 admin／AI 入口与逻辑。
+- **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化。
+- **未闭环**：加密图片暂无内联预览（需要解密后再生成 blob URL，成本与生命周期管理另立议题）；缩略图为按需 URL 渲染，未做磁盘缓存与预取。
+
+---
+
+### 19.96 MatrixCryptoStateTracker `doEnsureCrypto` 下沉（2026-11-19）
+
+#### 19.96.1 问题
+
+§19.86 拆分后 `doEnsureCrypto` 仍同时承担「准备 crypto store」与「写调试状态」两件事：storageKey 获取、按身份 / 加密原语变化提前清理、`initRustCrypto` 失败后的清理重试与等待、错误归一化，全集中在 219 行的单一方法里。后果是改初始化细节必须通读状态机，且这些 IO 路径无法脱离 tracker 单独验证。
+
+#### 19.96.2 改动
+
+| 文件 | 行数 | 内容 |
+| :--- | :--- | :--- |
+| `src/services/matrix/crypto/rustCryptoInit.ts` | 151（新增） | `prepareRustCryptoStore()`：取 storageKey、按 `userId:deviceId` 与加密原语变化提前清理旧 store、回写身份标记、记录 keychain 后端；`initRustCryptoWithCleanupRetry()`：调用 `initRustCrypto`，失败且 IndexedDB 可用时清理 → 等待 → 重试一次，返回 `{ ok, error?, retried }` |
+| `src/services/matrix/MatrixCryptoStateTracker.ts` | 219 → 130 | 仅保留代次守卫、`writeState` / `writeInitializedState` 写入，以及 storageKey 缺失时的 `armStorageKeyRetry` 编排 |
+
+#### 19.96.3 行为一致性
+
+- 失败日志文案与顺序不变（「初始化失败，继续以非加密模式启动」「清除旧 crypto 数据后重试」「重试仍失败」），只是输出点移入新模块。
+- 非 IndexedDB 环境不重试；清理部分失败 / 阻塞时仍等待 1000ms，否则 100ms。
+- storageKey 缺失仍 fail-closed（拒绝落明文 store），并保留 `armStorageKeyRetry` 解锁后续跑。
+- 调试状态字段（`attempted` / `initialized` / `skippedReason` / `error` / `usedIndexedDB` / `storeEncrypted`）的写入时机与取值不变。
+- 跨窗口串行化、超时判定仍由 `MatrixCryptoStateTrackerInit` 负责；新模块不做锁，也不读写调试状态。
+
+#### 19.96.4 验证表
+
+| 命令 / 用例 | 结果 |
+| :--- | :--- |
+| `pnpm exec vitest run`（tracker + 跨窗口守卫） | `Test Files 2 passed (2)`、`Tests 50 passed (50)` |
+| `pnpm test:run`（全量） | `Test Files 1113 passed (1113)`、`Tests 12311 passed (12311)`，`EXIT=0`。首轮暴露 `matrix_service_files` 270 → 271 漂移，已同步集成图谱标记块与正文后复跑通过 |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm check` | `EXIT=0`（biome 3065 文件；首轮 2 处格式差异已用 `biome check --write` 修复后复跑） |
+| `pnpm check:ratchet` | `OK — no regressions` |
+| `pnpm check:sdk-boundary` | `OK`（新模块仅类型引用 `RustCryptoCapableClient`，无 SDK 运行时依赖） |
+| `pnpm quality:no-raw-fetch` | 白名单 3 项，`EXIT=0` |
+| `pnpm check:doc-coverage` / `pnpm check:doc-paths` | 均 `EXIT=0` |
+
+#### 19.96.5 边界
+
+- **R1**：初始化仍调用 SDK `initRustCrypto`，storageKey 仍走既有 `cryptoStorageKey`，清理仍走 `clearStaleCryptoStores`；未新增 HTTP 通道或平行协议实现。
+- **R2**：改动面为 `src/services/matrix/MatrixCryptoStateTracker.ts` 与 `src/services/matrix/crypto/rustCryptoInit.ts`；未新增 admin／AI 入口与逻辑。
+- **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化，仅服务层内部下沉。
+- **未闭环**：`doEnsureCrypto` 之外，`MatrixCryptoStateTrackerInit` 仍持有 Web Locks 与解锁续跑逻辑（属状态机本体，不再下沉）；crypto 调试状态的 localStorage 读写仍为同步实现，未改为异步队列。
 
 ---
 

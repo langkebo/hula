@@ -95,7 +95,17 @@
             :key="file.eventId"
             class="flex items-center gap-8px px-8px py-6px mb-4px rounded-8px bg-[--tjg-surface-search]"
             data-test="chat-sidebar-file-item">
-            <svg class="size-20px shrink-0 color-[--tjg-text-secondary]" aria-hidden="true">
+            <!-- 图片走服务端缩略图；加密附件与解析失败回落类型图标，不显示破图 -->
+            <img
+              v-if="thumbnails[file.eventId]"
+              :src="thumbnails[file.eventId]"
+              alt=""
+              loading="lazy"
+              referrerpolicy="no-referrer"
+              class="size-32px shrink-0 rounded-4px object-cover"
+              data-test="chat-sidebar-file-thumb"
+              @error="markThumbnailFailed(file.eventId)" />
+            <svg v-else class="size-20px shrink-0 color-[--tjg-text-secondary]" aria-hidden="true">
               <use :href="fileIcon(file.kind)"></use>
             </svg>
             <div class="flex-1 min-w-0">
@@ -111,6 +121,25 @@
             <svg v-if="file.encrypted" class="size-12px shrink-0 color-[--tjg-text-quaternary]" aria-hidden="true">
               <use href="#lock"></use>
             </svg>
+            <button
+              type="button"
+              class="shrink-0 p-2px rounded-4px bg-transparent border-none cursor-pointer color-[--tjg-text-tertiary] hover:color-[--tjg-color-primary-500] hover:bg-[--tjg-surface-sidebar-hover] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[--tjg-color-primary-500]"
+              :title="t('home.chat_sidebar.files.jump_to_message')"
+              :aria-label="t('home.chat_sidebar.files.jump_to_message')"
+              data-test="chat-sidebar-file-jump"
+              @click="jumpToMessage(file)">
+              <svg class="size-14px" aria-hidden="true"><use href="#message"></use></svg>
+            </button>
+            <button
+              type="button"
+              class="shrink-0 p-2px rounded-4px bg-transparent border-none cursor-pointer color-[--tjg-text-tertiary] hover:color-[--tjg-color-primary-500] hover:bg-[--tjg-surface-sidebar-hover] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[--tjg-color-primary-500] disabled:opacity-50 disabled:cursor-not-allowed"
+              :title="t('home.chat_sidebar.files.download')"
+              :aria-label="t('home.chat_sidebar.files.download')"
+              :disabled="downloadingIds.includes(file.eventId)"
+              data-test="chat-sidebar-file-download"
+              @click="downloadFileEntry(file)">
+              <svg class="size-14px" aria-hidden="true"><use href="#download"></use></svg>
+            </button>
           </div>
         </div>
         <!-- 还有更早历史：允许继续翻页，扫描是分页的，不宣称一次就扫完整个房间 -->
@@ -131,21 +160,29 @@
 </template>
 
 <script setup lang="ts">
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
 import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useMitt } from '@/composables/common/useMitt'
+import { MittEnum } from '@/enums'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { MediaQuotaStats } from '@/services/matrix/media/mediaConfigOps'
 import { onMediaQuotaChanged } from '@/services/matrix/media/mediaQuotaEvents'
 import { matrixRoomTimelineService } from '@/services/matrix/room/TimelineService'
 import type { RoomFileEntry } from '@/services/matrix/room/timelineOutcomes'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { formatChatTime } from '@/utils/ComputedTime'
 import { formatBytes } from '@/utils/Formatting'
+import { createLogger } from '@/utils/Logger'
 
 const props = defineProps<{ active: boolean; roomId?: string }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
+const logger = createLogger('ChatSidebarFiles')
 
 const quota = ref<MediaQuotaStats | null>(null)
 /** 接口存在但本次取不到（鉴权 / 网络 / 5xx）：显示「暂不可用」；服务端无此接口时为 false（整块隐藏） */
@@ -218,6 +255,10 @@ watch(
 
 /** 文件列表：分页扫描出的附件消息，以及是否还有更早历史 */
 const files = ref<RoomFileEntry[]>([])
+/** 图片缩略图（eventId → URL）；加密附件不在此列，模板回落到类型图标 */
+const thumbnails = ref<Record<string, string>>({})
+/** 正在下载的文件，避免同一行被重复点击 */
+const downloadingIds = ref<string[]>([])
 const nextToken = ref<string | null>(null)
 const filesLoading = ref(false)
 const filesLoaded = ref(false)
@@ -231,6 +272,7 @@ let filesRequestId = 0
 const resetFiles = (): void => {
   filesRequestId += 1
   files.value = []
+  thumbnails.value = {}
   nextToken.value = null
   filesLoaded.value = false
   filesError.value = false
@@ -264,6 +306,7 @@ const loadFiles = async (more: boolean): Promise<void> => {
       ? result.page.files.filter((entry) => !files.value.some((existing) => existing.eventId === entry.eventId))
       : result.page.files
     files.value = more ? [...files.value, ...appended] : appended
+    refreshThumbnails()
     nextToken.value = result.page.nextToken
     filesUnsupported.value = false
   } else if (result.status === 'unsupported') {
@@ -313,6 +356,79 @@ const fileMeta = (file: RoomFileEntry): string => {
     if (time) parts.push(time)
   }
   return parts.join(' · ')
+}
+
+/**
+ * 缩略图只对「未加密的图片」生成：加密附件必须先解密才能出图，
+ * 为列表预取解密成本过高，回落到类型图标更诚实。解析失败也走同一回落。
+ */
+const refreshThumbnails = (): void => {
+  const next: Record<string, string> = {}
+  for (const file of files.value) {
+    if (file.kind !== 'image' || file.encrypted) continue
+    const thumbnail = matrixMediaService.getThumbnailUrl(file.url, 64, 64)
+    if (thumbnail) next[file.eventId] = thumbnail
+  }
+  thumbnails.value = next
+}
+
+/** 缩略图加载失败（mxc 解析结果不可用）：移除该项，模板自动回落类型图标，不显示破图 */
+const markThumbnailFailed = (eventId: string): void => {
+  if (!(eventId in thumbnails.value)) return
+  const next = { ...thumbnails.value }
+  delete next[eventId]
+  thumbnails.value = next
+}
+
+const fileDisplayName = (file: RoomFileEntry): string => file.name || t('home.chat_sidebar.files.unnamed')
+
+/**
+ * 下载文件。
+ *
+ * 复用 `fileDownload` store 的既有链路（签名媒体 / 加密媒体都由它处理），
+ * 这里只负责「加密附件必须带解密描述符」「普通附件必须有可访问 HTTP 地址」的前置判断，
+ * 以及下载成功后在文件夹中定位。
+ */
+const downloadFileEntry = async (file: RoomFileEntry): Promise<void> => {
+  if (downloadingIds.value.includes(file.eventId)) return
+
+  if ((file.encrypted && !file.encryptedFile) || (!file.encrypted && !file.httpUrl)) {
+    showFeedback(t('home.chat_sidebar.files.download_unavailable'), 'error')
+    return
+  }
+
+  downloadingIds.value = [...downloadingIds.value, file.eventId]
+  try {
+    const fileDownloadStore = useFileDownloadStore()
+    const fileName = fileDisplayName(file)
+    let absolutePath: string | null
+    if (file.encrypted && file.encryptedFile) {
+      absolutePath = await fileDownloadStore.downloadEncryptedFile(file.url, fileName, file.encryptedFile)
+    } else if (file.httpUrl) {
+      absolutePath = await fileDownloadStore.downloadFile(file.httpUrl, fileName)
+    } else {
+      absolutePath = null
+    }
+    // 失败时 store 内部已给出提示，这里只处理成功反馈
+    if (!absolutePath) return
+
+    showFeedback(t('home.chat_sidebar.files.download_success'), 'success')
+    try {
+      await revealItemInDir(absolutePath)
+    } catch (error) {
+      logger.warn(`[ChatSidebarFiles] reveal file in folder failed: ${(error as Error)?.message ?? error}`)
+      showFeedback(t('home.chat_sidebar.files.reveal_failed'), 'warning')
+    }
+  } finally {
+    downloadingIds.value = downloadingIds.value.filter((id) => id !== file.eventId)
+  }
+}
+
+/** 跳转原消息：由 ChatMain 的 `useMessageJump` 负责历史翻页定位与高亮 */
+const jumpToMessage = (file: RoomFileEntry): void => {
+  const roomId = props.roomId
+  if (!roomId) return
+  useMitt.emit(MittEnum.NAVIGATE_TO_MESSAGE, { roomId, eventId: file.eventId })
 }
 
 // 上传 / 删除成功会让服务端配额变化：可见时立即重取；隐藏时清掉缓存，下次可见即重取。

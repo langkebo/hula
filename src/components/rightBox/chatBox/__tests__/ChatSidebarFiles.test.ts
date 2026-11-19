@@ -14,17 +14,54 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * 客户端附件筛选）。分页扫描必然有「还有更早历史」的状态，因此空页不等于空房间，
  * 失败也不等于没有文件，三者必须分别呈现。
  */
-const { getQuotaStatsMock, getRoomFilesMock } = vi.hoisted(() => ({
+const {
+  getQuotaStatsMock,
+  getRoomFilesMock,
+  getThumbnailUrlMock,
+  downloadFileMock,
+  downloadEncryptedFileMock,
+  emitMock,
+  revealItemInDirMock,
+  showFeedbackMock
+} = vi.hoisted(() => ({
   getQuotaStatsMock: vi.fn(),
-  getRoomFilesMock: vi.fn()
+  getRoomFilesMock: vi.fn(),
+  getThumbnailUrlMock: vi.fn(),
+  downloadFileMock: vi.fn(),
+  downloadEncryptedFileMock: vi.fn(),
+  emitMock: vi.fn(),
+  revealItemInDirMock: vi.fn(),
+  showFeedbackMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
-  matrixMediaService: { getQuotaStats: (...args: unknown[]) => getQuotaStatsMock(...args) }
+  matrixMediaService: {
+    getQuotaStats: (...args: unknown[]) => getQuotaStatsMock(...args),
+    getThumbnailUrl: (...args: unknown[]) => getThumbnailUrlMock(...args)
+  }
 }))
 
 vi.mock('@/services/matrix/room/TimelineService', () => ({
   matrixRoomTimelineService: { getRoomFiles: (...args: unknown[]) => getRoomFilesMock(...args) }
+}))
+
+vi.mock('@/stores/domains/widget/fileDownload', () => ({
+  useFileDownloadStore: () => ({
+    downloadFile: (...args: unknown[]) => downloadFileMock(...args),
+    downloadEncryptedFile: (...args: unknown[]) => downloadEncryptedFileMock(...args)
+  })
+}))
+
+vi.mock('@/composables/common/useMitt', () => ({
+  useMitt: { emit: (...args: unknown[]) => emitMock(...args) }
+}))
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({ showFeedback: (...args: unknown[]) => showFeedbackMock(...args) })
+}))
+
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  revealItemInDir: (...args: unknown[]) => revealItemInDirMock(...args)
 }))
 
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
@@ -66,6 +103,7 @@ vi.mock('naive-ui', async () => {
   }
 })
 
+import { MittEnum } from '@/enums'
 import { notifyMediaQuotaChanged } from '@/services/matrix/media/mediaQuotaEvents'
 import ChatSidebarFiles from '../ChatSidebarFiles.vue'
 
@@ -82,6 +120,7 @@ const fileEntry = (overrides: Record<string, unknown> = {}) => ({
   mimeType: 'application/pdf',
   kind: 'file',
   encrypted: false,
+  encryptedFile: null,
   ...overrides
 })
 
@@ -255,6 +294,11 @@ describe('ChatSidebarFiles — 文件列表', () => {
     vi.clearAllMocks()
     getQuotaStatsMock.mockResolvedValue({ ok: false, reason: 'unsupported' })
     getRoomFilesMock.mockResolvedValue({ status: 'ok', page: { files: [], nextToken: null } })
+    // 默认无缩略图、下载成功并落到本地路径
+    getThumbnailUrlMock.mockReturnValue(null)
+    downloadFileMock.mockResolvedValue('/tmp/downloads/report.pdf')
+    downloadEncryptedFileMock.mockResolvedValue('/tmp/downloads/secret.png')
+    revealItemInDirMock.mockResolvedValue(undefined)
   })
 
   it('未选中会话时不请求文件接口，给出「未选择会话」空态', async () => {
@@ -394,6 +438,154 @@ describe('ChatSidebarFiles — 文件列表', () => {
 
     expect(wrapper.text()).toContain('b-room.txt')
     expect(wrapper.text()).not.toContain('a-room.txt')
+    wrapper.unmount()
+  })
+
+  it('图片附件用服务端缩略图渲染，加密图片不解密出图、回落类型图标', async () => {
+    getThumbnailUrlMock.mockReturnValue('https://example.org/_matrix/media/thumb')
+    getRoomFilesMock.mockResolvedValue({
+      status: 'ok',
+      page: {
+        files: [
+          fileEntry({ eventId: '$img', name: 'photo.png', kind: 'image' }),
+          fileEntry({
+            eventId: '$enc',
+            name: 'secret.png',
+            kind: 'image',
+            encrypted: true,
+            encryptedFile: { url: 'mxc://example.org/enc', key: 'k', iv: 'v' }
+          })
+        ],
+        nextToken: null
+      }
+    })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true, roomId: '!room:example.org' } })
+    await flushPromises()
+
+    // 只对未加密图片请求缩略图，且按 64x64 取
+    expect(getThumbnailUrlMock).toHaveBeenCalledTimes(1)
+    expect(getThumbnailUrlMock).toHaveBeenCalledWith('mxc://example.org/media1', 64, 64)
+    const thumbs = wrapper.findAll('[data-test="chat-sidebar-file-thumb"]')
+    expect(thumbs).toHaveLength(1)
+    expect(thumbs[0]?.attributes('src')).toBe('https://example.org/_matrix/media/thumb')
+    expect(wrapper.findAll('[data-test="chat-sidebar-file-item"]')).toHaveLength(2)
+    wrapper.unmount()
+  })
+
+  it('缩略图加载失败时移除该图，回落类型图标而不是显示破图', async () => {
+    getThumbnailUrlMock.mockReturnValue('https://example.org/broken-thumb')
+    getRoomFilesMock.mockResolvedValue({
+      status: 'ok',
+      page: { files: [fileEntry({ eventId: '$img', name: 'photo.png', kind: 'image' })], nextToken: null }
+    })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true, roomId: '!room:example.org' } })
+    await flushPromises()
+
+    const thumb = wrapper.find('[data-test="chat-sidebar-file-thumb"]')
+    expect(thumb.exists()).toBe(true)
+    await thumb.trigger('error')
+    expect(wrapper.find('[data-test="chat-sidebar-file-thumb"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="chat-sidebar-file-item"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('下载普通附件复用 fileDownload store，成功后定位文件并给出成功反馈', async () => {
+    getRoomFilesMock.mockResolvedValue({
+      status: 'ok',
+      page: { files: [fileEntry()], nextToken: null }
+    })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true, roomId: '!room:example.org' } })
+    await flushPromises()
+    await wrapper.find('[data-test="chat-sidebar-file-download"]').trigger('click')
+    await flushPromises()
+
+    expect(downloadFileMock).toHaveBeenCalledWith('https://example.org/_matrix/media/media1', 'report.pdf')
+    expect(downloadEncryptedFileMock).not.toHaveBeenCalled()
+    expect(revealItemInDirMock).toHaveBeenCalledWith('/tmp/downloads/report.pdf')
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_sidebar.files.download_success', 'success')
+    wrapper.unmount()
+  })
+
+  it('下载加密附件时把解密描述符原样交给 store，不走普通下载', async () => {
+    const encryptedFile = { url: 'mxc://example.org/enc', key: 'k', iv: 'v' }
+    getRoomFilesMock.mockResolvedValue({
+      status: 'ok',
+      page: {
+        files: [fileEntry({ eventId: '$enc', name: 'secret.png', kind: 'image', encrypted: true, encryptedFile })],
+        nextToken: null
+      }
+    })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true, roomId: '!room:example.org' } })
+    await flushPromises()
+    await wrapper.find('[data-test="chat-sidebar-file-download"]').trigger('click')
+    await flushPromises()
+
+    expect(downloadEncryptedFileMock).toHaveBeenCalledWith('mxc://example.org/media1', 'secret.png', encryptedFile)
+    expect(downloadFileMock).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('缺少下载所需信息（加密无描述符 / 普通无 HTTP 地址）时如实提示，不发起下载', async () => {
+    getRoomFilesMock.mockResolvedValue({
+      status: 'ok',
+      page: {
+        files: [
+          fileEntry({ eventId: '$enc', name: 'secret.png', kind: 'image', encrypted: true, encryptedFile: null }),
+          fileEntry({ eventId: '$nohttp', name: 'broken.pdf', httpUrl: null })
+        ],
+        nextToken: null
+      }
+    })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true, roomId: '!room:example.org' } })
+    await flushPromises()
+
+    const downloads = wrapper.findAll('[data-test="chat-sidebar-file-download"]')
+    await downloads[0]?.trigger('click')
+    await downloads[1]?.trigger('click')
+    await flushPromises()
+
+    expect(downloadEncryptedFileMock).not.toHaveBeenCalled()
+    expect(downloadFileMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_sidebar.files.download_unavailable', 'error')
+    wrapper.unmount()
+  })
+
+  it('下载成功但无法在文件夹中定位时降级提示，不覆盖下载结果', async () => {
+    revealItemInDirMock.mockRejectedValue(new Error('opener unavailable'))
+    getRoomFilesMock.mockResolvedValue({
+      status: 'ok',
+      page: { files: [fileEntry()], nextToken: null }
+    })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true, roomId: '!room:example.org' } })
+    await flushPromises()
+    await wrapper.find('[data-test="chat-sidebar-file-download"]').trigger('click')
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_sidebar.files.download_success', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('home.chat_sidebar.files.reveal_failed', 'warning')
+    wrapper.unmount()
+  })
+
+  it('点击「跳转到原消息」发出 NAVIGATE_TO_MESSAGE，由 ChatMain 定位并高亮', async () => {
+    getRoomFilesMock.mockResolvedValue({
+      status: 'ok',
+      page: { files: [fileEntry({ eventId: '$file1' })], nextToken: null }
+    })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true, roomId: '!room:example.org' } })
+    await flushPromises()
+    await wrapper.find('[data-test="chat-sidebar-file-jump"]').trigger('click')
+
+    expect(emitMock).toHaveBeenCalledWith(MittEnum.NAVIGATE_TO_MESSAGE, {
+      roomId: '!room:example.org',
+      eventId: '$file1'
+    })
     wrapper.unmount()
   })
 })

@@ -52,6 +52,9 @@
     "load_failed_permission": "没有权限读取该会话的消息",
     "load_failed_server": "服务端暂时无法返回消息，请稍后重试",
     "live_update_failed": "部分新消息接收失败",
+    "live_update_failed_network": "网络波动导致新消息接收失败，请检查网络后重试",
+    "live_update_failed_permission": "没有权限接收该会话的新消息",
+    "live_update_failed_server": "服务端处理新消息失败，请稍后重试",
     "jump_searching": "正在查找消息...",
     "jump_not_found": "无法找到原始消息，可能已被删除或太久远",
     "unread_divider": "以下为新消息",
@@ -187,7 +190,12 @@
       "load_failed": "加载文件列表失败",
       "load_more": "加载更多",
       "unnamed": "未命名文件",
-      "scope_hint": "本页没有附件，可继续加载更早的消息"
+      "scope_hint": "本页没有附件，可继续加载更早的消息",
+      "download": "下载",
+      "jump_to_message": "跳转到原消息",
+      "download_success": "已开始下载",
+      "reveal_failed": "下载完成，但无法在文件夹中显示",
+      "download_unavailable": "暂时无法获取下载地址"
     },
     "favorites": {
       "total": "收藏消息 {count} 条",
