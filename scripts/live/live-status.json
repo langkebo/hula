@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-11-18T23:00:06.742Z",
+  "updated_at": "2026-11-19T02:27:00.000Z",
   "schema": {
     "status": ["passed", "failed", "stale", "never-run", "manual"],
     "meaning": {
@@ -113,7 +113,7 @@
       "note": "2026-11-18 20:55 真机 5/5：登录/裸 mxc 检查/加密房发送/解密时间线/双账号投递"
     },
     "my-hub-live": {
-      "status": "failed",
+      "status": "passed",
       "last_run": {
         "backend_image": "synapse-rust:6.3.0-173e8f75d",
         "backend_started_at": "2026-11-18T11:27:05.584678359Z",
@@ -125,12 +125,12 @@
         "apk_mtime": null
       },
       "result": {
-        "passed": 3,
-        "failed": 3,
+        "passed": 6,
+        "failed": 0,
         "skipped": 0,
-        "duration_s": 282
+        "duration_s": 162
       },
-      "note": "**FLAKY，非产品缺陷**。2026-11-18/19 共 6 次真机跑，失败点持续漂移：4/6（路由不可达）→5/6（存储管理超时）→5/6（推送设置未跳转）→6/6→5/6（首条九宫格登录 180s）→3/6（设置/推送/好友隐私，同因“登录表单未渲染出 3 个输入框”）。根因：浏览器态没有系统密钥库 ⇒ 每次登录触发“设置/输入本地解锁密码”门禁，弹层与登录表单渲染竞争；真机有密钥库不会触发。落点校验（FE-F5）已加且 6 次跑中 0 次误伤"
+      "note": "2026-11-19 10:4x 连续两次 6/6（2.8m / 2.7m，各用例 22–37s 无卡顿）。此前 flaky 由四个原因叠加，均已消除：① pushMobileRoute 的 $router 固定重试不足（改 waitForFunction）；② 通知历史断言的 data-testid 与组件输出的 data-test 不符；③ loginOnMobileUi 的门禁 dismiss 预算 300ms 太短（改 1s，且门禁仍在就返回 0 逼 poll 继续等）；④ 工作区曾处于拆文件的 in-flight 中间态（timelineOutcomes 导出搬走但 import 未改），现已自洽。结论：非产品缺陷；浏览器态无密钥库必然触发门禁，属既定前提"
     },
     "notification-unread-live": {
       "status": "passed",

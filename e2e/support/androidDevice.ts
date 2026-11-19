@@ -233,10 +233,25 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
   // 表单容器先出现、内部 input 稍后才挂载（Vue 分步渲染 + 首屏资源竞争）。
   // 直接 nth(1).fill() 会在 input 尚未存在时抛 "element(s) not found"，
   // 看起来像登录失败，实际是时序问题。等够 3 个 input 再填；等待期间顺手点掉门禁弹层。
+  //
+  // ⚠️ 门禁处置的两个坑（2026-11-19 实测，`my-hub-live` 多条用例因此 flaky）：
+  // 1. `dismissLocalUnlockDialog` 的 timeout 是「等弹窗出现」的上限；原先给 300ms，
+  //    而弹窗有进场动画，常常等不到 attached 就返回 false ⇒ 「点了但没点到」，
+  //    下一轮表单照样被遮，直到吃满 formTimeoutMs。这里给 1s。
+  // 2. 只要门禁仍在，就**直接返回 0**：逼 poll 继续等到它真的消失。否则可能数到
+  //    「被遮住时的中间态 input 数量」，把尚未完成的渲染当成结果。
+  //    门禁会在 App 启动与 crypto 初始化两个阶段各出现一次（见 `localUnlockGate.ts`）。
+  const GATE_SKIP_SELECTOR = '[data-test="local-unlock-skip"]'
   await expect
     .poll(
       async () => {
-        await dismissLocalUnlockDialog(page, 300)
+        await dismissLocalUnlockDialog(page, 1_000)
+        const gateStillThere = await page
+          .locator(GATE_SKIP_SELECTOR)
+          .first()
+          .isVisible()
+          .catch(() => false)
+        if (gateStillThere) return 0
         return form.locator('input').count()
       },
       { timeout: formTimeoutMs, message: '登录表单未渲染出 3 个输入框（可能被解锁门禁遮住）' }
