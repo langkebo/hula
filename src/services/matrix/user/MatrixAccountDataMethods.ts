@@ -1,5 +1,6 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import { getMatrixAccessToken } from '@/services/matrix/matrixClientAccessor'
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import {
@@ -235,7 +236,10 @@ export abstract class MatrixAccountDataMethods extends MatrixAccountProfileDevic
 
     // Worker 路径：在 worker 线程发起单次请求，避免阻塞主线程
     if (matrixWorkerHost.isStarted) {
-      const accessToken = client.getAccessToken()
+      // token 走唯一读入口（AR-07b）：直读 `client.getAccessToken()` 会让
+      // check-matrix-layering 记一条新的 token_read_site，且刷新后可能拿到陈旧值
+      // （MatrixTokenManager 只回写 Rust 侧）。
+      const accessToken = getMatrixAccessToken()
       if (accessToken) {
         try {
           logger.debug('[MatrixAccount] getCapabilities() 通过 worker 获取')
