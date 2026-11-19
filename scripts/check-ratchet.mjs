@@ -429,6 +429,20 @@ const counters = {
     strip: stripCommentsOnly
   },
   /**
+   * `as any` —— 最经典的逃逸，本项目生产代码**当前为 0**（注释文字不计）。
+   *
+   * 加它不是为了还债，而是**防止回潮**：`as never` / `as unknown as` 都已设防，
+   * 若 `as any` 不设防，绕过门禁只需换个写法，前面两项也就形同虚设。
+   * 测试内的 `as any`（100+ 处，mock 简写）不计入。
+   */
+  as_any: {
+    pattern: /as\s+any\b/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly
+  },
+  /**
    * Rust 侧（src-tauri/src 下所有 .rs）的中文**字符串字面量**。
    *
    * 判据本意：后端不该把面向用户的文案写死成中文 —— 正确形态是「返回错误码/英文 +
