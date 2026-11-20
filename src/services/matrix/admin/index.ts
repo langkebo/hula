@@ -47,6 +47,7 @@ export type {
   CleanupTokensResponse
 } from './AdminCleanupService'
 export { adminCleanupService } from './AdminCleanupService'
+export type { AdminMediaDetail } from './mediaServiceTypes'
 export { adminService }
 /** 联邦子服务实例：与 `adminService.federation` 同一对象，供 composable 直接消费。 */
 export const adminFederationService = adminService.federation

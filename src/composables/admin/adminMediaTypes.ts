@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import type { adminService, MediaInfo } from '@/services/matrix/admin'
+import type { AdminMediaDetail, adminService, MediaInfo } from '@/services/matrix/admin'
 import type { GlobalMediaQuarantineChange, MediaQuarantineChange, RoomMediaItem } from '@/services/matrix/sdk'
 
 type MediaListPage = Awaited<ReturnType<typeof adminService.getMediaList>>
@@ -17,7 +17,7 @@ export interface UseAdminMedia {
   library: Ref<MediaLibraryItem[]>
   libraryNextBatch: Ref<string | null>
   libraryLoading: Ref<boolean>
-  selectedMedia: Ref<MediaInfo | null>
+  selectedMedia: Ref<AdminMediaDetail | null>
   detailLoading: Ref<boolean>
   quarantineChanges: Ref<GlobalMediaQuarantineChange[]>
   quarantineNextBatch: Ref<number>

@@ -21,6 +21,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import { type MediaLibraryItem, type UseAdminMedia, useAdminMedia } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { resolveMxcToHttp } from '@/services/matrix/media/mxcUrl'
 import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
@@ -58,6 +59,13 @@ const policyBeforeTs = ref<number | null>(null)
 const policyMaxSize = ref<number | null>(null)
 /** 两个条件均为空时不设置任何过滤条件，确认按钮需禁用并提示风险。 */
 const policyEmpty = computed(() => !policyBeforeTs.value && !policyMaxSize.value)
+
+/** 详情预览地址：后端 2026-11-20 起给出 `content_uri`（synapse-rust 5b312df5d）。 */
+const previewUrl = computed<string | null>(() => {
+  const uri = selectedMedia.value?.content_uri
+  if (!uri) return null
+  return resolveMxcToHttp(matrixClientService.getClient(), uri, 480, 480)
+})
 /** 加载完成且媒体库为空时才展示空态 */
 const isEmptyLibrary = computed(() => !libraryLoading.value && library.value.length === 0)
 /** 按「服务器名 + 媒体 ID」直查：用于媒体库列表未覆盖跨服务器场景。 */
@@ -297,6 +305,14 @@ onMounted(() => {
 
     <n-drawer :show="detailVisible" :width="520" placement="right" @update:show="handleDetailVisibleChange">
       <n-drawer-content :title="t('admin.media.detail.title')" closable>
+        <div v-if="previewUrl" class="media-preview">
+          <img
+            v-if="selectedMedia?.media_type?.startsWith('image/')"
+            :src="previewUrl"
+            :alt="selectedMedia?.upload_name || selectedMedia?.media_id || ''"
+            loading="lazy" />
+          <a v-else :href="previewUrl" target="_blank" rel="noopener noreferrer">{{ previewUrl }}</a>
+        </div>
         <n-descriptions v-if="selectedMedia" :column="1" bordered size="small">
           <n-descriptions-item :label="t('admin.media.column.mediaId')">
             {{ selectedMedia.media_id }}
@@ -361,5 +377,18 @@ onMounted(() => {
 <style scoped>
 .media-library-panel {
   padding-top: 8px;
+}
+
+.media-preview {
+  margin-bottom: 12px;
+  max-height: 320px;
+  overflow: auto;
+}
+.media-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 </style>
