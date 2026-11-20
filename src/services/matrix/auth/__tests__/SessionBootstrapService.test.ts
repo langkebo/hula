@@ -5,6 +5,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { SessionBootstrapService } from '../SessionBootstrapService'
 import type { MatrixPostLoginBootstrapOptions, SessionRuntimeHost } from '../sessionRuntimeInternal'
 import { SessionRuntimeState } from '../sessionRuntimeInternal'
+import { makeWhoamiIdentity } from './fixtures/session'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -334,9 +335,9 @@ describe('SessionBootstrapService', () => {
       mocks.getUserInfo.mockReturnValue(undefined)
       mocks.getStoredTokens.mockResolvedValue({ uid: null, token: 'tok' })
       const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
-      vi.mocked(matrixClientService.resolveIdentityByWhoami).mockResolvedValueOnce({
-        userId: '@whoami:matrix.test'
-      })
+      vi.mocked(matrixClientService.resolveIdentityByWhoami).mockResolvedValueOnce(
+        makeWhoamiIdentity({ userId: '@whoami:matrix.test' })
+      )
 
       const service = new SessionBootstrapService(host, state)
       await service.ensureClientReady()

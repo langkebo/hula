@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeSecureStorageBackendInfo } from './fixtures/secureStorage'
 
 /**
  * crypto store 的 storageKey 单元测试。
@@ -221,12 +222,13 @@ describe('cryptoStorageKey', () => {
     })
 
     it('降级（仅加密文件 fallback）时走 warn，且**不得**出现 keychain 字样', async () => {
-      hoisted.getSecureStorageBackendInfo.mockResolvedValueOnce({
-        available: true,
-        backend: 'encrypted_file_fallback',
-        nativeAvailable: false,
-        degraded: true
-      })
+      hoisted.getSecureStorageBackendInfo.mockResolvedValueOnce(
+        makeSecureStorageBackendInfo({
+          backend: 'encrypted_file_fallback',
+          nativeAvailable: false,
+          degraded: true
+        })
+      )
 
       const key = await getOrCreateCryptoStorageKey('@alice:hs', 'DEV1')
 

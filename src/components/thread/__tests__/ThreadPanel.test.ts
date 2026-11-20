@@ -1,6 +1,7 @@
 import { shallowMount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '@/services/matrix/MatrixClientService'
+import { makeThreadStatistics, makeThreadSubscription } from '@/services/matrix/messaging/__tests__/fixtures/thread'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import ThreadPanel from '../ThreadPanel.vue'
 
@@ -221,12 +222,10 @@ describe('ThreadPanel 线程冻结/静音', () => {
   })
 
   it('静音与取消静音复用订阅接口并回写状态', async () => {
-    const muteSpy = vi
-      .spyOn(matrixThreadService, 'muteThreadViaApi')
-      .mockResolvedValueOnce({ notificationLevel: 'muted', isMuted: true })
+    const muteSpy = vi.spyOn(matrixThreadService, 'muteThreadViaApi').mockResolvedValueOnce(makeThreadSubscription())
     const subscribeSpy = vi
       .spyOn(matrixThreadService, 'subscribeToThreadViaApi')
-      .mockResolvedValueOnce({ notificationLevel: 'all', isMuted: false })
+      .mockResolvedValueOnce(makeThreadSubscription({ notificationLevel: 'all', isMuted: false }))
 
     const wrapper = mountPanel()
     await vm(wrapper).handleToggleMute()
@@ -276,12 +275,7 @@ describe('ThreadPanel 统计/已读/删除/撤回', () => {
   })
 
   it('打开线程时拉取统计并展示回复数与参与人数', async () => {
-    const statsSpy = vi.spyOn(matrixThreadService, 'getThreadStatsViaApi').mockResolvedValueOnce({
-      totalReplies: 3,
-      totalParticipants: 2,
-      totalEdits: 0,
-      totalRedactions: 0
-    })
+    const statsSpy = vi.spyOn(matrixThreadService, 'getThreadStatsViaApi').mockResolvedValueOnce(makeThreadStatistics())
 
     const wrapper = mountPanel()
     await vm(wrapper).loadThreadStats()

@@ -1,6 +1,6 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
-import type { AdminRoomTokenSync, RoomInfo } from '@/services/matrix/admin/AdminTypes'
+import type { AdminRoomForwardExtremitiesInfo, AdminRoomTokenSync, RoomInfo } from '@/services/matrix/admin/AdminTypes'
 import type { RoomStatsOverview } from '@/services/matrix/sdk'
 
 export interface AdminRoomGovernanceState {
@@ -42,8 +42,8 @@ export interface AdminRoomGovernanceState {
   roomSearchLoading: Ref<boolean>
   searchInRoom: (searchTerm: string) => Promise<void>
 
-  /** 前向极值 */
-  forwardExtremities: Ref<Array<Record<string, unknown>>>
+  /** 前向极点数（后端返回计数，`null` 表示读取失败） */
+  forwardExtremities: Ref<AdminRoomForwardExtremitiesInfo | null>
   forwardExtremitiesLoading: Ref<boolean>
   loadForwardExtremities: () => Promise<void>
 
@@ -80,7 +80,7 @@ export function useAdminRoomGovernance(
   const roomSearchResults = ref<Array<Record<string, unknown>>>([])
   const roomSearchLoading = ref(false)
 
-  const forwardExtremities = ref<Array<Record<string, unknown>>>([])
+  const forwardExtremities = ref<AdminRoomForwardExtremitiesInfo | null>(null)
   const forwardExtremitiesLoading = ref(false)
 
   async function loadServerRoomStats() {
@@ -192,7 +192,7 @@ export function useAdminRoomGovernance(
     roomTokenSync.value = null
     roomEventContext.value = null
     roomSearchResults.value = []
-    forwardExtremities.value = []
+    forwardExtremities.value = null
   }
 
   return {

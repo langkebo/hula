@@ -14,6 +14,14 @@ vi.mock('../../MatrixClientService', () => ({
 }))
 
 import { matrixRendezvousService } from '../MatrixRendezvousService'
+import {
+  makeCreateSessionResponse,
+  makeGetMessagesResponse,
+  makeRendezvousLoginCredentials,
+  makeRendezvousMessage,
+  makeSendMessageResponse,
+  makeUpdateSessionResponse
+} from './fixtures/rendezvous'
 
 const makeManager = () => ({
   createSession: vi.fn(),
@@ -51,11 +59,7 @@ describe('MatrixRendezvousService', () => {
   })
 
   it('createSession 透传选项并返回二维码会话信息', async () => {
-    manager.createSession.mockResolvedValueOnce({
-      url: 'https://hs.test/rendezvous/s1',
-      session_id: 's1',
-      key: 'k1'
-    })
+    manager.createSession.mockResolvedValueOnce(makeCreateSessionResponse())
 
     const options = {
       intent: 'login.start' as const,
@@ -71,7 +75,7 @@ describe('MatrixRendezvousService', () => {
   })
 
   it('updateSession 传递状态与会话密钥', async () => {
-    manager.updateSession.mockResolvedValueOnce({ session_id: 's1', status: 'connected' })
+    manager.updateSession.mockResolvedValueOnce(makeUpdateSessionResponse())
 
     await expect(matrixRendezvousService.updateSession('s1', 'connected', 'k1')).resolves.toEqual({
       session_id: 's1',
@@ -81,9 +85,9 @@ describe('MatrixRendezvousService', () => {
   })
 
   it('sendMessage/getMessages 透传消息载荷', async () => {
-    const message = { type: 'm.login.protocol', content: { protocol: 'org.matrix.msc3906.v1' } }
-    manager.sendMessage.mockResolvedValueOnce({ session_id: 's1', message_id: 'm1', sent_ts: 1 })
-    manager.getMessages.mockResolvedValueOnce({ messages: [message] })
+    const message = makeRendezvousMessage()
+    manager.sendMessage.mockResolvedValueOnce(makeSendMessageResponse())
+    manager.getMessages.mockResolvedValueOnce(makeGetMessagesResponse([message]))
 
     await expect(matrixRendezvousService.sendMessage('s1', message, 'k1')).resolves.toEqual({
       session_id: 's1',
@@ -96,11 +100,7 @@ describe('MatrixRendezvousService', () => {
   })
 
   it('completeSession 返回登录凭证', async () => {
-    manager.completeSession.mockResolvedValueOnce({
-      access_token: 'at',
-      device_id: 'DEV',
-      user_id: '@u:hs'
-    })
+    manager.completeSession.mockResolvedValueOnce(makeRendezvousLoginCredentials())
 
     await expect(matrixRendezvousService.completeSession('s1', 'k1')).resolves.toEqual({
       access_token: 'at',
@@ -116,7 +116,7 @@ describe('MatrixRendezvousService', () => {
 
   it('pollForMessages 透传轮询选项', async () => {
     const onMessage = vi.fn()
-    manager.pollForMessages.mockResolvedValueOnce([{ type: 't', content: {} }])
+    manager.pollForMessages.mockResolvedValueOnce([makeRendezvousMessage({ type: 't', content: {} })])
 
     const result = await matrixRendezvousService.pollForMessages('s1', {
       interval: 500,

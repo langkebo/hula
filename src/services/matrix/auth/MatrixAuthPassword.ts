@@ -5,6 +5,7 @@ import {
   type MatrixRequestedEmailTokenResult,
   matrixRequestPasswordEmailToken,
   matrixResetPassword,
+  type PasswordResetResponse,
   runSdkFirst,
   withClientSecret
 } from './authHelpers'
@@ -52,14 +53,14 @@ export async function resetPassword(
   authType?: string,
   authToken?: string,
   clientSecret?: string
-): Promise<Record<string, unknown>> {
+): Promise<PasswordResetResponse> {
   const auth = buildResetPasswordAuth(authSession, authType, authToken, clientSecret)
 
   if (!auth) {
     return matrixResetPassword(newPassword, authSession, authType, authToken, clientSecret)
   }
 
-  return runSdkFirst(
+  return runSdkFirst<PasswordResetResponse>(
     () => createTemporaryMatrixClient().setPassword(auth, newPassword),
     () => matrixResetPassword(newPassword, authSession, authType, authToken, clientSecret),
     '重置密码失败'

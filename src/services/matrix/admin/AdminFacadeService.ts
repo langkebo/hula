@@ -7,7 +7,7 @@ import { AdminApiProbeService } from './AdminApiProbeService'
 import { AdminFacadeUserRoomMethods } from './AdminFacadeUserRoomMethods'
 import { AdminModerationService } from './AdminModerationService'
 import { AdminServerNotificationService } from './AdminServerNotificationService'
-import type { ServerHealth, ServerStats, ServerStatus, ServerVersion } from './AdminTypes'
+import type { AdminServerConfigInfo, ServerHealth, ServerStats, ServerStatus, ServerVersion } from './AdminTypes'
 import { AdminApplicationService } from './ApplicationService'
 import { AdminBackgroundUpdateService } from './BackgroundUpdateService'
 import { AdminExternalServiceService } from './ExternalServiceService'
@@ -183,7 +183,7 @@ class AdminFacadeService extends AdminFacadeUserRoomMethods {
     return this.server.getServerVersion()
   }
 
-  async getServerConfig(): Promise<Record<string, unknown> | null> {
+  async getServerConfig(): Promise<AdminServerConfigInfo | null> {
     return this.server.getServerConfig()
   }
 

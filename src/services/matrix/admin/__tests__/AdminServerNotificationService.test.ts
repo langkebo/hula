@@ -1,4 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeCreateNotificationResult,
+  makeSendServerNoticeResult,
+  makeServerNotice,
+  makeServerNoticePage,
+  makeSystemNotificationPage,
+  makeSystemNotificationWire
+} from '../__tests__/fixtures/serverNotification'
 import { AdminServerNotificationService } from '../AdminServerNotificationService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -27,7 +35,7 @@ describe('AdminServerNotificationService', () => {
   })
 
   it('sendServerNotice 返回 eventId 且失败时向上抛出', async () => {
-    admin.sendServerNotice.mockResolvedValueOnce({ event_id: '$notice1' })
+    admin.sendServerNotice.mockResolvedValueOnce(makeSendServerNoticeResult({ event_id: '$notice1' }))
     const content = { msgtype: 'm.text', body: 'hello' }
 
     await expect(service.sendServerNotice('@u:hs', content)).resolves.toEqual({ eventId: '$notice1' })
@@ -38,9 +46,7 @@ describe('AdminServerNotificationService', () => {
   })
 
   it('getServerNotices 映射通知列表字段', async () => {
-    admin.getServerNotices.mockResolvedValueOnce({
-      notices: [{ user_id: '@u:hs', sent_ts: 111, content: { body: 'hi' } }]
-    })
+    admin.getServerNotices.mockResolvedValueOnce(makeServerNoticePage({ notices: [makeServerNotice()] }))
 
     await expect(service.getServerNotices(10)).resolves.toEqual({
       notices: [{ userId: '@u:hs', sentTs: 111, content: { body: 'hi' } }]
@@ -57,7 +63,7 @@ describe('AdminServerNotificationService', () => {
   })
 
   it('createSystemNotification 组装 target_users 请求体', async () => {
-    admin.createNotification.mockResolvedValueOnce({ notification_id: 'n1' })
+    admin.createNotification.mockResolvedValueOnce(makeCreateNotificationResult({ notification_id: 'n1' }))
 
     await expect(service.createSystemNotification('维护公告', 'warning', ['@a:hs'])).resolves.toEqual({
       notificationId: 'n1'
@@ -70,13 +76,21 @@ describe('AdminServerNotificationService', () => {
   })
 
   it('getSystemNotifications 归一化条目并映射 next_token', async () => {
-    admin.listNotifications.mockResolvedValueOnce({
-      notifications: [
-        { notification_id: 'n1', content: '维护', type: 'warning', target_users: ['@a:hs'], created_ts: 1700000000 },
-        { id: 'n2', content: '公告' }
-      ],
-      next_token: 'tok'
-    })
+    admin.listNotifications.mockResolvedValueOnce(
+      makeSystemNotificationPage({
+        notifications: [
+          makeSystemNotificationWire({
+            notification_id: 'n1',
+            content: '维护',
+            type: 'warning',
+            target_users: ['@a:hs'],
+            created_ts: 1700000000
+          }),
+          makeSystemNotificationWire({ id: 'n2', content: '公告' })
+        ],
+        next_token: 'tok'
+      })
+    )
 
     await expect(service.getSystemNotifications(20, 'from-1')).resolves.toEqual({
       notifications: [
@@ -97,7 +111,7 @@ describe('AdminServerNotificationService', () => {
   })
 
   it('getSystemNotification 返回归一化条目，空响应返回 null', async () => {
-    admin.getNotification.mockResolvedValueOnce({ notification_id: 'n1', content: '维护' })
+    admin.getNotification.mockResolvedValueOnce(makeSystemNotificationWire({ notification_id: 'n1', content: '维护' }))
     await expect(service.getSystemNotification('n1')).resolves.toEqual({
       id: 'n1',
       content: '维护',

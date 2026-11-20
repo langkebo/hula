@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { roomServiceTypesError } from '@/services/matrix/room/__tests__/fixtures/roomSettings'
 import RoomServiceTypesSection from '../RoomServiceTypesSection.vue'
 
 vi.mock('vue-i18n', () => ({
@@ -77,7 +78,7 @@ describe('RoomServiceTypesSection — 房间服务类型只读区块', () => {
   })
 
   it('读取失败时展示失败与重试，重试成功后渲染列表', async () => {
-    mocks.getRoomServiceTypes.mockResolvedValueOnce({ status: 'error' })
+    mocks.getRoomServiceTypes.mockResolvedValueOnce(roomServiceTypesError())
     const wrapper = await mountSection()
 
     expect(wrapper.find('[data-testid="service-types-error"]').exists()).toBe(true)

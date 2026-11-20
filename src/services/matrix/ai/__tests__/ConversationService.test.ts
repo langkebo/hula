@@ -21,6 +21,7 @@ vi.mock('@/services/matrix/MatrixHttpClient', () => ({
 }))
 
 import { conversationService } from '../ConversationService'
+import { makeConversation, makeConversationMessage, makeConversationPage } from './fixtures/conversation'
 
 describe('MatrixConversationService', () => {
   beforeEach(() => {
@@ -29,9 +30,9 @@ describe('MatrixConversationService', () => {
 
   describe('page', () => {
     it('调用 conversationPage 端点并传分页参数', async () => {
-      mockRequest.mockResolvedValueOnce({ list: [{ id: 'c1' }], total: 1 })
+      mockRequest.mockResolvedValueOnce(makeConversationPage({ list: [makeConversation()], total: 1 }))
       const result = await conversationService.page({ pageNo: 1, pageSize: 50 })
-      expect(result).toEqual({ list: [{ id: 'c1' }], total: 1 })
+      expect(result).toEqual(makeConversationPage({ list: [makeConversation()], total: 1 }))
       expect(mockRequest).toHaveBeenCalledWith(
         { url: 'conversationPage', params: { pageNo: 1, pageSize: 50 } },
         undefined,
@@ -42,7 +43,7 @@ describe('MatrixConversationService', () => {
     })
 
     it('不传参数时 params 为 undefined', async () => {
-      mockRequest.mockResolvedValueOnce({ list: [], total: 0 })
+      mockRequest.mockResolvedValueOnce(makeConversationPage())
       await conversationService.page()
       expect(mockRequest).toHaveBeenCalledWith({ url: 'conversationPage', params: undefined }, undefined, {
         logPrefix: 'MatrixConversation'
@@ -58,7 +59,7 @@ describe('MatrixConversationService', () => {
   describe('create', () => {
     it('POST 请求体并返回新建的 Conversation', async () => {
       const params = { roleId: 'r1', title: '标题', modelId: 'm1' }
-      mockRequest.mockResolvedValueOnce({ id: 'c1', ...params })
+      mockRequest.mockResolvedValueOnce(makeConversation({ id: 'c1', ...params }))
       const result = await conversationService.create(params)
       expect(result.id).toBe('c1')
       expect(mockRequest).toHaveBeenCalledWith(
@@ -79,7 +80,7 @@ describe('MatrixConversationService', () => {
   describe('update', () => {
     it('POST 请求体（含 id）并返回更新后的 Conversation', async () => {
       const params = { id: 'c1', title: '新标题', isPinned: true }
-      mockRequest.mockResolvedValueOnce({ id: 'c1', title: '新标题', isPinned: true })
+      mockRequest.mockResolvedValueOnce(makeConversation(params))
       const result = await conversationService.update(params)
       expect(result.title).toBe('新标题')
       expect(mockRequest).toHaveBeenCalledWith(
@@ -117,7 +118,7 @@ describe('MatrixConversationService', () => {
 
   describe('messageListByConversationId', () => {
     it('传 conversationId 作为 query 参数并返回消息数组', async () => {
-      const messages = [{ id: 'msg1', conversationId: 'c1', role: 'user', content: 'hi' }]
+      const messages = [makeConversationMessage()]
       mockRequest.mockResolvedValueOnce(messages)
       const result = await conversationService.messageListByConversationId({ conversationId: 'c1' })
       expect(result).toEqual(messages)

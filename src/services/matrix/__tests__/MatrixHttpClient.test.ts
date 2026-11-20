@@ -75,7 +75,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('uses the accessor-provided Matrix client for GET requests', async () => {
-    authedRequestWithPrefix.mockResolvedValueOnce({ ok: true })
+    authedRequestWithPrefix.mockResolvedValueOnce({ ok: true }) // fixture-literal-ok: 传输层透传任意 JSON，非后端契约响应
 
     const result = await matrixHttpClient.get<{ ok: boolean }>('/test')
 
@@ -147,7 +147,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('request 不再操作 window.$loadingBar（即使传入 showLoading）', async () => {
-    authedRequestWithPrefix.mockResolvedValueOnce({ ok: true })
+    authedRequestWithPrefix.mockResolvedValueOnce({ ok: true }) // fixture-literal-ok: 传输层透传任意 JSON，非后端契约响应
 
     await matrixHttpClient.request('GET', '/test', {
       showLoading: true

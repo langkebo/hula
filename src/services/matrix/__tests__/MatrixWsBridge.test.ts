@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { WsResponseMessageType } from '@/services/legacy/wsType'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { ClientEvent, RoomEvent, RoomStateEvent } from '@/services/matrix/sdk'
+import { makeRoomStub } from './fixtures/room'
 
 const mockEmit = vi.fn()
 vi.mock('@/composables/common/useMitt', () => ({
@@ -161,10 +162,12 @@ describe('MatrixWsBridge', () => {
 
   it('emits ROOM_INFO_CHANGE on m.room.name state event', async () => {
     const { matrixWsBridge } = await import('../MatrixWsBridge')
-    fakeClient.getRoom.mockReturnValueOnce({
-      name: 'Alpha',
-      getMxcAvatarUrl: () => 'mxc://matrix.test/abc'
-    })
+    fakeClient.getRoom.mockReturnValueOnce(
+      makeRoomStub({
+        name: 'Alpha',
+        getMxcAvatarUrl: () => 'mxc://matrix.test/abc'
+      })
+    )
     matrixWsBridge.start()
 
     const event = {

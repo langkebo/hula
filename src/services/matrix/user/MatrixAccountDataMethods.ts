@@ -1,7 +1,7 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getMatrixAccessToken } from '@/services/matrix/matrixClientAccessor'
-import type { MatrixClient } from '@/services/matrix/sdk'
+import type { Capabilities, IProtocol, MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import {
   cacheInvitePolicy,
@@ -22,6 +22,17 @@ export interface MyRoomEntry {
   name?: string | undefined
   avatarUrl?: string | undefined
   membership: 'join' | 'invite' | 'leave' | string
+}
+
+/**
+ * `GET /events` 长轮询响应。
+ * `chunk` 为原始客户端事件 JSON（字段随事件类型变化，保持开放），
+ * 失败时本服务返回空对象，故全部字段可选。
+ */
+export interface EventStreamResponse {
+  chunk?: Array<Record<string, unknown>>
+  start?: string
+  end?: string
 }
 
 interface MyRoomsSdkResponse {
@@ -230,7 +241,7 @@ export abstract class MatrixAccountDataMethods extends MatrixAccountProfileDevic
    * 获取 homeserver 能力表。
    * 优先经 Worker 线程单次请求以避免阻塞主线程，失败降级到 SDK（拼回 capabilities + unstable_features）。
    */
-  async getCapabilities(): Promise<Record<string, unknown>> {
+  async getCapabilities(): Promise<Capabilities> {
     const client = this.getClient()
     logger.debug(`[MatrixAccount] getCapabilities() 开始: workerStarted=${matrixWorkerHost.isStarted}`)
 
@@ -261,7 +272,7 @@ export abstract class MatrixAccountDataMethods extends MatrixAccountProfileDevic
     try {
       const capabilities = await client.getCapabilities()
       const unstableFeatures = client.getUnstableFeatures()
-      const result: Record<string, unknown> = { ...capabilities }
+      const result: Capabilities = { ...capabilities }
       if (unstableFeatures) result.unstable_features = unstableFeatures
       logger.debug('[MatrixAccount] getCapabilities() 成功（SDK）')
       return result
@@ -273,13 +284,13 @@ export abstract class MatrixAccountDataMethods extends MatrixAccountProfileDevic
   }
 
   /** 获取 homeserver 支持的第三方协议（身份服务器等）；失败返回空对象。 */
-  async getThirdPartyProtocols(): Promise<Record<string, unknown>> {
+  async getThirdPartyProtocols(): Promise<Record<string, IProtocol>> {
     const client = this.getClient()
 
     try {
       const result = await client.getThirdpartyProtocols()
       logger.info('[MatrixAccount] 获取第三方协议成功')
-      return result as Record<string, unknown>
+      return result
     } catch (err) {
       logger.error(`[MatrixAccount] 获取第三方协议失败: ${err}`)
       return {}
@@ -335,13 +346,13 @@ export abstract class MatrixAccountDataMethods extends MatrixAccountProfileDevic
   }
 
   /** 拉取 `/events` 事件流（长轮询，带 timeout）；失败返回空对象。 */
-  async getEventStream(from?: string, timeout: number = 30000): Promise<Record<string, unknown>> {
+  async getEventStream(from?: string, timeout: number = 30000): Promise<EventStreamResponse> {
     const client = this.getClient()
 
     try {
       const queryParams: Record<string, string> = { timeout: String(timeout) }
       if (from) queryParams.from = from
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/events', queryParams)
+      const result = await authedRequestWithPath<EventStreamResponse>(client, 'GET', '/events', queryParams)
       return result
     } catch (err) {
       logger.error(`[MatrixAccount] 获取事件流失败: ${err}`)

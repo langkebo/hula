@@ -1,4 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeClaimDehydratedDeviceResponse,
+  makeDehydratedDeviceData,
+  makeDehydratedDeviceIdResponse,
+  makeDehydratedDeviceInfo,
+  makeDehydratedDevicesResponse
+} from '@/services/matrix/crypto/__tests__/fixtures/dehydratedDevice'
 import matrixClientService from '../../MatrixClientService'
 import { matrixDehydratedDeviceService } from '../MatrixDehydratedDeviceService'
 
@@ -22,9 +29,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('createDevice', () => {
     it('should create dehydrated device', async () => {
-      mockManager.createDevice.mockResolvedValueOnce({
-        device_id: 'DEVID123'
-      })
+      mockManager.createDevice.mockResolvedValueOnce(makeDehydratedDeviceIdResponse())
 
       const result = await matrixDehydratedDeviceService.createDevice({
         initialDeviceDisplayName: 'Test Device'
@@ -46,13 +51,15 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('getDevice', () => {
     it('should get device by ID', async () => {
-      mockManager.getDevice.mockResolvedValueOnce({
-        device_id: 'DEVID123',
-        initial_device_display_name: 'Test Device',
-        device_data: {},
-        created_at: Date.now(),
-        expires_at: Date.now() + 3600000
-      })
+      mockManager.getDevice.mockResolvedValueOnce(
+        makeDehydratedDeviceInfo({
+          device_id: 'DEVID123',
+          initial_device_display_name: 'Test Device',
+          device_data: makeDehydratedDeviceData(),
+          created_at: Date.now(),
+          expires_at: Date.now() + 3600000
+        })
+      )
 
       const result = await matrixDehydratedDeviceService.getDevice('DEVID123')
 
@@ -70,12 +77,12 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('getDevices', () => {
     it('should list all dehydrated devices', async () => {
-      mockManager.getDevices.mockResolvedValueOnce({
-        devices: [
-          { device_id: 'DEVID1', initial_device_display_name: 'Device 1' },
-          { device_id: 'DEVID2', initial_device_display_name: 'Device 2' }
-        ]
-      })
+      mockManager.getDevices.mockResolvedValueOnce(
+        makeDehydratedDevicesResponse([
+          makeDehydratedDeviceInfo({ device_id: 'DEVID1', initial_device_display_name: 'Device 1' }),
+          makeDehydratedDeviceInfo({ device_id: 'DEVID2', initial_device_display_name: 'Device 2' })
+        ])
+      )
 
       const result = await matrixDehydratedDeviceService.getDevices()
 
@@ -93,10 +100,9 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('claimDevice', () => {
     it('should claim device with signing key', async () => {
-      mockManager.claimDevice.mockResolvedValueOnce({
-        access_token: 'token123',
-        device_id: 'DEVID123'
-      })
+      mockManager.claimDevice.mockResolvedValueOnce(
+        makeClaimDehydratedDeviceResponse({ access_token: 'token123', device_id: 'DEVID123' })
+      )
 
       const result = await matrixDehydratedDeviceService.claimDevice('DEVID123', 'signing_key')
 
@@ -114,9 +120,12 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('updateDeviceData', () => {
     it('should update device data', async () => {
-      mockManager.updateDeviceData.mockResolvedValueOnce({ device_id: 'DEVID123' })
+      mockManager.updateDeviceData.mockResolvedValueOnce(makeDehydratedDeviceIdResponse())
 
-      const result = await matrixDehydratedDeviceService.updateDeviceData('DEVID123', { key: 'value' })
+      const result = await matrixDehydratedDeviceService.updateDeviceData('DEVID123', {
+        algorithm: 'org.matrix.msc3814.v1',
+        account: 'acc'
+      })
 
       expect(result).toBe(true)
     })
@@ -124,7 +133,10 @@ describe('MatrixDehydratedDeviceService', () => {
     it('should return false on error', async () => {
       mockManager.updateDeviceData.mockRejectedValueOnce(new Error('Network error'))
 
-      const result = await matrixDehydratedDeviceService.updateDeviceData('DEVID123', { key: 'value' })
+      const result = await matrixDehydratedDeviceService.updateDeviceData('DEVID123', {
+        algorithm: 'org.matrix.msc3814.v1',
+        account: 'acc'
+      })
 
       expect(result).toBe(false)
     })
@@ -132,7 +144,7 @@ describe('MatrixDehydratedDeviceService', () => {
 
   describe('deleteDevice', () => {
     it('should delete device', async () => {
-      mockManager.deleteDevice.mockResolvedValueOnce({})
+      mockManager.deleteDevice.mockResolvedValueOnce(makeDehydratedDeviceIdResponse())
 
       const result = await matrixDehydratedDeviceService.deleteDevice('DEVID123')
 

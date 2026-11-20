@@ -1,5 +1,6 @@
 import { type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
+import type { IContent } from '@/services/matrix/sdk'
 import type { MessageType } from '@/types/message'
 import matrixMessageAdapter from '../messaging/MatrixMessageAdapter'
 import { getMessagePreviewByType, getRoomTimelinePreview } from './roomPreviewText'
@@ -7,6 +8,19 @@ import { getMessagePreviewByType, getRoomTimelinePreview } from './roomPreviewTe
 interface SlidingSyncUnreadCounts {
   notificationCount?: number
   highlightCount?: number
+}
+
+/**
+ * 滑动同步时间线原始事件（SDK 事件对象的 JSON 视图）。
+ * 后端可能追加扩展字段，故保留索引签名。
+ */
+export interface SlidingSyncRawEvent {
+  event_id?: string
+  type?: string
+  sender?: string
+  origin_server_ts?: number
+  content?: IContent
+  [field: string]: unknown
 }
 
 /**
@@ -87,11 +101,7 @@ function isDisplayableMessageEvent(event: MatrixEvent): boolean {
  * - 位置/信标事件使用 MatrixMessageAdapter 解析为 LocationBody/BeaconBody
  * - 其余类型保持原始 content 透传，兼容现有渲染路径
  */
-function buildMessageBody(
-  content: Record<string, unknown>,
-  body: string,
-  messageType: MsgEnum
-): MessageType['message']['body'] {
+function buildMessageBody(content: IContent, body: string, messageType: MsgEnum): MessageType['message']['body'] {
   if (messageType === MsgEnum.LOCATION || messageType === MsgEnum.BEACON) {
     return matrixMessageAdapter.convertMatrixContent(content, messageType) as MessageType['message']['body']
   }
@@ -142,8 +152,8 @@ function convertMatrixEventsToMessages(events: MatrixEvent[]): MessageType[] {
 /**
  * 将滑动同步的时间线事件转换为 Tjg 内部的 MessageType 格式
  */
-function convertTimelineEventToMessage(roomId: string, event: Record<string, unknown>): MessageType {
-  const content = (event.content ?? {}) as Record<string, unknown>
+function convertTimelineEventToMessage(roomId: string, event: SlidingSyncRawEvent): MessageType {
+  const content: IContent = event.content ?? {}
   const body = (content.body as string | undefined) ?? ''
   const messageType = matrixMessageAdapter.getMsgTypeFromEventLike(event.type as string, content)
 
@@ -171,7 +181,7 @@ function convertTimelineEventToMessage(roomId: string, event: Record<string, unk
 const matrixRoomStoreAdapter = {
   getTimelineEventPreview: getRoomTimelinePreview,
   getMessagePreview: (message: MessageType) =>
-    getMessagePreviewByType(message.message.type, message.message.body as Record<string, unknown>),
+    getMessagePreviewByType(message.message.type, message.message.body as IContent),
   convertRoomToRoomInfo,
   applySlidingSyncUnreadCounts,
   isDisplayableMessageEvent,

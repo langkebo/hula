@@ -35,6 +35,13 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminService } from '@/services/matrix/admin'
+import {
+  makeBatchCreateUserResult,
+  makeImpersonationTokens,
+  makeUserInfo,
+  makeUserListPage,
+  makeUserStatsListPage
+} from '@/services/matrix/admin/__tests__/fixtures/user'
 
 describe('useAdminUsers', () => {
   beforeEach(() => {
@@ -42,12 +49,9 @@ describe('useAdminUsers', () => {
   })
 
   it('loadUsers populates users ref via adminService.getUsers', async () => {
-    vi.mocked(adminService.getUsers).mockResolvedValueOnce({
-      users: [
-        { userId: '@a:s', displayname: 'Alice' },
-        { userId: '@b:s', displayname: 'Bob' }
-      ]
-    })
+    vi.mocked(adminService.getUsers).mockResolvedValueOnce(
+      makeUserListPage([makeUserInfo('@a:s', { displayname: 'Alice' }), makeUserInfo('@b:s', { displayname: 'Bob' })])
+    )
     const composable = useAdminUsers()
     await composable.loadUsers(50)
     expect(composable.users.value).toHaveLength(2)
@@ -55,12 +59,12 @@ describe('useAdminUsers', () => {
   })
 
   it('filteredUsers searches across userId, displayname and name', async () => {
-    vi.mocked(adminService.getUsers).mockResolvedValueOnce({
-      users: [
-        { userId: '@alice:s', displayname: 'Alice', name: 'alice' },
-        { userId: '@bob:s', displayname: 'Bob', name: 'bob' }
-      ]
-    })
+    vi.mocked(adminService.getUsers).mockResolvedValueOnce(
+      makeUserListPage([
+        makeUserInfo('@alice:s', { displayname: 'Alice', name: 'alice' }),
+        makeUserInfo('@bob:s', { displayname: 'Bob', name: 'bob' })
+      ])
+    )
     const c = useAdminUsers()
     await c.loadUsers()
     c.searchQuery.value = 'ali'
@@ -69,13 +73,13 @@ describe('useAdminUsers', () => {
   })
 
   it('filterRole narrows to admin or user role', async () => {
-    vi.mocked(adminService.getUsers).mockResolvedValueOnce({
-      users: [
-        { userId: '@admin:s', admin: true },
-        { userId: '@user1:s', admin: false },
-        { userId: '@user2:s', admin: false }
-      ]
-    })
+    vi.mocked(adminService.getUsers).mockResolvedValueOnce(
+      makeUserListPage([
+        makeUserInfo('@admin:s', { admin: true }),
+        makeUserInfo('@user1:s', { admin: false }),
+        makeUserInfo('@user2:s', { admin: false })
+      ])
+    )
     const c = useAdminUsers()
     await c.loadUsers()
     expect(c.filterRole.value).toBe('all')
@@ -89,12 +93,12 @@ describe('useAdminUsers', () => {
   })
 
   it('filterStatus narrows to active or deactivated', async () => {
-    vi.mocked(adminService.getUsers).mockResolvedValueOnce({
-      users: [
-        { userId: '@active:s', deactivated: false },
-        { userId: '@deact:s', deactivated: true }
-      ]
-    })
+    vi.mocked(adminService.getUsers).mockResolvedValueOnce(
+      makeUserListPage([
+        makeUserInfo('@active:s', { deactivated: false }),
+        makeUserInfo('@deact:s', { deactivated: true })
+      ])
+    )
     const c = useAdminUsers()
     await c.loadUsers()
     expect(c.filterStatus.value).toBe('all')
@@ -205,18 +209,18 @@ describe('useAdminUsers', () => {
 
   it('selectUser 同时加载管理员校验与服务端统计', async () => {
     vi.mocked(adminService.checkUserAdmin).mockResolvedValueOnce(true)
-    vi.mocked(adminService.getUserStatsList).mockResolvedValueOnce({ stats: [{ total: 3 }] })
+    vi.mocked(adminService.getUserStatsList).mockResolvedValueOnce(makeUserStatsListPage([{ total_users: 3 }]))
     const c = useAdminUsers()
     await c.selectUser({ userId: '@x:s' })
     expect(adminService.checkUserAdmin).toHaveBeenCalledWith('@x:s')
     expect(c.adminCheck.value).toBe(true)
-    expect(c.userStatsOverview.value).toEqual([{ total: 3 }])
+    expect(c.userStatsOverview.value).toEqual([{ total_users: 3 }])
   })
 
   it('selectUser(null) 重置管理员校验与模拟会话', async () => {
     const c = useAdminUsers()
     await c.selectUser({ userId: '@x:s' })
-    vi.mocked(adminService.loginUserAs).mockResolvedValueOnce({ accessToken: 'tok', deviceId: 'DEV' })
+    vi.mocked(adminService.loginUserAs).mockResolvedValueOnce(makeImpersonationTokens('tok', 'DEV'))
     await c.loginUserAs('@x:s')
     await c.selectUser(null)
     expect(c.adminCheck.value).toBeNull()
@@ -224,16 +228,13 @@ describe('useAdminUsers', () => {
   })
 
   it('refreshUserDetail 用 getUserById 更新选中用户与列表项', async () => {
-    vi.mocked(adminService.getUsers).mockResolvedValueOnce({
-      users: [{ userId: '@x:s', displayname: 'Old' }]
-    })
+    vi.mocked(adminService.getUsers).mockResolvedValueOnce(
+      makeUserListPage([makeUserInfo('@x:s', { displayname: 'Old' })])
+    )
     const c = useAdminUsers()
     await c.loadUsers()
     await c.selectUser({ userId: '@x:s', displayname: 'Old' })
-    vi.mocked(adminService.getUserById).mockResolvedValueOnce({
-      userId: '@x:s',
-      displayname: 'New'
-    })
+    vi.mocked(adminService.getUserById).mockResolvedValueOnce(makeUserInfo('@x:s', { displayname: 'New' }))
     const fresh = await c.refreshUserDetail()
     expect(fresh?.displayname).toBe('New')
     expect(c.selectedUser.value?.displayname).toBe('New')
@@ -292,7 +293,7 @@ describe('useAdminUsers', () => {
   })
 
   it('loginUserAs 成功时写入模拟会话', async () => {
-    vi.mocked(adminService.loginUserAs).mockResolvedValueOnce({ accessToken: 'tok', deviceId: 'DEV' })
+    vi.mocked(adminService.loginUserAs).mockResolvedValueOnce(makeImpersonationTokens('tok', 'DEV'))
     const c = useAdminUsers()
     const session = await c.loginUserAs('@x:s')
     expect(session).toEqual({ userId: '@x:s', accessToken: 'tok', deviceId: 'DEV' })
@@ -315,7 +316,7 @@ describe('useAdminUsers', () => {
   })
 
   it('clearImpersonation 清空模拟会话', async () => {
-    vi.mocked(adminService.loginUserAs).mockResolvedValueOnce({ accessToken: 'tok', deviceId: 'DEV' })
+    vi.mocked(adminService.loginUserAs).mockResolvedValueOnce(makeImpersonationTokens('tok', 'DEV'))
     const c = useAdminUsers()
     await c.loginUserAs('@x:s')
     c.clearImpersonation()
@@ -324,8 +325,8 @@ describe('useAdminUsers', () => {
 
   it('batchCreateUsers 透传参数并刷新列表', async () => {
     vi.mocked(adminService.batchCreateUsers).mockResolvedValueOnce([
-      { userId: '@a:s', success: true },
-      { userId: '@b:s', success: false }
+      makeBatchCreateUserResult('@a:s', true),
+      makeBatchCreateUserResult('@b:s', false)
     ])
     const c = useAdminUsers()
     const result = await c.batchCreateUsers([{ username: 'a', password: 'pw' }])

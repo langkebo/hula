@@ -52,6 +52,11 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
+import {
+  makeCaptchaResult,
+  makeCaptchaVerify,
+  makeRegisterSession
+} from '@/services/matrix/auth/__tests__/fixtures/captcha'
 import { useRegisterCaptcha } from '../useRegisterCaptcha'
 
 const REG_SESSION = 'reg-session-001'
@@ -60,21 +65,18 @@ const CAPTCHA_MXC = 'mxc://localhost/abcdef'
 const CAPTCHA_HTTP = 'http://localhost/_matrix/media/abcdef'
 const CAPTCHA_API_PATH = '/_matrix/client/v3/register/captcha/verify'
 
-const captchaFixture = {
+const captchaFixture = makeCaptchaResult({
   session: CAPTCHA_SESSION,
   api_path: CAPTCHA_API_PATH,
   mxc_url: CAPTCHA_MXC
-}
+})
 
 describe('useRegisterCaptcha', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockStartRegistrationSession.mockResolvedValue({
-      session: REG_SESSION,
-      flows: [{ type: 'm.login.dummy' }]
-    })
+    mockStartRegistrationSession.mockResolvedValue(makeRegisterSession({ session: REG_SESSION }))
     mockGetCaptcha.mockResolvedValue(captchaFixture)
-    mockVerifyCaptcha.mockResolvedValue({ success: true })
+    mockVerifyCaptcha.mockResolvedValue(makeCaptchaVerify())
     mockGetMediaUrl.mockReturnValue(CAPTCHA_HTTP)
   })
 
@@ -176,11 +178,7 @@ describe('useRegisterCaptcha', () => {
     })
 
     it('mxc_url 为空字符串时 captchaImage 为 null', async () => {
-      mockGetCaptcha.mockResolvedValueOnce({
-        session: CAPTCHA_SESSION,
-        api_path: CAPTCHA_API_PATH,
-        mxc_url: ''
-      })
+      mockGetCaptcha.mockResolvedValueOnce(makeCaptchaResult({ session: CAPTCHA_SESSION, mxc_url: '' }))
       const captcha = useRegisterCaptcha()
       await captcha.load()
       expect(captcha.captchaImage.value).toBeNull()
@@ -193,11 +191,7 @@ describe('useRegisterCaptcha', () => {
       await captcha.load()
       const newMxc = 'mxc://localhost/newimg'
       const newHttp = 'http://localhost/_matrix/media/newimg'
-      mockGetCaptcha.mockResolvedValueOnce({
-        session: CAPTCHA_SESSION,
-        api_path: CAPTCHA_API_PATH,
-        mxc_url: newMxc
-      })
+      mockGetCaptcha.mockResolvedValueOnce(makeCaptchaResult({ session: CAPTCHA_SESSION, mxc_url: newMxc }))
       mockGetMediaUrl.mockReturnValueOnce(newHttp)
       await captcha.refresh()
       expect(captcha.session.value).toBe(REG_SESSION)
@@ -257,7 +251,7 @@ describe('useRegisterCaptcha', () => {
       const captcha = useRegisterCaptcha()
       await captcha.load()
       captcha.captchaInput.value = 'WRONG'
-      mockVerifyCaptcha.mockResolvedValueOnce({ success: false })
+      mockVerifyCaptcha.mockResolvedValueOnce(makeCaptchaVerify({ success: false }))
       const ok = await captcha.verify()
       expect(ok).toBe(false)
       expect(captcha.verified.value).toBe(false)

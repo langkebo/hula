@@ -5,8 +5,10 @@
  * All methods delegate to the live CryptoApi / SDK managers via CryptoAdapterAccessors.
  */
 
+import type { IContent } from '@/services/matrix/sdk'
 import type { VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import type { CryptoAdapterAccessors, DeviceInfo, DeviceVerificationResult } from './cryptoAdapterTypes'
 
 const logger = createLogger('CryptoDeviceAdapter')
@@ -31,8 +33,8 @@ export class CryptoDeviceAdapter {
       const deviceMap = (await sdkDeviceKeysManager.getUserDevices(userId)) ?? {}
       const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId)
       return Object.entries(deviceMap).map(([deviceId, content]) => {
-        const keys = (content ?? {}) as Record<string, unknown>
-        const unsigned = (keys.unsigned ?? {}) as Record<string, unknown>
+        const keys: IContent = content ?? {}
+        const unsigned = unknownToObject(keys.unsigned) ?? {}
         return {
           deviceId,
           userId,
@@ -59,9 +61,9 @@ export class CryptoDeviceAdapter {
     const sdkDeviceKeysManager = this.accessors.getSDKDeviceKeysManager()
     if (sdkDeviceKeysManager) {
       const deviceMap = (await sdkDeviceKeysManager.getUserDevices(userId)) ?? {}
-      const keys = (deviceMap[deviceId] ?? null) as Record<string, unknown> | null
+      const keys: IContent | null = deviceMap[deviceId] ?? null
       if (keys) {
-        const unsigned = (keys.unsigned ?? {}) as Record<string, unknown>
+        const unsigned = unknownToObject(keys.unsigned) ?? {}
         const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId)
         return {
           deviceId,

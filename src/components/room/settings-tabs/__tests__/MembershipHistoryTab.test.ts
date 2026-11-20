@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { membershipEventsError } from '@/services/matrix/room/__tests__/fixtures/roomSettings'
 import MembershipHistoryTab from '../MembershipHistoryTab.vue'
 
 vi.mock('vue-i18n', () => ({
@@ -90,7 +91,7 @@ describe('MembershipHistoryTab — 成员变更历史', () => {
   })
 
   it('读取失败时展示局部失败并可重试', async () => {
-    mocks.getMembershipEvents.mockResolvedValueOnce({ status: 'error' })
+    mocks.getMembershipEvents.mockResolvedValueOnce(membershipEventsError())
     const wrapper = await mountTab()
 
     expect(wrapper.find('[data-testid="membership-history-error"]').exists()).toBe(true)

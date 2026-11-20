@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeSpaceInfo } from '@/services/matrix/room/__tests__/fixtures/space'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
@@ -31,7 +32,7 @@ describe('useSpaces', () => {
   afterEach(() => vi.resetAllMocks())
 
   it('load populates list and clears loading', async () => {
-    spaceServiceMock.getSpaces.mockResolvedValueOnce([{ spaceId: 's1', name: 'S', memberCount: 1, childCount: 0 }])
+    spaceServiceMock.getSpaces.mockResolvedValueOnce([makeSpaceInfo()])
     const { spaces, loading, load } = useSpaces()
     const promise = load()
     expect(loading.value).toBe(true)
@@ -48,13 +49,8 @@ describe('useSpaces', () => {
   })
 
   it('create reloads list on success', async () => {
-    spaceServiceMock.createSpace.mockResolvedValueOnce({
-      spaceId: 's1',
-      name: 'S',
-      memberCount: 1,
-      childCount: 0
-    })
-    spaceServiceMock.getSpaces.mockResolvedValueOnce([{ spaceId: 's1', name: 'S', memberCount: 1, childCount: 0 }])
+    spaceServiceMock.createSpace.mockResolvedValueOnce(makeSpaceInfo())
+    spaceServiceMock.getSpaces.mockResolvedValueOnce([makeSpaceInfo()])
     const { create, spaces } = useSpaces()
     const result = await create({ name: 'S' })
     expect(result?.spaceId).toBe('s1')
@@ -82,12 +78,7 @@ describe('useSpace', () => {
   })
 
   it('load populates space state', async () => {
-    spaceServiceMock.getSpace.mockResolvedValueOnce({
-      spaceId: 's1',
-      name: 'S',
-      memberCount: 3,
-      childCount: 2
-    })
+    spaceServiceMock.getSpace.mockResolvedValueOnce(makeSpaceInfo({ memberCount: 3, childCount: 2 }))
     const { load, space } = useSpace(() => 's1')
     await load()
     expect(space.value?.memberCount).toBe(3)
@@ -95,12 +86,7 @@ describe('useSpace', () => {
 
   it('update calls service and reloads', async () => {
     spaceServiceMock.updateSpace.mockResolvedValueOnce(undefined)
-    spaceServiceMock.getSpace.mockResolvedValueOnce({
-      spaceId: 's1',
-      name: 'Renamed',
-      memberCount: 1,
-      childCount: 0
-    })
+    spaceServiceMock.getSpace.mockResolvedValueOnce(makeSpaceInfo({ name: 'Renamed' }))
     const { update, space } = useSpace(() => 's1')
     const ok = await update({ name: 'Renamed' })
     expect(ok).toBe(true)
@@ -119,7 +105,7 @@ describe('useSpace', () => {
   it('leave clears space on success', async () => {
     spaceServiceMock.leaveSpace.mockResolvedValueOnce(undefined)
     const { leave, space } = useSpace(() => 's1')
-    space.value = { spaceId: 's1', name: 'S', memberCount: 1, childCount: 0 }
+    space.value = makeSpaceInfo()
     const ok = await leave()
     expect(ok).toBe(true)
     expect(space.value).toBeNull()

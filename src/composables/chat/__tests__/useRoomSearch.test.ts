@@ -11,17 +11,13 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() })
 }))
 
+import { makeSearchResult, makeSearchRoomMessagesResponse } from '@/services/matrix/__tests__/fixtures/search'
 import type { SearchResult } from '@/services/matrix/MatrixSearchService'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
 import { useRoomSearch } from '../useRoomSearch'
 
-const makeHit = (eventId: string, body = 'match') => ({
-  roomId: '!room:example.com',
-  eventId,
-  sender: '@alice:example.com',
-  content: { body, msgtype: 'm.text' },
-  timestamp: 1000
-})
+const makeHit = (eventId: string, body = 'match'): SearchResult =>
+  makeSearchResult({ eventId, content: { body, msgtype: 'm.text' } })
 
 describe('useRoomSearch', () => {
   beforeEach(() => {
@@ -144,11 +140,9 @@ describe('useRoomSearch', () => {
 
       expect(error.value).toBe(true)
 
-      vi.mocked(matrixSearchService.searchRoomMessages).mockResolvedValueOnce({
-        results: [makeHit('$1')],
-        count: 1,
-        highlights: []
-      })
+      vi.mocked(matrixSearchService.searchRoomMessages).mockResolvedValueOnce(
+        makeSearchRoomMessagesResponse([makeHit('$1')])
+      )
       retry()
       await vi.runAllTicks()
 
@@ -160,7 +154,7 @@ describe('useRoomSearch', () => {
       let resolveFirst: (value: { results: SearchResult[]; count: number; highlights: string[] }) => void = () => {}
       vi.mocked(matrixSearchService.searchRoomMessages)
         .mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
-        .mockResolvedValueOnce({ results: [makeHit('$new', 'new')], count: 1, highlights: [] })
+        .mockResolvedValueOnce(makeSearchRoomMessagesResponse([makeHit('$new', 'new')]))
 
       const roomId = ref('!room:example.com')
       const { query, results, performSearch, error } = useRoomSearch(roomId)

@@ -23,8 +23,8 @@
             <div class="cap-grid">
               <div v-for="(val, key) in capabilities.capabilities" :key="key" class="cap-item">
                 <span class="cap-name">{{ key }}</span>
-                <n-tag :type="val?.enabled === false ? 'default' : 'success'" size="small" round>
-                  {{ val?.enabled === false ? t('room.capabilities.disabled') : t('room.capabilities.enabled') }}
+                <n-tag :type="val === false ? 'default' : 'success'" size="small" round>
+                  {{ val === false ? t('room.capabilities.disabled') : t('room.capabilities.enabled') }}
                 </n-tag>
               </div>
             </div>
@@ -35,8 +35,8 @@
             <div class="cap-grid">
               <div v-for="(val, key) in capabilities.features" :key="key" class="cap-item">
                 <span class="cap-name">{{ key }}</span>
-                <n-tag :type="val?.enabled === false ? 'default' : 'success'" size="small" round>
-                  {{ val?.enabled === false ? t('room.capabilities.disabled') : t('room.capabilities.enabled') }}
+                <n-tag :type="val === false ? 'default' : 'success'" size="small" round>
+                  {{ val === false ? t('room.capabilities.disabled') : t('room.capabilities.enabled') }}
                 </n-tag>
               </div>
             </div>
@@ -61,15 +61,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { RoomCapabilitiesOutcome } from '@/services/matrix/room/RoomFacade'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
-
-interface RoomCapabilitiesPayload {
-  room_id: string
-  room_version?: string
-  capabilities?: Record<string, { enabled?: boolean }>
-  features?: Record<string, { enabled?: boolean }>
-  join_rule?: string
-}
 
 const props = defineProps<{
   roomId: string
@@ -78,7 +71,7 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const loading = ref(true)
-const capabilities = ref<RoomCapabilitiesPayload | null>(null)
+const capabilities = ref<RoomCapabilitiesOutcome | null>(null)
 const permissions = ref<Record<string, unknown>>({})
 
 const hasData = computed(() => {
@@ -98,7 +91,7 @@ onMounted(async () => {
       matrixRoomReadFacade.getRoomCapabilities(props.roomId).catch(() => null),
       matrixRoomReadFacade.getRoomPermissions(props.roomId).catch(() => ({ status: 'error' }) as const)
     ])
-    capabilities.value = caps as RoomCapabilitiesPayload | null
+    capabilities.value = caps
     permissions.value = perms.status === 'ok' ? perms.permissions.raw : {}
   } finally {
     loading.value = false

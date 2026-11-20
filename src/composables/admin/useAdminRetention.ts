@@ -1,6 +1,7 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
 import type { RetentionPolicy, RoomRetention } from '@/services/matrix/admin/AdminTypes'
+import type { RetentionPolicyListEntry, RetentionStatusResponse } from '@/services/matrix/admin/RetentionService'
 
 export interface RetentionPolicyView {
   roomId: string
@@ -10,7 +11,7 @@ export interface RetentionPolicyView {
 
 interface UseAdminRetentionResult {
   policies: Ref<RetentionPolicyView[]>
-  retentionStatus: Ref<Record<string, unknown> | null>
+  retentionStatus: Ref<RetentionStatusResponse | null>
   loading: Ref<boolean>
   taskLoading: Ref<boolean>
 
@@ -46,7 +47,7 @@ interface UseAdminRetentionResult {
  */
 export function useAdminRetention(): UseAdminRetentionResult {
   const policies = ref<RetentionPolicyView[]>([])
-  const retentionStatus = ref<Record<string, unknown> | null>(null)
+  const retentionStatus = ref<RetentionStatusResponse | null>(null)
   const loading = ref(false)
   const taskLoading = ref(false)
   const defaultRetention = ref<RetentionPolicy | null>(null)
@@ -55,11 +56,11 @@ export function useAdminRetention(): UseAdminRetentionResult {
   const roomPolicyLoading = ref(false)
   const roomWriteLoading = ref(false)
 
-  function toView(p: Record<string, unknown>): RetentionPolicyView {
+  function toView(p: RetentionPolicyListEntry): RetentionPolicyView {
     return {
-      roomId: (p.room_id as string) ?? '',
-      minLifetime: p.min_lifetime as number | undefined,
-      maxLifetime: p.max_lifetime as number | undefined
+      roomId: p.room_id ?? '',
+      minLifetime: p.min_lifetime ?? undefined,
+      maxLifetime: p.max_lifetime ?? undefined
     }
   }
 

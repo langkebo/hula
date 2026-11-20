@@ -34,6 +34,7 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminService } from '@/services/matrix/admin'
+import { makeFeatureFlag, makePurgeMediaCacheResult, makeServerQuota } from './fixtures/admin'
 
 describe('useAdminMaintenance', () => {
   beforeEach(() => {
@@ -42,27 +43,11 @@ describe('useAdminMaintenance', () => {
 
   it('loadAll fans out to features/quota in parallel', async () => {
     vi.mocked(adminService.listFeatureFlagsDetailed).mockResolvedValueOnce([
-      {
-        flagKey: 'foo',
-        enabled: true,
-        status: 'enabled',
-        description: 'test',
-        targetScope: 'global',
-        rolloutPercent: 100,
-        expiresAt: null,
-        reason: 'test',
-        createdBy: '@admin:server',
-        createdTs: 1,
-        updatedTs: 2,
-        targets: []
-      }
+      makeFeatureFlag({ flagKey: 'foo', description: 'test', reason: 'test', createdBy: '@admin:server' })
     ])
-    vi.mocked(adminService.getServerQuota).mockResolvedValueOnce({
-      totalSize: 2048,
-      totalCount: 4,
-      defaultSizeLimit: 1024,
-      defaultCountLimit: 100
-    })
+    vi.mocked(adminService.getServerQuota).mockResolvedValueOnce(
+      makeServerQuota({ totalSize: 2048, totalCount: 4, defaultSizeLimit: 1024, defaultCountLimit: 100 })
+    )
 
     const c = useAdminMaintenance()
     await c.loadAll()
@@ -99,7 +84,7 @@ describe('useAdminMaintenance', () => {
   })
 
   it('purgeMediaCache forwards beforeTs and returns deleted count', async () => {
-    vi.mocked(adminService.purgeMediaCache).mockResolvedValueOnce({ deleted: 7 })
+    vi.mocked(adminService.purgeMediaCache).mockResolvedValueOnce(makePurgeMediaCacheResult(7))
     const c = useAdminMaintenance()
     const r = await c.purgeMediaCache(1234)
     expect(r.deleted).toBe(7)

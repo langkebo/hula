@@ -39,6 +39,11 @@ export interface MatrixCaptchaResult {
   mxc_url: string
 }
 
+/** `POST /account/password` 响应：Matrix 规范仅定义第三方 ID 解绑结果，失败时服务端返回空对象。 */
+export interface PasswordResetResponse {
+  id_server_unbind_result?: 'success' | 'no-support'
+}
+
 type MatrixAuthPayload = Record<string, unknown>
 // Tjg 侧流程名 → SDK `submitEmailToken(..., scope)` 的映射见 MatrixAuthService：
 // `password_reset` → `password`，其余 → `register`（后端三条路径挂同一处理器）。
@@ -356,10 +361,10 @@ export async function matrixResetPassword(
   authType?: string,
   authToken?: string,
   clientSecret?: string
-): Promise<Record<string, unknown>> {
+): Promise<PasswordResetResponse> {
   const auth = buildResetPasswordAuth(authSession, authType, authToken, clientSecret)
 
-  return postMatrixJson(
+  return postMatrixJson<PasswordResetResponse>(
     `${PREFIX_V3}/account/password`,
     {
       new_password: newPassword,

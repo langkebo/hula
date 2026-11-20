@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomSpacesSection from '../RoomSpacesSection.vue'
+import { makeRoomSpaceMembership, roomSpacesError, roomSpacesOk } from './fixtures/roomPanels'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -92,15 +93,16 @@ describe('RoomSpacesSection — 房间所属空间只读区块', () => {
   })
 
   it('读取失败时展示失败与重试，重试成功后渲染列表', async () => {
-    mocks.getRoomSpaces.mockResolvedValueOnce({ status: 'error' })
+    mocks.getRoomSpaces.mockResolvedValueOnce(roomSpacesError())
     const wrapper = await mountSection()
 
     expect(wrapper.find('[data-testid="room-spaces-error"]').exists()).toBe(true)
 
-    mocks.getRoomSpaces.mockResolvedValue({
-      status: 'ok',
-      spaces: [{ roomId: '!s:hs', name: '产品空间', canonicalAlias: '', avatarUrl: '', topic: '' }]
-    })
+    mocks.getRoomSpaces.mockResolvedValue(
+      roomSpacesOk([
+        makeRoomSpaceMembership({ roomId: '!s:hs', name: '产品空间', canonicalAlias: '', avatarUrl: '', topic: '' })
+      ])
+    )
     await wrapper.find('[data-testid="partial-retry"]').trigger('click')
     await flushPromises()
 

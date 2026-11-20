@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminPushService, type PushConfigPatchRequest } from '../AdminPushService'
+import { makePushCleanupResult, makePushConfig, makePushConfigUpdate, makePushProcessResult } from './fixtures/push'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -24,11 +25,7 @@ const makeDeps = () => {
   }
 }
 
-const configResponse = {
-  config: { poll_timeout: '30', apns_secret: '***' },
-  initialized_providers: ['apns'],
-  supported_keys: ['poll_timeout', 'apns_secret']
-}
+const configResponse = makePushConfig()
 
 describe('AdminPushService', () => {
   beforeEach(() => {
@@ -46,7 +43,7 @@ describe('AdminPushService', () => {
 
   it('setConfig 透传按键补丁（null 表示清除）', async () => {
     const patch: PushConfigPatchRequest = { config: { poll_timeout: '60', apns_secret: null } }
-    setConfig.mockResolvedValueOnce(configResponse)
+    setConfig.mockResolvedValueOnce(makePushConfigUpdate())
 
     await new AdminPushService(makeDeps()).setConfig(patch)
 
@@ -54,21 +51,23 @@ describe('AdminPushService', () => {
   })
 
   it('processQueue 透传批量大小', async () => {
-    processQueue.mockResolvedValueOnce({ processed: 12, message: 'ok' })
+    const response = makePushProcessResult()
+    processQueue.mockResolvedValueOnce(response)
 
     const result = await new AdminPushService(makeDeps()).processQueue(50)
 
     expect(processQueue).toHaveBeenCalledWith(50)
-    expect(result).toEqual({ processed: 12, message: 'ok' })
+    expect(result).toEqual(response)
   })
 
   it('cleanupLogs 透传保留天数', async () => {
-    cleanupLogs.mockResolvedValueOnce({ cleaned: 7, message: 'ok' })
+    const response = makePushCleanupResult()
+    cleanupLogs.mockResolvedValueOnce(response)
 
     const result = await new AdminPushService(makeDeps()).cleanupLogs(30)
 
     expect(cleanupLogs).toHaveBeenCalledWith(30)
-    expect(result).toEqual({ cleaned: 7, message: 'ok' })
+    expect(result).toEqual(response)
   })
 
   it('后端失败时记录日志并重新抛出', async () => {

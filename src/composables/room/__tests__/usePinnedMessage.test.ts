@@ -55,6 +55,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 import { usePinnedMessage } from '../usePinnedMessage'
+import { makeCachedChatMessage } from './fixtures/chatMessage'
 
 /** 构造 MatrixEvent mock */
 const makeMatrixEvent = (eventId: string, sender: string, body: string, ts: number, msgtype = 'm.text') => ({
@@ -153,16 +154,7 @@ describe('usePinnedMessage', () => {
 
     it('优先使用 chat store 缓存的消息', async () => {
       mockGetPinnedEvents.mockResolvedValueOnce(['$e1:s'])
-      mockChatGetMessage.mockReturnValueOnce({
-        message: {
-          id: '$e1:s',
-          roomId: '!r:s',
-          sendTime: 2000,
-          type: 'text',
-          body: { content: 'cached body', msgtype: 'm.text' }
-        },
-        fromUser: { uid: '@alice:s', username: 'Alice' }
-      })
+      mockChatGetMessage.mockReturnValueOnce(makeCachedChatMessage())
 
       const flow = usePinnedMessage({ roomId: '!r:s' })
       await flow.load()

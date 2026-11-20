@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeMutualRoomsResult } from '@/services/matrix/user/__tests__/fixtures/relationship'
 import { createI18nMock, resolveMessage } from '~/tests/i18n-messages'
 import MutualRoomsSection from '../MutualRoomsSection.vue'
 
@@ -150,7 +151,7 @@ describe('MutualRoomsSection', () => {
     expect(errorBlock.exists()).toBe(true)
     expect(errorBlock.text()).toContain(resolveMessage('friend.detail.mutual_rooms_load_error'))
 
-    getMutualRoomsMock.mockResolvedValueOnce({ roomIds: ['!a:matrix.test'] })
+    getMutualRoomsMock.mockResolvedValueOnce(makeMutualRoomsResult({ roomIds: ['!a:matrix.test'] }))
     await errorBlock.find('button').trigger('click')
     await flushPromises()
 
@@ -160,8 +161,8 @@ describe('MutualRoomsSection', () => {
 
   it('存在 next_batch_token 时加载更多并去重追加', async () => {
     getMutualRoomsMock
-      .mockResolvedValueOnce({ roomIds: ['!a:matrix.test'], nextBatchToken: 'token-2' })
-      .mockResolvedValueOnce({ roomIds: ['!a:matrix.test', '!b:matrix.test'] })
+      .mockResolvedValueOnce(makeMutualRoomsResult({ roomIds: ['!a:matrix.test'], nextBatchToken: 'token-2' }))
+      .mockResolvedValueOnce(makeMutualRoomsResult({ roomIds: ['!a:matrix.test', '!b:matrix.test'] }))
 
     const wrapper = mountSection()
     await flushPromises()

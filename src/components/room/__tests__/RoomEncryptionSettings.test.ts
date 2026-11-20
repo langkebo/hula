@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomEncryptionSettings from '../RoomEncryptionSettings.vue'
+import { makeEncryptionSettings } from './fixtures/roomPanels'
 
 /**
  * 房间加密设置面板的四态边界。
@@ -96,11 +97,13 @@ describe('RoomEncryptionSettings', () => {
     expect(wrapper.find('[data-test="encryption-error"]').exists()).toBe(true)
 
     isRoomEncryptedMock.mockResolvedValueOnce(true)
-    getEncryptionSettingsMock.mockResolvedValueOnce({
-      algorithm: 'm.megolm.v1.aes-sha2',
-      rotationPeriodMs: 604800000,
-      rotationPeriodMsgs: 100
-    })
+    getEncryptionSettingsMock.mockResolvedValueOnce(
+      makeEncryptionSettings({
+        algorithm: 'm.megolm.v1.aes-sha2',
+        rotationPeriodMs: 604800000,
+        rotationPeriodMsgs: 100
+      })
+    )
     await wrapper.find('[data-test="encryption-retry"]').trigger('click')
     await flushPromises()
 

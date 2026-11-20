@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Widget } from '@/composables/widget'
+import { makeWidgetConfig } from '@/services/matrix/widget/__tests__/fixtures/widget'
 import WidgetDetailPanel from '../WidgetDetailPanel.vue'
 
 const { getWidgetConfigMock, getWidgetCapabilitiesMock, getWidgetSessionsMock, showFeedbackMock } = vi.hoisted(() => ({
@@ -108,7 +109,9 @@ describe('WidgetDetailPanel — 读取失败不伪装空态', () => {
   })
 
   it('点击重试会重新读取并恢复配置内容', async () => {
-    getWidgetConfigMock.mockRejectedValueOnce(new Error('config-fail')).mockResolvedValueOnce({ theme: 'dark' })
+    getWidgetConfigMock
+      .mockRejectedValueOnce(new Error('config-fail'))
+      .mockResolvedValueOnce(makeWidgetConfig({ data: { theme: 'dark' } }))
 
     const wrapper = mountPanel()
     await flushPromises()

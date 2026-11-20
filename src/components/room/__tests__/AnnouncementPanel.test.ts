@@ -1,5 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeAnnouncementListPage,
+  makeAnnouncementListRecord
+} from '@/stores/domains/chat/__tests__/fixtures/announcement'
 import AnnouncementPanel from '../AnnouncementPanel.vue'
 
 const {
@@ -232,17 +236,17 @@ describe('AnnouncementPanel', () => {
   })
 
   it('重试成功后恢复公告列表', async () => {
-    getGroupAnnouncementListMock.mockRejectedValueOnce(new Error('load failed')).mockResolvedValueOnce({
-      records: [
-        {
-          id: 1,
+    getGroupAnnouncementListMock.mockRejectedValueOnce(new Error('load failed')).mockResolvedValueOnce(
+      makeAnnouncementListPage([
+        makeAnnouncementListRecord({
+          id: '1',
           author: '@admin:example.com',
           timestamp: 1700000000000,
           top: false,
           content: '恢复的公告'
-        }
-      ]
-    })
+        })
+      ])
+    )
     const wrapper = mountPanel()
     await flushPromises()
 

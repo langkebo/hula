@@ -29,8 +29,8 @@ import { PushRuleActionName, TweakName } from '@/services/matrix/sdk'
 import type { IPushRules } from '@/types/matrix-services'
 import { buildActions, inferActionType, usePushRuleEditor } from '../usePushRuleEditor'
 
-/** 构造测试用 IPushRules */
-function buildRules(): IPushRules {
+/** 构造测试用 IPushRules（overrides 可替换整个 `global` 以覆盖空规则场景） */
+function buildRules(overrides: Partial<IPushRules> = {}): IPushRules {
   return {
     global: {
       override: [
@@ -73,7 +73,8 @@ function buildRules(): IPushRules {
           actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Sound, value: 'ringtone' }]
         }
       ]
-    }
+    },
+    ...overrides
   }
 }
 
@@ -137,7 +138,7 @@ describe('usePushRuleEditor', () => {
     })
 
     it('hasRules 在无规则时为 false', async () => {
-      mockGetPushRules.mockResolvedValueOnce({ global: {} })
+      mockGetPushRules.mockResolvedValueOnce(buildRules({ global: {} }))
 
       const editor = usePushRuleEditor()
       await editor.load()

@@ -219,7 +219,8 @@ export function useSecureBackupDialog(options: UseSecureBackupDialogOptions) {
       verifyResult.value = {
         valid: result.valid,
         algorithm: result.algorithm || backupData.value.algorithm,
-        auth_data: result.auth_data || {},
+        // auth_data 契约随备份算法变化；这里保留空对象兜底，运行时行为与旧实现一致
+        auth_data: result.auth_data || ({} as VerifyResult['auth_data']),
         key_count: backupData.value.keyCount ?? 0,
         signatures: result.signatures || {}
       }

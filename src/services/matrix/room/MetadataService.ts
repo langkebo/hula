@@ -1,3 +1,4 @@
+import type { IRoomCapabilitiesResponse, IRoomMetadataResponse, RoomSyncResult } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -27,6 +28,13 @@ export type RoomServiceTypesOutcome =
   /** 端点存在但本次读取失败（无权限、房间不存在、网络错误等） */
   | { status: 'error' }
 
+/**
+ * 房间元数据动态读取包（后端 synapse-rust 扩展端点，字段随版本变化）。
+ */
+export interface RoomMetadataRecord {
+  [field: string]: unknown
+}
+
 /** 当前用户在某房间的权限快照（B3，只读）。 */
 export interface RoomPermissionSnapshot {
   roomId: string
@@ -39,7 +47,7 @@ export interface RoomPermissionSnapshot {
   canBan: boolean | null
   canRedact: boolean | null
   /** 原始响应，供既有能力面板原样展示 */
-  raw: Record<string, unknown>
+  raw: RoomMetadataRecord
 }
 
 export type RoomPermissionsOutcome =
@@ -95,6 +103,15 @@ export type RoomEventUrlOutcome =
   | { status: 'unsupported' }
   | { status: 'error' }
 
+/** 房间能力响应（复用 SDK `IRoomCapabilitiesResponse`；读取失败时降级为空对象）。 */
+export type RoomCapabilitiesOutcome = Partial<IRoomCapabilitiesResponse>
+
+/** 房间元数据响应（复用 SDK `IRoomMetadataResponse`；读取失败时降级为空对象）。 */
+export type RoomMetadataOutcome = Partial<IRoomMetadataResponse>
+
+/** 房间级同步响应（复用 SDK `RoomSyncResult`；读取失败时降级为空对象）。 */
+export type RoomSyncOutcome = Partial<RoomSyncResult>
+
 /** 从 SDK 抛出的错误中提取 Matrix errcode（部分错误把 errcode 塞在 message 的 JSON 里）。 */
 function readErrcode(err: unknown): string | null {
   if (typeof err !== 'object' || err === null) return null
@@ -115,7 +132,7 @@ function readErrcode(err: unknown): string | null {
   return null
 }
 
-function readStringField(record: Record<string, unknown>, keys: string[]): string {
+function readStringField(record: RoomMetadataRecord, keys: string[]): string {
   for (const key of keys) {
     const value = record[key]
     if (typeof value === 'string' && value.length > 0) return value
@@ -123,12 +140,12 @@ function readStringField(record: Record<string, unknown>, keys: string[]): strin
   return ''
 }
 
-function readBooleanField(record: Record<string, unknown>, key: string): boolean | null {
+function readBooleanField(record: RoomMetadataRecord, key: string): boolean | null {
   const value = record[key]
   return typeof value === 'boolean' ? value : null
 }
 
-function readFiniteNumberField(record: Record<string, unknown>, key: string): number | null {
+function readFiniteNumberField(record: RoomMetadataRecord, key: string): number | null {
   const value = record[key]
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
@@ -185,22 +202,22 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     }
   }
 
-  async getRoomCapabilities(roomId: string): Promise<Record<string, unknown>> {
+  async getRoomCapabilities(roomId: string): Promise<RoomCapabilitiesOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomManager().getRoomCapabilities(roomId)
-      return unknownToObject(result) ?? {}
+      return result ?? {}
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间能力失败: ${err}`)
       return {}
     }
   }
 
-  async getRoomMetadata(roomId: string): Promise<Record<string, unknown>> {
+  async getRoomMetadata(roomId: string): Promise<RoomMetadataOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomManager().getRoomMetadata(roomId)
-      return unknownToObject(result) ?? {}
+      return result ?? {}
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间元数据失败: ${err}`)
       return {}
@@ -266,11 +283,11 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
     }
   }
 
-  async getRoomSync(roomId: string): Promise<Record<string, unknown>> {
+  async getRoomSync(roomId: string): Promise<RoomSyncOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomSync(roomId)
-      return unknownToObject(result) ?? {}
+      return result ?? {}
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间级同步失败: ${err}`)
       return {}

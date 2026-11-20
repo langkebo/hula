@@ -37,6 +37,11 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+import {
+  emptyCapabilitiesFixture,
+  legacyRoomVersionsCapabilitiesFixture,
+  makeCapabilities
+} from '@/services/matrix/__tests__/fixtures/capabilities'
 import { useRoomUpgradeFlow } from '../useRoomUpgradeFlow'
 
 describe('useRoomUpgradeFlow', () => {
@@ -47,12 +52,7 @@ describe('useRoomUpgradeFlow', () => {
   describe('load', () => {
     it('loads current version and capabilities in parallel', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': {
-          default: '11',
-          available: { '9': 'stable', '10': 'stable', '11': 'stable' }
-        }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['9', '10', '11'], '11'))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -67,12 +67,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('sorts versions numerically', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('9')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': {
-          default: '11',
-          available: { '11': 'stable', '9': 'stable', '10': 'stable' }
-        }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['11', '9', '10'], '11'))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -92,7 +87,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('sets errorMessage when getRoomVersion throws', async () => {
       mockGetRoomVersion.mockRejectedValueOnce(new Error('network'))
-      mockGetCapabilities.mockResolvedValueOnce({})
+      mockGetCapabilities.mockResolvedValueOnce(emptyCapabilitiesFixture)
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -103,7 +98,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('handles missing m.room_versions in capabilities', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({})
+      mockGetCapabilities.mockResolvedValueOnce(emptyCapabilitiesFixture)
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -115,12 +110,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('handles room_versions alternative key', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({
-        room_versions: {
-          default: '11',
-          available: { '11': 'stable' }
-        }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(legacyRoomVersionsCapabilitiesFixture)
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -133,12 +123,7 @@ describe('useRoomUpgradeFlow', () => {
   describe('computed', () => {
     it('newerVersions filters versions greater than current', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': {
-          default: '11',
-          available: { '9': 'stable', '10': 'stable', '11': 'stable' }
-        }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['9', '10', '11'], '11'))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -148,9 +133,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('newerVersions returns all when no current version', async () => {
       mockGetRoomVersion.mockResolvedValueOnce(null)
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': { default: '11', available: { '10': 'stable', '11': 'stable' } }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['10', '11'], '11'))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -175,9 +158,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('hasVersions reflects availableVersions', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': { default: '11', available: { '11': 'stable' } }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['11'], '11'))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -189,9 +170,7 @@ describe('useRoomUpgradeFlow', () => {
   describe('resolveTargetVersion', () => {
     it('returns explicitly set targetVersion first', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': { default: '11', available: { '11': 'stable' } }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['11'], '11'))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -202,9 +181,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('falls back to default version', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': { default: '11', available: { '11': 'stable' } }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['11'], '11'))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -214,9 +191,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('falls back to newest newerVersion when no default', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('9')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': { default: '', available: { '10': 'stable', '11': 'stable' } }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['10', '11'], ''))
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -226,7 +201,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('returns null when no versions available', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({})
+      mockGetCapabilities.mockResolvedValueOnce(emptyCapabilitiesFixture)
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -247,7 +222,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('returns null when no target version resolvable', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({})
+      mockGetCapabilities.mockResolvedValueOnce(emptyCapabilitiesFixture)
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })
       await flow.load()
@@ -273,9 +248,7 @@ describe('useRoomUpgradeFlow', () => {
 
     it('falls back to resolved target version when not provided', async () => {
       mockGetRoomVersion.mockResolvedValueOnce('10')
-      mockGetCapabilities.mockResolvedValueOnce({
-        'm.room_versions': { default: '11', available: { '11': 'stable' } }
-      })
+      mockGetCapabilities.mockResolvedValueOnce(makeCapabilities(['11'], '11'))
       mockUpgradeRoom.mockResolvedValueOnce('!new:s')
 
       const flow = useRoomUpgradeFlow({ roomId: '!r:s' })

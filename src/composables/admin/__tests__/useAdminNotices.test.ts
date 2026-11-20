@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ServerNoticeInfo } from '@/services/matrix/admin/AdminTypes'
 import { useAdminNotices } from '../useAdminNotices'
+import { makeServerNoticesResponse } from './fixtures/admin'
 
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
@@ -21,9 +22,7 @@ describe('useAdminNotices', () => {
       { userId: '@a:s', content: { body: 'x' } },
       { userId: '@b:s', content: { body: 'y' } }
     ]
-    vi.mocked(adminService.getServerNotices).mockResolvedValueOnce({
-      notices
-    })
+    vi.mocked(adminService.getServerNotices).mockResolvedValueOnce(makeServerNoticesResponse(notices))
     const c = useAdminNotices()
     await c.loadNotices()
     expect(c.notices.value).toHaveLength(2)

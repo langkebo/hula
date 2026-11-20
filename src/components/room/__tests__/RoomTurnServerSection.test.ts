@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomTurnServerSection from '../RoomTurnServerSection.vue'
+import { makeRoomTurnServerConfig, roomTurnServerError, roomTurnServerOk } from './fixtures/roomPanels'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -81,12 +82,12 @@ describe('RoomTurnServerSection — 房间级 TURN 只读诊断区块', () => {
   })
 
   it('读取失败时展示失败与重试，重试成功后渲染列表', async () => {
-    mocks.getRoomTurnServer.mockResolvedValueOnce({ status: 'error' })
+    mocks.getRoomTurnServer.mockResolvedValueOnce(roomTurnServerError())
     const wrapper = await mountSection()
 
     expect(wrapper.find('[data-testid="turn-server-error"]').exists()).toBe(true)
 
-    mocks.getRoomTurnServer.mockResolvedValue({ status: 'ok', config: { uris: ['turn:e'], ttl: null } })
+    mocks.getRoomTurnServer.mockResolvedValue(roomTurnServerOk(makeRoomTurnServerConfig({ uris: ['turn:e'] })))
     await wrapper.find('[data-testid="partial-retry"]').trigger('click')
     await flushPromises()
 

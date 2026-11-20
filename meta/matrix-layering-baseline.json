@@ -1,9 +1,12 @@
 {
-  "comment": "AR-07b 分层与 token 收口棘轮。数值**原则上**只可收紧；唯一例外是 `check:file-size`（400 行上限）逼出的拆分——拆分必然增加 service_files 与继承链深度，此时同步上调并在 `adjust_reason` 里写明理由，而不是让它长期红着被忽略。",
-  "updated_at": "2026-11-19T05:16:38.932Z",
+  "comment": "AR-07b 分层与 token 收口棘轮。数值只可收紧不可放宽；清理后运行 `node scripts/check-matrix-service-layering.mjs --update`。L6 按 logical_services（服务根 + 孤立模块）计数，service_files 仅观测。",
+  "updated_at": "2026-11-19T10:35:35.600Z",
   "scope": "src/services/matrix/** 非测试 .ts（运行时 import 边，不含 import type）",
   "counters": {
     "service_files": 272,
+    "logical_services": 130,
+    "service_roots": 103,
+    "orphan_modules": 27,
     "runtime_edges": 499,
     "runtime_cycles": 0,
     "runtime_max_depth": 14,
@@ -26,6 +29,5 @@
     "src/services/matrix/matrixClientAccessor.ts": 2,
     "src/services/matrix/media/mediaDownloadHelpers.ts": 2,
     "src/services/matrix/user/MatrixAccountDataMethods.ts": 1
-  },
-  "adjust_reason": "2026-11-19：为满足 check:file-size 的 400 行上限，服务层被拆成 mixin 继承链（MatrixAccountService → MatrixAccountDataMethods → MatrixAccountProfileDeviceMethods），导致 service_files 244→272、runtime_max_depth 12→14、runtime_edges 439→499。token_read_sites 总量不变：MatrixAccountService.ts:1 随 getCapabilities() 一并搬到 MatrixAccountDataMethods.ts:1。⚠️ 两个门禁在此直接冲突：拆文件是 file-size 要求的，却会被 layering 判成「文件数增长」回退。若将来要收紧，正确路径是扁平化 mixin 链（组合替代继承）+ 提高 file-size 上限，而不是继续拆。"
+  }
 }

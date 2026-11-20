@@ -1,5 +1,5 @@
 import { type Ref, ref } from 'vue'
-import { matrixWidgetService, type Widget } from '@/services/matrix/widget/MatrixWidgetService'
+import { matrixWidgetService, type SessionApiData, type Widget } from '@/services/matrix/widget/MatrixWidgetService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useWidgets')
@@ -24,7 +24,7 @@ interface UseWidgetsResult {
     widgetId: string,
     options?: { deviceId?: string; expiresInMs?: number },
     throwOnError?: boolean
-  ) => Promise<Record<string, unknown> | null>
+  ) => Promise<SessionApiData | null>
   terminateWidgetSession: (sessionId: string, throwOnError?: boolean) => Promise<boolean>
 }
 
@@ -110,10 +110,10 @@ export function useWidgets(roomId: () => string): UseWidgetsResult {
     widgetId: string,
     options?: { deviceId?: string; expiresInMs?: number },
     throwOnError = false
-  ): Promise<Record<string, unknown> | null> => {
+  ): Promise<SessionApiData | null> => {
     try {
       const result = await matrixWidgetService.createWidgetSession(widgetId, options, throwOnError)
-      return result as Record<string, unknown> | null
+      return result
     } catch (err) {
       logger.error('create widget session failed', err)
       error.value = err instanceof Error ? err.message : String(err)

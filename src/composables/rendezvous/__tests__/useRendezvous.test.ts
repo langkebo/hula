@@ -17,6 +17,13 @@ vi.mock('@/services/matrix/rendezvous/MatrixRendezvousService', () => ({
   matrixRendezvousService: serviceMock
 }))
 
+import {
+  makeCreateSessionResponse,
+  makeGetMessagesResponse,
+  makeRendezvousLoginCredentials,
+  makeRendezvousMessage,
+  makeRendezvousSession
+} from '@/services/matrix/rendezvous/__tests__/fixtures/rendezvous'
 import { useRendezvous } from '../useRendezvous'
 
 describe('useRendezvous', () => {
@@ -25,7 +32,7 @@ describe('useRendezvous', () => {
   })
 
   it('createSession 成功后状态转为 active 并缓存响应', async () => {
-    const response = { url: 'https://hs/r/s1', session_id: 's1', key: 'k1' }
+    const response = makeCreateSessionResponse()
     serviceMock.createSession.mockResolvedValueOnce(response)
 
     const rendezvous = useRendezvous()
@@ -55,7 +62,7 @@ describe('useRendezvous', () => {
   })
 
   it('getSession 缓存当前会话', async () => {
-    const session = { session_id: 's1', intent: 'login.start', transport: 'http.v1', status: 'connected' }
+    const session = makeRendezvousSession()
     serviceMock.getSession.mockResolvedValueOnce(session)
 
     const rendezvous = useRendezvous()
@@ -66,8 +73,8 @@ describe('useRendezvous', () => {
   })
 
   it('getMessages 更新消息列表', async () => {
-    const messages = [{ type: 'm.login.protocol', content: {} }]
-    serviceMock.getMessages.mockResolvedValueOnce({ messages })
+    const messages = [makeRendezvousMessage()]
+    serviceMock.getMessages.mockResolvedValueOnce(makeGetMessagesResponse(messages))
 
     const rendezvous = useRendezvous()
     await rendezvous.getMessages('s1')
@@ -76,18 +83,21 @@ describe('useRendezvous', () => {
   })
 
   it('completeSession 成功后状态转为 completed', async () => {
-    serviceMock.completeSession.mockResolvedValueOnce({ access_token: 'at', device_id: 'D', user_id: '@u:hs' })
+    const credentials = makeRendezvousLoginCredentials()
+    serviceMock.completeSession.mockResolvedValueOnce(credentials)
 
     const rendezvous = useRendezvous()
     const result = await rendezvous.completeSession('s1', 'k1')
 
-    expect(result).toEqual({ access_token: 'at', device_id: 'D', user_id: '@u:hs' })
+    expect(result).toEqual(credentials)
     expect(rendezvous.sessionStatus.value).toBe('completed')
   })
 
   it('deleteSession 清空全部会话状态', async () => {
-    serviceMock.createSession.mockResolvedValueOnce({ url: 'u', session_id: 's1', key: 'k' })
-    serviceMock.getMessages.mockResolvedValueOnce({ messages: [{ type: 't', content: {} }] })
+    serviceMock.createSession.mockResolvedValueOnce(makeCreateSessionResponse())
+    serviceMock.getMessages.mockResolvedValueOnce(
+      makeGetMessagesResponse([makeRendezvousMessage({ type: 't', content: {} })])
+    )
     serviceMock.deleteSession.mockResolvedValueOnce(undefined)
 
     const rendezvous = useRendezvous()
@@ -102,7 +112,7 @@ describe('useRendezvous', () => {
   })
 
   it('pollForMessages 累积消息并转发给调用方回调', async () => {
-    const batch = [{ type: 'm.login.approved', content: {} }]
+    const batch = [makeRendezvousMessage({ type: 'm.login.approved' })]
     serviceMock.pollForMessages.mockImplementationOnce(async (_sessionId, options) => {
       options?.onMessage?.(batch)
       return batch

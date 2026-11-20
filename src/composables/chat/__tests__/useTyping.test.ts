@@ -21,6 +21,7 @@ vi.mock('@/composables/common/useMitt', () => ({
   }
 }))
 
+import { makeBatchTypingResult } from '@/services/matrix/messaging/__tests__/fixtures/typing'
 import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'
 import { useTyping } from '../useTyping'
 
@@ -108,7 +109,7 @@ describe('useTyping', () => {
     })
 
     it('returns empty object for empty room list', () => {
-      vi.mocked(matrixTypingService.getBatchTyping).mockReturnValueOnce({})
+      vi.mocked(matrixTypingService.getBatchTyping).mockReturnValueOnce(makeBatchTypingResult())
 
       const { getBatchTyping } = useTyping()
       const result = getBatchTyping([])

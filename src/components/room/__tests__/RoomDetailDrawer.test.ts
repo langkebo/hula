@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import RoomDetailDrawer from '../RoomDetailDrawer.vue'
+import { makeGroupInfo } from './fixtures/roomPanels'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -221,7 +222,9 @@ describe('RoomDetailDrawer — ROOM-02 四 Tab 能力面板接线', () => {
     getGroupDetailByRoomIdMock.mockResolvedValue(null)
     loadGroupInfoMock
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ name: '恢复房间', avatar: '', topic: 'topic', memberCount: 5, isEncrypted: true })
+      .mockResolvedValueOnce(
+        makeGroupInfo({ name: '恢复房间', avatar: '', topic: 'topic', memberCount: 5, isEncrypted: true })
+      )
 
     const wrapper = await mountDrawer()
     expect(wrapper.find('.room-drawer__error').exists()).toBe(true)

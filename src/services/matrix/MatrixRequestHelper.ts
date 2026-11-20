@@ -13,6 +13,16 @@
 import { getMatrixClient } from './matrixClientAccessor'
 
 /**
+ * Matrix JSON 对象：错误响应体、解析结果与响应头的动态载荷。
+ *
+ * 字段名随端点与后端版本变化（`errcode` / `error` / `retry_after_ms` 等），
+ * 无法从 SDK 契约静态派生，故以本具名类型显式承载「真·动态包」语义。
+ */
+export interface MatrixJsonObject {
+  [key: string]: unknown
+}
+
+/**
  * 归一化后的传输层错误。
  *
  * `errcode` 恒为非空串；`retryAfterMs` 同时以 camelCase 与 snake_case 暴露，
@@ -30,7 +40,7 @@ interface MatrixTransportError extends Error {
   /** snake_case 别名，供 `toAppError` 读取。 */
   retry_after_ms?: number
   /** 归一后的响应体（对象形式，无体时为空对象）。 */
-  data: Record<string, unknown>
+  data: MatrixJsonObject
   method?: string
   url?: string
 }
@@ -96,21 +106,21 @@ function toFiniteNumber(value: unknown): number | undefined {
   return undefined
 }
 
-function tryParseJsonRecord(text: string | undefined): Record<string, unknown> | null {
+function tryParseJsonRecord(text: string | undefined): MatrixJsonObject | null {
   if (!text) return null
   const trimmed = text.trim()
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
   try {
     const parsed: unknown = JSON.parse(trimmed)
-    if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown>
+    if (parsed && typeof parsed === 'object') return parsed as MatrixJsonObject
   } catch {
     return null
   }
   return null
 }
 
-function resolveBodyRecord(body: unknown, bodyText: string | undefined): Record<string, unknown> {
-  if (body && typeof body === 'object') return body as Record<string, unknown>
+function resolveBodyRecord(body: unknown, bodyText: string | undefined): MatrixJsonObject {
+  if (body && typeof body === 'object') return body as MatrixJsonObject
   if (typeof body === 'string') return tryParseJsonRecord(body) ?? {}
   return tryParseJsonRecord(bodyText) ?? {}
 }
@@ -122,13 +132,13 @@ function readHeaderValue(headers: unknown, name: string): string | null {
     const value = (maybeGet as (n: string) => unknown).call(headers, name)
     if (typeof value === 'string' && value.trim() !== '') return value
   }
-  const record = headers as Record<string, unknown>
+  const record = headers as MatrixJsonObject
   const direct = record[name] ?? record[name.toLowerCase()]
   if (typeof direct === 'string' && direct.trim() !== '') return direct
   return null
 }
 
-function resolveRetryAfterMs(data: Record<string, unknown>, headers: unknown): number | undefined {
+function resolveRetryAfterMs(data: MatrixJsonObject, headers: unknown): number | undefined {
   const fromBody = toFiniteNumber(data.retry_after_ms) ?? toFiniteNumber(data.retryAfterMs)
   if (fromBody !== undefined) return fromBody
   const header = readHeaderValue(headers, 'Retry-After')
@@ -139,7 +149,7 @@ function resolveRetryAfterMs(data: Record<string, unknown>, headers: unknown): n
   return undefined
 }
 
-function resolveErrcode(status: number, data: Record<string, unknown>, fallbackErrcode?: string): string {
+function resolveErrcode(status: number, data: MatrixJsonObject, fallbackErrcode?: string): string {
   const fromBody = pickNonEmptyString(data.errcode)
   if (fromBody !== undefined) return fromBody
   const fromFallback = pickNonEmptyString(fallbackErrcode)
@@ -208,9 +218,9 @@ function isMatrixTransportError(err: unknown): err is MatrixTransportError {
 export function normalizeMatrixError(err: unknown): MatrixTransportError {
   if (isMatrixTransportError(err)) return err
 
-  const record = (err && typeof err === 'object' ? err : {}) as Record<string, unknown>
-  const data = (record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>
-  const mergedData: Record<string, unknown> = { ...data }
+  const record = (err && typeof err === 'object' ? err : {}) as MatrixJsonObject
+  const data = (record.data && typeof record.data === 'object' ? record.data : {}) as MatrixJsonObject
+  const mergedData: MatrixJsonObject = { ...data }
   if (mergedData.retry_after_ms === undefined && record.retry_after_ms !== undefined) {
     mergedData.retry_after_ms = record.retry_after_ms
   }
@@ -272,8 +282,8 @@ const CONNECTION_ERROR_MESSAGE_PATTERNS = [
 export function isConnectionClassError(err: unknown): boolean {
   if (!(err instanceof Error)) return false
 
-  const record = err as Error & Record<string, unknown>
-  const data = (record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>
+  const record = err as Error & MatrixJsonObject
+  const data = (record.data && typeof record.data === 'object' ? record.data : {}) as MatrixJsonObject
   const httpStatus = toFiniteNumber(record.httpStatus) ?? toFiniteNumber(data.httpStatus)
   if (httpStatus !== undefined && httpStatus > 0) return false
 

@@ -10,6 +10,7 @@ vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
   matrixCryptoService: { getDeviceVerificationStatus: vi.fn() }
 }))
 
+import { makeDeviceInfo, makeDeviceVerificationResult } from '@/services/matrix/crypto/__tests__/fixtures/encryption'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
@@ -33,39 +34,40 @@ describe('useDeviceTrust.loadUnverifiedDevicesInRoom', () => {
 
     mockGetDevices
       .mockResolvedValueOnce([
-        {
+        makeDeviceInfo({
           deviceId: 'aliceDev1',
           userId: '@alice:server',
           displayName: 'Alice Phone',
           lastSeenTs: 1,
           lastSeenIp: '1.1.1.1'
-        }
+        })
       ])
       .mockResolvedValueOnce([
-        { deviceId: 'bobDev1', userId: '@bob:server', displayName: 'Bob Laptop', lastSeenTs: 2, lastSeenIp: '2.2.2.2' },
-        { deviceId: 'bobDev2', userId: '@bob:server', displayName: 'Bob Phone', lastSeenTs: 3, lastSeenIp: '2.2.2.3' }
+        makeDeviceInfo({
+          deviceId: 'bobDev1',
+          userId: '@bob:server',
+          displayName: 'Bob Laptop',
+          lastSeenTs: 2,
+          lastSeenIp: '2.2.2.2'
+        }),
+        makeDeviceInfo({
+          deviceId: 'bobDev2',
+          userId: '@bob:server',
+          displayName: 'Bob Phone',
+          lastSeenTs: 3,
+          lastSeenIp: '2.2.2.3'
+        })
       ])
 
     // aliceDev1 -> verified (skip); bobDev1 -> unverified; bobDev2 -> cross-signed (skip)
     mockGetStatus
-      .mockResolvedValueOnce({
-        verified: true,
-        crossSigningVerified: true,
-        devicesCrossSigningVerified: true,
-        tofu: false
-      })
-      .mockResolvedValueOnce({
-        verified: false,
-        crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
-        tofu: true
-      })
-      .mockResolvedValueOnce({
-        verified: false,
-        crossSigningVerified: true,
-        devicesCrossSigningVerified: true,
-        tofu: false
-      })
+      .mockResolvedValueOnce(
+        makeDeviceVerificationResult({ verified: true, crossSigningVerified: true, devicesCrossSigningVerified: true })
+      )
+      .mockResolvedValueOnce(makeDeviceVerificationResult({ tofu: true }))
+      .mockResolvedValueOnce(
+        makeDeviceVerificationResult({ crossSigningVerified: true, devicesCrossSigningVerified: true })
+      )
 
     const { unverifiedDevices, loadUnverifiedDevicesInRoom } = useDeviceTrust()
     await loadUnverifiedDevicesInRoom('!room:server')
@@ -86,17 +88,16 @@ describe('useDeviceTrust.loadUnverifiedDevicesInRoom', () => {
 
   it('skips a member whose device list fails to load without dropping others', async () => {
     mockGetRoom.mockReturnValue(makeRoom(['@alice:server', '@bob:server']) as never)
-    mockGetDevices
-      .mockRejectedValueOnce(new Error('network'))
-      .mockResolvedValueOnce([
-        { deviceId: 'bobDev1', userId: '@bob:server', displayName: 'Bob', lastSeenTs: 2, lastSeenIp: '2.2.2.2' }
-      ])
-    mockGetStatus.mockResolvedValueOnce({
-      verified: false,
-      crossSigningVerified: false,
-      devicesCrossSigningVerified: false,
-      tofu: false
-    })
+    mockGetDevices.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce([
+      makeDeviceInfo({
+        deviceId: 'bobDev1',
+        userId: '@bob:server',
+        displayName: 'Bob',
+        lastSeenTs: 2,
+        lastSeenIp: '2.2.2.2'
+      })
+    ])
+    mockGetStatus.mockResolvedValueOnce(makeDeviceVerificationResult())
 
     const { unverifiedDevices, loadUnverifiedDevicesInRoom } = useDeviceTrust()
     await loadUnverifiedDevicesInRoom('!room:server')

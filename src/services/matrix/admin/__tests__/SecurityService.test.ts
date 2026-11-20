@@ -6,6 +6,16 @@ import {
   FeatureFlagFixture,
   FeatureFlagPageFixture
 } from '@/services/matrix/__tests__/fixtures/generated'
+import {
+  makeFeatureFlag,
+  makeFeatureFlagPage,
+  makeFederationDestination,
+  makeIpBlock,
+  makeSamlMapping,
+  makeSamlMappingPage,
+  makeSecurityEvent,
+  makeSecurityEventsPage
+} from '@/services/matrix/admin/__tests__/fixtures/security'
 import { AdminSecurityService } from '../SecurityService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -143,9 +153,10 @@ describe('AdminSecurityService', () => {
   })
 
   it('lists feature flags with detailed fields', async () => {
-    ;(admin as any).listFeatureFlags.mockResolvedValueOnce({
-      flags: [
-        {
+    // FeatureFlagPage 必填 `total`（旧 mock 漏了它）
+    ;(admin as any).listFeatureFlags.mockResolvedValueOnce(
+      makeFeatureFlagPage([
+        makeFeatureFlag({
           flag_key: 'flag-x',
           status: 'enabled',
           target_scope: 'global',
@@ -156,9 +167,9 @@ describe('AdminSecurityService', () => {
           created_ts: 1,
           updated_ts: 2,
           targets: [{ subject_type: 'user', subject_id: '@alice:server' }]
-        }
-      ]
-    })
+        })
+      ])
+    )
 
     await expect(service.listFeatureFlagsDetailed()).resolves.toEqual([
       {
@@ -179,30 +190,33 @@ describe('AdminSecurityService', () => {
   })
 
   it('gets, saves and deletes feature flag detail', async () => {
-    ;(admin as any).getFeatureFlag.mockResolvedValueOnce({
-      flag_key: 'flag-y',
-      status: 'disabled',
-      target_scope: 'global',
-      rollout_percent: 0,
-      expires_at: null,
-      reason: 'hold',
-      created_by: '@admin:server',
-      created_ts: 3,
-      updated_ts: 4,
-      targets: []
-    })
-    ;(admin as any).setFeatureFlag.mockResolvedValueOnce({
-      flag_key: 'flag-y',
-      status: 'enabled',
-      target_scope: 'global',
-      rollout_percent: 50,
-      expires_at: 123,
-      reason: 'gradual',
-      created_by: '@admin:server',
-      created_ts: 3,
-      updated_ts: 5,
-      targets: [{ subject_type: 'user', subject_id: '@bob:server' }]
-    })
+    ;(admin as any).getFeatureFlag.mockResolvedValueOnce(
+      makeFeatureFlag({
+        flag_key: 'flag-y',
+        status: 'disabled',
+        target_scope: 'global',
+        rollout_percent: 0,
+        expires_at: null,
+        reason: 'hold',
+        created_by: '@admin:server',
+        created_ts: 3,
+        updated_ts: 4
+      })
+    )
+    ;(admin as any).setFeatureFlag.mockResolvedValueOnce(
+      makeFeatureFlag({
+        flag_key: 'flag-y',
+        status: 'enabled',
+        target_scope: 'global',
+        rollout_percent: 50,
+        expires_at: 123,
+        reason: 'gradual',
+        created_by: '@admin:server',
+        created_ts: 3,
+        updated_ts: 5,
+        targets: [{ subject_type: 'user', subject_id: '@bob:server' }]
+      })
+    )
     ;(admin as any).deleteFeatureFlag.mockResolvedValueOnce(undefined)
 
     await expect(service.getFeatureFlagDetail('flag-y')).resolves.toEqual(
@@ -245,29 +259,28 @@ describe('AdminSecurityService', () => {
   })
 
   it('delegates federation server status with throwOnError false', async () => {
-    ;(admin as any).getFederationDestination.mockResolvedValueOnce({ online: true })
+    // 该端点返回的是完整 `FederationDestination`（旧 mock 的 `{ online: true }` 不是真实线格式）
+    const destination = makeFederationDestination({ destination: 'server.com' })
+    ;(admin as any).getFederationDestination.mockResolvedValueOnce(destination)
 
-    await expect(service.getFederationServerStatus('server.com')).resolves.toEqual({ online: true })
+    await expect(service.getFederationServerStatus('server.com')).resolves.toEqual(destination)
     expect((admin as any).getFederationDestination).toHaveBeenCalledWith('server.com', false)
   })
 
   it('maps saml mappings pagination response', async () => {
-    ;(admin as any).listSamlMappings.mockResolvedValueOnce({
-      mappings: [{ name_id: 'n1' }],
-      next_token: 'tok'
-    })
+    const mapping = makeSamlMapping('n1')
+    ;(admin as any).listSamlMappings.mockResolvedValueOnce(makeSamlMappingPage([mapping], 'tok'))
 
     await expect(service.getSamlMappings(10, 'from')).resolves.toEqual({
-      mappings: [{ name_id: 'n1' }],
+      mappings: [mapping],
       nextToken: 'tok'
     })
   })
 
   it('merges security filters and pagination', async () => {
-    ;(admin as any).listSecurityEvents.mockResolvedValueOnce({
-      events: [{ id: 1 }],
-      next_token: 'n1'
-    })
+    // 安全事件的键是 `event_id/event_type/user_id/ts`（旧 mock 用的 `{ id: 1 }` 不是真实线格式）
+    const event = makeSecurityEvent({ event_id: '$e1', event_type: 'login_fail' })
+    ;(admin as any).listSecurityEvents.mockResolvedValueOnce(makeSecurityEventsPage([event], 'n1'))
 
     const result = await service.getSecurityEvents(50, 'from', { event_type: 'login_fail' })
 
@@ -277,17 +290,16 @@ describe('AdminSecurityService', () => {
       event_type: 'login_fail'
     })
     expect(result).toEqual({
-      events: [{ id: 1 }],
+      events: [event],
       nextToken: 'n1'
     })
   })
 
   it('maps blockIp options to SDK snake_case fields', async () => {
-    ;(admin as any).blockIp.mockResolvedValueOnce({ ip: '1.2.3.4' })
+    const block = makeIpBlock({ ip: '1.2.3.4' })
+    ;(admin as any).blockIp.mockResolvedValueOnce(block)
 
-    await expect(service.blockIp('1.2.3.4', { cidr: 24, expireAt: 999, reason: 'abuse' })).resolves.toEqual({
-      ip: '1.2.3.4'
-    })
+    await expect(service.blockIp('1.2.3.4', { cidr: 24, expireAt: 999, reason: 'abuse' })).resolves.toEqual(block)
     expect((admin as any).blockIp).toHaveBeenCalledWith('1.2.3.4', {
       cidr: 24,
       expire_at: 999,

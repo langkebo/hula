@@ -36,6 +36,14 @@ export type { Friend, FriendRequest }
 
 const logger = createLogger('MatrixFriendService')
 
+/** 好友状态详情（与 SDK `FriendStatusInfo` 同形）。 */
+export interface FriendStatusInfo {
+  user_id: string
+  status: string
+  is_friend?: boolean
+  are_friends?: boolean
+}
+
 /** 好友列表缓存 TTL：覆盖启动阶段的重复读取；写操作另有代际失效，不依赖它。 */
 const FRIENDS_CACHE_TTL_MS = 15_000
 
@@ -355,7 +363,7 @@ class MatrixFriendService {
    * 失败语义为 fail-loud：SDK 调用失败时向上抛错。仅「无 client」与
    * 「FriendManager 未提供该接口」返回 null。
    */
-  async getFriendStatusInfo(userId: string): Promise<Record<string, unknown> | null> {
+  async getFriendStatusInfo(userId: string): Promise<FriendStatusInfo | null> {
     const client = matrixClientService.getClient()
     if (!client) return null
     const friendManager = client.getFriendManager()
@@ -363,8 +371,7 @@ class MatrixFriendService {
 
     const result = await friendManager.getFriendStatusInfo(userId)
     logger.info(`[MatrixFriend] 获取好友状态详情成功: ${userId}`)
-    // SDK 返回 FriendStatusInfo（具体接口，无索引签名）；保持公开契约 Record<string, unknown> | null
-    return unknownToObject(result)
+    return unknownToObject<FriendStatusInfo>(result)
   }
 
   async searchFriendsViaApi(

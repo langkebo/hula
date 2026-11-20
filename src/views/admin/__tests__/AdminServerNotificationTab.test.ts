@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminServerNotificationTab from '../AdminServerNotificationTab.vue'
+import { makeSystemNotificationsPage } from './fixtures/serverNotification'
 
 const mocks = vi.hoisted(() => ({
   getSystemNotifications: vi.fn(),
@@ -275,7 +276,7 @@ describe('AdminServerNotificationTab', () => {
   })
 
   it('空列表显示空状态', async () => {
-    mocks.getSystemNotifications.mockResolvedValueOnce({ notifications: [], nextToken: undefined })
+    mocks.getSystemNotifications.mockResolvedValueOnce(makeSystemNotificationsPage())
     const wrapper = await mountTab()
 
     expect(wrapper.find('[data-testid="server-notification-empty"]').exists()).toBe(true)

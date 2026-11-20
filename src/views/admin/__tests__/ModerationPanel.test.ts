@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import ModerationPanel from '../ModerationPanel.vue'
+import { makeStatusCount } from './fixtures/eventReport'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -232,7 +233,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
   it('挂载时加载事件举报列表与统计', async () => {
     listReportsMock.mockResolvedValue([sampleEventReport])
     getReportsCountMock.mockResolvedValue({ total_reports: 1 })
-    getStatusCountMock.mockResolvedValueOnce({ status: 'open', count: 1 })
+    getStatusCountMock.mockResolvedValueOnce(makeStatusCount('open', 1))
 
     const wrapper = mountPanel()
     await flushPromises()

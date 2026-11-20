@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeProfile } from '@/services/matrix/user/__tests__/fixtures/profile'
 import FriendInfo from '../FriendInfo.vue'
 
 /**
@@ -94,7 +95,7 @@ describe('FriendInfo 资料读取失败不伪装成「未知」', () => {
   })
 
   it('重试成功后回填昵称并隐藏错误提示', async () => {
-    getProfileMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({ displayname: 'Alice' })
+    getProfileMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(makeProfile({ displayname: 'Alice' }))
 
     const wrapper = mountPage()
     await flushPromises()

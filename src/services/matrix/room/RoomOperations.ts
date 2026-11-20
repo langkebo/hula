@@ -12,6 +12,20 @@ const logger = createLogger('RoomOperations')
 /** 私密模式状态事件类型：房间级持久化，重进房间时据此恢复开关。 */
 export const PRIVATE_MODE_STATE_EVENT_TYPE = 'com.hula.private_mode'
 
+/** MSC4354 `GET /sticky_events` 响应中的单条粘性事件。 */
+export interface StickyEventEntry {
+  event_id: string
+  event_type: string
+  user_id: string
+  sticky_duration_ms?: number
+  sticky_expiry_ts?: number
+}
+
+/** MSC4354 `GET /sticky_events` 响应（`{ events: [...] }`）。 */
+export interface StickyEventsOutcome {
+  events?: StickyEventEntry[]
+}
+
 /**
  * 房间操作门面：置顶 / 粘性事件 / 成员资料 / 通知级别。
  *
@@ -112,10 +126,10 @@ export class RoomOperations extends RoomOperationsModerationMethods {
     )
   }
 
-  async getStickyEvents(roomId: string): Promise<Record<string, unknown>> {
+  async getStickyEvents(roomId: string): Promise<StickyEventsOutcome> {
     const client = this.getClient()
     try {
-      return await client.getRoomManager().getStickyEvents(roomId)
+      return (await client.getRoomManager().getStickyEvents(roomId)) as StickyEventsOutcome
     } catch (err) {
       // R-12: sticky events 获取失败不应静默
       logger.error(`获取 sticky events 失败: ${roomId} ${err}`)

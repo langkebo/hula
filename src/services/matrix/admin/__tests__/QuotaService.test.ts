@@ -1,5 +1,14 @@
 import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeMediaQuotaAlert,
+  makeMediaQuotaAlerts,
+  makeMediaQuotaAlertsUnavailable,
+  makeMediaQuotaStats,
+  makeMediaQuotaStatsUnavailable,
+  makeMediaQuotaUsage,
+  makeServerMediaQuota
+} from '@/services/matrix/admin/__tests__/fixtures/quota'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -42,7 +51,7 @@ describe('AdminQuotaService', () => {
   })
 
   it('checkQuota 走媒体管理器并补出 percentage / exceeded', async () => {
-    checkQuotaMock.mockResolvedValueOnce({ limit: 100, used: 25, remaining: 75 })
+    checkQuotaMock.mockResolvedValueOnce(makeMediaQuotaUsage({ limit: 100, used: 25, remaining: 75 }))
 
     await expect(service.checkQuota()).resolves.toEqual({
       limit: 100,
@@ -54,7 +63,7 @@ describe('AdminQuotaService', () => {
   })
 
   it('checkQuota 在 used 达到 limit 时标记 exceeded', async () => {
-    checkQuotaMock.mockResolvedValueOnce({ limit: 100, used: 100, remaining: 0 })
+    checkQuotaMock.mockResolvedValueOnce(makeMediaQuotaUsage({ limit: 100, used: 100, remaining: 0 }))
 
     await expect(service.checkQuota()).resolves.toMatchObject({ percentage: 100, exceeded: true })
   })
@@ -66,10 +75,9 @@ describe('AdminQuotaService', () => {
   })
 
   it('getQuotaStats 透传真实字段（storageBytes / mediaCount / limitBytes）', async () => {
-    getQuotaStatsMock.mockResolvedValueOnce({
-      ok: true,
-      stats: { storageBytes: 2048, mediaCount: 3, limitBytes: 4096 }
-    })
+    getQuotaStatsMock.mockResolvedValueOnce(
+      makeMediaQuotaStats({ storageBytes: 2048, mediaCount: 3, limitBytes: 4096 })
+    )
 
     await expect(service.getQuotaStats()).resolves.toEqual({
       storageBytes: 2048,
@@ -78,28 +86,30 @@ describe('AdminQuotaService', () => {
     })
 
     // 取不到时把原因带进错误，后台能区分「服务端无配额」与「本次失败」
-    getQuotaStatsMock.mockResolvedValueOnce({ ok: false, reason: 'unsupported' })
+    getQuotaStatsMock.mockResolvedValueOnce(makeMediaQuotaStatsUnavailable('unsupported'))
     await expect(service.getQuotaStats()).rejects.toThrow('获取配额统计失败（unsupported）')
   })
 
   it('getQuotaAlerts 透传媒体管理器的告警数组，失败时抛错而非返回空数组', async () => {
-    const alert = { alert_id: 'a1', alert_type: 'quota_warning' }
-    getQuotaAlertsMock.mockResolvedValueOnce({ ok: true, alerts: [alert] })
+    const alert = makeMediaQuotaAlert({ alert_id: 'a1' })
+    getQuotaAlertsMock.mockResolvedValueOnce(makeMediaQuotaAlerts([alert]))
 
     await expect(service.getQuotaAlerts()).resolves.toEqual([alert])
 
     // 与 getQuotaStats 同口径：失败必须抛错，不能冒充「暂无告警」
-    getQuotaAlertsMock.mockResolvedValueOnce({ ok: false, reason: 'unavailable' })
+    getQuotaAlertsMock.mockResolvedValueOnce(makeMediaQuotaAlertsUnavailable('unavailable'))
     await expect(service.getQuotaAlerts()).rejects.toThrow('获取配额告警失败（unavailable）')
   })
 
   it('getServerQuota 走 admin media 端点并映射 total_size 等字段', async () => {
-    getMediaQuota.mockResolvedValueOnce({
-      total_size: 1000,
-      total_count: 5,
-      default_size_limit: 100,
-      default_count_limit: 10
-    })
+    getMediaQuota.mockResolvedValueOnce(
+      makeServerMediaQuota({
+        total_size: 1000,
+        total_count: 5,
+        default_size_limit: 100,
+        default_count_limit: 10
+      })
+    )
 
     await expect(service.getServerQuota()).resolves.toEqual({
       totalSize: 1000,

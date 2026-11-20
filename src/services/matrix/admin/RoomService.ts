@@ -3,7 +3,22 @@ import type { MatrixClient, RoomStatsOverview } from '@/services/matrix/sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
-import type { AdminRoomTokenSync, RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'
+import type {
+  AdminRoomEventContextInfo,
+  AdminRoomEventItem,
+  AdminRoomForwardExtremitiesInfo,
+  AdminRoomListingsInfo,
+  AdminRoomSearchResultItem,
+  AdminRoomStatsInfo,
+  AdminRoomTokenSync,
+  AdminSpaceInfo,
+  AdminSpaceRoom,
+  AdminSpaceStatsInfo,
+  AdminSpaceUser,
+  RoomInfo,
+  RoomState,
+  ShutdownRoomResult
+} from './AdminTypes'
 
 const logger = createLogger('RoomService')
 
@@ -302,22 +317,22 @@ export class AdminRoomService {
     }
   }
 
-  async getSingleRoomStats(roomId: string): Promise<Record<string, unknown> | null> {
+  async getSingleRoomStats(roomId: string): Promise<AdminRoomStatsInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomStatsByRoom(roomId)
-      return unknownToObject(result)
+      return unknownToObject<AdminRoomStatsInfo>(result)
     } catch (err) {
       logger.error(`[Admin] 获取单房间统计失败: ${err}`)
       return null
     }
   }
 
-  async getRoomListings(roomId: string): Promise<Record<string, unknown> | null> {
+  async getRoomListings(roomId: string): Promise<AdminRoomListingsInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomListings(roomId)
-      return unknownToObject(result)
+      return unknownToObject<AdminRoomListingsInfo>(result)
     } catch (err) {
       logger.error(`[Admin] 获取房间公开列表项失败: ${err}`)
       return null
@@ -372,11 +387,11 @@ export class AdminRoomService {
     }
   }
 
-  async getRoomEventContext(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
+  async getRoomEventContext(roomId: string, eventId: string): Promise<AdminRoomEventContextInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomEventContext(roomId, eventId)
-      return unknownToObject(result)
+      return unknownToObject<AdminRoomEventContextInfo>(result)
     } catch (err) {
       logger.error(`[Admin] 获取事件上下文失败: ${err}`)
       return null
@@ -388,14 +403,14 @@ export class AdminRoomService {
     searchTerm: string,
     limit = DEFAULT_PAGE_LIMIT
   ): Promise<{
-    results: Array<Record<string, unknown>>
+    results: AdminRoomEventItem[]
     nextBatch?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.searchRoomEvents(roomId, { search_term: searchTerm, limit })
       return {
-        results: (result?.results ?? []).map((e) => unknownToObject(e) ?? {}),
+        results: (result?.results ?? []).map((e) => unknownToObject<AdminRoomEventItem>(e) ?? {}),
         nextBatch: undefined
       }
     } catch (err) {
@@ -406,14 +421,14 @@ export class AdminRoomService {
 
   /** 按关键词搜索房间。 */
   async searchRooms(searchTerm: string): Promise<{
-    rooms: Array<Record<string, unknown>>
+    rooms: AdminRoomSearchResultItem[]
     nextBatch?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.searchRooms({ search_term: searchTerm })
       return {
-        rooms: (result?.results ?? []).map((e) => unknownToObject(e) ?? {}),
+        rooms: (result?.results ?? []).map((e) => unknownToObject<AdminRoomSearchResultItem>(e) ?? {}),
         nextBatch: result?.next_batch ?? undefined
       }
     } catch (err) {
@@ -422,15 +437,23 @@ export class AdminRoomService {
     }
   }
 
-  async getRoomForwardExtremities(roomId: string): Promise<Array<Record<string, unknown>>> {
+  /**
+   * 前向极点数（`GET /_synapse/admin/v1/rooms/{room_id}/forward_extremities`）。
+   *
+   * 后端响应是 `{room_id, forward_extremities: number}`（整数），不是极点对象数组。
+   * 失败返回 `null`，让调用方能区分「读取失败」与「0 个极点」。
+   */
+  async getRoomForwardExtremities(roomId: string): Promise<AdminRoomForwardExtremitiesInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomForwardExtremities(roomId)
-      if (Array.isArray(result)) return result as Array<Record<string, unknown>>
-      return []
+      return {
+        roomId: result?.room_id ?? roomId,
+        forwardExtremities: result?.forward_extremities ?? 0
+      }
     } catch (err) {
       logger.error(`[Admin] 获取房间前向极值失败: ${err}`)
-      return []
+      return null
     }
   }
 
@@ -438,14 +461,14 @@ export class AdminRoomService {
     limit: number = 50,
     from?: string
   ): Promise<{
-    spaces: Array<Record<string, unknown>>
+    spaces: AdminSpaceInfo[]
     next_batch?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listSpaces(from, limit)
       return {
-        spaces: (result?.spaces ?? []).map((s) => unknownToObject(s) ?? {}),
+        spaces: (result?.spaces ?? []).map((s) => unknownToObject<AdminSpaceInfo>(s) ?? {}),
         next_batch: undefined
       }
     } catch (err) {
@@ -465,44 +488,44 @@ export class AdminRoomService {
     }
   }
 
-  async getSpaceDetails(spaceId: string): Promise<Record<string, unknown> | null> {
+  async getSpaceDetails(spaceId: string): Promise<AdminSpaceInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpace(spaceId)
-      return unknownToObject(result)
+      return unknownToObject<AdminSpaceInfo>(result)
     } catch (err) {
       logger.error(`[Admin] 获取空间详情失败: ${err}`)
       return null
     }
   }
 
-  async getSpaceUsers(spaceId: string): Promise<Array<Record<string, unknown>>> {
+  async getSpaceUsers(spaceId: string): Promise<AdminSpaceUser[]> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceUsers(spaceId)
-      return (result?.users ?? []).map((u) => unknownToObject(u) ?? {})
+      return (result?.users ?? []).map((u) => unknownToObject<AdminSpaceUser>(u) ?? {})
     } catch (err) {
       logger.error(`[Admin] 获取空间用户失败: ${err}`)
       return []
     }
   }
 
-  async getSpaceRooms(spaceId: string): Promise<Array<Record<string, unknown>>> {
+  async getSpaceRooms(spaceId: string): Promise<AdminSpaceRoom[]> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceRooms(spaceId)
-      return (result?.rooms ?? []).map((r) => unknownToObject(r) ?? {})
+      return (result?.rooms ?? []).map((r) => unknownToObject<AdminSpaceRoom>(r) ?? {})
     } catch (err) {
       logger.error(`[Admin] 获取空间房间失败: ${err}`)
       return []
     }
   }
 
-  async getSpaceStats(spaceId: string): Promise<Record<string, unknown> | null> {
+  async getSpaceStats(spaceId: string): Promise<AdminSpaceStatsInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceStats(spaceId)
-      return unknownToObject(result)
+      return unknownToObject<AdminSpaceStatsInfo>(result)
     } catch (err) {
       logger.error(`[Admin] 获取空间统计失败: ${err}`)
       return null
@@ -550,23 +573,14 @@ export class AdminRoomService {
       topic: room.topic,
       joinedMembers: room.joined_members ?? 0,
       joinedLocalMembers: room.joined_local_members ?? 0,
-      invitedMembers: room.invited_members ?? 0,
+      // 后端房间接口从不返回邀请人数与创建时间，DTO 保留 0 / undefined 而不是伪造
+      invitedMembers: 0,
       invitedLocalMembers: 0,
-      createTime: room.created_ts,
       creator: room.creator,
-      public: room.public
+      public: room.is_public
     }
   }
 }
 
-type RoomInfoSdk = {
-  room_id: string
-  name?: string
-  topic?: string
-  joined_members?: number
-  joined_local_members?: number
-  invited_members?: number
-  created_ts?: number
-  creator?: string
-  public?: boolean
-}
+/** 后端房间端点返回的 wire 结构（SDK 已按后端 ledger 定型） */
+type RoomInfoSdk = import('matrix-js-sdk/admin').RoomInfo

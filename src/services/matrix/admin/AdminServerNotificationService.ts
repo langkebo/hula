@@ -1,15 +1,35 @@
 import { DEFAULT_PAGE_LIMIT } from '@/common/constants'
+import type { DynamicConfig, IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import type { ServerNoticeInfo, ServerNoticeResult, SystemNotificationInfo } from './AdminTypes'
 
 const logger = createLogger('AdminServerNotificationService')
 
 /**
+ * 系统通知详情的原始响应（`GET /_synapse/admin/v1/notifications/{notificationId}`）。
+ *
+ * 后端字段存在历史别名（`notification_id`/`id`、`created_ts`/`created_at`/`received_ts`），
+ * 与列表响应共用同一映射函数，故保留索引签名。
+ */
+export interface SystemNotificationResponse {
+  notification_id?: string
+  id?: string
+  content?: string
+  type?: string
+  target_users?: string[]
+  created_ts?: number
+  created_at?: number
+  received_ts?: number
+  [key: string]: unknown
+}
+
+/**
  * 系统通知管理所需的 SDK AdminManager 子集。
  *
  * 注：SDK 侧这些方法均为可选导出，这里保持可选，避免因版本差异导致类型不可用。
+ * 导出仅为让测试夹具从该声明推导 wire 响应类型，不作为对外 API。
  */
-type ServerNotificationAdminSdk = {
+export type ServerNotificationAdminSdk = {
   sendServerNotice(
     arg1: string,
     arg2?: string | { msgtype: string; body: string; [k: string]: unknown },
@@ -19,22 +39,22 @@ type ServerNotificationAdminSdk = {
     fromOrLimit?: string | number,
     limit?: number
   ): Promise<{ notices?: unknown[]; next_token?: string } | null>
-  createNotification?(payload: Record<string, unknown>): Promise<{ notification_id?: string; [key: string]: unknown }>
+  createNotification?(payload: DynamicConfig): Promise<{ notification_id?: string; [key: string]: unknown }>
   listNotifications?(
     from?: string,
     limit?: number
   ): Promise<{
-    notifications: Array<Record<string, unknown>>
+    notifications: SystemNotificationResponse[]
     next_token?: string
   }>
-  getNotification?(notificationId: string): Promise<Record<string, unknown>>
-  updateNotification?(notificationId: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>
+  getNotification?(notificationId: string): Promise<SystemNotificationResponse>
+  updateNotification?(notificationId: string, payload: DynamicConfig): Promise<SystemNotificationResponse>
   deleteNotification?(notificationId: string): Promise<void>
 }
 
 type ServerNotificationSdkGetter = () => Promise<unknown>
 
-function mapSystemNotification(raw: Record<string, unknown>): SystemNotificationInfo {
+function mapSystemNotification(raw: SystemNotificationResponse): SystemNotificationInfo {
   const targets = raw.target_users
   const created = raw.created_ts ?? raw.created_at ?? raw.received_ts
   return {
@@ -60,7 +80,7 @@ export class AdminServerNotificationService {
   }
 
   /** 向指定用户发送服务器通知。 */
-  async sendServerNotice(userId: string, content: Record<string, unknown>): Promise<ServerNoticeResult> {
+  async sendServerNotice(userId: string, content: IContent): Promise<ServerNoticeResult> {
     try {
       const admin = await this.sdk()
       const result = await admin.sendServerNotice(
@@ -86,11 +106,11 @@ export class AdminServerNotificationService {
       if (!result) return null
       return {
         notices: (result.notices ?? []).map((raw) => {
-          const n = raw as Record<string, unknown>
+          const n = raw as SystemNotificationResponse
           return {
             userId: (n.user_id as string) || '',
             sentTs: n.sent_ts as number | undefined,
-            content: n.content as Record<string, unknown> | undefined
+            content: n.content as IContent | undefined
           }
         })
       }
@@ -154,7 +174,7 @@ export class AdminServerNotificationService {
   }
 
   /** 更新指定系统通知的内容或类型等字段。 */
-  async updateSystemNotification(notificationId: string, updates: Record<string, unknown>): Promise<void> {
+  async updateSystemNotification(notificationId: string, updates: DynamicConfig): Promise<void> {
     try {
       const admin = await this.sdk()
       await admin.updateNotification?.(notificationId, updates)

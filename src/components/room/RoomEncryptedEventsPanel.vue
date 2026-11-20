@@ -53,15 +53,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ErrorState from '@/components/common/ErrorState.vue'
+import type { EncryptedEventsOutcome, EncryptedRoomEvent } from '@/services/matrix/room/AccountDataService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { truncateMiddle } from '@/utils/StringUtils'
-
-interface EncryptedEvent {
-  event_id: string
-  algorithm: string
-  session_id: string
-  sender?: string
-}
 
 const props = defineProps<{
   roomId: string
@@ -70,13 +64,13 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const loading = ref(true)
-const eventsData = ref<Record<string, unknown>>({})
+const eventsData = ref<EncryptedEventsOutcome>({})
 // 读取失败不能落成 {}：那会把「读不到加密事件」渲染成「本群没有加密事件」
 const loadFailed = ref(false)
 
-const events = computed<EncryptedEvent[]>(() => {
+const events = computed<EncryptedRoomEvent[]>(() => {
   const list = eventsData.value?.events
-  return Array.isArray(list) ? (list as EncryptedEvent[]) : []
+  return Array.isArray(list) ? list : []
 })
 
 async function loadEvents() {

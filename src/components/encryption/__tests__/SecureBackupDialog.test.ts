@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeKeyBackupInfo } from '@/services/matrix/crypto/__tests__/fixtures/keyBackup'
 import SecureBackupDialog from '../SecureBackupDialog.vue'
 
 const {
@@ -239,12 +240,14 @@ describe('SecureBackupDialog', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="secure-backup-status-error"]').exists()).toBe(true)
 
-    getKeyBackupInfoMock.mockResolvedValueOnce({
-      version: 'backup-version-1',
-      algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2',
-      auth_data: {},
-      count: 8
-    })
+    getKeyBackupInfoMock.mockResolvedValueOnce(
+      makeKeyBackupInfo({
+        version: 'backup-version-1',
+        algorithm: 'm.megolm_backup.v1.curve25519-aes-sha2',
+        authData: {},
+        count: 8
+      })
+    )
     await wrapper.find('[data-testid="secure-backup-status-retry"]').trigger('click')
     await flushPromises()
 

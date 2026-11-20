@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeNotificationHistory } from '@/services/matrix/notifications/__tests__/fixtures/notificationHistory'
 import MobileNotificationHistory from '../MobileNotificationHistory.vue'
 
 const showToastMock = vi.fn()
@@ -71,7 +72,7 @@ describe('MobileNotificationHistory 四态', () => {
   it('错误态点重试后读取成功，渲染通知列表', async () => {
     getNotificationsMock
       .mockRejectedValueOnce(new Error('network down'))
-      .mockResolvedValueOnce({ notifications: [unreadNotification], next_token: undefined })
+      .mockResolvedValueOnce(makeNotificationHistory({ notifications: [unreadNotification] }))
 
     const wrapper = mount(MobileNotificationHistory)
     await flushPromises()

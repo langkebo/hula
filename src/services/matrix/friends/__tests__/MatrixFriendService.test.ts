@@ -4,6 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
+import { makeFriendClientStub } from './fixtures/friendManager'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -261,7 +262,7 @@ describe('MatrixFriendService', () => {
       }
 
       vi.mocked(matrixClientService.getClient)
-        .mockReturnValueOnce({ friendManager: oldManager } as unknown as MatrixClient)
+        .mockReturnValueOnce(makeFriendClientStub({ friendManager: oldManager }) as unknown as MatrixClient)
         .mockReturnValue({ friendManager: newManager } as unknown as MatrixClient)
 
       await matrixFriendSync.initialize()

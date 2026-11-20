@@ -39,6 +39,10 @@ vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
 
 import { readFile } from '@tauri-apps/plugin-fs'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
+import {
+  makeEncryptedUploadResult,
+  makeVoiceUploadResult
+} from '@/services/matrix/media/__tests__/fixtures/voiceUpload'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
 import { useVoiceInput } from '../useVoiceInput'
@@ -52,8 +56,8 @@ describe('useVoiceInput', () => {
     const bytes = new Uint8Array([1, 2, 3])
     vi.mocked(readFile).mockResolvedValueOnce(bytes)
     vi.mocked(cryptoSDKAdapter.getRoomEncryptionState).mockResolvedValueOnce('plaintext')
-    const fakeResult = { eventId: 'evt', httpUrl: 'http://x', mxcUrl: 'mxc://y', filename: 'voice.webm' }
-    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce(fakeResult as never)
+    const fakeResult = makeVoiceUploadResult({ httpUrl: 'http://x', mxcUrl: 'mxc://y' })
+    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce(fakeResult)
 
     const { uploadVoiceToMatrix } = useVoiceInput()
     const result = await uploadVoiceToMatrix('!room:srv', '/tmp/v.webm', 'voice.webm', 'audio/webm')
@@ -86,7 +90,7 @@ describe('useVoiceInput', () => {
   it('passes through custom filename + mimeType to the constructed File', async () => {
     vi.mocked(readFile).mockResolvedValueOnce(new Uint8Array([9]))
     vi.mocked(cryptoSDKAdapter.getRoomEncryptionState).mockResolvedValueOnce('plaintext')
-    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce({} as never)
+    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce(makeVoiceUploadResult())
     const { uploadVoiceToMatrix } = useVoiceInput()
     await uploadVoiceToMatrix('!r', '/a', 'custom.m4a', 'audio/mp4')
     const fileArg = vi.mocked(matrixVoiceService.uploadVoice).mock.calls[0][1] as File
@@ -97,25 +101,8 @@ describe('useVoiceInput', () => {
   it('uses encrypted upload pipeline when room encryption is enabled', async () => {
     vi.mocked(readFile).mockResolvedValueOnce(new Uint8Array([7, 8]))
     vi.mocked(cryptoSDKAdapter.getRoomEncryptionState).mockResolvedValueOnce('encrypted')
-    vi.mocked(matrixMediaService.uploadEncryptedFile).mockResolvedValueOnce({
-      contentUri: 'mxc://example.org/encrypted-voice',
-      size: 2,
-      mimetype: 'audio/webm',
-      encryptedFile: {
-        url: 'mxc://example.org/encrypted-voice',
-        iv: 'iv',
-        hashes: { sha256: 'hash' },
-        v: 'v2',
-        key: {
-          alg: 'A256CTR',
-          ext: true,
-          kty: 'oct',
-          k: 'test-key',
-          key_ops: ['encrypt', 'decrypt']
-        }
-      }
-    })
-    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce({} as never)
+    vi.mocked(matrixMediaService.uploadEncryptedFile).mockResolvedValueOnce(makeEncryptedUploadResult())
+    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce(makeVoiceUploadResult())
     const { uploadVoiceToMatrix } = useVoiceInput()
     await uploadVoiceToMatrix('!r', '/p', 'voice.webm', 'audio/webm')
     expect(matrixMediaService.uploadEncryptedFile).toHaveBeenCalledTimes(1)

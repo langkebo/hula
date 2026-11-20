@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeSpaceHierarchyPage, makeSpaceHierarchyRoomEntry } from '@/services/matrix/room/__tests__/fixtures/space'
 import PublicSpaceDiscoveryDialog from '../PublicSpaceDiscoveryDialog.vue'
 
 // === Mocks ===
@@ -175,9 +176,16 @@ describe('PublicSpaceDiscoveryDialog', () => {
 
   it('子空间读取失败后点击重试可恢复展示子空间', async () => {
     getPublicSpacesMock.mockResolvedValue([publicSpace])
-    getSpaceHierarchyMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({
-      rooms: [{ room_id: '!child-1:server', room_type: 'm.space', name: 'Child Space', num_joined_members: 7 }]
-    })
+    getSpaceHierarchyMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(
+      makeSpaceHierarchyPage([
+        makeSpaceHierarchyRoomEntry({
+          room_id: '!child-1:server',
+          room_type: 'm.space',
+          name: 'Child Space',
+          num_joined_members: 7
+        })
+      ])
+    )
     const wrapper = mountDialog()
     await flushPromises()
 

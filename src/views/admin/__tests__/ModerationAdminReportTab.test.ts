@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ModerationAdminReportTab from '../ModerationAdminReportTab.vue'
+import { makeAdminReportPage } from './fixtures/adminReport'
 
 const mocks = vi.hoisted(() => ({
   getAdminReports: vi.fn(),
@@ -251,7 +252,7 @@ describe('ModerationAdminReportTab', () => {
   })
 
   it('空列表显示空状态', async () => {
-    mocks.getAdminReports.mockResolvedValueOnce({ reports: [] })
+    mocks.getAdminReports.mockResolvedValueOnce(makeAdminReportPage())
     const wrapper = await mountTab()
 
     expect(wrapper.find('[data-testid="admin-report-empty"]').exists()).toBe(true)

@@ -1,12 +1,33 @@
 import type { FeatureFlag, FederationDestination as SdkFederationDestination } from 'matrix-js-sdk/admin'
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
+import type { SamlMapping, SamlMetadata } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
-import type { FederationDestination } from './AdminTypes'
+import type {
+  AdminAuditLogEntry,
+  AdminAuditLogPage,
+  AdminFederationServerStatus,
+  AdminIpBlock,
+  AdminIpReputation,
+  AdminSecurityEventsPage,
+  FederationDestination
+} from './AdminTypes'
 
 const logger = createLogger('SecurityService')
 
 type SecurityDomainSdkGetter = () => Promise<import('matrix-js-sdk/admin').AdminManager>
+
+/**
+ * 安全事件查询参数。
+ *
+ * `limit` / `from` 为分页字段，其余键是后端审计接口的过滤条件（`event`、`user_id`、`room_id` 等），
+ * 键集合随版本扩展，故保留索引签名。
+ */
+export interface SecurityEventQuery {
+  limit?: number
+  from?: string
+  [filter: string]: unknown
+}
 
 export interface AdminFeatureFlagTarget {
   subjectType: string
@@ -35,6 +56,67 @@ export interface AdminFeatureFlagInput {
   expiresAt?: number | null
   reason?: string
   targets?: AdminFeatureFlagTarget[]
+}
+
+/**
+ * `GET /_synapse/admin/v1/saml/config` 的响应。
+ *
+ * 服务端字段为 snake_case，同时兼容历史 camelCase 别名（`idpEntityId` 等）。
+ * 配置键集合随 homeserver 版本扩展，因此保留索引签名承载未建模字段。
+ */
+export interface SamlConfigResponse {
+  enabled?: boolean
+  saml_enabled?: boolean
+  entity_id?: string
+  idp_entity_id?: string
+  idpEntityId?: string
+  idp_url?: string
+  idpUrl?: string
+  sso_url?: string
+  sp_entity_id?: string
+  sp_url?: string
+  spUrl?: string
+  acs_url?: string
+  metadata_url?: string
+  /** 服务端新增的配置键（如签名/加密开关），不做穷举建模。 */
+  [key: string]: unknown
+}
+
+/**
+ * SAML IdP 元数据，`getSamlMetadata` 与 `refreshIdpMetadata` 共用。
+ *
+ * 元数据由 IdP 动态下发（含 XML 与 X.509 证书），字段集合不固定。
+ */
+export interface SamlMetadataResponse {
+  entity_id?: string
+  entityId?: string
+  sso_url?: string
+  ssoUrl?: string
+  slo_url?: string
+  nameid_format?: string
+  x509_certificates?: string[]
+  xml?: string
+  /** IdP 元数据中的其它扩展字段。 */
+  [key: string]: unknown
+}
+
+/** `getExperimentalFeatures` 中单个实验性开关的摘要。 */
+export interface ExperimentalFeatureInfo {
+  enabled: boolean
+  status: string
+  description: string
+  targetScope: string
+  rolloutPercent: number
+  reason: string
+  expiresAt: number | null
+  updatedTs: number
+  createdTs: number
+  targets: AdminFeatureFlagTarget[]
+}
+
+/** 实验性功能键值映射，键为开关 key（如 `msc1234`）。 */
+export interface ExperimentalFeaturesResponse {
+  [flagKey: string]: ExperimentalFeatureInfo
 }
 
 export class AdminSecurityService {
@@ -105,10 +187,7 @@ export class AdminSecurityService {
     from?: string,
     userId?: string,
     eventType?: string
-  ): Promise<{
-    logs: Array<Record<string, unknown>>
-    next_batch?: string | undefined
-  }> {
+  ): Promise<AdminAuditLogPage> {
     try {
       const admin = await this.sdkAdmin()
       const params: Record<string, string | number | undefined> = { limit }
@@ -120,7 +199,7 @@ export class AdminSecurityService {
       if (eventType) params.action = eventType
       const result = await admin.listAuditEvents(params)
       return {
-        logs: (result?.events ?? []).map((e) => unknownToObject(e) ?? {}),
+        logs: (result?.events ?? []).map((e) => unknownToObject<AdminAuditLogEntry>(e) ?? {}),
         next_batch: result?.next_batch != null ? String(result.next_batch) : undefined
       }
     } catch (err) {
@@ -129,7 +208,7 @@ export class AdminSecurityService {
     }
   }
 
-  async getSamlConfig(): Promise<Record<string, unknown>> {
+  async getSamlConfig(): Promise<SamlConfigResponse> {
     try {
       const admin = await this.sdkAdmin()
       return (await admin.getSamlConfig()) ?? {}
@@ -139,7 +218,7 @@ export class AdminSecurityService {
     }
   }
 
-  async getSamlMetadata(): Promise<Record<string, unknown>> {
+  async getSamlMetadata(): Promise<SamlMetadataResponse> {
     try {
       const admin = await this.sdkAdmin()
       return (await admin.getSamlMetadata()) ?? {}
@@ -159,7 +238,7 @@ export class AdminSecurityService {
     }
   }
 
-  async updateSamlConfig(config: Record<string, unknown>): Promise<void> {
+  async updateSamlConfig(config: Partial<SamlMetadata>): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
       await admin.updateSamlConfig(config)
@@ -170,7 +249,7 @@ export class AdminSecurityService {
     }
   }
 
-  async refreshIdpMetadata(): Promise<Record<string, unknown>> {
+  async refreshIdpMetadata(): Promise<SamlMetadataResponse> {
     try {
       const admin = await this.sdkAdmin()
       const metadata = await admin.refreshIdpMetadata()
@@ -193,9 +272,9 @@ export class AdminSecurityService {
     }
   }
 
-  async getExperimentalFeatures(): Promise<Record<string, unknown>> {
+  async getExperimentalFeatures(): Promise<ExperimentalFeaturesResponse> {
     const flags = await this.listFeatureFlagsDetailed()
-    const out: Record<string, unknown> = {}
+    const out: ExperimentalFeaturesResponse = {}
     for (const flag of flags) {
       out[flag.flagKey] = {
         enabled: flag.enabled,
@@ -267,11 +346,11 @@ export class AdminSecurityService {
     }
   }
 
-  async getFederationServerStatus(serverName: string): Promise<Record<string, unknown> | null> {
+  async getFederationServerStatus(serverName: string): Promise<AdminFederationServerStatus | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getFederationDestination(serverName, false)
-      return unknownToObject(result)
+      return unknownToObject<AdminFederationServerStatus>(result)
     } catch (err) {
       logger.error(`[Admin] 获取联邦服务器状态失败: ${err}`)
       return null
@@ -289,11 +368,11 @@ export class AdminSecurityService {
     }
   }
 
-  async getAuditEvent(eventId: string): Promise<Record<string, unknown> | null> {
+  async getAuditEvent(eventId: string): Promise<AdminAuditLogEntry | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getAuditEvent(eventId)
-      return unknownToObject(result)
+      return unknownToObject<AdminAuditLogEntry>(result)
     } catch (err) {
       logger.error(`[Admin] 获取审计事件详情失败: ${err}`)
       return null
@@ -304,7 +383,7 @@ export class AdminSecurityService {
     limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{
-    mappings: Array<Record<string, unknown>>
+    mappings: SamlMapping[]
     nextToken?: string | undefined
   }> {
     try {
@@ -320,7 +399,7 @@ export class AdminSecurityService {
     }
   }
 
-  async getSamlMapping(nameId: string): Promise<Record<string, unknown> | null> {
+  async getSamlMapping(nameId: string): Promise<SamlMapping | null> {
     try {
       const admin = await this.sdkAdmin()
       return (await admin.getSamlMapping(nameId)) ?? null
@@ -330,7 +409,7 @@ export class AdminSecurityService {
     }
   }
 
-  async updateSamlMapping(nameId: string, updates: Record<string, unknown>): Promise<void> {
+  async updateSamlMapping(nameId: string, updates: Partial<SamlMapping>): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
       await admin.updateSamlMapping(nameId, updates)
@@ -366,11 +445,11 @@ export class AdminSecurityService {
   async getSecurityEvents(
     limit = LARGE_PAGE_LIMIT,
     from?: string,
-    filters?: Record<string, unknown>
-  ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string | undefined } | null> {
+    filters?: SecurityEventQuery
+  ): Promise<AdminSecurityEventsPage | null> {
     try {
       const admin = await this.sdkAdmin()
-      const params: Record<string, unknown> = { limit }
+      const params: SecurityEventQuery = { limit }
       if (from) params.from = from
       if (filters) Object.assign(params, filters)
       const result = await admin.listSecurityEvents(params)
@@ -384,7 +463,7 @@ export class AdminSecurityService {
     }
   }
 
-  async getIpBlocks(): Promise<Array<Record<string, unknown>> | null> {
+  async getIpBlocks(): Promise<AdminIpBlock[] | null> {
     try {
       const admin = await this.sdkAdmin()
       return (await admin.listIpBlocks()) ?? null
@@ -397,7 +476,7 @@ export class AdminSecurityService {
   async blockIp(
     ip: string,
     options?: { cidr?: number; expireAt?: number; reason?: string }
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<AdminIpBlock | null> {
     try {
       const admin = await this.sdkAdmin()
       const sdkOptions: { cidr?: number; expire_at?: number; reason?: string } = {}
@@ -421,7 +500,7 @@ export class AdminSecurityService {
     }
   }
 
-  async getIpReputation(ip: string): Promise<Record<string, unknown> | null> {
+  async getIpReputation(ip: string): Promise<AdminIpReputation | null> {
     try {
       const admin = await this.sdkAdmin()
       return (await admin.getIpReputation(ip)) ?? null

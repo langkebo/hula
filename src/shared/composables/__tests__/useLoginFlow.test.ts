@@ -109,6 +109,7 @@ vi.mock('@/common/matrixErrorTranslator', () => ({
   })
 }))
 
+import { makeLoginResult } from '@/services/matrix/auth/__tests__/fixtures/session'
 import { useLoginFlow } from '../useLoginFlow'
 
 /** 填充手动登录表单，避免走「账号缺失」提前返回分支。 */
@@ -157,7 +158,7 @@ describe('useLoginFlow — 登录重入锁', () => {
     await flow.normalLogin('PC', true, false)
     expect(flow.loginStatus.value).toBe('failed')
 
-    h.loginWithPassword.mockResolvedValueOnce({ uid: '@alice:hs', accessToken: 'token' })
+    h.loginWithPassword.mockResolvedValueOnce(makeLoginResult('@alice:hs', 'token'))
     await flow.normalLogin('PC', true, false)
 
     expect(h.loginWithPassword).toHaveBeenCalledTimes(2)

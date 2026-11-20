@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeNotificationHistory } from '@/services/matrix/notifications/__tests__/fixtures/notificationHistory'
 import PushNotificationHistory from '../PushNotificationHistory.vue'
 
 /**
@@ -73,7 +74,7 @@ describe('PushNotificationHistory', () => {
 
   it('点击重试后重新拉取并渲染列表', async () => {
     getNotificationsMock.mockRejectedValueOnce(new Error('network down'))
-    getNotificationsMock.mockResolvedValueOnce({ notifications: [unreadNotification(2)] })
+    getNotificationsMock.mockResolvedValueOnce(makeNotificationHistory({ notifications: [unreadNotification(2)] }))
 
     const wrapper = mountHistory()
     await flushPromises()

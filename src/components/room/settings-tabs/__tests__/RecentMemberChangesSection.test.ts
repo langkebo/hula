@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { recentMemberChangesError } from '@/services/matrix/room/__tests__/fixtures/roomSettings'
 import RecentMemberChangesSection from '../RecentMemberChangesSection.vue'
 
 vi.mock('vue-i18n', () => ({
@@ -98,7 +99,7 @@ describe('RecentMemberChangesSection — 最近成员变更', () => {
   })
 
   it('读取失败时展示局部失败并可重试', async () => {
-    mocks.getRecentMemberChanges.mockResolvedValueOnce({ status: 'error' })
+    mocks.getRecentMemberChanges.mockResolvedValueOnce(recentMemberChangesError())
     const wrapper = await mountSection()
 
     expect(wrapper.find('[data-testid="recent-members-error"]').exists()).toBe(true)

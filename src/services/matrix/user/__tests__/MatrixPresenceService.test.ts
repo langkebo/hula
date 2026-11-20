@@ -4,6 +4,7 @@ import { registerPrivacyPreferenceHooks } from '@/services/matrix/privacyPrefere
 import { getLastSentPresence, recordSentPresence, resetSentPresence } from '@/utils/userStatus'
 import matrixClientService from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
+import { makePresenceList, makePresenceState } from './fixtures/presence'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -165,12 +166,9 @@ describe('MatrixPresenceService', () => {
 
   describe('getPresence', () => {
     it('should get presence using presenceManager', async () => {
-      mockPresenceManager.getPresence.mockResolvedValue({
-        presence: 'online',
-        status_msg: 'Working',
-        last_active_ago: 60000,
-        currently_active: true
-      })
+      mockPresenceManager.getPresence.mockResolvedValue(
+        makePresenceState({ status_msg: 'Working', last_active_ago: 60000 })
+      )
 
       const result = await matrixPresenceService.getPresence('@other:example.com')
 
@@ -186,12 +184,8 @@ describe('MatrixPresenceService', () => {
 
   describe('getCurrentPresence', () => {
     it('should get current user presence', async () => {
-      mockPresenceManager.getPresence.mockResolvedValue({
-        presence: 'online',
-        status_msg: null,
-        last_active_ago: 0,
-        currently_active: true
-      })
+      // 状态消息缺省 = SDK 省略该字段（契约是 `status_msg?: string`，不存在 null 形态）
+      mockPresenceManager.getPresence.mockResolvedValue(makePresenceState({ last_active_ago: 0 }))
 
       const result = await matrixPresenceService.getCurrentPresence()
 
@@ -201,7 +195,7 @@ describe('MatrixPresenceService', () => {
 
   describe('subscribeToPresence', () => {
     it('should subscribe using presenceManager', async () => {
-      const mockResponse = { presences: [] }
+      const mockResponse = makePresenceList()
       mockPresenceManager.subscribeToPresence.mockResolvedValue(mockResponse)
 
       const result = await matrixPresenceService.subscribeToPresence(['@a:example.com', '@b:example.com'])
@@ -224,8 +218,8 @@ describe('MatrixPresenceService', () => {
   describe('getBatchPresence', () => {
     it('should get presence for multiple users', async () => {
       mockPresenceManager.getPresence
-        .mockResolvedValueOnce({ presence: 'online', last_active_ago: 1000 })
-        .mockResolvedValueOnce({ presence: 'offline', last_active_ago: 5000 })
+        .mockResolvedValueOnce(makePresenceState({ presence: 'online', last_active_ago: 1000 }))
+        .mockResolvedValueOnce(makePresenceState({ presence: 'offline', last_active_ago: 5000 }))
 
       const result = await matrixPresenceService.getBatchPresence(['@a:example.com', '@b:example.com'])
 
@@ -239,7 +233,7 @@ describe('MatrixPresenceService', () => {
     it('should continue on individual errors', async () => {
       mockPresenceManager.getPresence
         .mockRejectedValueOnce(new Error('not found'))
-        .mockResolvedValueOnce({ presence: 'online', last_active_ago: 1000 })
+        .mockResolvedValueOnce(makePresenceState({ presence: 'online', last_active_ago: 1000 }))
 
       const result = await matrixPresenceService.getBatchPresence(['@a:example.com', '@b:example.com'])
 

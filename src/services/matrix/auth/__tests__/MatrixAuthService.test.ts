@@ -81,6 +81,7 @@ vi.mock('@/services/backend/config', () => ({
 
 import * as sdk from 'matrix-js-sdk'
 import matrixClientService from '../../MatrixClientService'
+import { makeClientLoginResult } from './fixtures/session'
 
 describe('MatrixAuthService', () => {
   beforeEach(() => {
@@ -169,12 +170,13 @@ describe('MatrixAuthService', () => {
 
       it('should keep using matrix client service when initialized', async () => {
         vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
-        vi.mocked(matrixClientService.login).mockResolvedValueOnce({
-          success: true,
-          userId: '@test:matrix.org',
-          accessToken: 'token123',
-          deviceId: 'device123'
-        })
+        vi.mocked(matrixClientService.login).mockResolvedValueOnce(
+          makeClientLoginResult({
+            userId: '@test:matrix.org',
+            accessToken: 'token123',
+            deviceId: 'device123'
+          })
+        )
 
         const result = await MatrixAuthService.login('testuser', 'password123', 'device-id', 'Device Name')
 

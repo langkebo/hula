@@ -1,3 +1,4 @@
+import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import { PREFIX_V3 } from '../paths/prefixes'
@@ -38,7 +39,13 @@ export interface RoomSummary {
   heroes: RoomSummaryHero[]
 }
 
-type RoomEphemeralEvent = Record<string, unknown>
+/** 房间临时事件（ephemeral，synapse-rust 扩展端点，仅约定常用字段）。 */
+export interface RoomEphemeralEvent {
+  type?: string
+  sender?: string
+  room_id?: string
+  content?: IContent
+}
 
 /**
  * synapse-rust 房间摘要 / 临时事件扩展。

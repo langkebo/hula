@@ -3,6 +3,7 @@
  * 允许在不使用密钥的情况下创建和恢复设备
  */
 
+import type { DehydratedDeviceData } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 
@@ -12,14 +13,14 @@ export interface DehydratedDevice {
   deviceId: string
   userId: string
   initialDeviceDisplayName?: string | undefined
-  deviceData?: Record<string, unknown> | undefined
+  deviceData?: DehydratedDeviceData | undefined
   createdAt: number
   expiresAt?: number | undefined
 }
 
 export interface CreateDehydratedDeviceParams {
   initialDeviceDisplayName?: string
-  deviceData?: Record<string, unknown>
+  deviceData?: DehydratedDeviceData
 }
 
 class MatrixDehydratedDeviceService {
@@ -55,7 +56,7 @@ class MatrixDehydratedDeviceService {
 
     try {
       const response = await client.getDehydratedDeviceManager().createDevice({
-        device_data: (deviceData || {}) as { algorithm: string; account: string },
+        device_data: deviceData ?? ({} as DehydratedDeviceData),
         ...(initialDeviceDisplayName !== undefined ? { initial_device_display_name: initialDeviceDisplayName } : {})
       })
 
@@ -85,7 +86,7 @@ class MatrixDehydratedDeviceService {
         deviceId: response.device_id,
         userId: client.getUserId() || '',
         initialDeviceDisplayName: response.initial_device_display_name,
-        deviceData: response.device_data as Record<string, unknown> | undefined,
+        deviceData: response.device_data,
         createdAt: response.created_at ?? Date.now(),
         expiresAt: response.expires_at
       }
@@ -110,7 +111,7 @@ class MatrixDehydratedDeviceService {
           deviceId: device.device_id,
           userId: client.getUserId() || '',
           initialDeviceDisplayName: device.initial_device_display_name,
-          deviceData: device.device_data as Record<string, unknown> | undefined,
+          deviceData: device.device_data,
           createdAt: device.created_at ?? Date.now(),
           expiresAt: device.expires_at
         })
@@ -140,9 +141,10 @@ class MatrixDehydratedDeviceService {
         }
       })
 
+      // 后端在 claim 响应里附加 access_token / device_id，SDK 以索引签名承载
       return {
-        accessToken: (response as Record<string, unknown>).access_token as string,
-        deviceId: (response as Record<string, unknown>).device_id as string
+        accessToken: response.access_token as string,
+        deviceId: response.device_id as string
       }
     } catch (error) {
       logger.error('认领设备失败:', error)
@@ -153,12 +155,12 @@ class MatrixDehydratedDeviceService {
   /**
    * 更新脱水设备数据
    */
-  async updateDeviceData(deviceId: string, deviceData: Record<string, unknown>): Promise<boolean> {
+  async updateDeviceData(deviceId: string, deviceData: DehydratedDeviceData): Promise<boolean> {
     const client = this.getClient()
     if (!client) return false
     try {
       await client.getDehydratedDeviceManager().updateDeviceData(deviceId, {
-        device_data: deviceData as { algorithm: string; account: string }
+        device_data: deviceData
       })
 
       return true

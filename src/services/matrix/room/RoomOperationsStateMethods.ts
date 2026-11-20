@@ -1,3 +1,4 @@
+import type { IContent } from '@/services/matrix/sdk'
 import { ConditionKind, Preset, PushRuleKind, Visibility } from '@/services/matrix/sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -47,7 +48,7 @@ export abstract class RoomOperationsStateMethods extends BaseMatrixService {
       const result = await client.getRoomTags(roomId)
       return result.tags ?? {}
     } catch (e) {
-      const err = e as Record<string, unknown>
+      const err = e as { errcode?: unknown; httpStatus?: unknown }
       if (err.errcode === 'M_UNRECOGNIZED' || err.errcode === 'M_NOT_FOUND' || err.httpStatus === 404) {
         this.tagsUnsupported = true
         if (!this.unsupportedLogged) {
@@ -115,18 +116,18 @@ export abstract class RoomOperationsStateMethods extends BaseMatrixService {
 
   /** 获取消息保留策略
    */
-  async getRetentionPolicy(roomId: string): Promise<{ content: Record<string, unknown> } | null> {
+  async getRetentionPolicy(roomId: string): Promise<{ content: IContent } | null> {
     const client = this.getClient()
     const room = client.getRoom(roomId)
     if (!room) return null
     const event = room.currentState.getStateEvents('m.room.retention', '')
     if (!event) return null
-    return { content: event.getContent() as Record<string, unknown> }
+    return { content: event.getContent() }
   }
 
   /** 设置消息保留策略
    */
-  async setRetentionPolicy(roomId: string, content: Record<string, unknown>): Promise<void> {
+  async setRetentionPolicy(roomId: string, content: IContent): Promise<void> {
     const client = this.getClient()
     await client.sendStateEvent(roomId, 'm.room.retention', content, '')
   }
@@ -173,7 +174,7 @@ export abstract class RoomOperationsStateMethods extends BaseMatrixService {
       try {
         await client.getPushManager().deletePushRule('global', PushRuleKind.Override, roomId)
       } catch (err) {
-        const errcode = (err as Record<string, unknown>)?.errcode
+        const errcode = (err as { errcode?: unknown })?.errcode
         if (errcode !== 'M_NOT_FOUND') throw err
       }
     } else {
@@ -216,7 +217,7 @@ export abstract class RoomOperationsStateMethods extends BaseMatrixService {
     }
   }
 
-  private parseDirectRoomsContent(content: Record<string, unknown>): Map<string, string[]> {
+  private parseDirectRoomsContent(content: IContent): Map<string, string[]> {
     const directRooms = new Map<string, string[]>()
     for (const [userId, roomIds] of Object.entries(content)) {
       if (!Array.isArray(roomIds)) continue

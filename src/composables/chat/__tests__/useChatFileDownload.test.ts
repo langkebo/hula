@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeFileTypeResult } from '@/utils/__tests__/fixtures/fileType'
 import { useChatFileDownload } from '../useChatFileDownload'
 
 const { showFeedbackMock, showProgressFeedbackMock, progressDestroyMock } = vi.hoisted(() => ({
@@ -274,7 +275,7 @@ describe('useChatFileDownload', () => {
     it('falls back to remote when file does not exist', async () => {
       const { getFilesMeta, detectRemoteFileType } = await import('@/utils/PathUtil')
       vi.mocked(getFilesMeta).mockResolvedValueOnce([{ exists: false }] as never)
-      vi.mocked(detectRemoteFileType).mockResolvedValueOnce({ ext: 'txt', mime: 'text/plain' } as never)
+      vi.mocked(detectRemoteFileType).mockResolvedValueOnce(makeFileTypeResult({ ext: 'txt', mime: 'text/plain' }))
 
       const item = {
         message: { id: 'msg1', body: { url: 'https://example.com/file.txt', fileName: 'file.txt', size: 100 } },
@@ -331,7 +332,7 @@ describe('useChatFileDownload', () => {
         { exists: true, file_type: 'txt', mime_type: 'text/plain' }
       ] as never)
       mockSendWindowPayload.mockRejectedValueOnce(new Error('send failed'))
-      vi.mocked(detectRemoteFileType).mockResolvedValueOnce({ ext: 'txt', mime: 'text/plain' } as never)
+      vi.mocked(detectRemoteFileType).mockResolvedValueOnce(makeFileTypeResult({ ext: 'txt', mime: 'text/plain' }))
 
       const item = {
         message: { id: 'msg1', body: { url: 'https://example.com/file.txt', fileName: 'file.txt', size: 100 } },

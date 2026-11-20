@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { roomPermissionsError } from '@/services/matrix/room/__tests__/fixtures/roomSettings'
 import RoomPermissionSnapshotSection from '../RoomPermissionSnapshotSection.vue'
 
 vi.mock('vue-i18n', () => ({
@@ -103,7 +104,7 @@ describe('RoomPermissionSnapshotSection — 当前权限快照只读区块', () 
   })
 
   it('读取失败时展示失败与重试，重试成功后渲染快照', async () => {
-    mocks.getRoomPermissions.mockResolvedValueOnce({ status: 'error' })
+    mocks.getRoomPermissions.mockResolvedValueOnce(roomPermissionsError())
     const wrapper = await mountSection()
 
     expect(wrapper.find('[data-testid="permission-snapshot-error"]').exists()).toBe(true)

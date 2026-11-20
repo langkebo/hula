@@ -2,7 +2,7 @@ import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
-import { initializeManagerExtensions } from '@/services/matrix/sdk'
+import { type IClientWellKnown, initializeManagerExtensions } from '@/services/matrix/sdk'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 import { logger, normalizeSdkMatrixError } from './authErrors'
@@ -33,6 +33,11 @@ export interface SsoIdentityProvider {
   name?: string
   brand?: string
   icon?: string
+}
+
+/** 邮箱令牌提交结果（SDK `AccountManager.submitEmailToken` 响应）。 */
+export interface SubmitEmailTokenResponse {
+  success: boolean
 }
 
 /**
@@ -146,7 +151,7 @@ export class MatrixAuthService {
     clientSecret: string,
     sid: string,
     purpose: MatrixEmailTokenPurpose = 'register'
-  ): Promise<Record<string, unknown>> {
+  ): Promise<SubmitEmailTokenResponse> {
     // 后端三条 submitToken 路径挂同一个处理器（assembly.rs::submit_email_token），
     // SDK 的 `submitEmailToken(..., scope)` 已覆盖 register/password/threepid。
     // 此前 Tjg 为 `password_reset` 自建 `matrixSubmitEmailToken` 直连路径 —— 那是重复实现，
@@ -421,7 +426,7 @@ export class MatrixAuthService {
     }
   }
 
-  static async getWellKnown(): Promise<Record<string, unknown>> {
+  static async getWellKnown(): Promise<IClientWellKnown> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -434,7 +439,7 @@ export class MatrixAuthService {
       if (!response.ok) {
         return {}
       }
-      return (await response.json()) as Record<string, unknown>
+      return (await response.json()) as IClientWellKnown
     } catch (err) {
       // R-20: well-known is optional (相对合理), use warn not error
       logger.warn('fetchWellKnown failed:', err)

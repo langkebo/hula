@@ -36,6 +36,7 @@ import {
 } from '@/common/errors'
 import { AppException, ErrorType } from '@/common/exception'
 import { translateMatrixError } from '@/common/matrixErrorTranslator'
+import { makeTranslatedError } from './fixtures/translatedError'
 
 describe('errors', () => {
   describe('fingerprint', () => {
@@ -274,11 +275,9 @@ describe('errors', () => {
     })
 
     it('falls back to retryable when translateMatrixError says recoverable', () => {
-      vi.mocked(translateMatrixError).mockReturnValueOnce({
-        recoverable: true,
-        userMessage: 'retry plz',
-        level: 'toast'
-      })
+      vi.mocked(translateMatrixError).mockReturnValueOnce(
+        makeTranslatedError({ recoverable: true, userMessage: 'retry plz' })
+      )
       const err = new Error('transient')
       const result = toAppError(err)
       expect(result.kind).toBe('retryable')
@@ -298,22 +297,18 @@ describe('errors', () => {
     it('does not store a non-key sentence in i18nKey on the fallback path', () => {
       // 修 267/275：`translateMatrixError`（deprecated）的 userMessage 字段语义是「用户文案」。
       // 一旦它返回的是已翻译的句子而不是 key，i18nKey 必须留空，展示层回落 message。
-      vi.mocked(translateMatrixError).mockReturnValueOnce({
-        recoverable: false,
-        userMessage: '已经翻译好的整句文案',
-        level: 'toast'
-      })
+      vi.mocked(translateMatrixError).mockReturnValueOnce(
+        makeTranslatedError({ recoverable: false, userMessage: '已经翻译好的整句文案' })
+      )
       const result = toAppError(new Error('boom'))
       expect(result.i18nKey).toBeUndefined()
       expect(result.message).toBe('boom')
     })
 
     it('keeps a real key from the fallback translator', () => {
-      vi.mocked(translateMatrixError).mockReturnValueOnce({
-        recoverable: true,
-        userMessage: 'error.matrix.network',
-        level: 'toast'
-      })
+      vi.mocked(translateMatrixError).mockReturnValueOnce(
+        makeTranslatedError({ recoverable: true, userMessage: 'error.matrix.network' })
+      )
       const result = toAppError(new Error('transient'))
       expect(result.i18nKey).toBe('error.matrix.network')
     })

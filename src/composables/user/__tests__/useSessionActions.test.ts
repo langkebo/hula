@@ -85,6 +85,16 @@ vi.mock('@/services/matrix/auth/MatrixOidcService', () => ({
   }
 }))
 
+import {
+  makeLoginResult,
+  makeRegisterResult,
+  makeRequestedEmailToken,
+  makeStoredTokens,
+  oidcDiscoveryDocumentFixture,
+  oidcTokenResponseFixture,
+  oidcUserInfoFixture,
+  submitEmailTokenSuccessFixture
+} from '@/services/matrix/auth/__tests__/fixtures/session'
 import { useSessionActions } from '../useSessionActions'
 
 describe('useSessionActions', () => {
@@ -98,12 +108,13 @@ describe('useSessionActions', () => {
 
   describe('loginWithPassword', () => {
     it('delegates to sessionOrchestrator.loginWithPassword', async () => {
-      mockLoginWithPassword.mockResolvedValueOnce({ userId: '@alice:server' })
+      const loginResult = makeLoginResult('@alice:server')
+      mockLoginWithPassword.mockResolvedValueOnce(loginResult)
       const { loginWithPassword } = useSessionActions()
       const options = { username: 'alice', password: 'pass123', homeserverUrl: 'https://matrix.example.com' }
       const result = await loginWithPassword(options)
       expect(mockLoginWithPassword).toHaveBeenCalledWith(options)
-      expect(result).toEqual({ userId: '@alice:server' })
+      expect(result).toEqual(loginResult)
     })
 
     it('propagates error', async () => {
@@ -117,12 +128,13 @@ describe('useSessionActions', () => {
 
   describe('loginWithSsoToken', () => {
     it('delegates to sessionOrchestrator.loginWithSsoToken', async () => {
-      mockLoginWithSsoToken.mockResolvedValueOnce({ userId: '@bob:server' })
+      const loginResult = makeLoginResult('@bob:server')
+      mockLoginWithSsoToken.mockResolvedValueOnce(loginResult)
       const { loginWithSsoToken } = useSessionActions()
       const options = { loginToken: 'token123' }
       const result = await loginWithSsoToken(options)
       expect(mockLoginWithSsoToken).toHaveBeenCalledWith(options)
-      expect(result).toEqual({ userId: '@bob:server' })
+      expect(result).toEqual(loginResult)
     })
 
     it('propagates error', async () => {
@@ -194,11 +206,11 @@ describe('useSessionActions', () => {
   })
 
   describe('getStoredTokens', () => {
-    it('delegates to sessionOrchestrator.getStoredTokens', () => {
-      const tokens = { accessToken: 'at', refreshToken: 'rt' }
-      mockGetStoredTokens.mockReturnValueOnce(tokens)
+    it('delegates to sessionOrchestrator.getStoredTokens', async () => {
+      const tokens = makeStoredTokens('@alice:server', 'at', 'rt')
+      mockGetStoredTokens.mockResolvedValueOnce(tokens)
       const { getStoredTokens } = useSessionActions()
-      const result = getStoredTokens()
+      const result = await getStoredTokens()
       expect(mockGetStoredTokens).toHaveBeenCalled()
       expect(result).toEqual(tokens)
     })
@@ -241,15 +253,16 @@ describe('useSessionActions', () => {
 
   describe('register', () => {
     it('delegates with all parameters', async () => {
-      mockRegister.mockResolvedValueOnce({ userId: '@new:server' })
+      const registerResult = makeRegisterResult('@new:server')
+      mockRegister.mockResolvedValueOnce(registerResult)
       const { register } = useSessionActions()
       const result = await register('newuser', 'pass123', 'sess1', 'm.login.email', 'token1', 'secret1')
       expect(mockRegister).toHaveBeenCalledWith('newuser', 'pass123', 'sess1', 'm.login.email', 'token1', 'secret1')
-      expect(result).toEqual({ userId: '@new:server' })
+      expect(result).toEqual(registerResult)
     })
 
     it('delegates with required parameters only', async () => {
-      mockRegister.mockResolvedValueOnce({ userId: '@new:server' })
+      mockRegister.mockResolvedValueOnce(makeRegisterResult('@new:server'))
       const { register } = useSessionActions()
       await register('newuser', 'pass123')
       expect(mockRegister).toHaveBeenCalledWith('newuser', 'pass123', undefined, undefined, undefined, undefined)
@@ -264,15 +277,16 @@ describe('useSessionActions', () => {
 
   describe('requestEmailToken', () => {
     it('delegates with all parameters', async () => {
-      mockRequestEmailToken.mockResolvedValueOnce({ sid: 'sid1' })
+      const emailToken = makeRequestedEmailToken('sid1', 'secret1')
+      mockRequestEmailToken.mockResolvedValueOnce(emailToken)
       const { requestEmailToken } = useSessionActions()
       const result = await requestEmailToken('a@b.c', 1, 'secret1')
       expect(mockRequestEmailToken).toHaveBeenCalledWith('a@b.c', 1, 'secret1')
-      expect(result).toEqual({ sid: 'sid1' })
+      expect(result).toEqual(emailToken)
     })
 
     it('delegates with email only', async () => {
-      mockRequestEmailToken.mockResolvedValueOnce({ sid: 'sid2' })
+      mockRequestEmailToken.mockResolvedValueOnce(makeRequestedEmailToken('sid2'))
       const { requestEmailToken } = useSessionActions()
       await requestEmailToken('a@b.c')
       expect(mockRequestEmailToken).toHaveBeenCalledWith('a@b.c', undefined, undefined)
@@ -287,21 +301,21 @@ describe('useSessionActions', () => {
 
   describe('submitEmailToken', () => {
     it('delegates with purpose parameter', async () => {
-      mockSubmitEmailToken.mockResolvedValueOnce({ success: true })
+      mockSubmitEmailToken.mockResolvedValueOnce(submitEmailTokenSuccessFixture)
       const { submitEmailToken } = useSessionActions()
       await submitEmailToken('tok1', 'secret1', 'sid1', 'register')
       expect(mockSubmitEmailToken).toHaveBeenCalledWith('tok1', 'secret1', 'sid1', 'register')
     })
 
     it('delegates without purpose parameter', async () => {
-      mockSubmitEmailToken.mockResolvedValueOnce({ success: true })
+      mockSubmitEmailToken.mockResolvedValueOnce(submitEmailTokenSuccessFixture)
       const { submitEmailToken } = useSessionActions()
       await submitEmailToken('tok1', 'secret1', 'sid1')
       expect(mockSubmitEmailToken).toHaveBeenCalledWith('tok1', 'secret1', 'sid1', undefined)
     })
 
     it('delegates with password_reset purpose', async () => {
-      mockSubmitEmailToken.mockResolvedValueOnce({ success: true })
+      mockSubmitEmailToken.mockResolvedValueOnce(submitEmailTokenSuccessFixture)
       const { submitEmailToken } = useSessionActions()
       await submitEmailToken('tok2', 'secret2', 'sid2', 'password_reset')
       expect(mockSubmitEmailToken).toHaveBeenCalledWith('tok2', 'secret2', 'sid2', 'password_reset')
@@ -316,15 +330,16 @@ describe('useSessionActions', () => {
 
   describe('requestPasswordEmailToken', () => {
     it('delegates with all parameters', async () => {
-      mockRequestPasswordEmailToken.mockResolvedValueOnce({ sid: 'sid3' })
+      const emailToken = makeRequestedEmailToken('sid3', 'secret2')
+      mockRequestPasswordEmailToken.mockResolvedValueOnce(emailToken)
       const { requestPasswordEmailToken } = useSessionActions()
       const result = await requestPasswordEmailToken('a@b.c', 2, 'secret2')
       expect(mockRequestPasswordEmailToken).toHaveBeenCalledWith('a@b.c', 2, 'secret2')
-      expect(result).toEqual({ sid: 'sid3' })
+      expect(result).toEqual(emailToken)
     })
 
     it('delegates with email only', async () => {
-      mockRequestPasswordEmailToken.mockResolvedValueOnce({ sid: 'sid4' })
+      mockRequestPasswordEmailToken.mockResolvedValueOnce(makeRequestedEmailToken('sid4'))
       const { requestPasswordEmailToken } = useSessionActions()
       await requestPasswordEmailToken('a@b.c')
       expect(mockRequestPasswordEmailToken).toHaveBeenCalledWith('a@b.c', undefined, undefined)
@@ -410,7 +425,7 @@ describe('useSessionActions', () => {
 
   describe('discoverOidc', () => {
     it('delegates to matrixOidcService.discoverOidc', async () => {
-      const doc = { issuer: 'https://auth.server', authorization_endpoint: 'https://auth.server/auth' }
+      const doc = oidcDiscoveryDocumentFixture
       mockDiscoverOidc.mockResolvedValueOnce(doc)
       const { discoverOidc } = useSessionActions()
       const result = await discoverOidc('https://server')
@@ -452,7 +467,7 @@ describe('useSessionActions', () => {
 
   describe('handleOidcCallback', () => {
     it('delegates to matrixOidcService.handleCallback', async () => {
-      const tokenResponse = { access_token: 'at', token_type: 'Bearer' }
+      const tokenResponse = oidcTokenResponseFixture
       mockHandleOidcCallback.mockResolvedValueOnce(tokenResponse)
       const { handleOidcCallback } = useSessionActions()
       const result = await handleOidcCallback('auth-code', 'state123')
@@ -476,7 +491,7 @@ describe('useSessionActions', () => {
 
   describe('getOidcUserInfo', () => {
     it('delegates to matrixOidcService.getUserInfo', async () => {
-      const userInfo = { sub: 'user1', name: 'Alice' }
+      const userInfo = oidcUserInfoFixture
       mockGetOidcUserInfo.mockResolvedValueOnce(userInfo)
       const { getOidcUserInfo } = useSessionActions()
       const result = await getOidcUserInfo()

@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
+import { makeKeyBackupInfo } from '@/services/matrix/crypto/__tests__/fixtures/keyBackup'
 import { createI18nMock } from '~/tests/i18n-messages'
 import KeyBackupRestoreDialog from '../KeyBackupRestoreDialog.vue'
 
@@ -315,10 +316,7 @@ describe('KeyBackupRestoreDialog', () => {
     expect(wrapper.find('[data-test="backup-info-error"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('备份信息读取失败，暂时无法确认备份版本，请重试')
 
-    getKeyBackupInfoMock.mockResolvedValueOnce({
-      version: '2',
-      algorithm: 'm.megolm_backup.v1'
-    })
+    getKeyBackupInfoMock.mockResolvedValueOnce(makeKeyBackupInfo({ version: '2', algorithm: 'm.megolm_backup.v1' }))
     await wrapper.find('[data-test="backup-info-retry"]').trigger('click')
     await flushPromises()
 

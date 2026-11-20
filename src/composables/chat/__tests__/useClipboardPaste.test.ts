@@ -63,7 +63,7 @@ describe('useClipboardPaste', () => {
   it('handlePaste routes a clipboard image through imgPaste', async () => {
     const opts = makeOptions()
     const fakeFile = new File(['hi'], 'clip.png', { type: 'image/png' })
-    vi.mocked(readImage).mockResolvedValueOnce({} as never)
+    vi.mocked(readImage).mockResolvedValueOnce({} as never) // fixture-literal-ok: Tauri 剪贴板 Image 为原生句柄，测试无法构造
     vi.mocked(processClipboardImage).mockResolvedValueOnce(fakeFile)
 
     const { handlePaste } = useClipboardPaste(opts)
@@ -104,7 +104,7 @@ describe('useClipboardPaste', () => {
 
   it('handlePaste swallows processClipboardImage failure and tries text', async () => {
     const opts = makeOptions()
-    vi.mocked(readImage).mockResolvedValueOnce({} as never)
+    vi.mocked(readImage).mockResolvedValueOnce({} as never) // fixture-literal-ok: Tauri 剪贴板 Image 为原生句柄，测试无法构造
     vi.mocked(processClipboardImage).mockRejectedValueOnce(new Error('decode'))
     vi.mocked(readText).mockResolvedValueOnce('fallback text')
 

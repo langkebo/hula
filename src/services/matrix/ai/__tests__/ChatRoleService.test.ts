@@ -19,6 +19,7 @@ vi.mock('../../MatrixHttpClient', () => ({
 }))
 
 import { chatRoleService } from '../ChatRoleService'
+import { makeChatRole, makeChatRoleCategory, makeChatRolePage } from './fixtures/chatRole'
 
 describe('MatrixChatRoleService', () => {
   beforeEach(() => {
@@ -26,16 +27,16 @@ describe('MatrixChatRoleService', () => {
   })
 
   it('page 调用 chatRolePage 端点并传分页参数', async () => {
-    mockRequest.mockResolvedValueOnce({ list: [], total: 0 })
+    mockRequest.mockResolvedValueOnce(makeChatRolePage())
     const result = await chatRoleService.page({ pageNo: 2, pageSize: 20 })
-    expect(result).toEqual({ list: [], total: 0 })
+    expect(result).toEqual(makeChatRolePage())
     expect(mockRequest).toHaveBeenCalledWith({ url: 'chatRolePage', params: { pageNo: 2, pageSize: 20 } }, undefined, {
       logPrefix: 'MatrixChatRole'
     })
   })
 
   it('page 不传参数时 params 为 undefined', async () => {
-    mockRequest.mockResolvedValueOnce({ list: [], total: 0 })
+    mockRequest.mockResolvedValueOnce(makeChatRolePage())
     await chatRoleService.page()
     expect(mockRequest).toHaveBeenCalledWith({ url: 'chatRolePage', params: undefined }, undefined, {
       logPrefix: 'MatrixChatRole'
@@ -44,12 +45,12 @@ describe('MatrixChatRoleService', () => {
 
   it('categoryList 返回 label/value 数组', async () => {
     mockRequest.mockResolvedValueOnce([
-      { label: '助手', value: 'assistant' },
-      { label: '翻译', value: 'translator' }
+      makeChatRoleCategory({ label: '助手', value: 'assistant' }),
+      makeChatRoleCategory({ label: '翻译', value: 'translator' })
     ])
     const result = await chatRoleService.categoryList()
     expect(result).toHaveLength(2)
-    expect(result[0]).toEqual({ label: '助手', value: 'assistant' })
+    expect(result[0]).toEqual(makeChatRoleCategory({ label: '助手', value: 'assistant' }))
     expect(mockRequest).toHaveBeenCalledWith({ url: 'chatRoleCategoryList' }, undefined, {
       logPrefix: 'MatrixChatRole'
     })
@@ -66,7 +67,7 @@ describe('MatrixChatRoleService', () => {
       publicStatus: true,
       status: 1
     }
-    mockRequest.mockResolvedValueOnce({ id: 'r1', ...body })
+    mockRequest.mockResolvedValueOnce(makeChatRole(body))
     const result = await chatRoleService.create(body)
     expect(result.id).toBe('r1')
     expect(mockRequest).toHaveBeenCalledWith({ url: 'chatRoleCreate', method: 'POST', body }, undefined, {
@@ -76,7 +77,7 @@ describe('MatrixChatRoleService', () => {
 
   it('update POST 请求体（含 id）并返回更新后的 ChatRole', async () => {
     const body = { id: 'r1', name: '新名称' }
-    mockRequest.mockResolvedValueOnce({ id: 'r1', name: '新名称' })
+    mockRequest.mockResolvedValueOnce(makeChatRole({ id: 'r1', name: '新名称' }))
     const result = await chatRoleService.update(body)
     expect(result.name).toBe('新名称')
     expect(mockRequest).toHaveBeenCalledWith(

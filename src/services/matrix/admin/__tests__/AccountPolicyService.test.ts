@@ -10,6 +10,7 @@ import {
   PolicyServerService,
   RateLimitStatusService
 } from '../AccountPolicyService'
+import { makePolicyCheckResponse } from './fixtures/accountPolicy'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -173,7 +174,7 @@ describe('PolicyServerService', () => {
 
   it('check 透传检查请求并返回结果', async () => {
     const request = { room_id: '!room:example.org', user_id: '@alice:example.org', action: 'join' as const }
-    policyCheck.mockResolvedValueOnce({ allowed: false, result: 'deny', reason: 'banned word' })
+    policyCheck.mockResolvedValueOnce(makePolicyCheckResponse())
 
     const result = await new PolicyServerService(makeDeps()).check(request)
 

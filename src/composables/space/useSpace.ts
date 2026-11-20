@@ -1,5 +1,5 @@
 import { type Ref, ref } from 'vue'
-import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+import type { SpaceHierarchyPage, SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { createLogger } from '@/utils/Logger'
 
@@ -20,7 +20,7 @@ interface UseSpaceResult {
     limit?: number
     maxDepth?: number
     suggestedOnly?: boolean
-  }) => Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }>
+  }) => Promise<SpaceHierarchyPage>
   getTreePath: () => Promise<Array<{ spaceId: string; name: string }>>
   addChild: (roomId: string, options?: { via?: string[]; suggested?: boolean }) => Promise<void>
 }
@@ -101,9 +101,7 @@ export function useSpace(spaceId: () => string): UseSpaceResult {
     await matrixSpaceService.knockSpace(id, reason)
   }
 
-  const getHierarchy = async (options?: {
-    maxDepth?: number
-  }): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> => {
+  const getHierarchy = async (options?: { maxDepth?: number }): Promise<SpaceHierarchyPage> => {
     const id = spaceId()
     if (!id) return { rooms: [] }
     return await matrixSpaceService.getSpaceHierarchy(id, options)

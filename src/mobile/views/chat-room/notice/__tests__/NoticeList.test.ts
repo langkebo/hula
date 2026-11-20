@@ -1,6 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import {
+  makeAnnouncementListPage,
+  makeAnnouncementListRecord
+} from '@/stores/domains/chat/__tests__/fixtures/announcement'
 import NoticeList from '../NoticeList.vue'
 
 /**
@@ -98,7 +102,9 @@ describe('NoticeList 四态', () => {
 
   it('点击重试后重新拉取并渲染列表', async () => {
     getGroupAnnouncementListMock.mockRejectedValueOnce(new Error('network down'))
-    getGroupAnnouncementListMock.mockResolvedValueOnce({ records: [{ id: '1', content: 'hello', uid: 'u1' }] })
+    getGroupAnnouncementListMock.mockResolvedValueOnce(
+      makeAnnouncementListPage([makeAnnouncementListRecord({ id: '1', content: 'hello', uid: 'u1' })])
+    )
     const wrapper = mountPage()
     await flushPromises()
 

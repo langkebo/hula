@@ -17,6 +17,9 @@ function isNotFoundError(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { httpStatus?: unknown }).httpStatus === 404
 }
 
+/** i18n 翻译函数签名；`params` 仅承载文案插值标量。 */
+export type MediaTranslate = (key: string, params?: Record<string, string | number>) => string
+
 /** 后端签名媒体下载参数（`expires` 为 Unix 秒，与 `media_link_signer.rs` 一致） */
 export interface SignedMediaDownloadParams {
   serverName: string
@@ -89,7 +92,7 @@ export function parseSignedMediaUrl(url: string): SignedMediaDownloadParams | nu
 export function buildSignedMediaDownloadUrl(
   client: MatrixClient,
   params: SignedMediaDownloadParams,
-  t: (key: string, params?: Record<string, unknown>) => string
+  t: MediaTranslate
 ): string {
   const { serverName, mediaId, signature, expires, filename } = params
   if (!serverName || !mediaId || !signature || !Number.isFinite(expires) || expires <= 0) {
@@ -115,7 +118,7 @@ export function buildSignedMediaDownloadUrl(
 export async function downloadSignedMediaBytes(
   client: MatrixClient,
   params: SignedMediaDownloadParams,
-  t: (key: string, params?: Record<string, unknown>) => string
+  t: MediaTranslate
 ): Promise<Uint8Array> {
   const downloadUrl = buildSignedMediaDownloadUrl(client, params, t)
   const buffer = await matrixHttpClient.downloadRaw(downloadUrl)
@@ -128,7 +131,7 @@ export function resolveDownloadUrl(
   _client: MatrixClient,
   mediaUrl: string,
   getMediaUrl: (mxcUrl: string) => string | null,
-  t: (key: string, params?: Record<string, unknown>) => string
+  t: MediaTranslate
 ): string {
   if (!mediaUrl) {
     throw new Error(t('matrix_error.media.url_empty'))
@@ -151,7 +154,7 @@ export async function downloadFileBytes(
   client: MatrixClient,
   mediaUrl: string,
   getMediaUrl: (mxcUrl: string) => string | null,
-  t: (key: string, params?: Record<string, unknown>) => string
+  t: MediaTranslate
 ): Promise<Uint8Array> {
   const downloadUrl = resolveDownloadUrl(client, mediaUrl, getMediaUrl, t)
 
@@ -199,7 +202,7 @@ export async function downloadEncryptedFileBytes(
   client: MatrixClient,
   encryptedFile: MatrixEncryptedAttachmentLike,
   getMediaUrl: (mxcUrl: string) => string | null,
-  t: (key: string, params?: Record<string, unknown>) => string
+  t: MediaTranslate
 ): Promise<Uint8Array> {
   const parsedEncryptedFile = matrixAttachmentDecryptionService.parseEncryptedFile(encryptedFile)
   const ciphertext = await downloadFileBytes(client, parsedEncryptedFile.url, getMediaUrl, t)

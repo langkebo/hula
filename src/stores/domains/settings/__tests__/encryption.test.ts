@@ -79,6 +79,7 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
 }))
 
 import { useEncryptionStore } from '../encryption'
+import { makeCryptoLifecycleDiagnostics } from './fixtures/encryption'
 
 describe('useEncryptionStore · 初始 state 与 getters', () => {
   beforeEach(() => {
@@ -584,11 +585,9 @@ describe('useEncryptionStore · crypto 生命周期诊断（Batch 4.1）', () =>
   })
 
   it('恢复正常后再次刷新 ⇒ 诊断清空（不留下过期告警）', () => {
-    getCryptoLifecycleDiagnosticsMock.mockReturnValueOnce({
-      lastBindingReleaseRejection: 'crypto-not-stopped',
-      stoppedBindingReleased: 0,
-      staleCryptoReuseWarning: null
-    })
+    getCryptoLifecycleDiagnosticsMock.mockReturnValueOnce(
+      makeCryptoLifecycleDiagnostics({ lastBindingReleaseRejection: 'crypto-not-stopped' })
+    )
     const store = useEncryptionStore()
     store.loadCryptoInitStatus()
     expect(store.cryptoLifecycleWarning).toBe('crypto-not-stopped')

@@ -48,6 +48,23 @@ export interface SpaceInfo {
 
 export type { SpaceMember } from '../sdk-compat'
 
+/** 空间层级中的房间条目（synapse-rust hierarchy 端点返回，字段按消费方约定）。 */
+export interface SpaceHierarchyRoomEntry {
+  room_id: string
+  room_type?: string
+  name?: string
+  topic?: string
+  avatar_url?: string
+  num_joined_members?: number
+  children_state?: unknown[]
+}
+
+/** 空间层级分页结果。 */
+export interface SpaceHierarchyPage {
+  rooms: SpaceHierarchyRoomEntry[]
+  next_batch?: string
+}
+
 /** 空间成员角色（映射到 Matrix power level） */
 export type SpaceMemberRole = 'admin' | 'moderator' | 'member'
 
@@ -528,15 +545,13 @@ class SpaceService extends BaseMatrixService {
 
   // ── Space hierarchy ──
 
-  async getSpaceHierarchy(
-    spaceId: string,
-    options?: { maxDepth?: number }
-  ): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> {
+  /** 获取空间层级（`maxDepth` 透传为后端 `max_depth`）；失败时降级为 `{ rooms: [] }`。 */
+  async getSpaceHierarchy(spaceId: string, options?: { maxDepth?: number }): Promise<SpaceHierarchyPage> {
     try {
       // 后端 HierarchyQuery 只声明 max_depth 且 deny_unknown_fields，传 limit/from/suggested_only 会直接 400
       return (await this.getSpaceManager().hierarchy.getSpaceHierarchyPage(spaceId, {
         ...(options?.maxDepth !== undefined ? { max_depth: options.maxDepth } : {})
-      })) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
+      })) as SpaceHierarchyPage
     } catch (err) {
       logger.error(`[Space] 获取空间层级失败: ${spaceId}, ${err}`)
       return { rooms: [] }

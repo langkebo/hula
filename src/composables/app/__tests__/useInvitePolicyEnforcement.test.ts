@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { makeInvitePolicy } from '@/services/matrix/user/__tests__/fixtures/invitePolicy'
 import { DEFAULT_INVITE_POLICY, type InvitePolicy } from '@/services/matrix/user/invitePolicy'
 import type { InvitePolicyEnforcerOptions } from '@/services/matrix/user/invitePolicyEnforcer'
 import { useInvitePolicyEnforcement } from '../useInvitePolicyEnforcement'
@@ -146,16 +147,18 @@ describe('useInvitePolicyEnforcement', () => {
    */
   it('writes from the strict server read, preserving every field it does not own', async () => {
     const { deps, savePolicy, getPolicyStrict } = harness()
-    getPolicyStrict.mockResolvedValueOnce({
-      mode: 'allowlist',
-      blocklist: ['@blocked:evil.org'],
-      allowlist: ['@boss:corp.org'],
-      allowStrangers: false,
-      allowFriendRequests: false,
-      autoAcceptFriends: true,
-      requireFriendRequestMessage: false,
-      contacts: []
-    })
+    getPolicyStrict.mockResolvedValueOnce(
+      makeInvitePolicy({
+        mode: 'allowlist',
+        blocklist: ['@blocked:evil.org'],
+        allowlist: ['@boss:corp.org'],
+        allowStrangers: false,
+        allowFriendRequests: false,
+        autoAcceptFriends: true,
+        requireFriendRequestMessage: false,
+        contacts: []
+      })
+    )
     const api = useInvitePolicyEnforcement(deps)
     await api.syncContacts()
     expect(savePolicy).toHaveBeenCalledWith({

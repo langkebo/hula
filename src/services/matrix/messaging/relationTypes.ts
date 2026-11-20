@@ -4,28 +4,30 @@
  * 从 MatrixMessageRelationService 抽离，包含关系类型、编辑、回复、线程等接口。
  */
 
+import type { IContent } from '@/services/matrix/sdk'
+
 export type RelatesTo = {
   rel_type?: string
   event_id?: string
   'm.in_reply_to'?: { event_id: string }
 }
 
-export type RelationContent = Record<string, unknown> & {
+export type RelationContent = IContent & {
   'm.relates_to'?: RelatesTo
-  'm.new_content'?: Record<string, unknown>
+  'm.new_content'?: IContent
 }
 
 export interface MessageEdit {
   eventId: string
-  originalContent: Record<string, unknown>
-  newContent: Record<string, unknown>
+  originalContent: IContent
+  newContent: IContent
   timestamp: number
   sender: string
 }
 
 export interface ReplyChain {
   eventId: string
-  content: Record<string, unknown>
+  content: IContent
   sender: string
   timestamp: number
   inReplyTo?: ReplyChain
@@ -46,7 +48,7 @@ export interface ThreadInfo {
 }
 
 export interface RelationsResponse {
-  chunk: Array<Record<string, unknown>>
+  chunk: IContent[]
   next_batch?: string
   prev_batch?: string
 }

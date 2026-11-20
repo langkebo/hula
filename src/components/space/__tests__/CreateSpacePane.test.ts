@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, reactive } from 'vue'
+import { makeSpaceInfo } from '@/services/matrix/room/__tests__/fixtures/space'
 import CreateSpacePane from '../CreateSpacePane.vue'
 
 // === Mocks ===
@@ -256,12 +257,9 @@ describe('CreateSpacePane', () => {
   // 同名空间防重：409 M_ROOM_IN_USE 时弹确认框，确认后带 ignoreDuplicateName 重发
   it('shows duplicate-name confirm dialog and retries with ignoreDuplicateName on confirm', async () => {
     createSpaceMock.mockRejectedValueOnce(new Error('M_ROOM_IN_USE: Room name is already in use'))
-    createSpaceMock.mockResolvedValueOnce({
-      spaceId: '!new-space:server',
-      name: 'My Space',
-      memberCount: 1,
-      childCount: 0
-    })
+    createSpaceMock.mockResolvedValueOnce(
+      makeSpaceInfo({ spaceId: '!new-space:server', name: 'My Space', memberCount: 1, childCount: 0 })
+    )
     const wrapper = mountPane()
     await setFormData(wrapper, 'My Space', 'A topic')
     await wrapper.find('button.n-button--primary').trigger('click')

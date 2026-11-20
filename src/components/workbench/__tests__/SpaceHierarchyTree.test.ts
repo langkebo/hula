@@ -1,15 +1,16 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { makeSpaceHierarchyPage, makeSpaceHierarchyRoomEntry } from '@/services/matrix/room/__tests__/fixtures/space'
+import type { SpaceHierarchyPage } from '@/services/matrix/room/MatrixSpaceService'
 import SpaceHierarchyTree from '../SpaceHierarchyTree.vue'
 
 const { getHierarchyMock } = vi.hoisted(() => ({
-  getHierarchyMock: vi.fn(async () => ({
+  getHierarchyMock: vi.fn<() => Promise<SpaceHierarchyPage>>(async () => ({
     rooms: [
-      { space_id: '!child-1:server', name: 'Child Space 1', child_count: 0, avatar_url: undefined },
-      { space_id: '!room-2:server', name: 'Child Room 2', child_count: 0, avatar_url: undefined }
-    ],
-    next_batch: undefined
+      { room_id: '!child-1:server', room_type: 'm.space', name: 'Child Space 1', num_joined_members: 0 },
+      { room_id: '!room-2:server', room_type: 'm.space', name: 'Child Room 2', num_joined_members: 0 }
+    ]
   }))
 }))
 
@@ -49,10 +50,11 @@ vi.mock('../TjgSpaceTree.vue', () => ({
 describe('SpaceHierarchyTree', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getHierarchyMock.mockResolvedValue({
-      rooms: [{ space_id: '!child-1:server', name: 'Child Space 1', child_count: 0, avatar_url: undefined }],
-      next_batch: undefined
-    })
+    getHierarchyMock.mockResolvedValue(
+      makeSpaceHierarchyPage([
+        makeSpaceHierarchyRoomEntry({ room_id: '!child-1:server', room_type: 'm.space', name: 'Child Space 1' })
+      ])
+    )
   })
 
   it('renders panel header with back button', () => {
@@ -91,7 +93,7 @@ describe('SpaceHierarchyTree', () => {
   })
 
   it('shows empty hint when no children', async () => {
-    getHierarchyMock.mockResolvedValueOnce({ rooms: [], next_batch: undefined })
+    getHierarchyMock.mockResolvedValueOnce(makeSpaceHierarchyPage())
     mount(SpaceHierarchyTree, {
       props: { spaceId: '!parent:server' }
     })

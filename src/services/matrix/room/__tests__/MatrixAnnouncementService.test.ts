@@ -1,6 +1,7 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
+import { makeSendTextMessageResponse } from '../../messaging/__tests__/fixtures/sendEvent'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn()
@@ -95,7 +96,7 @@ describe('MatrixAnnouncementService', () => {
   })
 
   it('should create normal announcement and append pinned event ids', async () => {
-    mockSendTextMessage.mockResolvedValueOnce({ event_id: '$new-event' })
+    mockSendTextMessage.mockResolvedValueOnce(makeSendTextMessageResponse('$new-event'))
     mockGetRoom.mockResolvedValue(createRoom({ pinned: ['$old-event'] }))
 
     const mockClient = {
@@ -119,7 +120,7 @@ describe('MatrixAnnouncementService', () => {
   })
 
   it('should replace pinned event id when editing normal announcement', async () => {
-    mockSendTextMessage.mockResolvedValueOnce({ event_id: '$replacement' })
+    mockSendTextMessage.mockResolvedValueOnce(makeSendTextMessageResponse('$replacement'))
     mockGetRoom.mockResolvedValue(createRoom({ pinned: ['$target', '$other'] }))
 
     const mockClient = {

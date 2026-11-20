@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeInvitePolicy } from '@/services/matrix/user/__tests__/fixtures/invitePolicy'
 import InvitePermissionPanel from '../InvitePermissionPanel.vue'
 
 /**
@@ -232,13 +233,15 @@ describe('InvitePermissionPanel', () => {
       await flushPromises()
       expect(wrapper.find('[data-test="invite-policy-error"]').exists()).toBe(true)
 
-      getPolicyStrictMock.mockResolvedValueOnce({
-        mode: 'blocklist',
-        blocklist: ['@spam:evil.org'],
-        allowlist: [],
-        allowStrangers: true,
-        contacts: []
-      })
+      getPolicyStrictMock.mockResolvedValueOnce(
+        makeInvitePolicy({
+          mode: 'blocklist',
+          blocklist: ['@spam:evil.org'],
+          allowlist: [],
+          allowStrangers: true,
+          contacts: []
+        })
+      )
       await wrapper.find('[data-test="invite-policy-retry"]').trigger('click')
       await flushPromises()
 
@@ -260,13 +263,15 @@ describe('InvitePermissionPanel', () => {
      * account data。面板挂载时的快照会过期，写前必须重读最新策略。
      */
     it('写回前重读最新策略，不覆盖另一编辑器的改动', async () => {
-      getPolicyStrictMock.mockResolvedValueOnce({
-        mode: 'allow_all',
-        blocklist: [],
-        allowlist: [],
-        allowStrangers: false,
-        contacts: []
-      })
+      getPolicyStrictMock.mockResolvedValueOnce(
+        makeInvitePolicy({
+          mode: 'allow_all',
+          blocklist: [],
+          allowlist: [],
+          allowStrangers: false,
+          contacts: []
+        })
+      )
       const wrapper = mount(InvitePermissionPanel)
       await flushPromises()
 

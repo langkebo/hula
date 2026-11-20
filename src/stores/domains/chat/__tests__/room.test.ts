@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
+import { makeRoomInfo, makeRoomSummary, makeRoomTags } from '@/services/matrix/room/__tests__/fixtures/roomInfo'
 import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
@@ -318,15 +319,17 @@ describe('RoomStore', () => {
         members: []
       })
 
-      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValueOnce({
-        roomId: '!room:id',
-        topic: 'Topic',
-        memberCount: 3,
-        joinedCount: 2,
-        canonicalAlias: '#room:example.com',
-        avatarUrl: 'mxc://avatar',
-        isPublic: true
-      } as any)
+      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValueOnce(
+        makeRoomSummary({
+          roomId: '!room:id',
+          topic: 'Topic',
+          memberCount: 3,
+          joinedCount: 2,
+          canonicalAlias: '#room:example.com',
+          avatarUrl: 'mxc://avatar',
+          isPublic: true
+        })
+      )
 
       await store.loadRoomDetails(['!room:id'])
 
@@ -360,15 +363,9 @@ describe('RoomStore', () => {
         members: []
       })
 
-      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValueOnce({
-        roomId: '!room:id',
-        topic: null,
-        memberCount: 1,
-        joinedCount: 1,
-        canonicalAlias: null,
-        avatarUrl: null,
-        isPublic: false
-      } as any)
+      vi.mocked(matrixRoomReadFacade.getRoomSummary).mockResolvedValueOnce(
+        makeRoomSummary({ roomId: '!room:id', memberCount: 1, joinedCount: 1 })
+      )
 
       await store.loadRoomDetails(['!room:id', '!room:id'])
 
@@ -944,19 +941,15 @@ describe('RoomStore', () => {
       })
 
       mockChatStore.checkMsgExist.mockReturnValue(true)
-      mockCreationService.convertRoomToRoomInfo.mockReturnValueOnce({
-        roomId: '!room:id',
-        name: 'After',
-        avatarUrl: null,
-        isDirect: false,
-        isEncrypted: true,
-        unreadCount: 0,
-        highlightCount: 0,
-        notificationCount: 0,
-        lastMessage: 'decrypted hello',
-        lastMessageTime: 3000,
-        members: []
-      })
+      mockCreationService.convertRoomToRoomInfo.mockReturnValueOnce(
+        makeRoomInfo({
+          roomId: '!room:id',
+          name: 'After',
+          isEncrypted: true,
+          lastMessage: 'decrypted hello',
+          lastMessageTime: 3000
+        })
+      )
 
       matrixClientCallbacks['eventDecrypted']?.({
         event: {
@@ -1078,12 +1071,12 @@ describe('RoomStore', () => {
     })
 
     it('refreshRoomTags pulls and stores tags', async () => {
-      vi.mocked(tagsServiceMock.getTags).mockResolvedValueOnce({ 'm.favourite': { order: 0 } })
+      vi.mocked(tagsServiceMock.getTags).mockResolvedValueOnce(makeRoomTags({ 'm.favourite': { order: 0 } }))
       const store = useRoomStore()
 
       const tags = await store.refreshRoomTags('!r:s')
 
-      expect(tags).toEqual({ 'm.favourite': { order: 0 } })
+      expect(tags).toEqual(makeRoomTags({ 'm.favourite': { order: 0 } }))
       expect(store.hasTag('!r:s', 'm.favourite')).toBe(true)
     })
 

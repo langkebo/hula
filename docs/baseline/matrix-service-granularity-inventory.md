@@ -220,24 +220,27 @@ index.ts → friends/MatrixFriendService → friends/MatrixFriendGroups → frie
 - 基线：`meta/matrix-layering-baseline.json`
 - 接入：`package.json` 的 `check:matrix-layering`（已并入 `check:release`）+ `.github/workflows/quality-gate.yml`
 
-四类判据（**只锁不增长**，`--update` 收紧）：
+六类判据（**只锁不增长**，`--update` 收紧）：
 
 | 判据 | 含义 | 当前基线 |
 | :--- | :--- | ---: |
-| L1 token 读入口 | 白名单外文件不得新增 `getAccessToken(` / `access_token=${` | 17 文件 / 22 处（白名单 6 文件） |
-| L2 token 副本 | `private accessToken: string`、`accessToken = ref<`、pinia persist 命中数 | **3** |
+| L1 token 读入口 | 白名单外文件不得新增 `getAccessToken(` / `access_token=${` | 16 文件 / 24 处（白名单 6 文件） |
+| L2 token 副本 | `private accessToken: string`、`accessToken = ref<`、pinia persist 命中数 | **0** |
 | L3 运行时环 | Tarjan SCC 含环分量数 | **0** |
-| L4 最长运行时链 | 深度 | **15** |
-| L5 文件数 | 非测试 `.ts` 只锁不增长 | **240** |
+| L4 最长运行时链 | 深度 | **14** |
+| L5 物理文件数 | 非测试 `.ts`，仅观测、不参与门禁 | 272 |
+| L6 逻辑服务数 | `*Service.ts` 服务根 + 无人引用的孤立模块；其 mixin / helpers 拆分产物归入根、不单独计数 | **130**（服务根 103 + 孤立 27） |
 
-**变异自证（2026-11-04，全部 FAIL 后原样回滚）**：
+**变异自证（2026-11-04 与 2026-11-19，全部验证后原样回滚）**：
 
 | 变异 | 结果 |
 | :--- | :--- |
 | 在 `room/RoomOperations.ts` 新增一处 `getAccessToken()` | `[token-read-new]` exit 1 ✅ |
 | 在 `extensions/SynapseDmExtensionService.ts` 新增第 4 份 `private accessToken` | `[token-copy-growth]` 4 > 3 exit 1 ✅ |
 | 在 `paths/prefixes.ts` 加一条 `import '../MatrixCapabilityService'` | `[runtime-cycle-growth]` 0 → 1 个 18 节点 SCC，exit 1 ✅ |
-| 新增 `src/services/matrix/__probe_tmp.ts` | `[service-file-growth]` 240 → 241 exit 1 ✅ |
+| 新增 `src/services/matrix/__probe_tmp.ts` | 旧口径 `[service-file-growth]` exit 1 ✅（2026-11-04） |
+| 新增 `mutationProbe/MutationProbeService.ts` | 新口径 `[logical-service-growth]` 130 → 131 exit 1 ✅（2026-11-19） |
+| 新增 `room/*MutationMethods.ts` 并由 `room/QueryService.ts` import | 新口径 **OK**：物理文件 272 → 273，逻辑服务仍 130 ✅（2026-11-19） |
 
 > L3 的灵敏度值得注意：仅加**一条**边就把 18 个文件塌成同一个 SCC —— 说明脆弱点集中在 `paths/index`（re-export 中枢）+ `MatrixCapabilityService`（被广域依赖）这一对。拆环优先级应从这里入手，而不是逐个模块梳理。
 
@@ -249,7 +252,7 @@ index.ts → friends/MatrixFriendService → friends/MatrixFriendGroups → frie
 | B2 | 剩余非白名单读取点逐条判读；只修缺陷，不压数字 | 读取点语义澄清 | ✅ **已完成（2026-11-04，见 §10.7）** |
 | B3 | 剪断两处层级倒置（`MatrixRequestHelper → MatrixClientService`、`MatrixClientAuthHttp → paths` barrel） | L4 深度 15 → ≤12 | ✅ **已完成（2026-11-04，见 §10.8）**；15 → **12** |
 
-> 仍然**不设文件数下降目标**（§5 结论未变）：`check-sdk-boundary` + `check-bare-matrix-paths` 要求这些接缝存在。本文档 v1.1 的核心更正只有两点 —— **token 不是单一收口**、**调用链口径必须只算运行时边**。
+> 仍然**不设文件数下降目标**（§5 结论未变）：`check-sdk-boundary` + `check-bare-matrix-paths` 要求这些接缝存在。自 2026-11-19 起，L6 改按「逻辑服务数」计数（见上表）：`check:file-size` 逼出的 mixin / helpers 拆分不再撞「文件数增长」，但新增服务域仍会被拦。本文档 v1.1 的核心更正只有两点 —— **token 不是单一收口**、**调用链口径必须只算运行时边**。
 
 ### 10.6 B1 执行记录（2026-11-04）
 

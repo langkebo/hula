@@ -6,6 +6,7 @@ import {
   MatrixMsgType,
   MatrixRelType
 } from '@/common/matrixConstants'
+import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
@@ -57,7 +58,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.messaging.can_only_edit_own_messages'))
       }
 
-      const content: Record<string, unknown> = {
+      const content: IContent = {
         ...(originalEvent.getContent() as RelationContent),
         msgtype: newContent.msgtype || MatrixMsgType.TEXT,
         body: `* ${newContent.body}`,
@@ -104,7 +105,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
       const originalContent = originalEvent.getContent() as RelationContent
       const newBody = newCaption || (originalContent.body as string) || ''
 
-      const content: Record<string, unknown> = {
+      const content: IContent = {
         ...originalContent,
         body: `* ${newBody}`,
         'm.new_content': { ...originalContent, body: newBody },
@@ -138,7 +139,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.messaging.reply_message_not_found', { replyToEventId }))
       }
 
-      const messageContent: Record<string, unknown> = {
+      const messageContent: IContent = {
         msgtype: content.msgtype || MatrixMsgType.TEXT,
         body: content.body,
         [MatrixContentField.RELATES_TO]: { 'm.in_reply_to': { event_id: replyToEventId } }
@@ -167,7 +168,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
 
     try {
-      const messageContent: Record<string, unknown> = {
+      const messageContent: IContent = {
         msgtype: content.msgtype || MatrixMsgType.TEXT,
         body: content.body,
         [MatrixContentField.RELATES_TO]: {
@@ -226,13 +227,13 @@ class MatrixMessageRelationService extends BaseMatrixService {
     eventId: string,
     relType: string,
     eventType: string,
-    content: Record<string, unknown>,
+    content: IContent,
     key?: string
   ): Promise<SendRelationResponse | null> {
     const client = matrixClientService.getClient()
     if (!client) return null
     try {
-      const body: Record<string, unknown> = { ...content }
+      const body: IContent = { ...content }
       if (key) body.key = key
       const result = await client.sendEvent(roomId, eventType, body, `txn_${Date.now()}`)
       const response: SendRelationResponse = {
@@ -364,7 +365,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
   /**
    * 取编辑后的内容；未编辑过时回退为原内容。
    */
-  getEditedContent(event: MatrixEvent): Record<string, unknown> {
+  getEditedContent(event: MatrixEvent): IContent {
     return getEditedContent(event)
   }
 

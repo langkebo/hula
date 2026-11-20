@@ -15,6 +15,16 @@ import { UserDevicesCache } from './userDevicesCache'
 
 const logger = createLogger('MatrixDeviceService')
 
+/** 房间密钥请求条目（GET /room_keys/request 原始响应元素）。 */
+export interface RoomKeyRequestEntry {
+  request_id: string
+  status?: string
+  room_id?: string
+  sender_key?: string
+  device_id?: string
+  algorithm?: string
+}
+
 /**
  * 设备信息接口
  */
@@ -311,14 +321,14 @@ class MatrixDeviceService extends BaseMatrixService {
    * SDK 返回的是 Matrix 规范的包裹结构 `{ requests: [...] }`，此处按真实结构解包；
    * 失败时记录 error 并返回空数组。
    */
-  async getRoomKeyRequests(): Promise<Array<Record<string, unknown>>> {
+  async getRoomKeyRequests(): Promise<RoomKeyRequestEntry[]> {
     const client = this.getClient()
     try {
       // 注意：SDK 的 listRoomKeyRequests() 类型声明为 RoomKeyRequestResponse[]，但运行时实际返回
       // 的是 GET /room_keys/request 的原始响应体 { requests: [...] }（Matrix 规范的包裹结构）。
       // 必须按真实结构解包，否则会把包裹对象当成数组返回，违反本函数声明的 Array 契约。
       const response = await client.getE2EEManager().listRoomKeyRequests()
-      const requests = unknownToObject<{ requests?: Array<Record<string, unknown>> }>(response)?.requests
+      const requests = unknownToObject<{ requests?: RoomKeyRequestEntry[] }>(response)?.requests
       logger.info('[DeviceService] 获取密钥请求列表成功')
       return requests ?? []
     } catch (err) {

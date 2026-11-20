@@ -95,6 +95,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
+import type { RoomEphemeralEvent } from '@/services/matrix/extensions/SynapseRoomSummaryService'
 import type { RoomSummaryMemberEntry, RoomSummaryStateEntry } from '@/services/matrix/room/AccountDataService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { createLogger } from '@/utils/Logger'
@@ -111,7 +112,7 @@ const loading = ref(false)
 const error = ref(false)
 const members = ref<RoomSummaryMemberEntry[]>([])
 const states = ref<RoomSummaryStateEntry[]>([])
-const ephemeral = ref<Record<string, unknown>[]>([])
+const ephemeral = ref<RoomEphemeralEvent[]>([])
 const expandedKey = ref('')
 
 type SummarySectionKey = 'room.server_summary.members' | 'room.server_summary.state' | 'room.server_summary.ephemeral'
@@ -132,7 +133,7 @@ const toggle = (key: string) => {
 const sectionEmptyText = (key: SummarySectionKey) =>
   isSectionFailed(key) ? t('room.server_summary.unavailable') : t('room.server_summary.empty')
 
-const ephemeralType = (event: Record<string, unknown>): string => {
+const ephemeralType = (event: RoomEphemeralEvent): string => {
   const type = event.type
   return typeof type === 'string' ? type : '-'
 }

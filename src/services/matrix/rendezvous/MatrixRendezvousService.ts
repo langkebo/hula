@@ -17,11 +17,27 @@ export type RendezvousSessionTransport = 'http.v1' | 'http.v2'
 
 export type RendezvousSessionStatus = 'created' | 'connected' | 'completed' | 'expired' | 'cancelled'
 
+/**
+ * Rendezvous 传输层数据（MSC3886 传输实现自定义，随 transport 变化）。
+ * 内容由后端与传输实现共同决定，SDK 未定型，故保留为具名动态包。
+ */
+export interface RendezvousTransportData {
+  [field: string]: unknown
+}
+
+/**
+ * Rendezvous 消息内容（消息 type 由传输层定义）。
+ * 内容为传输实现自定义的动态包，SDK 未定型。
+ */
+export interface RendezvousMessageContent {
+  [field: string]: unknown
+}
+
 export interface RendezvousSession {
   session_id: string
   intent: RendezvousSessionIntent
   transport: RendezvousSessionTransport
-  transport_data?: Record<string, unknown>
+  transport_data?: RendezvousTransportData
   status: RendezvousSessionStatus
   created_ts: number
   expires_at?: number
@@ -48,7 +64,7 @@ export interface UpdateSessionResponse {
 
 export interface RendezvousMessage {
   type: string
-  content: Record<string, unknown>
+  content: RendezvousMessageContent
 }
 
 export interface SendMessageResponse {
@@ -65,7 +81,7 @@ type RendezvousManagerLike = {
   createSession(options: {
     intent: RendezvousSessionIntent
     transport: RendezvousSessionTransport
-    transport_data?: Record<string, unknown>
+    transport_data?: RendezvousTransportData
     expires_in_ms?: number
   }): Promise<CreateSessionResponse>
   getSession(sessionId: string, sessionKey?: string): Promise<RendezvousSession | null>
@@ -96,9 +112,11 @@ class MatrixRendezvousService {
       throw new Error('Matrix client not initialized')
     }
 
-    const clientWithMethods = client as MatrixClient & Record<string, unknown>
+    const clientWithMethods: MatrixClient & {
+      getRendezvousManager?: () => RendezvousManagerLike
+    } = client
     if (typeof clientWithMethods.getRendezvousManager === 'function') {
-      return clientWithMethods.getRendezvousManager() as RendezvousManagerLike
+      return clientWithMethods.getRendezvousManager()
     }
 
     throw new Error('RendezvousManager not available on Matrix client')
@@ -110,7 +128,7 @@ class MatrixRendezvousService {
   async createSession(options: {
     intent: RendezvousSessionIntent
     transport: RendezvousSessionTransport
-    transport_data?: Record<string, unknown>
+    transport_data?: RendezvousTransportData
     expires_in_ms?: number
   }): Promise<CreateSessionResponse> {
     try {

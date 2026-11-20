@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { makeBurnStats } from '@/services/matrix/messaging/__tests__/fixtures/burnStats'
 import BurnAfterReadSettings from '../BurnAfterReadSettings.vue'
 
 const showToastMock = vi.fn()
@@ -158,7 +159,7 @@ describe('BurnAfterReadSettings', () => {
   })
 
   it('keeps default burn stats when getBurnStats returns empty result', async () => {
-    getBurnStatsMock.mockResolvedValueOnce({ totalBurned: 0, totalPending: 0, roomsWithBurnEnabled: 0 })
+    getBurnStatsMock.mockResolvedValueOnce(makeBurnStats())
     const wrapper = mount(BurnAfterReadSettings)
     await flushPromises()
     expect((wrapper.vm as any).burnStats.totalBurned).toBe(0)

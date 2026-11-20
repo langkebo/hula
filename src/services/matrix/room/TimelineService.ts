@@ -5,10 +5,12 @@ import { resolveMxcToHttp } from '../media/mxcUrl'
 import type { RoomFilesOutcome } from './timelineFileOutcomes'
 import { normalizeRoomFilesPage } from './timelineFileOutcomes'
 import type {
+  RoomCallInfo,
   RoomEventMediaUrl,
   RoomEventMediaUrlOutcome,
   RoomEventPerspectiveOutcome,
   RoomFragmentsOutcome,
+  RoomNotificationsOutcome,
   RoomReceiptsOutcome,
   RoomReducedEventsOutcome,
   RoomRenderedOutcome
@@ -111,14 +113,14 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
   async getRoomNotifications(
     roomId: string,
     params?: { from?: string; limit?: number }
-  ): Promise<{ notifications: Array<Record<string, unknown>>; next_token?: string }> {
+  ): Promise<RoomNotificationsOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomNotifications(roomId, {
         ...(params?.from !== undefined ? { from: params.from } : {}),
         ...(params?.limit !== undefined ? { limit: params.limit } : {})
       })
-      return result as typeof result & { notifications: Array<Record<string, unknown>>; next_token?: string }
+      return result as RoomNotificationsOutcome
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间通知失败: ${err}`)
       return { notifications: [] }
@@ -135,11 +137,11 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
    * @param callId - 通话 ID
    * @returns 通话会话数据，或 null（端点不可用时）
    */
-  async getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null> {
+  async getRoomCall(roomId: string, callId: string): Promise<RoomCallInfo | null> {
     const client = this.getClient()
     try {
       const result = await client.getRoomManager().getRoomCall(roomId, callId)
-      return result as Record<string, unknown>
+      return result as RoomCallInfo
     } catch (err) {
       logger.error(`[MatrixRoom] 获取通话会话失败: ${err}`)
       return null

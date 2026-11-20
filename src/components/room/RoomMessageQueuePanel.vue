@@ -43,6 +43,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ErrorState from '@/components/common/ErrorState.vue'
+import type { RoomMessageQueueOutcome } from '@/services/matrix/room/AccountDataService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { truncateMiddle } from '@/utils/StringUtils'
 
@@ -59,7 +60,7 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const loading = ref(true)
-const queueData = ref<Record<string, unknown>>({})
+const queueData = ref<RoomMessageQueueOutcome>({})
 // 读取失败不能落成 {}：那会把「读不到消息队列」渲染成「队列为空」
 const loadFailed = ref(false)
 

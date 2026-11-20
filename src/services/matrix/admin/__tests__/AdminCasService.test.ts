@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminCasService } from '../AdminCasService'
+import { makeCasServiceCreateResponse, makeCasServiceDeleteResponse } from './fixtures/cas'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -47,7 +48,7 @@ describe('AdminCasService', () => {
       name: 'Svc',
       service_url_pattern: 'https://app.example.com/*'
     }
-    createService.mockResolvedValueOnce({ id: 'svc', name: 'Svc' })
+    createService.mockResolvedValueOnce(makeCasServiceCreateResponse({ id: 'svc', name: 'Svc' }))
 
     const result = await new AdminCasService(makeDeps()).createService(request)
 
@@ -56,7 +57,7 @@ describe('AdminCasService', () => {
   })
 
   it('deleteService 透传服务 ID', async () => {
-    deleteService.mockResolvedValueOnce({ id: 'svc' })
+    deleteService.mockResolvedValueOnce(makeCasServiceDeleteResponse({ id: 'svc' }))
 
     const result = await new AdminCasService(makeDeps()).deleteService('svc')
 

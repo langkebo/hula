@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomMessageQueuePanel from '../RoomMessageQueuePanel.vue'
+import { makeRoomMessageQueueEntry, makeRoomMessageQueueOutcome } from './fixtures/roomPanels'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -86,7 +87,11 @@ describe('RoomMessageQueuePanel — P2-6 房间消息队列状态面板', () => 
   it('重试成功后恢复队列列表', async () => {
     getMessageQueueMock
       .mockRejectedValueOnce(new Error('boom'))
-      .mockResolvedValueOnce({ queue: [{ event_id: '$e1:hs', type: 'm.room.message', content: 'hello' }] })
+      .mockResolvedValueOnce(
+        makeRoomMessageQueueOutcome([
+          makeRoomMessageQueueEntry({ event_id: '$e1:hs', type: 'm.room.message', content: 'hello' })
+        ])
+      )
     const wrapper = await mountPanel()
 
     await wrapper.find('[data-testid="error-retry"]').trigger('click')

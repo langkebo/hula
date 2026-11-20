@@ -23,6 +23,7 @@ vi.mock('@/services/performance/ChunkUploadService', () => ({
 }))
 
 import { matrixMediaService } from '../MatrixMediaService'
+import { makeChunkUploadResult } from './fixtures/chunkUpload'
 
 const bigFile = new File([new Uint8Array(8)], 'big.bin', { type: 'application/octet-stream' })
 
@@ -34,12 +35,7 @@ describe('MatrixMediaService 413 分片回退', () => {
 
   it('uploadFile 遇 413 回退分片上传并返回其 mxcUrl', async () => {
     mediaUploadMock.mockRejectedValueOnce(Object.assign(new Error('too large'), { httpStatus: 413 }))
-    chunkUploadMock.mockResolvedValueOnce({
-      mxcUrl: 'mxc://hs/chunked',
-      filename: 'big.bin',
-      size: 8,
-      mimeType: 'application/octet-stream'
-    })
+    chunkUploadMock.mockResolvedValueOnce(makeChunkUploadResult())
 
     const result = await matrixMediaService.uploadFile(bigFile)
 
@@ -49,12 +45,7 @@ describe('MatrixMediaService 413 分片回退', () => {
 
   it('errcode M_TOO_LARGE 同样触发回退', async () => {
     mediaUploadMock.mockRejectedValueOnce(Object.assign(new Error('too large'), { errcode: 'M_TOO_LARGE' }))
-    chunkUploadMock.mockResolvedValueOnce({
-      mxcUrl: 'mxc://hs/chunked2',
-      filename: 'big.bin',
-      size: 8,
-      mimeType: 'application/octet-stream'
-    })
+    chunkUploadMock.mockResolvedValueOnce(makeChunkUploadResult({ mxcUrl: 'mxc://hs/chunked2' }))
 
     const result = await matrixMediaService.uploadFile(bigFile)
     expect(result.contentUri).toBe('mxc://hs/chunked2')
@@ -79,12 +70,9 @@ describe('MatrixMediaService uploadFile 阈值分块', () => {
   })
 
   it('达到阈值且开关开启时直接走分块上传', async () => {
-    chunkUploadMock.mockResolvedValueOnce({
-      mxcUrl: 'mxc://hs/threshold',
-      filename: 'big.bin',
-      size: 10 * 1024 * 1024,
-      mimeType: 'application/octet-stream'
-    })
+    chunkUploadMock.mockResolvedValueOnce(
+      makeChunkUploadResult({ mxcUrl: 'mxc://hs/threshold', size: 10 * 1024 * 1024 })
+    )
 
     const result = await matrixMediaService.uploadFile(bigEnoughFile())
 
@@ -112,12 +100,9 @@ describe('MatrixMediaService uploadLargeFile 主动分块上传 (§9.4.1)', () =
   })
 
   it('uploadLargeFile 直接调用分块上传服务，不走 client.uploadContent', async () => {
-    chunkUploadMock.mockResolvedValueOnce({
-      mxcUrl: 'mxc://hs/large-file',
-      filename: 'large.bin',
-      size: 15 * 1024 * 1024,
-      mimeType: 'application/octet-stream'
-    })
+    chunkUploadMock.mockResolvedValueOnce(
+      makeChunkUploadResult({ mxcUrl: 'mxc://hs/large-file', filename: 'large.bin', size: 15 * 1024 * 1024 })
+    )
 
     const largeFile = new File([new Uint8Array(16)], 'large.bin', { type: 'application/octet-stream' })
     const result = await matrixMediaService.uploadLargeFile(largeFile)
@@ -131,12 +116,7 @@ describe('MatrixMediaService uploadLargeFile 主动分块上传 (§9.4.1)', () =
   it('uploadLargeFile 透传进度回调', async () => {
     chunkUploadMock.mockImplementationOnce(async (opts) => {
       opts.onProgress?.({ percentage: 42 } as never)
-      return {
-        mxcUrl: 'mxc://hs/large-file-2',
-        filename: 'large.bin',
-        size: 12 * 1024 * 1024,
-        mimeType: 'application/octet-stream'
-      }
+      return makeChunkUploadResult({ mxcUrl: 'mxc://hs/large-file-2', filename: 'large.bin', size: 12 * 1024 * 1024 })
     })
 
     const onProgress = vi.fn()

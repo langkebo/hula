@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeQuotaAlertsUnavailable } from '@/services/matrix/media/__tests__/fixtures/quota'
 import StorageSettings from '../StorageSettings.vue'
 
 const {
@@ -265,7 +266,7 @@ describe('StorageSettings — partial 态', () => {
   })
 
   it('点击重试会重新拉取配额与媒体配置', async () => {
-    getQuotaAlertsMock.mockResolvedValueOnce({ ok: false, reason: 'unavailable' })
+    getQuotaAlertsMock.mockResolvedValueOnce(makeQuotaAlertsUnavailable())
 
     const wrapper = mountTab()
     await flush()

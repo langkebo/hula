@@ -1,7 +1,15 @@
 import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  adminAccountDetailsFixture,
+  makeAdminAccountDetails,
+  makeAdminLoginAsUserResponse,
+  makeBatchCreateUsersResponse,
+  makeRateLimitConfig,
+  makeUserRoomsResponse,
+  makeUsersPage
+} from '@/services/matrix/admin/__tests__/fixtures/user'
 import { AdminUserService } from '../UserService'
-import { adminAccountDetailsFixture } from './fixtures/user'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -69,20 +77,21 @@ describe('AdminUserService', () => {
     // 该后端**不返回** `last_seen_ts` / `last_seen_ip`（SDK 类型注释原文：
     // 「原先声明的 suspended / erased / last_seen_ts / last_seen_ip 该后端从不返回，已删除」，
     // 见 `admin-user-types.d.ts` 的 `AdminAccountDetails`），故 mock 与期望都不应包含它。
-    ;(admin as any).getUsersPaginated.mockResolvedValueOnce({
-      items: [
-        {
-          name: '@user:server.com',
-          avatar_url: 'mxc://avatar',
-          admin: true,
-          deactivated: false,
-          is_guest: true,
-          created_ts: 456,
-          displayname: 'User'
-        }
-      ],
-      nextToken: 'next'
-    })
+    ;(admin as any).getUsersPaginated.mockResolvedValueOnce(
+      makeUsersPage(
+        [
+          makeAdminAccountDetails('@user:server.com', {
+            avatar_url: 'mxc://avatar',
+            admin: true,
+            deactivated: false,
+            is_guest: true,
+            created_ts: 456,
+            displayname: 'User'
+          })
+        ],
+        'next'
+      )
+    )
 
     const result = await service.getUsers()
 
@@ -104,13 +113,12 @@ describe('AdminUserService', () => {
   })
 
   it('getUsers respects guest filtering when SDK response mixes guest and normal users', async () => {
-    ;(admin as any).getUsersPaginated.mockResolvedValueOnce({
-      items: [
-        { name: '@guest:server.com', is_guest: true },
-        { name: '@user:server.com', is_guest: false }
-      ],
-      nextToken: undefined
-    })
+    ;(admin as any).getUsersPaginated.mockResolvedValueOnce(
+      makeUsersPage([
+        makeAdminAccountDetails('@guest:server.com', { is_guest: true }),
+        makeAdminAccountDetails('@user:server.com', { is_guest: false })
+      ])
+    )
 
     const result = await service.getUsers(100, undefined, true)
 
@@ -152,7 +160,7 @@ describe('AdminUserService', () => {
   })
 
   it('createUser composes full matrix user id from client domain', async () => {
-    ;(admin as any).createUser.mockResolvedValueOnce({ name: '@alice:server.com' })
+    ;(admin as any).createUser.mockResolvedValueOnce(makeAdminAccountDetails('@alice:server.com'))
 
     const result = await service.createUser('alice', 'secret', { admin: true, displayname: 'Alice' })
 
@@ -198,10 +206,7 @@ describe('AdminUserService', () => {
   // 没有 membership / is_room_admin 信息（SDK `UserRoomsResponse` 同形）。旧 mock 用的 `rooms`
   // 键在后端不存在，于是解析结果恒为空数组。
   it('getUserRooms maps joined_rooms into facade shape', async () => {
-    ;(admin as any).getUserRooms.mockResolvedValueOnce({
-      joined_rooms: ['!plain:server.com'],
-      total: 1
-    })
+    ;(admin as any).getUserRooms.mockResolvedValueOnce(makeUserRoomsResponse(['!plain:server.com']))
 
     const result = await service.getUserRooms('@alice:server.com')
 
@@ -211,11 +216,9 @@ describe('AdminUserService', () => {
   it('batchCreateUsers falls back to created and failed arrays', async () => {
     // 后端 `admin/user.rs:874` 返回 `{created, failed, total}`（SDK 同形，两个键都是 string[]）；
     // 旧 mock 用的是不存在的 `errors` 且元素是对象。
-    ;(admin as any).batchCreateUsers.mockResolvedValueOnce({
-      created: ['@ok:server.com'],
-      failed: ['@bad:server.com'],
-      total: 2
-    })
+    ;(admin as any).batchCreateUsers.mockResolvedValueOnce(
+      makeBatchCreateUsersResponse(['@ok:server.com'], ['@bad:server.com'])
+    )
 
     const result = await service.batchCreateUsers([{ username: 'ok', password: 'pass' }])
 
@@ -226,10 +229,7 @@ describe('AdminUserService', () => {
   })
 
   it('getRateLimit maps snake_case response', async () => {
-    ;(admin as any).getRateLimitOverride.mockResolvedValueOnce({
-      messages_per_second: 5,
-      burst_count: 10
-    })
+    ;(admin as any).getRateLimitOverride.mockResolvedValueOnce(makeRateLimitConfig(5, 10))
 
     const result = await service.getRateLimit('@alice:server.com')
 
@@ -240,10 +240,9 @@ describe('AdminUserService', () => {
   })
 
   it('loginUserAs maps access token payload', async () => {
-    ;(admin as any).loginAsUser.mockResolvedValueOnce({
-      access_token: 'token',
-      device_id: 'device'
-    })
+    ;(admin as any).loginAsUser.mockResolvedValueOnce(
+      makeAdminLoginAsUserResponse('token', 'device', '@alice:server.com')
+    )
 
     const result = await service.loginUserAs('@alice:server.com')
 

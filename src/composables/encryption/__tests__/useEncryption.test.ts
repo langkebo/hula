@@ -138,6 +138,13 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionService', () => ({
   }
 }))
 
+import {
+  makeDeviceVerificationResult,
+  makeKeyBackupInfo,
+  makeKeyBackupRestoreResult,
+  makeKeyExportResult,
+  makeKeyImportResult
+} from '@/services/matrix/crypto/__tests__/fixtures/encryption'
 import { useEncryption } from '../useEncryption'
 
 describe('useEncryption', () => {
@@ -301,7 +308,7 @@ describe('useEncryption', () => {
     })
 
     it('restoreFromBackup returns import stats', async () => {
-      mockCryptoSDKRestoreFromBackup.mockResolvedValueOnce({ imported: 10, total: 12 })
+      mockCryptoSDKRestoreFromBackup.mockResolvedValueOnce(makeKeyBackupRestoreResult())
       const { restoreFromBackup } = useEncryption()
       const result = await restoreFromBackup('recovery-key')
       expect(result).toEqual({ imported: 10, total: 12 })
@@ -309,7 +316,7 @@ describe('useEncryption', () => {
     })
 
     it('deleteKeyBackup delegates to matrixKeyBackupService', async () => {
-      mockKeyBackupCheckKeyBackup.mockResolvedValueOnce({ version: '1', algorithm: 'alg', auth_data: {} })
+      mockKeyBackupCheckKeyBackup.mockResolvedValueOnce(makeKeyBackupInfo({ algorithm: 'alg' }))
       mockKeyBackupDeleteKeyBackupVersion.mockResolvedValueOnce(undefined)
       const { deleteKeyBackup } = useEncryption()
       await deleteKeyBackup()
@@ -422,11 +429,13 @@ describe('useEncryption', () => {
     })
 
     it('getDeviceTrustLevel returns mapped trust info', async () => {
-      mockMatrixCryptoGetDeviceVerificationStatus.mockResolvedValueOnce({
-        verified: true,
-        crossSigningVerified: true,
-        devicesCrossSigningVerified: true
-      })
+      mockMatrixCryptoGetDeviceVerificationStatus.mockResolvedValueOnce(
+        makeDeviceVerificationResult({
+          verified: true,
+          crossSigningVerified: true,
+          devicesCrossSigningVerified: true
+        })
+      )
       const { getDeviceTrustLevel } = useEncryption()
       const result = await getDeviceTrustLevel('@user:server', 'DEVICE1')
       expect(result).toEqual({ isVerified: true, isCrossSigningVerified: true, isTofu: false })
@@ -434,12 +443,7 @@ describe('useEncryption', () => {
     })
 
     it('getDeviceTrustLevel maps tofu from verification status', async () => {
-      mockMatrixCryptoGetDeviceVerificationStatus.mockResolvedValueOnce({
-        verified: false,
-        crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
-        tofu: true
-      })
+      mockMatrixCryptoGetDeviceVerificationStatus.mockResolvedValueOnce(makeDeviceVerificationResult({ tofu: true }))
       const { getDeviceTrustLevel } = useEncryption()
       const result = await getDeviceTrustLevel('@user:server', 'DEVICE1')
       expect(result.isTofu).toBe(true)
@@ -465,14 +469,14 @@ describe('useEncryption', () => {
 
   describe('key import/export', () => {
     it('exportRoomKeys returns data from cryptoSDKAdapter.exportKeys', async () => {
-      mockCryptoSDKExportKeys.mockResolvedValueOnce({ data: '{"keys":[]}', count: 0 })
+      mockCryptoSDKExportKeys.mockResolvedValueOnce(makeKeyExportResult())
       const { exportRoomKeys } = useEncryption()
       const result = await exportRoomKeys()
       expect(result).toBe('{"keys":[]}')
     })
 
     it('importRoomKeys returns import stats', async () => {
-      mockCryptoSDKImportKeys.mockResolvedValueOnce({ imported: 5, total: 5 })
+      mockCryptoSDKImportKeys.mockResolvedValueOnce(makeKeyImportResult())
       const { importRoomKeys } = useEncryption()
       const result = await importRoomKeys('{"keys":[]}')
       expect(result).toEqual({ imported: 5, total: 5 })

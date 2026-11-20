@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoomSummary as SynapseRoomSummary } from '../../extensions/SynapseRoomSummaryService'
 import matrixClientService from '../../MatrixClientService'
 import { MatrixRoomSummaryAggregateService } from '../SummaryService'
+import { makeServerRoomSummary } from './fixtures/roomSummary'
 
 const synapseGetRoomSummaryMock = vi.fn()
 vi.mock('../../extensions/SynapseRoomSummaryService', () => ({
@@ -158,15 +159,13 @@ describe('MatrixRoomSummaryAggregateService', () => {
     it('uses server summary path when synapse returns data', async () => {
       const room = makeRoom()
       vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => room } as never)
-      synapseGetRoomSummaryMock.mockResolvedValueOnce({
-        room_id: '!r:e',
-        name: 'Server',
-        topic: null,
-        avatar_url: null,
-        heroes: [],
-        canonical_alias: null,
-        join_rule: 'public'
-      })
+      synapseGetRoomSummaryMock.mockResolvedValueOnce(
+        makeServerRoomSummary({
+          room_id: '!r:e',
+          name: 'Server',
+          join_rule: 'public'
+        })
+      )
       const s = await service.getRoomSummary('!r:e')
       expect(s?.name).toBe('Server')
       expect(s?.isPublic).toBe(true)

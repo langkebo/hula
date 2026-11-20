@@ -4,6 +4,7 @@ import { TauriCommand } from '@/enums'
 import { SessionRestoreService } from '../SessionRestoreService'
 import type { SessionRuntimeHost } from '../sessionRuntimeInternal'
 import { SessionRuntimeState } from '../sessionRuntimeInternal'
+import { makeStoredTokens } from './fixtures/session'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -344,8 +345,8 @@ describe('SessionRestoreService.hasAuthenticatedSession', () => {
     const service = new SessionRestoreService(host, state)
     const getStoredTokensSpy = vi
       .spyOn(service, 'getStoredTokens')
-      .mockResolvedValueOnce({ token: null, refreshToken: null })
-      .mockResolvedValueOnce({ token: 'found', refreshToken: null })
+      .mockResolvedValueOnce(makeStoredTokens(null, null))
+      .mockResolvedValueOnce(makeStoredTokens(null, 'found'))
 
     expect(await service.hasAuthenticatedSession()).toBe(false)
     // 冷启动早期的瞬时 IPC/DB 失败不能固化成永久「无会话」

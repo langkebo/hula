@@ -9,6 +9,7 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminService } from '@/services/matrix/admin'
+import { makeAuditLogEntry, makeAuditLogPage } from './fixtures/admin'
 
 describe('useAdminAudit', () => {
   beforeEach(() => {
@@ -16,12 +17,13 @@ describe('useAdminAudit', () => {
   })
 
   it('loadLogs populates logs with default limit', async () => {
-    vi.mocked(adminService.getAuditLog).mockResolvedValueOnce({
-      logs: [
-        { id: '1', type: 'admin', user_id: '@a:s', timestamp: 1 },
-        { id: '2', type: 'auth', user_id: '@b:s', timestamp: 2 }
-      ]
-    })
+    vi.mocked(adminService.getAuditLog).mockResolvedValueOnce(
+      makeAuditLogPage([
+        // view 层别名（id/type/user_id/timestamp）为现存失真，wire 字段保持真实
+        makeAuditLogEntry({ id: '1', type: 'admin', user_id: '@a:s', timestamp: 1 }),
+        makeAuditLogEntry({ id: '2', type: 'auth', user_id: '@b:s', timestamp: 2, created_ts: 2 })
+      ])
+    )
     const c = useAdminAudit()
     await c.loadLogs()
     expect(c.logs.value).toHaveLength(2)
@@ -43,12 +45,17 @@ describe('useAdminAudit', () => {
   })
 
   it('loadDetail populates selected', async () => {
-    vi.mocked(adminService.getAuditEvent).mockResolvedValueOnce({
-      id: '$e1',
-      type: 'admin',
-      user_id: '@x:s',
-      timestamp: 100
-    })
+    vi.mocked(adminService.getAuditEvent).mockResolvedValueOnce(
+      makeAuditLogEntry({
+        event_id: '$e1',
+        id: '$e1',
+        type: 'admin',
+        actor_id: '@x:s',
+        user_id: '@x:s',
+        created_ts: 100,
+        timestamp: 100
+      })
+    )
     const c = useAdminAudit()
     const r = await c.loadDetail('$e1')
     expect(r?.id).toBe('$e1')

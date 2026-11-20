@@ -1,5 +1,18 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
+import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeJitsiConfig,
+  makeRoomStateStub,
+  makeRoomWidgetsResponse,
+  makeSdkWidget,
+  makeSdkWidgetListItem,
+  makeSetPermissionResponse,
+  makeWidgetCapabilities,
+  makeWidgetConfig,
+  makeWidgetSessionItem,
+  makeWidgetSessionResponse,
+  makeWidgetSessionsResponse
+} from '@/services/matrix/widget/__tests__/fixtures/widget'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -45,16 +58,6 @@ const mockClient = {
 const { matrixClientService } = await import('../../MatrixClientService')
 const { matrixWidgetService } = await import('../MatrixWidgetService')
 
-const sdkWidget = (overrides: Record<string, unknown> = {}) => ({
-  widget_id: 'widget-1',
-  room_id: '!room:example.com',
-  type: 'jitsi',
-  url: 'https://meet.example.com',
-  name: 'Meeting',
-  data: {},
-  ...overrides
-})
-
 describe('MatrixWidgetService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -67,7 +70,9 @@ describe('MatrixWidgetService', () => {
   })
 
   it('lists room widgets via the new plural manager', async () => {
-    mockWidgetManager.getRoomWidgets.mockResolvedValueOnce({ widgets: [sdkWidget()] })
+    mockWidgetManager.getRoomWidgets.mockResolvedValueOnce(
+      makeRoomWidgetsResponse([makeSdkWidgetListItem({ widget_id: 'widget-1', widget_type: 'jitsi' })])
+    )
 
     const result = await matrixWidgetService.getRoomWidgets('!room:example.com')
 
@@ -79,24 +84,16 @@ describe('MatrixWidgetService', () => {
 
   it('falls back to room state when listRoomWidgets rejects in non-throwing mode', async () => {
     mockWidgetManager.getRoomWidgets.mockRejectedValueOnce(new Error('network error'))
-    mockClient.getRoom.mockReturnValueOnce({
-      currentState: {
-        getStateEvents: vi.fn().mockImplementation((eventType: string) =>
-          eventType === 'm.widget'
-            ? [
-                {
-                  getContent: () => ({
-                    type: 'custom',
-                    url: 'https://example.com/widget',
-                    name: 'Fallback Widget'
-                  }),
-                  getStateKey: () => 'widget-fallback'
-                }
-              ]
-            : []
-        )
-      }
-    } as unknown as Room)
+    mockClient.getRoom.mockReturnValueOnce(
+      makeRoomStateStub({
+        'm.widget': [
+          {
+            stateKey: 'widget-fallback',
+            content: { type: 'custom', url: 'https://example.com/widget', name: 'Fallback Widget' }
+          }
+        ]
+      })
+    )
 
     const result = await matrixWidgetService.getWidgets('!room:example.com', false)
 
@@ -113,26 +110,16 @@ describe('MatrixWidgetService', () => {
 
   it('falls back to room state when the manager is unavailable', async () => {
     mockClient.getWidgetManager.mockReturnValueOnce(null)
-    mockClient.getRoom.mockReturnValueOnce({
-      currentState: {
-        getStateEvents: vi.fn().mockImplementation((eventType: string) =>
-          eventType === 'im.vector.modular.widgets'
-            ? [
-                {
-                  getId: () => 'widget-state',
-                  getType: () => 'im.vector.modular.widgets',
-                  getContent: () => ({
-                    type: 'jitsi',
-                    url: 'https://meet.example.com',
-                    name: 'Meeting'
-                  }),
-                  getStateKey: () => 'widget-state'
-                }
-              ]
-            : []
-        )
-      }
-    } as unknown as Room)
+    mockClient.getRoom.mockReturnValueOnce(
+      makeRoomStateStub({
+        'im.vector.modular.widgets': [
+          {
+            stateKey: 'widget-state',
+            content: { type: 'jitsi', url: 'https://meet.example.com', name: 'Meeting' }
+          }
+        ]
+      })
+    )
 
     const result = await matrixWidgetService.getWidgets('!room:example.com')
 
@@ -148,11 +135,8 @@ describe('MatrixWidgetService', () => {
   })
 
   it('setWidgetCapabilities 把能力数组直接交给 SDK setWidgetCapabilities', async () => {
-    mockWidgetManager.setWidgetCapabilities.mockResolvedValueOnce({
-      widget_id: 'widget-1',
-      room_id: '!room:example.com',
-      capabilities: ['m.text', 'm.capability.screenshot']
-    })
+    const capabilities = makeWidgetCapabilities({ capabilities: ['m.text', 'm.capability.screenshot'] })
+    mockWidgetManager.setWidgetCapabilities.mockResolvedValueOnce(capabilities)
 
     const result = await matrixWidgetService.setWidgetCapabilities('!room:example.com', 'widget-1', [
       'm.text',
@@ -164,15 +148,11 @@ describe('MatrixWidgetService', () => {
       'm.text',
       'm.capability.screenshot'
     ])
-    expect(result).toEqual({
-      widget_id: 'widget-1',
-      room_id: '!room:example.com',
-      capabilities: ['m.text', 'm.capability.screenshot']
-    })
+    expect(result).toEqual(capabilities)
   })
 
   it('creates a widget via createWidget with the new body shape', async () => {
-    mockWidgetManager.createWidget.mockResolvedValueOnce(sdkWidget({ widget_id: 'widget-created' }))
+    mockWidgetManager.createWidget.mockResolvedValueOnce(makeSdkWidget({ widget_id: 'widget-created' }))
 
     const result = await matrixWidgetService.createWidget('!room:example.com', {
       widgetType: 'custom',
@@ -193,7 +173,7 @@ describe('MatrixWidgetService', () => {
   })
 
   it('addWidget façade delegates to createWidget', async () => {
-    mockWidgetManager.createWidget.mockResolvedValueOnce(sdkWidget())
+    mockWidgetManager.createWidget.mockResolvedValueOnce(makeSdkWidget())
 
     const ok = await matrixWidgetService.addWidget('!room:example.com', 'widget-1', {
       type: 'custom',
@@ -223,7 +203,7 @@ describe('MatrixWidgetService', () => {
   })
 
   it('getWidgetById returns the façade shape', async () => {
-    mockWidgetManager.getWidget.mockResolvedValueOnce(sdkWidget())
+    mockWidgetManager.getWidget.mockResolvedValueOnce(makeSdkWidget())
 
     const widget = await matrixWidgetService.getWidgetById('widget-1')
 
@@ -233,7 +213,7 @@ describe('MatrixWidgetService', () => {
 
   it('updateWidget maps façade updates onto the SDK body', async () => {
     // 后端返回**扁平** WidgetApiResponse（不是 `{widget}` 信封）
-    mockWidgetManager.updateWidget.mockResolvedValueOnce(sdkWidget({ url: 'https://new.example.com' }))
+    mockWidgetManager.updateWidget.mockResolvedValueOnce(makeSdkWidget({ url: 'https://new.example.com' }))
 
     const result = await matrixWidgetService.updateWidget('widget-1', { url: 'https://new.example.com' })
 
@@ -246,11 +226,12 @@ describe('MatrixWidgetService', () => {
   })
 
   it('setWidgetPermission wraps args into the SDK body shape', async () => {
-    mockWidgetManager.setWidgetPermissions.mockResolvedValueOnce({ ok: true })
+    const response = makeSetPermissionResponse()
+    mockWidgetManager.setWidgetPermissions.mockResolvedValueOnce(response)
 
     const result = await matrixWidgetService.setWidgetPermission('widget-1', '@alice:example.com', ['read', 'write'])
 
-    expect(result).toEqual({ ok: true })
+    expect(result).toEqual(response)
     expect(mockWidgetManager.setWidgetPermissions).toHaveBeenCalledWith('widget-1', {
       user_id: '@alice:example.com',
       permissions: ['read', 'write']
@@ -271,14 +252,15 @@ describe('MatrixWidgetService', () => {
   })
 
   it('createWidgetSession forwards option fields using snake_case', async () => {
-    mockWidgetManager.createWidgetSession.mockResolvedValueOnce({ session_id: 's-1' })
+    const session = makeWidgetSessionResponse(makeWidgetSessionItem({ session_id: 's-1' }))
+    mockWidgetManager.createWidgetSession.mockResolvedValueOnce(session)
 
     const result = await matrixWidgetService.createWidgetSession('widget-1', {
       deviceId: 'dev-1',
       expiresInMs: 60_000
     })
 
-    expect(result).toEqual({ session_id: 's-1' })
+    expect(result).toEqual(session)
     expect(mockWidgetManager.createWidgetSession).toHaveBeenCalledWith('widget-1', {
       device_id: 'dev-1',
       expires_in_ms: 60_000
@@ -286,9 +268,10 @@ describe('MatrixWidgetService', () => {
   })
 
   it('getWidgetSessions delegates to listWidgetSessions', async () => {
-    mockWidgetManager.getWidgetSessions.mockResolvedValueOnce({ sessions: [] })
+    const sessions = makeWidgetSessionsResponse()
+    mockWidgetManager.getWidgetSessions.mockResolvedValueOnce(sessions)
 
-    await expect(matrixWidgetService.getWidgetSessions('widget-1')).resolves.toEqual({ sessions: [] })
+    await expect(matrixWidgetService.getWidgetSessions('widget-1')).resolves.toEqual(sessions)
     expect(mockWidgetManager.getWidgetSessions).toHaveBeenCalledWith('widget-1')
   })
 
@@ -300,16 +283,18 @@ describe('MatrixWidgetService', () => {
   })
 
   it('getJitsiConfig calls the SDK with a single roomId argument', async () => {
-    mockWidgetManager.getJitsiConfig.mockResolvedValueOnce({ conf_id: 'c-1' })
+    const config = makeJitsiConfig({ conf_id: 'c-1' })
+    mockWidgetManager.getJitsiConfig.mockResolvedValueOnce(config)
 
-    await expect(matrixWidgetService.getJitsiConfig('!room:example.com')).resolves.toEqual({ conf_id: 'c-1' })
+    await expect(matrixWidgetService.getJitsiConfig('!room:example.com')).resolves.toEqual(config)
     expect(mockWidgetManager.getJitsiConfig).toHaveBeenCalledWith('!room:example.com')
   })
 
   it('getWidgetConfig calls the SDK with a single widgetId argument', async () => {
-    mockWidgetManager.getWidgetConfig.mockResolvedValueOnce({ url: 'https://example.com' })
+    const config = makeWidgetConfig({ url: 'https://example.com' })
+    mockWidgetManager.getWidgetConfig.mockResolvedValueOnce(config)
 
-    await expect(matrixWidgetService.getWidgetConfig('widget-1')).resolves.toEqual({ url: 'https://example.com' })
+    await expect(matrixWidgetService.getWidgetConfig('widget-1')).resolves.toEqual(config)
     expect(mockWidgetManager.getWidgetConfig).toHaveBeenCalledWith('widget-1')
   })
 })

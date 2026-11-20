@@ -3,36 +3,54 @@
 // 房间公共 API 边界：将房间领域的读写/成员/查询/操作能力聚合为单一门面模块，
 // 对外保持稳定的导出名，屏蔽下层 sub-service 的重构与拆分。
 
-import type { ICreateRoomOpts, Room, RoomMember } from 'matrix-js-sdk'
+import type { IContent, ICreateRoomOpts, Room, RoomMember } from 'matrix-js-sdk'
+import type { RoomEphemeralEvent } from '../extensions/SynapseRoomSummaryService'
 import { synapseRoomSummaryService } from '../extensions/SynapseRoomSummaryService'
-import type { RoomSummaryMemberEntry, RoomSummaryStateEntry } from './AccountDataService'
+import type {
+  ContentScannerInfo,
+  EncryptedEventsOutcome,
+  RoomMessageQueueOutcome,
+  RoomSignOutcome,
+  RoomSummaryMemberEntry,
+  RoomSummaryStateEntry,
+  RoomVaultDataOutcome
+} from './AccountDataService'
 import { matrixRoomAccountDataService } from './AccountDataService'
 import type { CreateGroupRoomOptions } from './CreationService'
 import { matrixRoomCreationService } from './CreationService'
 import type { MembershipEventsOutcome, RecentMemberChangesOutcome } from './MembershipService'
 import { matrixRoomMembershipService } from './MembershipService'
 import type {
+  RoomCapabilitiesOutcome,
   RoomEventUrlOutcome,
   RoomExternalId,
+  RoomMetadataOutcome,
   RoomPermissionsOutcome,
   RoomServiceTypesOutcome,
   RoomSpacesOutcome,
+  RoomSyncOutcome,
   RoomTurnServerOutcome
 } from './MetadataService'
 import { matrixRoomMetadataService } from './MetadataService'
 import { matrixRoomQueryService } from './QueryService'
+import type { StickyEventsOutcome } from './RoomOperations'
 import { roomOperations } from './RoomOperations'
+import type { RoomPowerLevelsOutcome } from './RoomOperationsModerationMethods'
 import type { MatrixRoomSummary } from './SummaryService'
 import { matrixRoomSummaryAggregateService } from './SummaryService'
 import { matrixRoomTimelineService } from './TimelineService'
 import type {
+  RoomCallInfo,
   RoomEventMediaUrlOutcome,
   RoomEventPerspectiveOutcome,
   RoomFragmentsOutcome,
+  RoomNotificationsOutcome,
   RoomReceiptsOutcome,
   RoomReducedEventsOutcome,
   RoomRenderedOutcome
 } from './timelineOutcomes'
+
+export type { RoomCapabilitiesOutcome } from './MetadataService'
 
 export interface MatrixRoomActionFacade {
   // --- Delegated to CreationService (deep) ---
@@ -53,11 +71,11 @@ export interface MatrixRoomActionFacade {
   setPinnedEvents(roomId: string, eventIds: string[]): Promise<void>
   pinEvent(roomId: string, eventId: string): Promise<void>
   unpinEvent(roomId: string, eventId: string): Promise<void>
-  getRetentionPolicy(roomId: string): Promise<{ content: Record<string, unknown> } | null>
-  setRetentionPolicy(roomId: string, content: Record<string, unknown>): Promise<void>
-  setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void>
+  getRetentionPolicy(roomId: string): Promise<{ content: IContent } | null>
+  setRetentionPolicy(roomId: string, content: IContent): Promise<void>
+  setStickyEvents(roomId: string, events: IContent): Promise<void>
   clearStickyEvent(roomId: string, eventType: string): Promise<void>
-  getStickyEvents(roomId: string): Promise<Record<string, unknown>>
+  getStickyEvents(roomId: string): Promise<StickyEventsOutcome>
   setTag(roomId: string, tag: string, order?: number): Promise<void>
   removeTag(roomId: string, tag: string): Promise<void>
   setInviteBlocklist(roomId: string, blocked: string[]): Promise<void>
@@ -65,8 +83,8 @@ export interface MatrixRoomActionFacade {
   upgradeRoom(roomId: string, newVersion: string): Promise<string>
   getHistoryVisibility(roomId: string): Promise<string>
   setHistoryVisibility(roomId: string, visibility: string): Promise<void>
-  getPowerLevels(roomId: string): Promise<Record<string, unknown>>
-  setPowerLevels(roomId: string, content: Record<string, unknown>): Promise<void>
+  getPowerLevels(roomId: string): Promise<RoomPowerLevelsOutcome>
+  setPowerLevels(roomId: string, content: IContent): Promise<void>
   getNotificationLevel(roomId: string): Promise<'all' | 'mentions' | 'mute'>
   setNotificationLevel(roomId: string, level: 'all' | 'mentions' | 'mute'): Promise<void>
   getAliases(roomId: string): Promise<string[]>
@@ -83,10 +101,10 @@ export interface MatrixRoomActionFacade {
   joinRoomByAlias(roomIdOrAlias: string, serverName?: string[]): Promise<{ room_id: string }>
 
   // --- Delegated to AccountDataService (deep) ---
-  setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void>
+  setRoomAccountData(roomId: string, eventType: string, content: IContent): Promise<void>
   setReadLifetime(roomId: string, lifetimeMs: number): Promise<void>
   setAntiScreenshot(roomId: string, enabled: boolean): Promise<void>
-  setVaultData(roomId: string, content: Record<string, unknown>): Promise<void>
+  setVaultData(roomId: string, content: IContent): Promise<void>
 }
 
 export const matrixRoomActionFacade: MatrixRoomActionFacade = {
@@ -206,7 +224,7 @@ interface MatrixRoomReadFacade {
   getRoomState(roomId: string): Promise<unknown[]>
   getRoomAliases(roomId: string): Promise<string[]>
   getPinnedEvents(roomId: string): Promise<string[]>
-  getStickyEvents(roomId: string): Promise<Record<string, unknown>>
+  getStickyEvents(roomId: string): Promise<StickyEventsOutcome>
   getInviteBlocklist(roomId: string): Promise<string[]>
   getInviteAllowlist(roomId: string): Promise<string[]>
   getTags(roomId: string): Promise<Record<string, { order?: number }>>
@@ -227,7 +245,7 @@ interface MatrixRoomReadFacade {
     state: unknown[]
   } | null>
   getRoomVersion(roomId: string): Promise<string | null>
-  getRoomCapabilities(roomId: string): Promise<Record<string, unknown>>
+  getRoomCapabilities(roomId: string): Promise<RoomCapabilitiesOutcome>
   getRoomTimeline(
     roomId: string,
     options?: { from?: string; limit?: number; dir?: 'f' | 'b' }
@@ -240,8 +258,8 @@ interface MatrixRoomReadFacade {
     unread_notifications: number
     unread_highlighted: number
   }>
-  getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null>
-  getRoomMetadata(roomId: string): Promise<Record<string, unknown>>
+  getRoomAccountData(roomId: string, eventType: string): Promise<IContent | null>
+  getRoomMetadata(roomId: string): Promise<RoomMetadataOutcome>
   /** 房间级 TURN 配置（只读，已剥离凭据） */
   getRoomTurnServer(roomId: string): Promise<RoomTurnServerOutcome>
   getRoomEventUrl(roomId: string, eventId: string): Promise<RoomEventUrlOutcome>
@@ -250,13 +268,10 @@ interface MatrixRoomReadFacade {
     timestamp: number,
     dir?: 'f' | 'b'
   ): Promise<{ event_id: string; origin_server_ts: number } | null>
-  getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null>
-  getRoomSync(roomId: string): Promise<Record<string, unknown>>
-  getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null>
-  getRoomNotifications(
-    roomId: string,
-    params?: { from?: string; limit?: number }
-  ): Promise<{ notifications: Array<Record<string, unknown>>; next_token?: string }>
+  getRoomCall(roomId: string, callId: string): Promise<RoomCallInfo | null>
+  getRoomSync(roomId: string): Promise<RoomSyncOutcome>
+  getReportScannerInfo(roomId: string, eventId: string): Promise<ContentScannerInfo | null>
+  getRoomNotifications(roomId: string, params?: { from?: string; limit?: number }): Promise<RoomNotificationsOutcome>
   /** 当前用户的房间权限快照（只读） */
   getRoomPermissions(roomId: string): Promise<RoomPermissionsOutcome>
   /** 房间所属空间列表（只读） */
@@ -264,14 +279,14 @@ interface MatrixRoomReadFacade {
   getRoomExternalIds(roomId: string): Promise<RoomExternalId[]>
   getRoomEventPerspective(roomId: string, eventId: string): Promise<RoomEventPerspectiveOutcome>
   getAntiScreenshot(roomId: string): Promise<{ enabled: boolean }>
-  getMessageQueue(roomId: string): Promise<Record<string, unknown>>
-  getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }>
-  signEvent(roomId: string, eventId: string): Promise<Record<string, unknown>>
+  getMessageQueue(roomId: string): Promise<RoomMessageQueueOutcome>
+  getEncryptedEvents(roomId: string): Promise<EncryptedEventsOutcome>
+  signEvent(roomId: string, eventId: string): Promise<RoomSignOutcome>
   verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean }>
-  getVaultData(roomId: string, throwOnError?: boolean): Promise<Record<string, unknown>>
+  getVaultData(roomId: string, throwOnError?: boolean): Promise<RoomVaultDataOutcome>
   getRoomSummaryMembers(roomId: string): Promise<RoomSummaryMemberEntry[]>
   getRoomSummaryState(roomId: string): Promise<RoomSummaryStateEntry[]>
-  getRoomEphemeral(roomId: string, types?: string[]): Promise<Record<string, unknown>[]>
+  getRoomEphemeral(roomId: string, types?: string[]): Promise<RoomEphemeralEvent[]>
   getRoomEventMediaUrls(roomId: string, eventId: string): Promise<RoomEventMediaUrlOutcome>
   /** 房间降采样事件（只读） */
   getRoomReducedEvents(roomId: string): Promise<RoomReducedEventsOutcome>

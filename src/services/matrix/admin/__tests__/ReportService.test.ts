@@ -4,6 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { AdminReportService } from '../ReportService'
+import { makeRoomWithTimeline } from './fixtures/room'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
@@ -137,9 +138,7 @@ describe('AdminReportService', () => {
       reportRoom: reportRoomMock,
       reportEvent: reportEventMock
     })
-    client.getRoom.mockReturnValueOnce({
-      timeline: [{ getId: () => '$first' }]
-    })
+    client.getRoom.mockReturnValueOnce(makeRoomWithTimeline(['$first']))
 
     await expect(service.reportRoom('!r:hs', 'abuse')).resolves.toEqual({ report_id: '' })
     expect(reportEventMock).toHaveBeenCalledWith('!r:hs', '$first', -50, 'abuse')

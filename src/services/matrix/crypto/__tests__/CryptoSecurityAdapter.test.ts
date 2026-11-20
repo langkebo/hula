@@ -3,6 +3,7 @@ import type { MatrixClient } from '@/services/matrix/sdk'
 import type { CryptoApi, MatrixClientExtended } from '@/types/matrix-extensions'
 import { CryptoSecurityAdapter } from '../CryptoSecurityAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
+import { makeUiaAuthErrorResponse, makeUiaSuccessResponse } from './fixtures/uia'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -348,8 +349,8 @@ describe('CryptoSecurityAdapter', () => {
     it('retries with session when UIA error provides one', async () => {
       const makeRequest = vi
         .fn()
-        .mockRejectedValueOnce({ data: { session: 'sess-1' } })
-        .mockResolvedValueOnce({ success: true })
+        .mockRejectedValueOnce(makeUiaAuthErrorResponse())
+        .mockResolvedValueOnce(makeUiaSuccessResponse())
       const bootstrapCrossSigning = vi.fn()
       const invokeAuth = captureBootstrap(bootstrapCrossSigning)
       const crypto = { bootstrapCrossSigning } as unknown as CryptoApi

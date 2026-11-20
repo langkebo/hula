@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DirectMessageManager, MatrixClient, Room } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
 import { matrixDirectMessageService } from '../MatrixDirectMessageService'
+import { makeDirectRoomsOnServer, makeDmPartnerResponse } from './fixtures/directMessage'
 
 // 门面上的 54 处 @deprecated 纯委托已删除（SDK C5）；调用点改走 sub-manager。
 const mockDmManager = {
@@ -40,9 +41,9 @@ describe('MatrixDirectMessageService', () => {
   })
 
   it('should get direct rooms from server', async () => {
-    mockDmManager.list.getDirectRoomsFromServer.mockResolvedValueOnce({
-      '@alice:example.com': ['!dm:example.com']
-    })
+    mockDmManager.list.getDirectRoomsFromServer.mockResolvedValueOnce(
+      makeDirectRoomsOnServer({ '@alice:example.com': ['!dm:example.com'] })
+    )
 
     const result = await matrixDirectMessageService.getDirectRoomsFromServer()
 
@@ -94,12 +95,7 @@ describe('MatrixDirectMessageService', () => {
   })
 
   it('should get dm partner from server', async () => {
-    mockDmManager.list.getDmPartnerFromServer.mockResolvedValueOnce({
-      room_id: '!dm:example.com',
-      user_id: '@alice:example.com',
-      display_name: 'Alice',
-      avatar_url: 'mxc://example.com/alice'
-    })
+    mockDmManager.list.getDmPartnerFromServer.mockResolvedValueOnce(makeDmPartnerResponse())
 
     const result = await matrixDirectMessageService.getDmPartnerFromServer('!dm:example.com')
 

@@ -1,7 +1,15 @@
 import { LARGE_PAGE_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
-import type { ServerHealth, ServerStats, ServerStatus, ServerVersion } from './AdminTypes'
+import type {
+  AdminInfo,
+  AdminServerConfigInfo,
+  AdminServerLogEntry,
+  ServerHealth,
+  ServerStats,
+  ServerStatus,
+  ServerVersion
+} from './AdminTypes'
 
 const logger = createLogger('ServerService')
 
@@ -85,11 +93,11 @@ export class AdminServerService {
     }
   }
 
-  async getServerConfig(): Promise<Record<string, unknown> | null> {
+  async getServerConfig(): Promise<AdminServerConfigInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getServerConfig(false)
-      return unknownToObject(result)
+      return unknownToObject<AdminServerConfigInfo>(result)
     } catch (err) {
       logger.error(`[AdminServer] 获取服务器配置失败: ${err}`)
       return null
@@ -118,11 +126,11 @@ export class AdminServerService {
     }
   }
 
-  async getAdminInfo(): Promise<Record<string, unknown> | null> {
+  async getAdminInfo(): Promise<AdminInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getServerInfo()
-      return (result as Record<string, unknown>) ?? null
+      return unknownToObject<AdminInfo>(result)
     } catch (err) {
       logger.error(`[AdminServer] 获取管理端信息失败: ${err}`)
       return null
@@ -132,7 +140,7 @@ export class AdminServerService {
   async getServerLogs(
     level?: 'debug' | 'info' | 'warn' | 'error',
     limit = LARGE_PAGE_LIMIT
-  ): Promise<Array<Record<string, unknown>> | null> {
+  ): Promise<AdminServerLogEntry[] | null> {
     try {
       const admin = await this.sdkAdmin()
       const params: { level?: string; limit?: number } = { limit }

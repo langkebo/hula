@@ -6,12 +6,20 @@ import type { WidgetManager } from '../sdk-compat'
 
 const logger = createLogger('MatrixWidgetService')
 
+/** SDK widget 数据载荷（后端 `serde_json::Value` ⇒ 任意 JSON 值，可能是 null/数组/标量）。 */
+export type WidgetData = Awaited<ReturnType<WidgetManager['getWidgetConfig']>>['data']
+/**
+ * widget 数据对象：后端 `serde_json::Value` 的对象形态，字段随 widget 类型变化，
+ * 属真·动态包（如 Jitsi 的 domain/conferenceId/auth），故以具名索引签名承载。
+ */
+export type WidgetDataObject = { [key: string]: unknown }
+
 export interface Widget {
   id: string
   type: string
   url: string
   name?: string | undefined
-  data?: Record<string, unknown> | undefined
+  data?: WidgetDataObject | undefined
 }
 
 interface WidgetSessionOptions {
@@ -19,11 +27,28 @@ interface WidgetSessionOptions {
   expiresInMs?: number
 }
 
-export interface WidgetConfigResponse extends Record<string, unknown> {}
-export interface JitsiConfigResponse extends Record<string, unknown> {}
-export interface WidgetPermissionsResponse extends Record<string, unknown> {}
-export interface SetPermissionResponse extends Record<string, unknown> {}
-export interface SessionApiData extends Record<string, unknown> {}
+/** 以下响应类型全部从 SDK `WidgetManager` 方法签名派生，不再手写空索引签名接口。 */
+export type WidgetConfigResponse = Awaited<ReturnType<WidgetManager['getWidgetConfig']>>
+export type JitsiConfigResponse = Awaited<ReturnType<WidgetManager['getJitsiConfig']>>
+export type WidgetPermissionsResponse = Awaited<ReturnType<WidgetManager['getWidgetPermissions']>>
+export type SetPermissionResponse = Awaited<ReturnType<WidgetManager['setWidgetPermissions']>>
+export type SessionApiData = Awaited<ReturnType<WidgetManager['getWidgetSession']>>
+
+/** Widget 会话条目（SDK `getWidgetSessions` 返回的 `sessions` 元素）。 */
+export interface WidgetSessionEntry {
+  session_id: string
+  user_id?: string
+  created_ts?: number | null
+  created_at?: number | string
+  last_active_ts?: number | null
+  last_active?: number | string
+}
+
+/** Widget 会话列表响应（SDK 返回 `{ sessions, total }`；失败时服务层降级为 `[]`）。 */
+export interface WidgetSessionsOutcome {
+  sessions?: WidgetSessionEntry[]
+  total?: number
+}
 /**
  * SDK 侧 widget 的**两种**真实形状（后端有意不统一，见 SDK `docs/api-contract/widget.md`）：
  * - 单条（`POST/GET/PUT /widgets/{id}`）：`WidgetApiResponse` —— 用 `type`，扁平，无 `{widget}` 信封；
@@ -43,7 +68,7 @@ interface SdkWidget {
    * 后端是 `serde_json::Value` ⇒ **任意 JSON**（可能是 null / 数组 / 标量），不是 `Record`。
    * 契约里对应 `WidgetJsonValue`；到 facade 时用 `unknownToObject` 归一成对象（非对象 ⇒ null）。
    */
-  data?: unknown
+  data?: WidgetData
 }
 
 export interface WidgetCapabilitiesResponse {
@@ -54,7 +79,7 @@ export interface WidgetCapabilitiesResponse {
 
 export interface SendWidgetMessageRequest {
   type: string
-  content: Record<string, unknown>
+  content: WidgetDataObject
 }
 
 class MatrixWidgetService {
@@ -73,7 +98,7 @@ class MatrixWidgetService {
       type: widget.type ?? widget.widget_type ?? 'unknown',
       url: widget.url,
       name: widget.name,
-      data: unknownToObject<Record<string, unknown>>(widget.data) ?? undefined
+      data: unknownToObject<WidgetDataObject>(widget.data) ?? undefined
     }
   }
 
@@ -94,7 +119,7 @@ class MatrixWidgetService {
         type?: string
         url?: string
         name?: string
-        data?: Record<string, unknown>
+        data?: WidgetDataObject
       }
       if (content?.type && content.url) {
         widgets.push({
@@ -137,7 +162,7 @@ class MatrixWidgetService {
 
   async createWidget(
     roomId: string,
-    body: { widgetType: string; url: string; name: string; data?: Record<string, unknown> | undefined },
+    body: { widgetType: string; url: string; name: string; data?: WidgetDataObject | undefined },
     throwOnError = true
   ): Promise<Widget | null> {
     const manager = this.getManager()
@@ -348,14 +373,14 @@ class MatrixWidgetService {
     }
   }
 
-  async getWidgetSessions(widgetId: string, throwOnError = true): Promise<Record<string, unknown> | []> {
+  async getWidgetSessions(widgetId: string, throwOnError = true): Promise<WidgetSessionsOutcome | []> {
     const manager = this.getManager()
     if (!manager) {
       if (!throwOnError) return []
       throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
     }
     try {
-      return unknownToObject(await manager.getWidgetSessions(widgetId)) ?? {}
+      return unknownToObject<WidgetSessionsOutcome>(await manager.getWidgetSessions(widgetId)) ?? {}
     } catch (err) {
       logger.error(`[MatrixWidgetService] 获取Widget会话列表失败: ${widgetId} ${err}`)
       if (throwOnError) throw err

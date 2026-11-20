@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { OnlineEnum } from '@/enums'
+import { makePresenceInfo } from '@/services/matrix/user/__tests__/fixtures/presence'
 import StatusSettings from '../StatusSettings.vue'
 
 const { setPresenceMock, getCurrentPresenceMock, showToastMock, routerBackMock, userStatusStoreMock, userInfo } =
@@ -231,11 +232,9 @@ describe('StatusSettings 经由唯一门控 presence 服务上报', () => {
   })
 
   it('重试成功后恢复回填并允许保存', async () => {
-    getCurrentPresenceMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({
-      user_id: '@alice:matrix.test',
-      presence: 'unavailable',
-      status_msg: '会议中'
-    })
+    getCurrentPresenceMock
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(makePresenceInfo({ presence: 'unavailable', status_msg: '会议中' }))
     setPresenceMock.mockResolvedValue('unavailable')
 
     const wrapper = mountComponent()

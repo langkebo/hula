@@ -129,16 +129,14 @@
       </n-spin>
     </n-card>
 
-    <!-- 前向极值 -->
+    <!-- 前向极值：后端只返回极点数（整数），不是极点对象数组 -->
     <n-card size="small" :title="t('admin.rooms.forwardExtremities')">
       <n-spin :show="rooms.forwardExtremitiesLoading.value">
-        <n-data-table
-          v-if="rooms.forwardExtremities.value.length > 0"
-          :columns="extremityColumns"
-          :data="rooms.forwardExtremities.value"
-          :bordered="false"
-          size="small"
-          :pagination="{ pageSize: 5 }" />
+        <div v-if="rooms.forwardExtremities.value" class="py-8px">
+          <span class="text-28px font-600 leading-none text-[--text-color]">
+            {{ rooms.forwardExtremities.value.forwardExtremities }}
+          </span>
+        </div>
         <n-empty v-else :description="t('admin.rooms.forwardExtremitiesEmpty')" class="py-16px" />
       </n-spin>
       <template #action>
@@ -207,8 +205,6 @@ const searchColumns = computed(() => [
   { title: t('admin.rooms.msgType'), key: 'type', width: 140, ellipsis: { tooltip: true } },
   { title: t('admin.rooms.msgContent'), key: 'content', ellipsis: { tooltip: true } }
 ])
-
-const extremityColumns = [{ title: t('admin.rooms.eventId'), key: 'event_id', ellipsis: { tooltip: true } }]
 
 async function handleToggleBlock() {
   const room = props.rooms.selectedRoom.value
@@ -330,6 +326,10 @@ async function handleSearchInRoom() {
 async function reloadExtremities() {
   try {
     await props.rooms.loadForwardExtremities()
+    if (!props.rooms.forwardExtremities.value) {
+      showFeedback(t('admin.rooms.forwardExtremitiesFailed'), 'error')
+      return
+    }
     showFeedback(t('admin.rooms.forwardExtremitiesLoaded'), 'success')
   } catch (err) {
     if (handleAdminError(err)) showFeedback(t('admin.rooms.forwardExtremitiesFailed'), 'error')

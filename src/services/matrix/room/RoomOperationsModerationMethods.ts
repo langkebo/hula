@@ -1,5 +1,5 @@
 import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
-import type { MatrixClient } from '@/services/matrix/sdk'
+import type { IPowerLevelsContent, MatrixClient } from '@/services/matrix/sdk'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
@@ -14,6 +14,9 @@ const logger = createLogger('RoomOperations')
  * 这里通过 MatrixClient 的访问器返回类型派生，避免违反 SDK 边界策略。
  */
 type InviteBlocklistManagerInstance = ReturnType<NonNullable<MatrixClient['getInviteBlocklistManager']>>
+
+/** 房间权限等级内容（复用 SDK `IPowerLevelsContent`）。 */
+export type RoomPowerLevelsOutcome = IPowerLevelsContent
 
 /**
  * RoomOperations 的审核 / 生命周期 / 翻译 / 历史可见性 / 权限等级方法片段。
@@ -181,12 +184,12 @@ export abstract class RoomOperationsModerationMethods extends RoomOperationsStat
 
   /** 获取房间权限等级
    */
-  async getPowerLevels(roomId: string): Promise<Record<string, unknown>> {
+  async getPowerLevels(roomId: string): Promise<RoomPowerLevelsOutcome> {
     const client = this.getClient()
     const room = client.getRoom(roomId)
     if (!room) return {}
     const event = room.currentState.getStateEvents('m.room.power_levels', '')
-    return (event?.getContent() as Record<string, unknown>) ?? {}
+    return (event?.getContent() as RoomPowerLevelsOutcome) ?? {}
   }
 
   /** 设置房间权限等级

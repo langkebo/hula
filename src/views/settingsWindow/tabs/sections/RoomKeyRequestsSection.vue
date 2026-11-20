@@ -40,7 +40,7 @@ import { NButton } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
+import { matrixDeviceService, type RoomKeyRequestEntry } from '@/services/matrix/user/MatrixDeviceService'
 
 defineOptions({
   name: 'RoomKeyRequestsSection'
@@ -82,7 +82,7 @@ async function loadRequests() {
   }
 }
 
-function toRequestItem(raw: Record<string, unknown>): RoomKeyRequestItem | null {
+function toRequestItem(raw: RoomKeyRequestEntry): RoomKeyRequestItem | null {
   const requestId = typeof raw.request_id === 'string' ? raw.request_id : ''
   if (!requestId) return null
   // listRoomKeyRequests() 不传 status 时后端会把 fulfilled / cancelled 一并返回，

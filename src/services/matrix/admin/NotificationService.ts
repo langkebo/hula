@@ -1,11 +1,41 @@
 import { createLogger } from '@/utils/Logger'
+import type { AdminUserPusher } from './AdminTypes'
 
 const logger = createLogger('NotificationService')
 
+/**
+ * 用户级通知设置响应。
+ *
+ * 服务端按用户返回一组开关（含 `global` 子映射），键集合随版本扩展，
+ * 因此保留索引签名承载未建模的开关项。
+ */
+export interface UserNotificationSettingsResponse {
+  enabled?: boolean
+  [key: string]: unknown
+}
+
+/** 更新用户通知设置后的响应。 */
+export interface UserNotificationUpdateResponse {
+  is_enabled?: boolean
+}
+
+/**
+ * 用户通知设置写入载荷。
+ *
+ * admin 界面把整组开关扁平化为 `global.*` 等键整体回写；SDK 只读取其中的 `enabled`
+ * （映射为 `is_enabled`），其余键当前被忽略。键集合随界面版本变化，属动态配置包。
+ */
+export interface UserNotificationSettingsPayload {
+  [setting: string]: unknown
+}
+
 type NotificationAdminSdk = {
-  getUserNotification?(userId: string): Promise<Record<string, unknown>>
-  setUserNotification?(userId: string, payload: Record<string, unknown>): Promise<Record<string, unknown>>
-  getUserPushers?(userId: string): Promise<{ pushers?: unknown[] }>
+  getUserNotification?(userId: string): Promise<UserNotificationSettingsResponse>
+  setUserNotification?(
+    userId: string,
+    payload: UserNotificationSettingsPayload
+  ): Promise<UserNotificationUpdateResponse>
+  getUserPushers?(userId: string): Promise<{ pushers?: AdminUserPusher[] }>
   deleteUserPusher?(userId: string, pushkey: string): Promise<void>
 }
 
@@ -19,7 +49,7 @@ type NotificationDomainSdkGetter = () => Promise<NotificationAdminSdk>
 export class AdminNotificationService {
   constructor(private readonly sdkAdmin: NotificationDomainSdkGetter) {}
 
-  async getUserNotificationSettings(userId: string): Promise<Record<string, unknown> | null> {
+  async getUserNotificationSettings(userId: string): Promise<UserNotificationSettingsResponse | null> {
     try {
       const admin = await this.sdkAdmin()
       return (await admin.getUserNotification?.(userId)) ?? null
@@ -29,7 +59,7 @@ export class AdminNotificationService {
     }
   }
 
-  async setUserNotificationSettings(userId: string, settings: Record<string, unknown>): Promise<void> {
+  async setUserNotificationSettings(userId: string, settings: UserNotificationSettingsPayload): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
       await admin.setUserNotification?.(userId, settings)
@@ -40,11 +70,11 @@ export class AdminNotificationService {
     }
   }
 
-  async getUserPushers(userId: string): Promise<Array<Record<string, unknown>>> {
+  async getUserPushers(userId: string): Promise<AdminUserPusher[]> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserPushers?.(userId)
-      return (result?.pushers ?? []) as Array<Record<string, unknown>>
+      return result?.pushers ?? []
     } catch (err) {
       logger.error(`[AdminNotification] 获取用户 Pushers 失败: ${err}`)
       return []

@@ -1,6 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import {
+  makeQuotaStats,
+  makeQuotaStatsOk,
+  makeQuotaStatsUnavailable
+} from '@/services/matrix/media/__tests__/fixtures/quota'
 import SideNavigation from '../SideNavigation.vue'
 
 const { getQuotaStatsMock } = vi.hoisted(() => ({
@@ -59,8 +64,8 @@ describe('SideNavigation', () => {
 
   it('配额本次取不到时提示暂不可用并提供重试，不显示 0', async () => {
     getQuotaStatsMock
-      .mockResolvedValueOnce({ ok: false, reason: 'unavailable' })
-      .mockResolvedValueOnce({ ok: true, stats: { storageBytes: 1024, mediaCount: 5, limitBytes: 4096 } })
+      .mockResolvedValueOnce(makeQuotaStatsUnavailable())
+      .mockResolvedValueOnce(makeQuotaStatsOk(makeQuotaStats({ storageBytes: 1024, mediaCount: 5, limitBytes: 4096 })))
 
     const wrapper = mountNavigation()
     await flushPromises()

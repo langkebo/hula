@@ -123,7 +123,11 @@ import { NButton, NInput, NModal, NSpin } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { matrixSpaceService, type SpaceInfo } from '@/services/matrix/room/MatrixSpaceService'
+import {
+  matrixSpaceService,
+  type SpaceHierarchyRoomEntry,
+  type SpaceInfo
+} from '@/services/matrix/room/MatrixSpaceService'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const props = defineProps<{
@@ -170,7 +174,7 @@ const joinLabel = (space: SpaceInfo) => {
   return t('space.join')
 }
 
-const toChildSpace = (room: Record<string, unknown>): SpaceInfo | null => {
+const toChildSpace = (room: SpaceHierarchyRoomEntry): SpaceInfo | null => {
   if (room.room_type !== 'm.space') return null
   const spaceId = typeof room.room_id === 'string' ? room.room_id : ''
   if (!spaceId) return null

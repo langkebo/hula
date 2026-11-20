@@ -1,4 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  emptyGlobalInvitePage,
+  makeGlobalInviteAddResult,
+  makeGlobalInviteAllowlistPage,
+  makeGlobalInviteBlocklistPage,
+  makeGlobalInviteRemoveResult
+} from '@/services/matrix/admin/__tests__/fixtures/invite'
 import { AdminInvitePolicyService } from '../AdminInvitePolicyService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -98,8 +105,8 @@ describe('AdminInvitePolicyService', () => {
   })
 
   it('getGlobalLists 并行读取全局白/黑名单', async () => {
-    getInviteAllowlist.mockResolvedValueOnce({ allowlist: ['@a:example.org'], limit: 100, offset: 0, total_count: 1 })
-    getInviteBlocklist.mockResolvedValueOnce({ blocklist: ['@b:example.org'], limit: 100, offset: 0, total_count: 1 })
+    getInviteAllowlist.mockResolvedValueOnce(makeGlobalInviteAllowlistPage())
+    getInviteBlocklist.mockResolvedValueOnce(makeGlobalInviteBlocklistPage())
 
     const result = await new AdminInvitePolicyService(makeDeps()).getGlobalLists()
 
@@ -109,8 +116,8 @@ describe('AdminInvitePolicyService', () => {
   })
 
   it('getGlobalLists 缺字段时降级为空数组', async () => {
-    getInviteAllowlist.mockResolvedValueOnce({} as never)
-    getInviteBlocklist.mockResolvedValueOnce({} as never)
+    getInviteAllowlist.mockResolvedValueOnce(emptyGlobalInvitePage)
+    getInviteBlocklist.mockResolvedValueOnce(emptyGlobalInvitePage)
 
     const result = await new AdminInvitePolicyService(makeDeps()).getGlobalLists()
 
@@ -145,7 +152,7 @@ describe('AdminInvitePolicyService', () => {
     ['allowlist', addToInviteAllowlist],
     ['blocklist', addToInviteBlocklist]
   ] as const)('addGlobalUser 按 kind=%s 分派增量接口', async (kind, fn) => {
-    fn.mockResolvedValueOnce({ status: 'ok', action: 'add', user_id: '@a:example.org', already_present: false })
+    fn.mockResolvedValueOnce(makeGlobalInviteAddResult(kind))
 
     await new AdminInvitePolicyService(makeDeps()).addGlobalUser(kind, '@a:example.org')
 
@@ -156,7 +163,7 @@ describe('AdminInvitePolicyService', () => {
     ['allowlist', removeFromInviteAllowlist],
     ['blocklist', removeFromInviteBlocklist]
   ] as const)('removeGlobalUser 按 kind=%s 分派增量接口', async (kind, fn) => {
-    fn.mockResolvedValueOnce({ status: 'ok', action: 'remove', user_id: '@a:example.org', already_absent: false })
+    fn.mockResolvedValueOnce(makeGlobalInviteRemoveResult(kind))
 
     await new AdminInvitePolicyService(makeDeps()).removeGlobalUser(kind, '@a:example.org')
 

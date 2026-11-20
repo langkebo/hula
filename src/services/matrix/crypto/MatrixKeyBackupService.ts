@@ -1,4 +1,17 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import type {
+  KeyBackupBatchRecoverResult,
+  KeyBackupExportResult,
+  KeyBackupImportResult,
+  KeyBackupRecoveryProgress,
+  KeyBackupRoomKeyBackup,
+  KeyBackupVerifyResult,
+  KeyBackupVersionInfo,
+  RecoverRoomKeysResult,
+  RecoverSessionKeyResult,
+  RoomSessions,
+  SessionData
+} from '@/services/matrix/sdk'
 import type { BackupInfo, KeyBackupManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -6,77 +19,34 @@ import { extractRoomKeys } from './ssssKeyDescription'
 
 const logger = createLogger('MatrixKeyBackupService')
 
-export interface BackupVersionInfo {
-  version: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-}
+/**
+ * 备份版本概要。
+ *
+ * auth_data 随备份算法变化（curve25519-aes-sha2 用 `public_key`，aes-sha2 用 `iv`/`mac`），
+ * 直接派生自 SDK `BackupVersionInfo` 契约，不再手写匿名 Record。
+ */
+export type BackupVersionInfo = Pick<KeyBackupVersionInfo, 'version' | 'algorithm' | 'auth_data'>
 
-interface BackupVersion {
-  version: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-  count?: number | undefined
-  etag?: string | undefined
-}
+/** 备份版本详情（含 count / etag） */
+type BackupVersion = KeyBackupVersionInfo
 
-interface RoomKeyBackup {
-  rooms: Record<
-    string,
-    {
-      sessions: Record<
-        string,
-        {
-          first_message_index: number
-          forwarded_count: number
-          is_verified: boolean
-          session_data: Record<string, unknown>
-        }
-      >
-    }
-  >
-  etag: string
-}
+/** 全量房间会话备份载荷（rooms → sessions → session_data 三层均为 SDK 契约） */
+type RoomKeyBackup = KeyBackupRoomKeyBackup
 
-interface RecoveryProgress {
-  user_id: string
-  version: string
-  total_keys: number
-  recovered_keys: number
-  status: string
-  started_ts: number
-  updated_ts: number
-}
+/** 备份恢复进度 */
+type RecoveryProgress = KeyBackupRecoveryProgress
 
-interface BatchRecoverResult {
-  rooms: Record<string, unknown>
-  total_sessions: number
-  has_more: boolean
-  next_batch?: string
-}
+/** 批量恢复结果 */
+type BatchRecoverResult = KeyBackupBatchRecoverResult
 
-interface ExportResult {
-  room_keys: Array<{
-    room_id: string
-    session_id: string
-    session_data: Record<string, unknown>
-  }>
-  version: string
-}
+/** 导出结果（room_keys 条目含 room_id / session_id / session_data） */
+type ExportResult = KeyBackupExportResult
 
-export interface ImportResult {
-  count: number
-  failed: number
-  total: number
-}
+/** 导入结果 */
+export type ImportResult = KeyBackupImportResult
 
-export interface VerifyResult {
-  valid: boolean
-  algorithm: string
-  auth_data: Record<string, unknown>
-  key_count: number
-  signatures?: Record<string, unknown>
-}
+/** 校验结果（auth_data 为算法联合，signatures 为设备签名映射） */
+export type VerifyResult = KeyBackupVerifyResult
 
 interface RestoreBackupResult {
   total: number
@@ -85,7 +55,7 @@ interface RestoreBackupResult {
 
 interface CreateKeyBackupVersionRequest {
   algorithm: string
-  auth_data: Record<string, unknown>
+  auth_data: BackupVersionInfo['auth_data']
 }
 
 type MatrixHttpErrorLike = {
@@ -112,7 +82,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
       return {
         version: info.version,
         algorithm: info.algorithm,
-        auth_data: info.auth_data as Record<string, unknown>,
+        auth_data: info.auth_data,
         ...(info.count !== undefined ? { count: info.count } : {}),
         ...(info.etag !== undefined ? { etag: info.etag } : {})
       }
@@ -158,10 +128,9 @@ class MatrixKeyBackupService extends BaseMatrixService {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.recoverKeys(version, rooms)
-      const data = result as Record<string, unknown>
       return {
-        total: (data.total_keys as number) ?? 0,
-        imported: (data.recovered_keys as number) ?? 0
+        total: result.total_keys ?? 0,
+        imported: result.recovered_keys ?? 0
       }
     } catch (err) {
       logger.error(`[KeyBackup] 恢复密钥备份失败: ${err}`)
@@ -174,7 +143,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
     return backupInfo ? [backupInfo] : []
   }
 
-  async createBackupVersion(algorithm: string, authData: Record<string, unknown>): Promise<BackupVersion> {
+  async createBackupVersion(algorithm: string, authData: BackupVersionInfo['auth_data']): Promise<BackupVersion> {
     const response = await this.createKeyBackupVersion({
       algorithm,
       auth_data: authData
@@ -195,9 +164,9 @@ class MatrixKeyBackupService extends BaseMatrixService {
       return {
         version: info.version,
         algorithm: info.algorithm,
-        auth_data: info.auth_data as Record<string, unknown>,
-        count: info.count,
-        etag: info.etag
+        auth_data: info.auth_data,
+        ...(info.count !== undefined ? { count: info.count } : {}),
+        ...(info.etag !== undefined ? { etag: info.etag } : {})
       }
     } catch (err) {
       logger.error(`[KeyBackup] 获取备份版本详情失败: ${version}, ${err}`)
@@ -205,7 +174,11 @@ class MatrixKeyBackupService extends BaseMatrixService {
     }
   }
 
-  async updateBackupVersion(version: string, _algorithm: string, authData: Record<string, unknown>): Promise<void> {
+  async updateBackupVersion(
+    version: string,
+    _algorithm: string,
+    authData: BackupVersionInfo['auth_data']
+  ): Promise<void> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
@@ -228,18 +201,18 @@ class MatrixKeyBackupService extends BaseMatrixService {
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.getAllRoomKeys(version)
       logger.info(`[KeyBackup] 获取所有备份密钥成功: ${version}`)
-      return result as RoomKeyBackup
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 获取所有备份密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
-  async uploadKeys(version: string, keys: RoomKeyBackup | Record<string, unknown>): Promise<void> {
+  async uploadKeys(version: string, keys: RoomKeyBackup): Promise<void> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
-      await keyBackupManager.putAllRoomKeys(version, keys as Record<string, unknown>)
+      await keyBackupManager.putAllRoomKeys(version, keys)
       logger.info(`[KeyBackup] 上传密钥成功: ${version}`)
     } catch (err) {
       logger.error(`[KeyBackup] 上传密钥失败: ${version}, ${err}`)
@@ -258,7 +231,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.getRecoveryProgress(version)
       logger.info(`[KeyBackup] 获取恢复进度成功: ${version}`)
-      return result as RecoveryProgress
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 获取恢复进度失败: ${version}, ${err}`)
       throw err
@@ -271,7 +244,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.verifyBackup(version)
       logger.info(`[KeyBackup] 验证备份成功: ${version}`)
-      return result as VerifyResult
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 验证备份失败: ${version}, ${err}`)
       throw err
@@ -284,20 +257,20 @@ class MatrixKeyBackupService extends BaseMatrixService {
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.exportKeys(version)
       logger.info('[KeyBackup] 导出密钥成功')
-      return result as ExportResult
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 导出密钥失败: ${err}`)
       throw err
     }
   }
 
-  async importKeys(keys: ExportResult | Record<string, unknown>, version?: string): Promise<ImportResult> {
+  async importKeys(keys: ExportResult | ExportResult['room_keys'], version?: string): Promise<ImportResult> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.importKeys(extractRoomKeys(keys), version)
       logger.info('[KeyBackup] 导入密钥成功')
-      return result as ImportResult
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 导入密钥失败: ${err}`)
       throw err
@@ -309,18 +282,18 @@ class MatrixKeyBackupService extends BaseMatrixService {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.getAllRoomKeys(version)
-      return result as RoomKeyBackup
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 获取指定版本密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
-  async uploadKeysToVersion(version: string, keys: RoomKeyBackup | Record<string, unknown>): Promise<void> {
+  async uploadKeysToVersion(version: string, keys: RoomKeyBackup): Promise<void> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
-      await keyBackupManager.putAllRoomKeys(version, keys as Record<string, unknown>)
+      await keyBackupManager.putAllRoomKeys(version, keys)
       logger.info(`[KeyBackup] 上传密钥到指定版本成功: ${version}`)
     } catch (err) {
       logger.error(`[KeyBackup] 上传密钥到指定版本失败: ${version}, ${err}`)
@@ -328,24 +301,24 @@ class MatrixKeyBackupService extends BaseMatrixService {
     }
   }
 
-  async getRoomBackupKeys(version: string, roomId: string): Promise<Record<string, unknown>> {
+  async getRoomBackupKeys(version: string, roomId: string): Promise<RoomSessions> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.getRoomKeys(version, roomId)
-      return result as Record<string, unknown>
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 获取房间备份密钥失败: ${roomId}, ${err}`)
       throw err
     }
   }
 
-  async getSessionBackupKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>> {
+  async getSessionBackupKey(version: string, roomId: string, sessionId: string): Promise<SessionData['session_data']> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.getSessionKey(version, roomId, sessionId)
-      return result as Record<string, unknown>
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 获取会话备份密钥失败: ${roomId}/${sessionId}, ${err}`)
       throw err
@@ -358,33 +331,33 @@ class MatrixKeyBackupService extends BaseMatrixService {
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.batchRecover(version, options?.rooms ?? [], options?.limit)
       logger.info(`[KeyBackup] 批量恢复成功: ${version}`)
-      return result as BatchRecoverResult
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 批量恢复失败: ${err}`)
       throw err
     }
   }
 
-  async recoverRoomKeys(version: string, roomId: string): Promise<Record<string, unknown>> {
+  async recoverRoomKeys(version: string, roomId: string): Promise<RecoverRoomKeysResult> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.recoverRoomKeys(version, roomId)
       logger.info(`[KeyBackup] 房间级恢复成功: ${roomId}`)
-      return result as Record<string, unknown>
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 房间级恢复失败: ${roomId}, ${err}`)
       throw err
     }
   }
 
-  async recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>> {
+  async recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<RecoverSessionKeyResult> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.recoverSessionKey(version, roomId, sessionId)
       logger.info(`[KeyBackup] 会话级恢复成功: ${roomId}/${sessionId}`)
-      return result as Record<string, unknown>
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 会话级恢复失败: ${roomId}/${sessionId}, ${err}`)
       throw err
@@ -396,19 +369,19 @@ class MatrixKeyBackupService extends BaseMatrixService {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.exportKeys(version)
-      return result as ExportResult
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 按版本导出密钥失败: ${version}, ${err}`)
       throw err
     }
   }
 
-  async importKeysToVersion(version: string, keys: ExportResult | Record<string, unknown>): Promise<ImportResult> {
+  async importKeysToVersion(version: string, keys: ExportResult | ExportResult['room_keys']): Promise<ImportResult> {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
       const result = await keyBackupManager.importKeys(extractRoomKeys(keys), version)
-      return result as ImportResult
+      return result
     } catch (err) {
       logger.error(`[KeyBackup] 按版本导入密钥失败: ${version}, ${err}`)
       throw err

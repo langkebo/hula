@@ -24,6 +24,7 @@ const mockManager = {
 
 import matrixClientService from '../../MatrixClientService'
 import { matrixBurnAfterReadService } from '../MatrixBurnAfterReadService'
+import { makeBurnSettingsResponse } from './fixtures/burnSettings'
 
 describe('MatrixBurnAfterReadService', () => {
   beforeEach(() => {
@@ -91,7 +92,7 @@ describe('MatrixBurnAfterReadService', () => {
     })
 
     it('后端未返回 scope 时兜底为 per_user', async () => {
-      mockManager.getBurnSettings.mockResolvedValueOnce({ enabled: true, burn_after_ms: 60000 })
+      mockManager.getBurnSettings.mockResolvedValueOnce(makeBurnSettingsResponse())
       const result = await matrixBurnAfterReadService.getBurnSettings('!room:test')
       expect(result?.scope).toBe('per_user')
     })

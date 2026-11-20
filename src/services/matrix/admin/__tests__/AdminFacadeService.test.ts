@@ -164,7 +164,10 @@ describe('adminService facade', () => {
       searchInRoom: vi.fn().mockResolvedValue({ results: [] }),
       searchRoomEvents: vi.fn().mockResolvedValue({ results: [] }),
       searchRooms: vi.fn().mockResolvedValue({ rooms: [] }),
-      getRoomForwardExtremities: vi.fn().mockResolvedValue({ results: [] }),
+      getRoomForwardExtremities: vi.fn().mockResolvedValue({
+        room_id: '!room:server',
+        forward_extremities: 0
+      }),
       getUsersPaginated: vi.fn().mockResolvedValue({ items: [], nextToken: undefined }),
       getUser: vi.fn().mockResolvedValue(null),
       createUser: vi.fn().mockResolvedValue({}),
@@ -517,7 +520,7 @@ describe('adminService facade', () => {
     })
 
     it('should get user sessions via SDK', async () => {
-      mockAdminManager.getUserSessions.mockResolvedValue({ sessions: [{ id: 1 }] })
+      mockAdminManager.getUserSession.mockResolvedValue({ sessions: [{ device_id: 'DEV1' }] })
       const result = await adminService.getUserSessions('@user:server')
       expect(result).toHaveLength(1)
     })
@@ -530,9 +533,9 @@ describe('adminService facade', () => {
     })
 
     it('should get account status', async () => {
-      mockAdminManager.getAccountStatus.mockResolvedValue({ locked: false })
+      mockAdminManager.getAccountStatus.mockResolvedValue({ user_id: '@user:server', deactivated: false })
       const result = await adminService.getAccountStatus('@user:server')
-      expect(result?.locked).toBe(false)
+      expect(result?.deactivated).toBe(false)
       expect(mockAdminManager.getAccountStatus).toHaveBeenCalledWith('@user:server')
     })
 
@@ -642,10 +645,13 @@ describe('adminService facade', () => {
       expect(mockAdminManager.searchRooms).toHaveBeenCalledWith({ search_term: 'test' })
     })
 
-    it('should get room forward extremities via SDK (object form tolerant)', async () => {
-      mockAdminManager.getRoomForwardExtremities.mockResolvedValue([{ event_id: '$e1' }])
+    it('should get room forward extremities count via SDK', async () => {
+      mockAdminManager.getRoomForwardExtremities.mockResolvedValue({
+        room_id: '!room:server',
+        forward_extremities: 2
+      })
       const result = await adminService.getRoomForwardExtremities('!room:server')
-      expect(result).toHaveLength(1)
+      expect(result).toEqual({ roomId: '!room:server', forwardExtremities: 2 })
     })
 
     it('should delete room via SDK with field mapping', async () => {
@@ -689,9 +695,13 @@ describe('adminService facade', () => {
     })
 
     it('should get space stats via SDK', async () => {
-      mockAdminManager.getSpaceStats.mockResolvedValue({ total_rooms: 5 })
+      mockAdminManager.getSpaceStats.mockResolvedValue({
+        space_id: '!space:server',
+        member_count: 2,
+        child_room_count: 5
+      })
       const result = await adminService.getSpaceStats('!space:server')
-      expect(result?.total_rooms).toBe(5)
+      expect(result?.child_room_count).toBe(5)
       expect(mockAdminManager.getSpaceStats).toHaveBeenCalledWith('!space:server')
     })
   })

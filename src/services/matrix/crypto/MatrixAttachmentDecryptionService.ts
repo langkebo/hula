@@ -1,6 +1,19 @@
+import { unknownToObject } from '@/utils/typeGuard'
 import type { EncryptedAttachmentFile } from './MatrixAttachmentEncryptionService'
 
-export type MatrixEncryptedAttachmentLike = EncryptedAttachmentFile | Record<string, unknown>
+/**
+ * 待解析的加密附件（来自事件 content）。
+ * 字段可能缺失或类型不符，由 `parseEncryptedFile` 在运行时逐项校验，故保持宽松。
+ */
+export interface EncryptedAttachmentLike {
+  url?: unknown
+  key?: unknown
+  iv?: unknown
+  hashes?: unknown
+  v?: unknown
+}
+
+export type MatrixEncryptedAttachmentLike = EncryptedAttachmentFile | EncryptedAttachmentLike
 
 class MatrixAttachmentDecryptionService {
   private ensureCrypto(): Crypto {
@@ -47,43 +60,48 @@ class MatrixAttachmentDecryptionService {
   }
 
   parseEncryptedFile(fileLike: MatrixEncryptedAttachmentLike): EncryptedAttachmentFile {
-    const source = fileLike as Record<string, unknown>
-    const key = (source.key ?? {}) as Record<string, unknown>
-    const hashes = (source.hashes ?? {}) as Record<string, unknown>
+    const source: EncryptedAttachmentLike = fileLike
+    const key = unknownToObject(source.key) ?? {}
+    const hashes = unknownToObject(source.hashes) ?? {}
     const keyOps = Array.isArray(key.key_ops)
       ? key.key_ops.filter((item): item is string => typeof item === 'string')
       : []
 
-    if (typeof source.url !== 'string' || !source.url) {
+    const url = source.url
+    if (typeof url !== 'string' || !url) {
       throw new Error('缺少加密附件 URL')
     }
-    if (typeof source.iv !== 'string' || !source.iv) {
+    const iv = source.iv
+    if (typeof iv !== 'string' || !iv) {
       throw new Error('缺少加密附件 IV')
     }
-    if (typeof source.v !== 'string' || !source.v) {
+    const v = source.v
+    if (typeof v !== 'string' || !v) {
       throw new Error('缺少加密附件版本信息')
     }
-    if (typeof key.k !== 'string' || !key.k) {
+    const k = key.k
+    if (typeof k !== 'string' || !k) {
       throw new Error('缺少加密附件密钥')
     }
-    if (typeof hashes.sha256 !== 'string' || !hashes.sha256) {
+    const sha256 = hashes.sha256
+    if (typeof sha256 !== 'string' || !sha256) {
       throw new Error('缺少加密附件哈希')
     }
 
     return {
-      url: source.url,
+      url,
       key: {
         alg: typeof key.alg === 'string' ? key.alg : 'A256CTR',
         key_ops: keyOps.length > 0 ? keyOps : ['decrypt'],
         kty: typeof key.kty === 'string' ? key.kty : 'oct',
-        k: key.k,
+        k,
         ext: typeof key.ext === 'boolean' ? key.ext : true
       },
-      iv: source.iv,
+      iv,
       hashes: {
-        sha256: hashes.sha256
+        sha256
       },
-      v: source.v
+      v
     }
   }
 

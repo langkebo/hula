@@ -1,5 +1,6 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '../MatrixClientService'
+import type { SamlMetadata } from '../sdk'
 import { normalizeSdkMatrixError } from './authErrors'
 import type { MatrixLoginResult } from './authHelpers'
 
@@ -80,7 +81,7 @@ export async function samlLogout(): Promise<string | null> {
  * `/_matrix/client/v3/saml/metadata`（SDK 内部以 ClientPrefix.V3 拼接，
  * 与 `synapse-web/src/routes/saml.rs` 注册的路由一致），移除裸调 authedRequestWithPath。
  */
-export async function getSamlMetadata(): Promise<Record<string, unknown>> {
+export async function getSamlMetadata(): Promise<SamlMetadata> {
   const client = matrixClientService.getClient()
   if (!client) {
     throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))

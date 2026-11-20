@@ -1,5 +1,12 @@
-import type { MatrixClient } from '@/services/matrix/sdk'
+import type {
+  IContent,
+  MatrixClient,
+  RoomMessageQueueResult,
+  RoomSignResult,
+  RoomVaultDataResult
+} from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixBurnAfterReadService } from '../messaging/MatrixBurnAfterReadService'
 
@@ -35,6 +42,49 @@ export interface RoomSummaryStateEntry {
   content: unknown
 }
 
+/** 保险库数据（复用 SDK `RoomVaultDataResult`；读取失败时降级为空对象）。 */
+export type RoomVaultDataOutcome = Partial<RoomVaultDataResult>
+
+/**
+ * 内容扫描信息（后端 `/report/:eventId/scanner_info` 返回，SDK 声明为 `Record<string, unknown>`）。
+ */
+export interface ContentScannerInfo {
+  clean: boolean
+  scanned_at: number
+}
+
+/** 加密事件列表条目（与 SDK `EncryptedEventsResult.events` 同形）。 */
+export interface EncryptedRoomEvent {
+  event_id: string
+  sender: string
+  type: string
+  content: IContent
+  timestamp: number
+  algorithm?: string
+  session_id?: string
+}
+
+/** 加密事件列表（读取失败时降级为空对象）。 */
+export interface EncryptedEventsOutcome {
+  events?: EncryptedRoomEvent[]
+  next_batch?: string
+}
+
+/** 事件签名结果（复用 SDK `RoomSignResult`）。 */
+export type RoomSignOutcome = RoomSignResult
+
+/** 消息队列条目（组件按 `queue` 读取，见 RoomMessageQueuePanel）。 */
+export interface RoomMessageQueueEntry {
+  event_id: string
+  type: string
+  content?: unknown
+}
+
+/** 消息队列响应：保留 SDK 字段，并补充组件实际消费的 `queue`。 */
+export interface RoomMessageQueueOutcome extends RoomMessageQueueResult {
+  queue?: RoomMessageQueueEntry[]
+}
+
 /**
  * Room account-data / reporting / retention domain service.
  *
@@ -53,13 +103,13 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     return fn.call(client)
   }
 
-  async getRoomAccountData(roomId: string, eventType: string): Promise<Record<string, unknown> | null> {
+  async getRoomAccountData(roomId: string, eventType: string): Promise<IContent | null> {
     // getClient() 在 try 之外调用，保持原行为：客户端未初始化时抛错而非返回 null
     const mgr = this.getAccountDataMgr()
     try {
       const event = await mgr.getRoomAccountDataFromServer(roomId, eventType)
       if (!event) return null
-      return (event.getContent() as Record<string, unknown>) ?? null
+      return event.getContent() ?? null
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间 account data 失败: ${err}`)
       return null
@@ -77,11 +127,11 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
-  async getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
+  async getReportScannerInfo(roomId: string, eventId: string): Promise<ContentScannerInfo | null> {
     const client = this.getClient()
     try {
       const result = await client.getReportingManager().getScannerInfo(roomId, eventId)
-      return result as Record<string, unknown>
+      return unknownToObject<ContentScannerInfo>(result)
     } catch (err) {
       logger.error(`[MatrixRoom] 获取内容扫描信息失败: ${err}`)
       return null
@@ -92,11 +142,11 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 获取保险库数据
    */
-  async getVaultData(roomId: string, throwOnError = false): Promise<Record<string, unknown>> {
+  async getVaultData(roomId: string, throwOnError = false): Promise<RoomVaultDataOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomVaultData(roomId)
-      return (result ?? {}) as Record<string, unknown>
+      return result ?? {}
     } catch (err) {
       logger.error(`[MatrixRoom] 获取保险库数据失败: ${err}`)
       if (throwOnError) throw err
@@ -188,12 +238,12 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 签名事件
    */
-  async signEvent(roomId: string, eventId: string): Promise<Record<string, unknown>> {
+  async signEvent(roomId: string, eventId: string): Promise<RoomSignOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().signRoomEvent(roomId, eventId)
       logger.info(`[MatrixRoom] 事件签名成功: ${roomId}/${eventId}`)
-      return result as Record<string, unknown>
+      return result
     } catch (err) {
       logger.error(`[MatrixRoom] 事件签名失败: ${err}`)
       throw err
@@ -218,11 +268,11 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 获取消息队列数据
    */
-  async getMessageQueue(roomId: string): Promise<Record<string, unknown>> {
+  async getMessageQueue(roomId: string): Promise<RoomMessageQueueOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomMessageQueue(roomId)
-      return result as Record<string, unknown>
+      return result
     } catch (err) {
       logger.error(`[MatrixRoom] 获取消息队列失败: ${err}`)
       return {}
@@ -233,11 +283,11 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 获取加密事件数据
    */
-  async getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }> {
+  async getEncryptedEvents(roomId: string): Promise<EncryptedEventsOutcome> {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getEncryptedEvents(roomId)
-      return result as { events?: Array<Record<string, unknown>> }
+      return result as EncryptedEventsOutcome
     } catch (err) {
       logger.error(`[MatrixRoom] 获取加密事件列表失败: ${err}`)
       return {}

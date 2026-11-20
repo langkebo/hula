@@ -13,6 +13,7 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminService } from '@/services/matrix/admin'
+import { makeSamlMapping, makeSamlMetadata } from './fixtures/admin'
 
 describe('useAdminSaml', () => {
   beforeEach(() => {
@@ -20,7 +21,7 @@ describe('useAdminSaml', () => {
   })
 
   it('loadMetadata populates refs', async () => {
-    vi.mocked(adminService.security.getSamlMetadata).mockResolvedValueOnce({ entity_id: 'saml1' })
+    vi.mocked(adminService.security.getSamlMetadata).mockResolvedValueOnce(makeSamlMetadata({ entity_id: 'saml1' }))
     vi.mocked(adminService.security.getSpMetadata).mockResolvedValueOnce('<xml />')
     const c = useAdminSaml()
     await c.loadMetadata()
@@ -51,11 +52,9 @@ describe('useAdminSaml', () => {
   })
 
   it('loadMappingDetail 归一化服务端字段，未命中时返回 null', async () => {
-    vi.mocked(adminService.security.getSamlMapping).mockResolvedValueOnce({
-      name_id: 'alice@idp',
-      user_id: '@alice:server',
-      display_name: 'Alice'
-    })
+    vi.mocked(adminService.security.getSamlMapping).mockResolvedValueOnce(
+      makeSamlMapping({ name_id: 'alice@idp', user_id: '@alice:server', display_name: 'Alice' })
+    )
     const c = useAdminSaml()
     await expect(c.loadMappingDetail('alice@idp')).resolves.toEqual({
       nameId: 'alice@idp',

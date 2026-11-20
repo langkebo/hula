@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { type RoomRetentionConfig, useRoomRetention } from '@/composables/room/useRoomRetention'
+import { makeRetentionStateEvent } from './fixtures/roomRetention'
 
 describe('useRoomRetention — 房间级消息保留策略 (§8.7)', () => {
   let sendStateEventMock: ReturnType<typeof vi.fn>
@@ -80,9 +81,7 @@ describe('useRoomRetention — 房间级消息保留策略 (§8.7)', () => {
 
   describe('加载现有策略', () => {
     it('从 m.room.retention 事件加载 max_lifetime（毫秒转天）', async () => {
-      getStateEventMock.mockResolvedValueOnce({
-        content: { max_lifetime: 7 * 24 * 60 * 60 * 1000 } // 7 天
-      })
+      getStateEventMock.mockResolvedValueOnce(makeRetentionStateEvent())
       const { loadPolicy, mode, days } = useRoomRetention(makeConfig())
 
       await loadPolicy('!room:server')

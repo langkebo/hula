@@ -1,4 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeAIConversation,
+  makeAIMessage,
+  makeAIVoice,
+  makeEmptyAiPageResponse,
+  makeImageGenerationResult,
+  makeMatrixClientStub
+} from '@/services/matrix/ai/__tests__/fixtures/ai'
 
 vi.mock('@/services/backend', () => ({
   matrixExtensionEndpoints: {
@@ -76,9 +84,10 @@ describe('AIService · conversation CRUD', () => {
   })
 
   it('conversationGetMy resolves the list', async () => {
-    mockRequest.mockResolvedValueOnce([{ id: 'c1', title: 'A' }])
+    const conversations = [makeAIConversation({ id: 'c1', title: 'A' })]
+    mockRequest.mockResolvedValueOnce(conversations)
     const result = await aiService.conversationGetMy({ id: 'c1' })
-    expect(result).toEqual([{ id: 'c1', title: 'A' }])
+    expect(result).toEqual(conversations)
     expect(mockRequest).toHaveBeenCalledWith({ url: '/api/ai/conversation/my', params: { id: 'c1' } }, undefined, {
       logPrefix: 'MatrixAI'
     })
@@ -90,7 +99,8 @@ describe('AIService · conversation CRUD', () => {
   })
 
   it('conversationCreate posts body and returns the created entity', async () => {
-    mockRequest.mockResolvedValueOnce({ id: 'c1', title: 'New' })
+    const created = makeAIConversation({ id: 'c1', title: 'New' })
+    mockRequest.mockResolvedValueOnce(created)
     const result = await aiService.conversationCreate({ roleId: 'r1', title: 'New' })
     expect(result.id).toBe('c1')
     expect(mockRequest).toHaveBeenCalledWith(
@@ -101,7 +111,7 @@ describe('AIService · conversation CRUD', () => {
   })
 
   it('conversationUpdate posts body with id', async () => {
-    mockRequest.mockResolvedValueOnce({ id: 'c1', pinned: true })
+    mockRequest.mockResolvedValueOnce(makeAIConversation({ id: 'c1', pinned: true }))
     const result = await aiService.conversationUpdate({ id: 'c1', pinned: true })
     expect(result.pinned).toBe(true)
     expect(mockRequest).toHaveBeenCalledWith(
@@ -145,9 +155,10 @@ describe('AIService · message CRUD', () => {
   })
 
   it('messageListByConversationId returns messages', async () => {
-    mockRequest.mockResolvedValueOnce([{ id: 'm1', conversationId: 'c1', role: 'user', content: 'hi' }])
+    const messages = [makeAIMessage({ id: 'm1', conversationId: 'c1', role: 'user', content: 'hi' })]
+    mockRequest.mockResolvedValueOnce(messages)
     const result = await aiService.messageListByConversationId({ conversationId: 'c1' })
-    expect(result).toHaveLength(1)
+    expect(result).toEqual(messages)
   })
 
   it('messageDelete re-throws when backend fails', async () => {
@@ -174,7 +185,7 @@ describe('AIService · media generation', () => {
   })
 
   it('generateImage posts request body', async () => {
-    mockRequest.mockResolvedValueOnce({ url: 'https://i.example.com/x.png' })
+    mockRequest.mockResolvedValueOnce(makeImageGenerationResult({ url: 'https://i.example.com/x.png' }))
     const result = await aiService.generateImage({ modelId: 'm1', prompt: 'sunset', width: 512, height: 512 })
     expect(typeof result).toBe('object')
     expect(result && typeof result === 'object' ? result.url : undefined).toContain('https://')
@@ -191,9 +202,10 @@ describe('AIService · media generation', () => {
   })
 
   it('audioGetVoices fetches by model param', async () => {
-    mockRequest.mockResolvedValueOnce([{ id: 'v1', name: 'Alice' }])
+    const voicesFixture = [makeAIVoice({ id: 'v1', name: 'Alice' })]
+    mockRequest.mockResolvedValueOnce(voicesFixture)
     const voices = await aiService.audioGetVoices({ model: 'tts-1' })
-    expect(voices).toHaveLength(1)
+    expect(voices).toEqual(voicesFixture)
     expect(mockRequest).toHaveBeenCalledWith({ url: '/api/ai/audio/voices', params: { model: 'tts-1' } }, undefined, {
       logPrefix: 'MatrixAI'
     })
@@ -213,12 +225,13 @@ describe('AIService · paginated reads', () => {
     ['audioMyPage', '/api/ai/audio/my/page'],
     ['chatRolePage', '/api/ai/chat-role/page']
   ])('%s calls the expected endpoint with pagination params', async (method, expectedUrl) => {
-    mockRequest.mockResolvedValueOnce({ list: [], total: 0 })
+    const emptyPage = makeEmptyAiPageResponse()
+    mockRequest.mockResolvedValueOnce(emptyPage)
     const result = await (aiService as unknown as Record<string, (args: unknown) => Promise<unknown>>)[method]({
       pageNo: 2,
       pageSize: 20
     })
-    expect(result).toEqual({ list: [], total: 0 })
+    expect(result).toEqual(emptyPage)
     expect(mockRequest).toHaveBeenCalledWith({ url: expectedUrl, params: { pageNo: 2, pageSize: 20 } }, undefined, {
       logPrefix: 'MatrixAI'
     })
@@ -267,7 +280,7 @@ describe('AIService · messageSendStream', () => {
   })
 
   it('accumulates chunks and resolves on done', async () => {
-    mockGetClient.mockReturnValueOnce({} as unknown as Record<string, unknown>)
+    mockGetClient.mockReturnValueOnce(makeMatrixClientStub())
     mockInvoke.mockResolvedValueOnce(undefined)
     const onChunk = vi.fn()
     const onDone = vi.fn()
@@ -291,7 +304,7 @@ describe('AIService · messageSendStream', () => {
   })
 
   it('ignores events with mismatched requestId', async () => {
-    mockGetClient.mockReturnValueOnce({} as unknown as Record<string, unknown>)
+    mockGetClient.mockReturnValueOnce(makeMatrixClientStub())
     mockInvoke.mockResolvedValueOnce(undefined)
     const onChunk = vi.fn()
     const onDone = vi.fn()
@@ -309,7 +322,7 @@ describe('AIService · messageSendStream', () => {
   })
 
   it('rejects on error event with the provided message', async () => {
-    mockGetClient.mockReturnValueOnce({} as unknown as Record<string, unknown>)
+    mockGetClient.mockReturnValueOnce(makeMatrixClientStub())
     mockInvoke.mockResolvedValueOnce(undefined)
     const onError = vi.fn()
     const onStart = vi.fn()
@@ -325,7 +338,7 @@ describe('AIService · messageSendStream', () => {
   })
 
   it('rejects when invoke itself fails before any events arrive', async () => {
-    mockGetClient.mockReturnValueOnce({} as unknown as Record<string, unknown>)
+    mockGetClient.mockReturnValueOnce(makeMatrixClientStub())
     mockInvoke.mockRejectedValueOnce(new Error('bridge-down'))
     const onError = vi.fn()
 

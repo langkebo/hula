@@ -22,6 +22,7 @@ import {
 import { type NotificationConfig, NotificationConfigStore } from './notificationConfig'
 import type { NotificationMessageInput } from './notificationDecision'
 import { shouldNotifyMessage as decideShouldNotifyMessage, renderNotificationDisplay } from './notificationDecisionGate'
+import type { NotificationHistoryEntry } from './notificationHistoryPresentation'
 import { isSystemNotificationPermissionGranted } from './systemNotificationPermission'
 
 const logger = createLogger('MatrixNotificationService')
@@ -37,7 +38,7 @@ interface NotificationRule {
   ruleId: string
   kind: 'override' | 'content' | 'room' | 'sender' | 'underride'
   roomId?: string
-  conditions?: Record<string, unknown>
+  conditions?: IPushRule['conditions']
   actions: unknown[]
   enabled?: boolean
 }
@@ -414,8 +415,8 @@ class MatrixNotificationService extends BaseMatrixService {
     from?: string,
     limit: number = 20
   ): Promise<{
-    notifications: Array<Record<string, unknown>>
-    next_token?: string
+    notifications: NotificationHistoryEntry[]
+    next_token?: string | undefined
   }> {
     const client = this.getNotificationClient()
     try {
@@ -423,7 +424,7 @@ class MatrixNotificationService extends BaseMatrixService {
         ...(from !== undefined ? { from } : {}),
         limit
       })
-      return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
+      return { notifications: result.notifications, next_token: result.next_token }
     } catch (err) {
       logger.error(`[MatrixNotification] 获取通知列表失败: ${err}`)
       return { notifications: [] }
@@ -457,8 +458,11 @@ class MatrixNotificationService extends BaseMatrixService {
   /**
    * 设置推送设备 (使用 SDK 高层方法)
    * FT-129: 校验必填字段后再调用 SDK，不使用 as unknown as 强转
+   *
+   * 入参取 SDK `IPusherRequest` 的部分形态：三个必填字段先本地校验，
+   * 其余字段可缺省由 SDK / 后端补默认值。
    */
-  async setPusherByBody(pusher: Record<string, unknown>): Promise<void> {
+  async setPusherByBody(pusher: Partial<IPusherRequest>): Promise<void> {
     if (typeof pusher.pushkey !== 'string' || pusher.pushkey === '') {
       throw new Error('pusher.pushkey is required and must be a non-empty string')
     }
@@ -471,7 +475,7 @@ class MatrixNotificationService extends BaseMatrixService {
 
     const client = this.getNotificationClient()
     try {
-      await client.getPushManager().setPusher(pusher as Record<string, unknown> & IPusherRequest)
+      await client.getPushManager().setPusher(pusher as IPusherRequest)
       logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)

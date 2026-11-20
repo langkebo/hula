@@ -3,14 +3,65 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ApplicationService')
 
+/** 应用服务命名空间条目（Matrix Application Service API：正则 + 是否独占）。 */
+export interface ApplicationServiceNamespace {
+  regex: string
+  exclusive: boolean
+}
+
+/** 应用服务命名空间集合。 */
+export interface ApplicationServiceNamespaces {
+  users?: ApplicationServiceNamespace[]
+  rooms?: ApplicationServiceNamespace[]
+  aliases?: ApplicationServiceNamespace[]
+}
+
+/** 应用服务注册 / 更新请求体（Matrix Application Service API 注册配置）。 */
+export interface ApplicationServiceConfig {
+  id?: string
+  as_token?: string
+  hs_token?: string
+  url?: string | null
+  sender_localpart?: string
+  namespaces?: ApplicationServiceNamespaces
+  rate_limited?: boolean
+  protocols?: string[]
+  is_enabled?: boolean
+}
+
+/**
+ * 应用服务（Application Service）响应。
+ *
+ * 列表、详情与注册三个端点共用同一实体；后端同时存在 `id`（DB 行 ID，数字）
+ * 与 `as_id`（业务 ID，字符串）两套主键命名，界面做兼容读取，故全部按可选建模。
+ */
+export interface ApplicationServiceResponse {
+  id?: number | string
+  as_id?: string
+  url?: string | null
+  sender?: string
+  sender_localpart?: string
+  as_token?: string
+  hs_token?: string
+  description?: string
+  rate_limited?: boolean
+  is_enabled?: boolean
+  enabled?: boolean
+  protocols?: string[]
+  namespaces?: ApplicationServiceNamespaces
+  created_ts?: number
+  /** 后端版本的扩展字段，界面按动态键读取。 */
+  [key: string]: unknown
+}
+
 export interface ApplicationServiceAdmin {
   listApplicationServices(params: { limit: number; from?: string | undefined }): Promise<{
-    services: Array<Record<string, unknown>>
+    services: ApplicationServiceResponse[]
     next_token?: string
   }>
-  registerApplicationService(asToken: string, config: Record<string, unknown>): Promise<Record<string, unknown>>
-  getApplicationService(serviceId: string): Promise<Record<string, unknown>>
-  updateApplicationService(serviceId: string, config: Record<string, unknown>): Promise<void>
+  registerApplicationService(asToken: string, config: ApplicationServiceConfig): Promise<ApplicationServiceResponse>
+  getApplicationService(serviceId: string): Promise<ApplicationServiceResponse>
+  updateApplicationService(serviceId: string, config: ApplicationServiceConfig): Promise<void>
   deleteApplicationService(serviceId: string): Promise<void>
   pingApplicationService(serviceId: string): Promise<{
     ok: boolean
@@ -26,7 +77,7 @@ export class AdminApplicationService {
   async getApplicationServices(
     limit = DEFAULT_PAGE_LIMIT,
     from?: string
-  ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  ): Promise<{ services: ApplicationServiceResponse[]; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listApplicationServices({ limit, from })
@@ -40,7 +91,10 @@ export class AdminApplicationService {
     }
   }
 
-  async registerApplicationService(asToken: string, config: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async registerApplicationService(
+    asToken: string,
+    config: ApplicationServiceConfig
+  ): Promise<ApplicationServiceResponse> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.registerApplicationService(asToken, config)
@@ -52,7 +106,7 @@ export class AdminApplicationService {
     }
   }
 
-  async getApplicationService(serviceId: string): Promise<Record<string, unknown> | null> {
+  async getApplicationService(serviceId: string): Promise<ApplicationServiceResponse | null> {
     try {
       const admin = await this.sdkAdmin()
       return (await admin.getApplicationService(serviceId)) ?? null
@@ -62,7 +116,7 @@ export class AdminApplicationService {
     }
   }
 
-  async updateApplicationService(serviceId: string, config: Record<string, unknown>): Promise<void> {
+  async updateApplicationService(serviceId: string, config: ApplicationServiceConfig): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
       await admin.updateApplicationService(serviceId, config)

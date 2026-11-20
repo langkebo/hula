@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
 import { registerVoipCapabilityResolver } from '../voipHelpers'
+import { makeVoiceConfigResponse } from './fixtures/voiceConfig'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -112,11 +113,13 @@ describe('MatrixVoiceService error propagation (FT-113)', () => {
     })
 
     it('still returns parsed config on the success path', async () => {
-      getVoiceConfigMock.mockResolvedValueOnce({
-        max_duration: 600,
-        allowed_formats: ['audio/webm'],
-        auto_transcribe: true
-      })
+      getVoiceConfigMock.mockResolvedValueOnce(
+        makeVoiceConfigResponse({
+          max_duration: 600,
+          allowed_formats: ['audio/webm'],
+          auto_transcribe: true
+        })
+      )
 
       const result = await matrixVoiceService.getVoiceConfig()
 

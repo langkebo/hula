@@ -17,6 +17,7 @@ vi.mock('@/services/matrix/MatrixHttpClient', () => ({
 }))
 
 import { modelService } from '../ModelService'
+import { makeAIModel, makeAIModelPage } from './fixtures/ai'
 
 describe('MatrixModelService', () => {
   beforeEach(() => {
@@ -25,16 +26,17 @@ describe('MatrixModelService', () => {
 
   describe('page', () => {
     it('调用 modelPage 端点并传分页参数', async () => {
-      mockRequest.mockResolvedValueOnce({ list: [{ id: 'm1' }], total: 1 })
+      const page = makeAIModelPage({ list: [makeAIModel({ id: 'm1' })], total: 1 })
+      mockRequest.mockResolvedValueOnce(page)
       const result = await modelService.page({ pageNo: 1, pageSize: 20 })
-      expect(result).toEqual({ list: [{ id: 'm1' }], total: 1 })
+      expect(result).toEqual(page)
       expect(mockRequest).toHaveBeenCalledWith({ url: 'modelPage', params: { pageNo: 1, pageSize: 20 } }, undefined, {
         logPrefix: 'MatrixModel'
       })
     })
 
     it('不传参数时 params 为 undefined', async () => {
-      mockRequest.mockResolvedValueOnce({ list: [], total: 0 })
+      mockRequest.mockResolvedValueOnce(makeAIModelPage())
       await modelService.page()
       expect(mockRequest).toHaveBeenCalledWith({ url: 'modelPage', params: undefined }, undefined, {
         logPrefix: 'MatrixModel'
@@ -50,7 +52,7 @@ describe('MatrixModelService', () => {
   describe('update', () => {
     it('POST 请求体并返回更新后的 AIModel', async () => {
       const body = { id: 'm1', name: 'GPT', platform: 'openai', temperature: 0.7 }
-      mockRequest.mockResolvedValueOnce({ id: 'm1', name: 'GPT', platform: 'openai', temperature: 0.7 })
+      mockRequest.mockResolvedValueOnce(makeAIModel({ temperature: 0.7 }))
       const result = await modelService.update(body)
       expect(result.name).toBe('GPT')
       expect(mockRequest).toHaveBeenCalledWith({ url: 'modelUpdate', method: 'POST', body }, undefined, {

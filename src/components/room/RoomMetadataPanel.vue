@@ -67,7 +67,7 @@ async function loadMetadata() {
   loadFailed.value = false
   try {
     const result = await matrixRoomReadFacade.getRoomMetadata(props.roomId)
-    metadata.value = (result as Record<string, unknown>) ?? {}
+    metadata.value = { ...result }
   } catch {
     metadata.value = {}
     loadFailed.value = true

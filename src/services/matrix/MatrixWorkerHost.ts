@@ -1,4 +1,5 @@
 import { useI18nGlobal } from '@/services/i18n'
+import type { Capabilities } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import type {
   SearchEventDoc,
@@ -199,8 +200,8 @@ export class MatrixWorkerHost {
    * 等价于 `MatrixClient.getCapabilities()` /  `GET /_matrix/client/v3/capabilities`，
    * 需要 access token；可与 `getServerVersions` 并发，登录后能力探测批次中常用。
    */
-  async getCapabilities(baseUrl: string, accessToken: string): Promise<Record<string, unknown>> {
-    return this.request<Record<string, unknown>>('getCapabilities', { baseUrl, accessToken })
+  async getCapabilities(baseUrl: string, accessToken: string): Promise<Capabilities> {
+    return this.request<Capabilities>('getCapabilities', { baseUrl, accessToken })
   }
 
   /**

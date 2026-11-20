@@ -33,6 +33,7 @@ vi.mock('@/composables/common/useMitt', () => ({
   }
 }))
 
+import { receiptsEmpty, receiptsError } from '@/components/room/__tests__/fixtures/roomPanels'
 import EventReceiptsOverlay from '../EventReceiptsOverlay.vue'
 
 const mountOverlay = () => mount(EventReceiptsOverlay, { attachTo: document.body })
@@ -92,7 +93,7 @@ describe('EventReceiptsOverlay', () => {
   })
 
   it('error：显示错误与重试，重试会重新取数', async () => {
-    getRoomReceiptsMock.mockResolvedValueOnce({ status: 'error' })
+    getRoomReceiptsMock.mockResolvedValueOnce(receiptsError())
     mountOverlay()
     lastHandler()({ roomId: '!r:hs', eventId: '$e1' })
     await flushPromises()
@@ -100,7 +101,7 @@ describe('EventReceiptsOverlay', () => {
     const retry = document.body.querySelector<HTMLElement>('[data-testid="event-receipts-retry"]')
     expect(retry).not.toBeNull()
 
-    getRoomReceiptsMock.mockResolvedValueOnce({ status: 'empty' })
+    getRoomReceiptsMock.mockResolvedValueOnce(receiptsEmpty())
     retry?.click()
     await flushPromises()
 

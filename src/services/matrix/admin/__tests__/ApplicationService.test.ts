@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminApplicationService, type ApplicationServiceAdmin } from '../ApplicationService'
+import {
+  makeApplicationService,
+  makeApplicationServiceList,
+  makeApplicationServicePing
+} from './fixtures/applicationService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -26,13 +31,11 @@ describe('AdminApplicationService', () => {
   })
 
   it('getApplicationServices 传递分页参数并映射 nextToken', async () => {
-    admin.listApplicationServices.mockResolvedValueOnce({
-      services: [{ id: 'as1' }],
-      next_token: 'tok'
-    })
+    const asFixture = makeApplicationService({ id: 'as1' })
+    admin.listApplicationServices.mockResolvedValueOnce(makeApplicationServiceList([asFixture], 'tok'))
 
     await expect(service.getApplicationServices(10, 'from-1')).resolves.toEqual({
-      services: [{ id: 'as1' }],
+      services: [asFixture],
       nextToken: 'tok'
     })
     expect(admin.listApplicationServices).toHaveBeenCalledWith({ limit: 10, from: 'from-1' })
@@ -44,10 +47,9 @@ describe('AdminApplicationService', () => {
   })
 
   it('registerApplicationService 透传配置且失败时向上抛出', async () => {
-    admin.registerApplicationService.mockResolvedValueOnce({ id: 'as2' })
-    await expect(service.registerApplicationService('token', { url: 'https://as.test' })).resolves.toEqual({
-      id: 'as2'
-    })
+    const registered = makeApplicationService({ id: 'as2' })
+    admin.registerApplicationService.mockResolvedValueOnce(registered)
+    await expect(service.registerApplicationService('token', { url: 'https://as.test' })).resolves.toEqual(registered)
     expect(admin.registerApplicationService).toHaveBeenCalledWith('token', { url: 'https://as.test' })
 
     admin.registerApplicationService.mockRejectedValueOnce(new Error('M_UNKNOWN'))
@@ -68,7 +70,7 @@ describe('AdminApplicationService', () => {
   })
 
   it('pingApplicationService 映射 duration_ms 且出错时返回 ok:false', async () => {
-    admin.pingApplicationService.mockResolvedValueOnce({ ok: true, duration_ms: 42 })
+    admin.pingApplicationService.mockResolvedValueOnce(makeApplicationServicePing({ duration_ms: 42 }))
     await expect(service.pingApplicationService('as1')).resolves.toEqual({ ok: true, durationMs: 42 })
 
     admin.pingApplicationService.mockRejectedValueOnce(new Error('timeout'))

@@ -1,12 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeRetentionPoliciesResponse,
+  makeRetentionPolicy,
+  makeRetentionPolicyRow,
+  makeRetentionStatus,
+  makeRoomRetention
+} from '@/composables/admin/__tests__/fixtures/retention'
 import { useAdminRetention } from '../useAdminRetention'
 
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
-    getRetentionPolicies: vi.fn().mockResolvedValue({ policies: [] }),
-    getRetentionStatus: vi.fn().mockResolvedValue({ running: false }),
+    getRetentionPolicies: vi.fn().mockResolvedValue(makeRetentionPoliciesResponse()),
+    getRetentionStatus: vi.fn().mockResolvedValue(makeRetentionStatus({ running: false })),
     getDefaultRetention: vi.fn().mockResolvedValue(null),
-    getRoomRetention: vi.fn().mockResolvedValue({ roomId: '!x:s' }),
+    getRoomRetention: vi.fn().mockResolvedValue(makeRoomRetention('!x:s')),
     setRoomRetention: vi.fn().mockResolvedValue(undefined),
     deleteRoomRetention: vi.fn().mockResolvedValue(undefined),
     setRetentionPolicy: vi.fn().mockResolvedValue(undefined),
@@ -22,11 +29,13 @@ describe('useAdminRetention', () => {
   })
 
   it('loadAll 同时加载策略列表、状态与默认策略', async () => {
-    vi.mocked(adminService.getRetentionPolicies).mockResolvedValueOnce({
-      policies: [{ room_id: '!x:s', min_lifetime: 1000, max_lifetime: 2000 }]
-    } as never)
-    vi.mocked(adminService.getRetentionStatus).mockResolvedValueOnce({ running: true })
-    vi.mocked(adminService.getDefaultRetention).mockResolvedValueOnce({ max_lifetime: 9000 })
+    vi.mocked(adminService.getRetentionPolicies).mockResolvedValueOnce(
+      makeRetentionPoliciesResponse([
+        makeRetentionPolicyRow({ room_id: '!x:s', min_lifetime: 1000, max_lifetime: 2000 })
+      ])
+    )
+    vi.mocked(adminService.getRetentionStatus).mockResolvedValueOnce(makeRetentionStatus({ running: true }))
+    vi.mocked(adminService.getDefaultRetention).mockResolvedValueOnce(makeRetentionPolicy({ max_lifetime: 9000 }))
 
     const c = useAdminRetention()
     await c.loadAll()
@@ -48,10 +57,7 @@ describe('useAdminRetention', () => {
   })
 
   it('loadRoomPolicy 裁剪空白并写入读取结果', async () => {
-    vi.mocked(adminService.getRoomRetention).mockResolvedValueOnce({
-      roomId: '!x:s',
-      policy: { min_lifetime: 1000 }
-    })
+    vi.mocked(adminService.getRoomRetention).mockResolvedValueOnce(makeRoomRetention('!x:s', { min_lifetime: 1000 }))
     const c = useAdminRetention()
     await c.loadRoomPolicy('  !x:s  ')
     expect(adminService.getRoomRetention).toHaveBeenCalledWith('!x:s')
@@ -74,10 +80,9 @@ describe('useAdminRetention', () => {
   })
 
   it('setRoomPolicy 写入后回读服务端策略', async () => {
-    vi.mocked(adminService.getRoomRetention).mockResolvedValueOnce({
-      roomId: '!x:s',
-      policy: { min_lifetime: 500, max_lifetime: 800 }
-    })
+    vi.mocked(adminService.getRoomRetention).mockResolvedValueOnce(
+      makeRoomRetention('!x:s', { min_lifetime: 500, max_lifetime: 800 })
+    )
     const c = useAdminRetention()
     await c.setRoomPolicy('!x:s', { min_lifetime: 500, max_lifetime: 800 })
 

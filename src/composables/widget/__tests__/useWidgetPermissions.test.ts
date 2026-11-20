@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeSetPermissionResponse,
+  makeWidgetPermissionItem,
+  makeWidgetPermissionsResponse
+} from '@/services/matrix/widget/__tests__/fixtures/widget'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
@@ -108,9 +113,11 @@ describe('useWidgetPermissions', () => {
 
   describe('load', () => {
     it('populates rows from parsed response', async () => {
-      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce({
-        permissions: [{ user_id: '@alice:e', permissions: ['read'] }]
-      })
+      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce(
+        makeWidgetPermissionsResponse({
+          permissions: [makeWidgetPermissionItem({ user_id: '@alice:e', permissions: ['read'] })]
+        })
+      )
 
       const { load, rows } = useWidgetPermissions()
       await load('w1')
@@ -141,7 +148,7 @@ describe('useWidgetPermissions', () => {
 
       expect(loading.value).toBe(true)
 
-      resolveLoad({ permissions: [] })
+      resolveLoad(makeWidgetPermissionsResponse())
       await promise
 
       expect(loading.value).toBe(false)
@@ -150,7 +157,7 @@ describe('useWidgetPermissions', () => {
     it('clears error before loading', async () => {
       widgetServiceMock.getWidgetPermissions
         .mockRejectedValueOnce(new Error('first fail'))
-        .mockResolvedValueOnce({ permissions: [] })
+        .mockResolvedValueOnce(makeWidgetPermissionsResponse())
 
       const { load, error } = useWidgetPermissions()
       await load('w1')
@@ -165,10 +172,12 @@ describe('useWidgetPermissions', () => {
 
   describe('grant', () => {
     it('calls setWidgetPermission and reloads rows', async () => {
-      widgetServiceMock.setWidgetPermission.mockResolvedValueOnce({ ok: true })
-      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce({
-        permissions: [{ user_id: '@alice:e', permissions: ['read', 'write'] }]
-      })
+      widgetServiceMock.setWidgetPermission.mockResolvedValueOnce(makeSetPermissionResponse())
+      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce(
+        makeWidgetPermissionsResponse({
+          permissions: [makeWidgetPermissionItem({ user_id: '@alice:e', permissions: ['read', 'write'] })]
+        })
+      )
 
       const { grant, rows } = useWidgetPermissions()
       const ok = await grant('w1', '@alice:e', ['read', 'write'])
@@ -194,9 +203,7 @@ describe('useWidgetPermissions', () => {
   describe('revoke', () => {
     it('succeeds and reloads rows', async () => {
       widgetServiceMock.deleteWidgetPermission.mockResolvedValueOnce(true)
-      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce({
-        permissions: []
-      })
+      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce(makeWidgetPermissionsResponse())
 
       const { revoke, rows } = useWidgetPermissions()
       const ok = await revoke('w1', '@alice:e')
@@ -237,7 +244,7 @@ describe('useWidgetPermissions', () => {
           resolveGrant = resolve
         })
       )
-      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce({ permissions: [] })
+      widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce(makeWidgetPermissionsResponse())
 
       const { grant, mutating } = useWidgetPermissions()
       const promise = grant('w1', '@alice:e', ['read'])

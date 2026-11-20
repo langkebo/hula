@@ -1,8 +1,29 @@
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import type { RoomStatsOverview } from '@/services/matrix/sdk'
 import { AdminFacadeMediaMethods } from './AdminFacadeMediaMethods'
-import type { AdminRoomTokenSync, UserInfo } from './AdminTypes'
+import type {
+  AdminAccountInfo,
+  AdminAccountStatusInfo,
+  AdminAuditLogPage,
+  AdminLoginFailure,
+  AdminRoomEventContextInfo,
+  AdminRoomEventItem,
+  AdminRoomForwardExtremitiesInfo,
+  AdminRoomListingsInfo,
+  AdminRoomSearchResultItem,
+  AdminRoomStatsInfo,
+  AdminRoomTokenSync,
+  AdminSpaceInfo,
+  AdminSpaceRoom,
+  AdminSpaceStatsInfo,
+  AdminSpaceUser,
+  AdminUserSession,
+  AdminUserStats,
+  AdminUserStatsOverview,
+  UserInfo
+} from './AdminTypes'
 import type { AdminRoomService } from './RoomService'
+import type { SamlConfigResponse, SamlMetadataResponse } from './SecurityService'
 
 /**
  * AdminFacadeService 的 Domain 方法片段。
@@ -19,7 +40,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   async adminGetSpaces(
     limit = DEFAULT_PAGE_LIMIT,
     from?: string
-  ): Promise<{ spaces: Array<Record<string, unknown>>; next_batch?: string | undefined }> {
+  ): Promise<{ spaces: AdminSpaceInfo[]; next_batch?: string | undefined }> {
     return this.rooms.adminGetSpaces(limit, from)
   }
 
@@ -33,12 +54,12 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
     from?: string,
     userId?: string,
     eventType?: string
-  ): Promise<{ logs: Array<Record<string, unknown>>; next_batch?: string | undefined }> {
+  ): Promise<AdminAuditLogPage> {
     return this.security.getAuditLog(limit, from, userId, eventType)
   }
 
   /** 获取 SAML 元数据。 */
-  async getSamlMetadata(): Promise<Record<string, unknown>> {
+  async getSamlMetadata(): Promise<SamlMetadataResponse> {
     return this.security.getSamlMetadata()
   }
 
@@ -48,12 +69,12 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 刷新身份提供方（IdP）元数据。 */
-  async refreshIdpMetadata(): Promise<Record<string, unknown>> {
+  async refreshIdpMetadata(): Promise<SamlMetadataResponse> {
     return this.security.refreshIdpMetadata()
   }
 
   /** 获取 SAML 配置。 */
-  async getSamlConfig(): Promise<Record<string, unknown>> {
+  async getSamlConfig(): Promise<SamlConfigResponse> {
     return this.security.getSamlConfig()
   }
 
@@ -68,12 +89,12 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 获取指定用户的统计信息。 */
-  async getUserStats(userId: string): Promise<Record<string, unknown> | null> {
+  async getUserStats(userId: string): Promise<AdminUserStats | null> {
     return this.users.getUserStats(userId)
   }
 
   /** 获取用户统计列表。 */
-  async getUserStatsList(): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  async getUserStatsList(): Promise<{ stats: AdminUserStatsOverview[]; nextToken?: string | undefined }> {
     return this.users.getUserStatsList()
   }
 
@@ -114,7 +135,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 获取指定用户的活动会话列表。 */
-  async getUserSessions(userId: string): Promise<Array<Record<string, unknown>>> {
+  async getUserSessions(userId: string): Promise<AdminUserSession[]> {
     return this.users.getUserSessions(userId)
   }
 
@@ -124,7 +145,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 获取指定账户的信息。 */
-  async getAccountInfo(userId: string): Promise<Record<string, unknown> | null> {
+  async getAccountInfo(userId: string): Promise<AdminAccountInfo | null> {
     return this.users.getAccountInfo(userId)
   }
 
@@ -139,14 +160,14 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 获取指定账户的状态。 */
-  async getAccountStatus(userId: string): Promise<Record<string, unknown> | null> {
+  async getAccountStatus(userId: string): Promise<AdminAccountStatusInfo | null> {
     return this.users.getAccountStatus(userId)
   }
 
   async getLoginFailures(
     limit = DEFAULT_PAGE_LIMIT,
     from?: string
-  ): Promise<{ failures: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  ): Promise<{ failures: AdminLoginFailure[]; nextToken?: string | undefined }> {
     return this.users.getLoginFailures(limit, from)
   }
 
@@ -206,12 +227,12 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 获取单个房间的统计信息。 */
-  async getSingleRoomStats(roomId: string): Promise<Record<string, unknown> | null> {
+  async getSingleRoomStats(roomId: string): Promise<AdminRoomStatsInfo | null> {
     return this.rooms.getSingleRoomStats(roomId)
   }
 
   /** 获取房间的公开目录（listing）信息。 */
-  async getRoomListings(roomId: string): Promise<Record<string, unknown> | null> {
+  async getRoomListings(roomId: string): Promise<AdminRoomListingsInfo | null> {
     return this.rooms.getRoomListings(roomId)
   }
 
@@ -235,7 +256,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 获取指定事件的上下文（前后事件）。 */
-  async getRoomEventContext(roomId: string, eventId: string): Promise<Record<string, unknown> | null> {
+  async getRoomEventContext(roomId: string, eventId: string): Promise<AdminRoomEventContextInfo | null> {
     return this.rooms.getRoomEventContext(roomId, eventId)
   }
 
@@ -243,18 +264,18 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
     roomId: string,
     searchTerm: string,
     limit = DEFAULT_PAGE_LIMIT
-  ): Promise<{ results: Array<Record<string, unknown>>; nextBatch?: string | undefined }> {
+  ): Promise<{ results: AdminRoomEventItem[]; nextBatch?: string | undefined }> {
     return this.rooms.searchInRoom(roomId, searchTerm, limit)
   }
 
   async searchRooms(
     searchTerm: string
-  ): Promise<{ rooms: Array<Record<string, unknown>>; nextBatch?: string | undefined }> {
+  ): Promise<{ rooms: AdminRoomSearchResultItem[]; nextBatch?: string | undefined }> {
     return this.rooms.searchRooms(searchTerm)
   }
 
-  /** 获取房间的前向极值（forward extremities）。 */
-  async getRoomForwardExtremities(roomId: string): Promise<Array<Record<string, unknown>>> {
+  /** 获取房间的前向极点数（后端返回的是计数，不是极点对象数组）。 */
+  async getRoomForwardExtremities(roomId: string): Promise<AdminRoomForwardExtremitiesInfo | null> {
     return this.rooms.getRoomForwardExtremities(roomId)
   }
 
@@ -273,22 +294,22 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 获取空间详情。 */
-  async getSpaceDetails(spaceId: string): Promise<Record<string, unknown> | null> {
+  async getSpaceDetails(spaceId: string): Promise<AdminSpaceInfo | null> {
     return this.rooms.getSpaceDetails(spaceId)
   }
 
   /** 获取空间内的用户列表。 */
-  async getSpaceUsers(spaceId: string): Promise<Array<Record<string, unknown>>> {
+  async getSpaceUsers(spaceId: string): Promise<AdminSpaceUser[]> {
     return this.rooms.getSpaceUsers(spaceId)
   }
 
   /** 获取空间内的房间列表。 */
-  async getSpaceRooms(spaceId: string): Promise<Array<Record<string, unknown>>> {
+  async getSpaceRooms(spaceId: string): Promise<AdminSpaceRoom[]> {
     return this.rooms.getSpaceRooms(spaceId)
   }
 
   /** 获取空间的统计信息。 */
-  async getSpaceStats(spaceId: string): Promise<Record<string, unknown> | null> {
+  async getSpaceStats(spaceId: string): Promise<AdminSpaceStatsInfo | null> {
     return this.rooms.getSpaceStats(spaceId)
   }
 }

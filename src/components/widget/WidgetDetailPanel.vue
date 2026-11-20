@@ -145,7 +145,7 @@ async function loadWidgetConfig() {
   configLoadFailed.value = false
   try {
     const result = await matrixWidgetService.getWidgetConfig(props.widget.id, false)
-    widgetConfig.value = result ?? {}
+    widgetConfig.value = result ? { ...result } : {}
   } catch (e) {
     logger.error('Failed to load widget config', e)
     widgetConfig.value = {}

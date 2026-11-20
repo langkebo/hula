@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeInvitePolicy } from '@/services/matrix/user/__tests__/fixtures/invitePolicy'
 import MobileInvitePermission from '../MobileInvitePermission.vue'
 
 /**
@@ -390,27 +391,19 @@ describe('MobileInvitePermission', () => {
    */
   it('re-reads the strict server policy before writing instead of using the mount snapshot', async () => {
     getConfigMock
-      .mockResolvedValueOnce({
-        mode: 'allow_all',
-        blocklist: [],
-        allowlist: [],
-        allowStrangers: true,
-        allowFriendRequests: true,
-        autoAcceptFriends: false,
-        requireFriendRequestMessage: true,
-        contacts: ['@friend:server']
-      })
+      .mockResolvedValueOnce(
+        makeInvitePolicy({ allowStrangers: true, requireFriendRequestMessage: true, contacts: ['@friend:server'] })
+      )
       // 挂载后另一个编辑面（桌面端）改了本页不拥有的字段
-      .mockResolvedValueOnce({
-        mode: 'allow_all',
-        blocklist: ['@spam:evil.org'],
-        allowlist: [],
-        allowStrangers: true,
-        allowFriendRequests: false,
-        autoAcceptFriends: true,
-        requireFriendRequestMessage: false,
-        contacts: ['@fresh:server']
-      })
+      .mockResolvedValueOnce(
+        makeInvitePolicy({
+          blocklist: ['@spam:evil.org'],
+          allowStrangers: true,
+          allowFriendRequests: false,
+          autoAcceptFriends: true,
+          contacts: ['@fresh:server']
+        })
+      )
 
     const wrapper = mountPage()
     await flushPromises()
@@ -432,13 +425,7 @@ describe('MobileInvitePermission', () => {
 
   it('aborts the write with a toast when the strict re-read fails', async () => {
     getConfigMock
-      .mockResolvedValueOnce({
-        mode: 'allow_all',
-        blocklist: [],
-        allowlist: [],
-        allowStrangers: true,
-        contacts: []
-      })
+      .mockResolvedValueOnce(makeInvitePolicy({ allowStrangers: true }))
       .mockRejectedValueOnce(new Error('read failed'))
 
     const wrapper = mountPage()

@@ -2,6 +2,13 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminRetentionService } from '../RetentionService'
+import {
+  makeRetentionPolicy,
+  makeRoomRetentionPolicy,
+  makeRoomRetentionStateContent,
+  makeSendStateEventResponse,
+  makeServerRetentionPolicy
+} from './fixtures/retention'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -39,9 +46,11 @@ describe('AdminRetentionService', () => {
   })
 
   it('getRetentionPolicies 将单一策略包装为列表，出错时降级为空', async () => {
-    admin.getRetentionPolicy.mockResolvedValueOnce({ max_lifetime: 86400 })
+    admin.getRetentionPolicy.mockResolvedValueOnce(makeRetentionPolicy({ max_lifetime: 86400 }))
+    // SDK `RetentionPolicy` 三键必填（`admin-config-types.d.ts:110-114`），
+    // 服务层原样透传，因此断言需带上夹具补齐的默认值。
     await expect(service.getRetentionPolicies()).resolves.toEqual({
-      policies: [{ max_lifetime: 86400 }],
+      policies: [{ max_lifetime: 86400, min_lifetime: null, is_expire_on_clients: false }],
       nextToken: undefined
     })
 
@@ -50,7 +59,7 @@ describe('AdminRetentionService', () => {
   })
 
   it('setRetentionPolicy 只携带已提供的生命周期字段', async () => {
-    admin.setRoomRetentionPolicy.mockResolvedValue(undefined)
+    admin.setRoomRetentionPolicy.mockResolvedValue(makeRoomRetentionPolicy({ room_id: '!r:hs' }))
 
     await service.setRetentionPolicy('!r:hs', 1000)
     expect(admin.setRoomRetentionPolicy).toHaveBeenCalledWith('!r:hs', { max_lifetime: 1000 })
@@ -67,7 +76,7 @@ describe('AdminRetentionService', () => {
   it('getRoomRetention 读取 m.room.retention 状态事件', async () => {
     // SDK 的方法是 `client.getStateEvent(roomId, eventType, stateKey?)`（`client.d.ts:3279`）；
     // `getRoomStateEvent` 是早期被清理掉的幻影方法名，实现早已改成 `getStateEvent`，测试没跟上。
-    client.getStateEvent.mockResolvedValueOnce({ min_lifetime: 100, max_lifetime: 200 })
+    client.getStateEvent.mockResolvedValueOnce(makeRoomRetentionStateContent({ min_lifetime: 100, max_lifetime: 200 }))
 
     await expect(service.getRoomRetention('!r:hs')).resolves.toEqual({
       roomId: '!r:hs',
@@ -82,7 +91,7 @@ describe('AdminRetentionService', () => {
   })
 
   it('setRoomRetention 通过状态事件写入策略', async () => {
-    client.sendStateEvent.mockResolvedValueOnce({})
+    client.sendStateEvent.mockResolvedValueOnce(makeSendStateEventResponse())
     await service.setRoomRetention('!r:hs', { max_lifetime: 999 })
     expect(client.sendStateEvent).toHaveBeenCalledWith('!r:hs', 'm.room.retention', { max_lifetime: 999 }, '')
   })
@@ -94,7 +103,7 @@ describe('AdminRetentionService', () => {
   })
 
   it('getDefaultRetention 出错时返回 null', async () => {
-    client.getServerRetention.mockResolvedValueOnce({ max_lifetime: 1 })
+    client.getServerRetention.mockResolvedValueOnce(makeServerRetentionPolicy({ max_lifetime: 1 }))
     await expect(service.getDefaultRetention()).resolves.toEqual({ max_lifetime: 1 })
 
     client.getServerRetention.mockRejectedValueOnce(new Error('boom'))

@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeUserProfile } from '@/services/matrix/user/__tests__/fixtures/relationship'
 import CreateDmDialog from '../CreateDmDialog.vue'
 
 const { getUserProfileMock } = vi.hoisted(() => ({
@@ -174,7 +175,7 @@ describe('CreateDmDialog', () => {
   it('重试成功后恢复检索结果', async () => {
     getUserProfileMock
       .mockRejectedValueOnce(new Error('boom'))
-      .mockResolvedValueOnce({ userId: '@alice:example.com', displayName: 'Alice' })
+      .mockResolvedValueOnce(makeUserProfile({ userId: '@alice:example.com', displayName: 'Alice' }))
     const wrapper = mountDialog()
 
     await wrapper.find('input').setValue('@alice:example.com')

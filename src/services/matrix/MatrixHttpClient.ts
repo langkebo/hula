@@ -7,9 +7,19 @@ import { getMatrixAccessToken, getMatrixClient, getMatrixHomeserverUrl } from '.
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 import { PREFIX_V3 } from './paths/prefixes'
 
+/**
+ * Matrix 请求体：结构由具体端点决定，统一以 JSON 对象透传。
+ *
+ * 具名类型用于替代散落的 Record 泛型，明确语义是「任意 JSON 对象请求体」，
+ * 而非可随意扩散的全局动态包。
+ */
+export interface MatrixRequestBody {
+  [key: string]: unknown
+}
+
 interface MatrixHttpRequestOptions {
   queryParams?: Record<string, string | number> | undefined
-  body?: Record<string, unknown> | undefined
+  body?: MatrixRequestBody | undefined
   headers?: Record<string, string> | undefined
   throwOnError?: boolean | undefined
   logPrefix?: string | undefined
@@ -31,7 +41,7 @@ interface MatrixAuthedRequestWithPrefixInvoker {
     method: string,
     path: string,
     queryParams?: Record<string, string>,
-    body?: Record<string, unknown>
+    body?: MatrixRequestBody
   ): Promise<T>
 }
 
@@ -59,7 +69,7 @@ export async function authedRequestWithPath<T>(
     method,
     fullPath,
     queryParams,
-    body as Record<string, unknown> | undefined
+    body as MatrixRequestBody | undefined
   )
 }
 
@@ -87,7 +97,7 @@ class MatrixHttpClient {
       | {
           url: string
           method?: MatrixHttpMethod
-          body?: Record<string, unknown>
+          body?: MatrixRequestBody
           params?: Record<string, string | number>
           headers?: Record<string, string>
           retries?: number
@@ -292,7 +302,7 @@ class MatrixHttpClient {
   async requestResult<T = unknown>(options: {
     url: string
     method?: MatrixHttpMethod
-    body?: Record<string, unknown>
+    body?: MatrixRequestBody
     params?: Record<string, string | number>
     headers?: Record<string, string>
   }): Promise<{ ok: boolean; data?: T; error?: string }> {
@@ -312,33 +322,21 @@ class MatrixHttpClient {
     return this.safeRequest<T>('GET', path, options)
   }
 
-  async post<T>(
-    path: string,
-    body?: Record<string, unknown>,
-    options: MatrixHttpRequestOptions = {}
-  ): Promise<T | null> {
+  async post<T>(path: string, body?: MatrixRequestBody, options: MatrixHttpRequestOptions = {}): Promise<T | null> {
     return this.safeRequest<T>('POST', path, {
       ...options,
       body
     })
   }
 
-  async put<T>(
-    path: string,
-    body?: Record<string, unknown>,
-    options: MatrixHttpRequestOptions = {}
-  ): Promise<T | null> {
+  async put<T>(path: string, body?: MatrixRequestBody, options: MatrixHttpRequestOptions = {}): Promise<T | null> {
     return this.safeRequest<T>('PUT', path, {
       ...options,
       body
     })
   }
 
-  async patch<T>(
-    path: string,
-    body?: Record<string, unknown>,
-    options: MatrixHttpRequestOptions = {}
-  ): Promise<T | null> {
+  async patch<T>(path: string, body?: MatrixRequestBody, options: MatrixHttpRequestOptions = {}): Promise<T | null> {
     return this.safeRequest<T>('PATCH', path, {
       ...options,
       body

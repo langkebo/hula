@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
+import { makeGroupInfo } from '@/stores/domains/chat/__tests__/fixtures/group'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { createI18nMock } from '~/tests/i18n-messages'
 import ApplyList from '../ApplyList.vue'
@@ -131,7 +132,7 @@ describe('ApplyList', () => {
     const retryButton = wrapper.find('[data-test="apply-group-detail-retry"]')
     expect(retryButton.exists()).toBe(true)
 
-    loadGroupInfoMock.mockResolvedValueOnce({ name: '测试群' })
+    loadGroupInfoMock.mockResolvedValueOnce(makeGroupInfo({ name: '测试群' }))
     await retryButton.trigger('click')
     await flushPromises()
 

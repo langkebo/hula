@@ -1,6 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminModerationService } from '../AdminModerationService'
+import { makeContentFilter } from './fixtures/moderation'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -109,8 +110,9 @@ describe('AdminModerationService', () => {
   })
 
   it('addContentFilter/removeContentFilter 透传且失败时向上抛出', async () => {
-    manager.addContentFilter.mockResolvedValueOnce({ id: 'f1' })
-    await expect(service.addContentFilter({ pattern: 'bad' } as never)).resolves.toEqual({ id: 'f1' })
+    const filter = makeContentFilter({ id: 'f1' })
+    manager.addContentFilter.mockResolvedValueOnce(filter)
+    await expect(service.addContentFilter({ pattern: 'bad' } as never)).resolves.toEqual(filter)
 
     manager.removeContentFilter.mockRejectedValueOnce(new Error('remove-fail'))
     await expect(service.removeContentFilter('f1')).rejects.toThrow('remove-fail')

@@ -1,10 +1,35 @@
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
+import type { RoomRetentionPolicy, SamlMapping } from '@/services/matrix/sdk'
 import { BaseMatrixService } from '../BaseMatrixService'
-import type { AdminApplicationService } from './ApplicationService'
+import type {
+  AdminAuditLogEntry,
+  AdminFederationServerStatus,
+  AdminInfo,
+  AdminIpBlock,
+  AdminIpReputation,
+  AdminSecurityEventsPage,
+  AdminServerLogEntry,
+  AdminUserPusher
+} from './AdminTypes'
+import type {
+  AdminApplicationService,
+  ApplicationServiceConfig,
+  ApplicationServiceResponse
+} from './ApplicationService'
 import type { AdminMediaService } from './MediaService'
-import type { AdminNotificationService } from './NotificationService'
-import type { AdminRetentionService } from './RetentionService'
-import type { AdminFeatureFlag, AdminFeatureFlagInput, AdminSecurityService } from './SecurityService'
+import type {
+  AdminNotificationService,
+  UserNotificationSettingsPayload,
+  UserNotificationSettingsResponse
+} from './NotificationService'
+import type { AdminRetentionService, RetentionPolicyListEntry, RetentionStatusResponse } from './RetentionService'
+import type {
+  AdminFeatureFlag,
+  AdminFeatureFlagInput,
+  AdminSecurityService,
+  ExperimentalFeaturesResponse,
+  SecurityEventQuery
+} from './SecurityService'
 import type { AdminServerService } from './ServerService'
 import type { AdminUserService } from './UserService'
 
@@ -35,7 +60,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * 获取实验性功能开关列表。
    * @returns 实验性功能键值映射。
    */
-  async getExperimentalFeatures(): Promise<Record<string, unknown>> {
+  async getExperimentalFeatures(): Promise<ExperimentalFeaturesResponse> {
     return this.security.getExperimentalFeatures()
   }
 
@@ -87,7 +112,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param serverName 联邦服务器名。
    * @returns 服务器状态信息，不存在时返回 null。
    */
-  async getFederationServerStatus(serverName: string): Promise<Record<string, unknown> | null> {
+  async getFederationServerStatus(serverName: string): Promise<AdminFederationServerStatus | null> {
     return this.security.getFederationServerStatus(serverName)
   }
 
@@ -104,7 +129,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @returns 策略数组（服务端当前最多返回一条）与可选分页 token。
    */
   async getRetentionPolicies(): Promise<{
-    policies: Array<Record<string, unknown>>
+    policies: RetentionPolicyListEntry[]
     nextToken?: string | undefined
   }> {
     return this.retention.getRetentionPolicies()
@@ -115,7 +140,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param roomId 房间 ID。
    * @returns 保留策略信息，不存在时返回 null。
    */
-  async getRetentionPolicy(roomId: string): Promise<Record<string, unknown> | null> {
+  async getRetentionPolicy(roomId: string): Promise<RoomRetentionPolicy | null> {
     return this.retention.getRetentionPolicy(roomId)
   }
 
@@ -140,7 +165,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * 获取保留任务运行状态。
    * @returns 保留任务状态信息。
    */
-  async getRetentionStatus(): Promise<Record<string, unknown>> {
+  async getRetentionStatus(): Promise<RetentionStatusResponse> {
     return this.retention.getRetentionStatus()
   }
 
@@ -167,7 +192,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param eventId 事件 ID。
    * @returns 审计事件信息，不存在时返回 null。
    */
-  async getAuditEvent(eventId: string): Promise<Record<string, unknown> | null> {
+  async getAuditEvent(eventId: string): Promise<AdminAuditLogEntry | null> {
     return this.security.getAuditEvent(eventId)
   }
 
@@ -183,7 +208,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   async getSamlMappings(
     limit = DEFAULT_PAGE_LIMIT,
     from?: string
-  ): Promise<{ mappings: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  ): Promise<{ mappings: SamlMapping[]; nextToken?: string | undefined }> {
     return this.security.getSamlMappings(limit, from)
   }
 
@@ -192,7 +217,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param nameId SAML nameId。
    * @returns SAML 映射信息，不存在时返回 null。
    */
-  async getSamlMapping(nameId: string): Promise<Record<string, unknown> | null> {
+  async getSamlMapping(nameId: string): Promise<SamlMapping | null> {
     return this.security.getSamlMapping(nameId)
   }
 
@@ -201,7 +226,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param nameId SAML nameId。
    * @param updates 更新字段。
    */
-  async updateSamlMapping(nameId: string, updates: Record<string, unknown>): Promise<void> {
+  async updateSamlMapping(nameId: string, updates: Partial<SamlMapping>): Promise<void> {
     return this.security.updateSamlMapping(nameId, updates)
   }
 
@@ -226,7 +251,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param userId 用户 ID。
    * @returns 通知设置，不存在时返回 null。
    */
-  async getUserNotificationSettings(userId: string): Promise<Record<string, unknown> | null> {
+  async getUserNotificationSettings(userId: string): Promise<UserNotificationSettingsResponse | null> {
     return this.notifications.getUserNotificationSettings(userId)
   }
 
@@ -235,7 +260,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param userId 用户 ID。
    * @param settings 通知设置。
    */
-  async setUserNotificationSettings(userId: string, settings: Record<string, unknown>): Promise<void> {
+  async setUserNotificationSettings(userId: string, settings: UserNotificationSettingsPayload): Promise<void> {
     return this.notifications.setUserNotificationSettings(userId, settings)
   }
 
@@ -244,7 +269,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param userId 用户 ID。
    * @returns pusher 列表。
    */
-  async getUserPushers(userId: string): Promise<Array<Record<string, unknown>>> {
+  async getUserPushers(userId: string): Promise<AdminUserPusher[]> {
     return this.notifications.getUserPushers(userId)
   }
 
@@ -261,7 +286,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   async getApplicationServices(
     limit = DEFAULT_PAGE_LIMIT,
     from?: string
-  ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  ): Promise<{ services: ApplicationServiceResponse[]; nextToken?: string | undefined }> {
     return this.applications.getApplicationServices(limit, from)
   }
 
@@ -271,7 +296,10 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param config 应用服务配置。
    * @returns 注册结果。
    */
-  async registerApplicationService(asToken: string, config: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async registerApplicationService(
+    asToken: string,
+    config: ApplicationServiceConfig
+  ): Promise<ApplicationServiceResponse> {
     return this.applications.registerApplicationService(asToken, config)
   }
 
@@ -280,7 +308,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param serviceId 应用服务 ID。
    * @returns 应用服务信息，不存在时返回 null。
    */
-  async getApplicationService(serviceId: string): Promise<Record<string, unknown> | null> {
+  async getApplicationService(serviceId: string): Promise<ApplicationServiceResponse | null> {
     return this.applications.getApplicationService(serviceId)
   }
 
@@ -289,7 +317,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param serviceId 应用服务 ID。
    * @param config 新配置。
    */
-  async updateApplicationService(serviceId: string, config: Record<string, unknown>): Promise<void> {
+  async updateApplicationService(serviceId: string, config: ApplicationServiceConfig): Promise<void> {
     return this.applications.updateApplicationService(serviceId, config)
   }
 
@@ -314,15 +342,15 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * 获取服务器管理员信息（委托给 getServerInfo()）。
    * @returns 管理员信息，不存在时返回 null。
    */
-  async getAdminInfo(): Promise<Record<string, unknown> | null> {
+  async getAdminInfo(): Promise<AdminInfo | null> {
     return this.server.getAdminInfo()
   }
 
   async getSecurityEvents(
     limit = LARGE_PAGE_LIMIT,
     from?: string,
-    filters?: Record<string, unknown>
-  ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string | undefined } | null> {
+    filters?: SecurityEventQuery
+  ): Promise<AdminSecurityEventsPage | null> {
     return this.security.getSecurityEvents(limit, from, filters)
   }
 
@@ -330,14 +358,14 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * 获取 IP 封禁列表。
    * @returns 封禁条目列表，不存在时返回 null。
    */
-  async getIpBlocks(): Promise<Array<Record<string, unknown>> | null> {
+  async getIpBlocks(): Promise<AdminIpBlock[] | null> {
     return this.security.getIpBlocks()
   }
 
   async blockIp(
     ip: string,
     options?: { cidr?: number; expireAt?: number; reason?: string }
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<AdminIpBlock | null> {
     return this.security.blockIp(ip, options)
   }
 
@@ -354,14 +382,14 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param ip 目标 IP。
    * @returns IP 声誉信息，不存在时返回 null。
    */
-  async getIpReputation(ip: string): Promise<Record<string, unknown> | null> {
+  async getIpReputation(ip: string): Promise<AdminIpReputation | null> {
     return this.security.getIpReputation(ip)
   }
 
   async getServerLogs(
     level?: 'debug' | 'info' | 'warn' | 'error',
     limit = LARGE_PAGE_LIMIT
-  ): Promise<Array<Record<string, unknown>> | null> {
+  ): Promise<AdminServerLogEntry[] | null> {
     return this.server.getServerLogs(level, limit)
   }
 }

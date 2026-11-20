@@ -99,7 +99,7 @@ describe('MatrixNotificationService', () => {
         ruleId: 'test-rule',
         kind: 'override' as const,
         roomId: '!room:id',
-        conditions: {},
+        conditions: [],
         actions: ['notify'],
         enabled: true
       }
@@ -982,7 +982,7 @@ describe('MatrixNotificationService', () => {
         ruleId: 'test-rule',
         kind: 'override' as const,
         roomId: '!room:id',
-        conditions: {},
+        conditions: [],
         actions: ['notify'],
         enabled: true
       }

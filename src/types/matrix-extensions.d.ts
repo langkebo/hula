@@ -5,6 +5,22 @@
  */
 
 import type { ICreatePushRuleRequest, IPusher, IPusherRequest, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
+import type {
+  KeyBackupBatchRecoverResult,
+  KeyBackupExportResult,
+  KeyBackupImportResult,
+  KeyBackupPutRoomKeysBody,
+  KeyBackupPutRoomSessionsBody,
+  KeyBackupRecoveryProgress,
+  KeyBackupRoomKeyBackup,
+  KeyBackupVerifyResult,
+  KeyBackupVersionInfo,
+  RecoverKeysResult,
+  RecoverRoomKeysResult,
+  RecoverSessionKeyResult,
+  RoomSessions,
+  SessionData
+} from '../services/matrix/sdk'
 
 // ============================================
 // Crypto API 扩展
@@ -126,7 +142,7 @@ export interface CryptoApi {
   exportRoomKeys(opts?: Record<string, unknown>): Promise<Array<Record<string, unknown>>>
   importRoomKeys(keys: Array<Record<string, unknown>>, opts?: Record<string, unknown>): Promise<void>
   /** SDK 真身签名：接收 userId 数组，返回 DeviceMap（不是单个 userId + timeout） */
-  getUserDeviceInfo(userIds: string[], downloadUncached?: boolean): Promise<Record<string, unknown>>
+  getUserDeviceInfo(userIds: string[], downloadUncached?: boolean): Promise<Map<string, Map<string, Device>>>
   setDeviceVerified(userId: string, deviceId: string, verified?: boolean): Promise<void>
   createRecoveryKeyFromPassphrase(password?: string): Promise<GeneratedSecretStorageKey>
 }
@@ -140,13 +156,8 @@ export interface KeyBackupRestoreResult {
   imported: number
 }
 
-export interface KeyBackupInfo {
-  algorithm: string
-  auth_data: Record<string, unknown>
-  count?: number
-  etag?: string
-  version?: string
-}
+/** 备份版本概要（派生自 SDK `BackupVersionInfo`；auth_data 随算法变化，见该契约） */
+export type KeyBackupInfo = KeyBackupVersionInfo
 
 // ============================================
 // Device Manager 扩展
@@ -210,72 +221,30 @@ export interface AuthDict {
 // ============================================
 // Key Backup 扩展
 // ============================================
+//
+// 以下数据类型全部派生自 vendored matrix-js-sdk 的 `key-backup` 契约，
+// 不再手写镜像结构：手写副本一旦与 SDK 漂移，就会在运行时静默丢字段或错判类型。
 
-export interface BackupInfo {
-  version: string
-  algorithm: string
-  auth_data: Record<string, unknown>
-  count?: number
-  etag?: string
-}
+/** 备份版本详情（含 count/etag） */
+export type BackupInfo = KeyBackupVersionInfo
 
-export interface RoomKeyBackup {
-  rooms: Record<
-    string,
-    {
-      sessions: Record<
-        string,
-        {
-          first_message_index: number
-          forwarded_count: number
-          is_verified: boolean
-          session_data: Record<string, unknown>
-        }
-      >
-    }
-  >
-  etag?: string
-}
+/** 全量房间会话备份载荷（rooms → sessions → session_data 三层均为 SDK 契约） */
+export type RoomKeyBackup = KeyBackupRoomKeyBackup
 
-export interface RecoveryProgress {
-  user_id: string
-  version: string
-  total_keys: number
-  recovered_keys: number
-  status: string
-  started_ts: number
-  updated_ts: number
-}
+/** 备份恢复进度 */
+export type RecoveryProgress = KeyBackupRecoveryProgress
 
-export interface BatchRecoverResult {
-  rooms: Record<string, unknown>
-  total_sessions: number
-  has_more: boolean
-  next_batch?: string
-}
+/** 批量恢复结果 */
+export type BatchRecoverResult = KeyBackupBatchRecoverResult
 
-export interface ExportResult {
-  room_keys: Array<{
-    room_id: string
-    session_id: string
-    session_data: Record<string, unknown>
-  }>
-  version: string
-}
+/** 导出结果（room_keys 条目含 room_id / session_id / session_data） */
+export type ExportResult = KeyBackupExportResult
 
-export interface ImportResult {
-  count: number
-  failed: number
-  total: number
-}
+/** 导入结果 */
+export type ImportResult = KeyBackupImportResult
 
-export interface VerifyResult {
-  valid: boolean
-  algorithm: string
-  auth_data: Record<string, unknown>
-  key_count: number
-  signatures?: Record<string, unknown>
-}
+/** 校验结果（auth_data 为算法联合，signatures 为设备签名映射） */
+export type VerifyResult = KeyBackupVerifyResult
 
 export interface KeyBackupManager {
   checkKeyBackup(): Promise<BackupInfo | null>
@@ -289,29 +258,33 @@ export interface KeyBackupManager {
   getLatestBackupVersion(forceRefresh?: boolean): Promise<BackupInfo>
   getBackupVersion(version: string, forceRefresh?: boolean): Promise<BackupInfo>
   /** SDK 真身签名：只有两个参数，auth_data 为 AuthData | Aes256AuthData 联合 */
-  createBackupVersion(algorithm?: string, authData?: Record<string, unknown>): Promise<{ version: string }>
-  updateBackupVersion(version: string, authData: Record<string, unknown>): Promise<{ version: string }>
+  createBackupVersion(algorithm?: string, authData?: BackupInfo['auth_data']): Promise<{ version: string }>
+  updateBackupVersion(version: string, authData: BackupInfo['auth_data']): Promise<{ version: string }>
   deleteBackupVersion(version: string): Promise<{ deleted: boolean; version: string }>
   getAllRoomKeys(version: string): Promise<RoomKeyBackup>
-  putAllRoomKeys(version: string, body: Record<string, unknown>): Promise<{ count: number; etag: string }>
-  getRoomKeys(version: string, roomId: string): Promise<Record<string, unknown>>
-  putRoomKeys(version: string, roomId: string, body: Record<string, unknown>): Promise<{ count: number; etag: string }>
+  putAllRoomKeys(version: string, body: KeyBackupPutRoomKeysBody): Promise<{ count: number; etag: string }>
+  getRoomKeys(version: string, roomId: string): Promise<RoomSessions>
+  putRoomKeys(
+    version: string,
+    roomId: string,
+    body: KeyBackupPutRoomSessionsBody
+  ): Promise<{ count: number; etag: string }>
   deleteAllRoomKeys(version: string): Promise<{ count: number; etag: string }>
   deleteRoomKeys(version: string, roomId: string): Promise<{ count: number; etag: string }>
-  getSessionKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>>
+  getSessionKey(version: string, roomId: string, sessionId: string): Promise<SessionData['session_data']>
   putSessionKey(
     version: string,
     roomId: string,
     sessionId: string,
-    sessionData: Record<string, unknown>
+    sessionData: SessionData['session_data']
   ): Promise<{ count: number; etag: string }>
   deleteSessionKey(version: string, roomId: string, sessionId: string): Promise<{ count: number; etag: string }>
-  recoverKeys(version: string, rooms?: string[]): Promise<Record<string, unknown>>
+  recoverKeys(version: string, rooms?: string[]): Promise<RecoverKeysResult>
   getRecoveryProgress(version: string): Promise<RecoveryProgress>
   verifyBackup(version: string): Promise<VerifyResult>
   batchRecover(version: string, roomIds: string[], sessionLimit?: number): Promise<BatchRecoverResult>
-  recoverRoomKeys(version: string, roomId: string): Promise<Record<string, unknown>>
-  recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<Record<string, unknown>>
+  recoverRoomKeys(version: string, roomId: string): Promise<RecoverRoomKeysResult>
+  recoverSessionKey(version: string, roomId: string, sessionId: string): Promise<RecoverSessionKeyResult>
   exportKeys(version?: string): Promise<ExportResult>
   importKeys(roomKeys: Array<Record<string, unknown>>, version?: string): Promise<ImportResult>
 }

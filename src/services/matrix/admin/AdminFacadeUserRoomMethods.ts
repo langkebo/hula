@@ -1,6 +1,7 @@
 import { LARGE_PAGE_LIMIT } from '@/common/constants'
 import { AdminFacadeTrustSafetyMethods } from './AdminFacadeTrustSafetyMethods'
 import type {
+  AdminWhoisInfo,
   FederationBlacklistEntry,
   FederationDestination,
   RateLimit,
@@ -102,7 +103,7 @@ export abstract class AdminFacadeUserRoomMethods extends AdminFacadeTrustSafetyM
     return this.users.getShadowBanStatus(userId)
   }
 
-  async getWhois(userId: string): Promise<Record<string, unknown> | null> {
+  async getWhois(userId: string): Promise<AdminWhoisInfo | null> {
     return this.users.getWhois(userId)
   }
 

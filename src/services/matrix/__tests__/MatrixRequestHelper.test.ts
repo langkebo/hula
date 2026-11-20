@@ -17,6 +17,7 @@ import {
   safePost,
   safePut
 } from '../MatrixRequestHelper'
+import { makeAuthedGetResponse } from './fixtures/authedRequest'
 
 describe('createMatrixTransportError', () => {
   it('normalizes 404 + M_NOT_FOUND without collapsing to a bare HTTP text', () => {
@@ -137,7 +138,7 @@ describe('safe request helpers', () => {
   })
 
   it('safeGet issues a GET through the SDK auth channel', async () => {
-    authedRequest.mockResolvedValueOnce({ ok: true })
+    authedRequest.mockResolvedValueOnce(makeAuthedGetResponse())
 
     await expect(safeGet<{ ok: boolean }>('/p', { a: '1' })).resolves.toEqual({ ok: true })
     expect(authedRequest).toHaveBeenCalledWith('GET', '/p', { a: '1' })

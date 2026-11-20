@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminNotificationService } from '../NotificationService'
+import { makeUserPusher, makeUserPushersResponse } from './fixtures/notification'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -24,8 +25,9 @@ describe('AdminNotificationService', () => {
   })
 
   it('getUserPushers 出错时降级为空数组', async () => {
-    admin.getUserPushers.mockResolvedValueOnce({ pushers: [{ pushkey: 'pk1' }] })
-    await expect(service.getUserPushers('@u:hs')).resolves.toEqual([{ pushkey: 'pk1' }])
+    const pushers = [makeUserPusher({ pushkey: 'pk1' })]
+    admin.getUserPushers.mockResolvedValueOnce(makeUserPushersResponse(pushers))
+    await expect(service.getUserPushers('@u:hs')).resolves.toEqual(pushers)
 
     admin.getUserPushers.mockRejectedValueOnce(new Error('boom'))
     await expect(service.getUserPushers('@u:hs')).resolves.toEqual([])

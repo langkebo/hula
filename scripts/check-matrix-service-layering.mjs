@@ -20,7 +20,9 @@
  *   L2 token 副本禁令 —— durable copy 计数不得增长（目标 0，逐批清理后 --update 收紧）；
  *   L3 运行时依赖环数 —— Tarjan SCC，含环分量数不得增长；
  *   L4 运行时最长依赖链 —— 深度不得增长；
- *   L5 store 边界 —— 服务层不得 import Pinia store（S7 回归守卫，白名单外即红）。
+ *   L5 store 边界 —— 服务层不得 import Pinia store（S7 回归守卫，白名单外即红）；
+ *   L6 逻辑服务数 —— `*Service.ts` 视为服务根，被它 import 的实现模块（`*Methods` /
+ *      helpers / types 等拆分产物）归入该根、不单独计数；只锁「服务域」不增长。
  *
  * ⚠️ 口径（易误判，务必遵守）：
  *   - **只量运行时边**：`import type` / `export type` 整条语句被剔除。
@@ -40,7 +42,7 @@
  *
  * Exit codes:
  *   0  通过
- *   1  发现违规（新增 token 读取点 / 副本增加 / 环增加 / 链变深 / 文件数增长）
+ *   1  发现违规（新增 token 读取点 / 副本增加 / 环增加 / 链变深 / 逻辑服务数增长）
  *   2  环境或自检异常（目录缺失、扫到文件数不足 —— 基数断言）
  */
 
@@ -344,6 +346,46 @@ export function longestChain(graph) {
 }
 
 /**
+ * 服务根判定：`*Service.ts` 是「服务域」的入口文件。
+ * 例如 `room/MatrixRoomService.ts`、`admin/AdminFacadeService.ts`。
+ */
+const SERVICE_ROOT_PATTERN = /(?:^|\/)[A-Za-z0-9_]+Service\.ts$/
+
+/**
+ * L6 逻辑服务数 —— 与「物理文件数」解耦。
+ *
+ * 规则：以 `*Service.ts` 为根，沿运行时 import 边把其实现模块
+ * （`*Methods` mixin、helpers、types 等）收进同一个逻辑服务；这些拆分产物不单独计数。
+ * 于是 `check:file-size`（400 行）逼出的拆分不会再撞 `matrix-layering` 的棘轮，
+ * 而新增服务域（多一个 `*Service.ts`，或多一个无人引用的孤立模块）仍会被拦住。
+ *
+ * 已知边界：不以 `*Service.ts` 命名的独立家族（如 `MatrixCryptoStateTracker.ts`
+ * 及其 `Core` / `Init` 拆分）按文件计数 —— 宁可多计，也不误放新服务域。
+ *
+ * @param {Array<{path: string}>} files
+ * @param {Map<string, Set<string>>} graph 运行时 import 边
+ */
+export function countLogicalServices(files, graph) {
+  const roots = files.filter((f) => SERVICE_ROOT_PATTERN.test(f.path)).map((f) => f.path)
+  const owned = new Set(roots)
+  for (const root of roots) {
+    const queue = [...(graph.get(root) ?? [])]
+    while (queue.length > 0) {
+      const current = queue.pop()
+      if (owned.has(current)) continue
+      owned.add(current)
+      queue.push(...(graph.get(current) ?? []))
+    }
+  }
+  const orphanModules = files.filter((f) => !owned.has(f.path)).length
+  return {
+    logical_services: roots.length + orphanModules,
+    service_roots: roots.length,
+    orphan_modules: orphanModules
+  }
+}
+
+/**
  * 纯函数判据 —— 无 I/O，便于单测。
  *
  * @param {Array<{path: string, content: string}>} files 扫描范围内的文件
@@ -354,6 +396,7 @@ export function scan(files, baseline, extraFiles = []) {
   const graph = buildRuntimeGraph(files)
   const cycles = findCycles(graph)
   const chain = longestChain(graph)
+  const logical = countLogicalServices(files, graph)
 
   const readSites = {}
   for (const file of files) {
@@ -433,14 +476,15 @@ export function scan(files, baseline, extraFiles = []) {
     })
   }
 
-  // 文件数：只锁不增长
-  const baselineFiles = baseline.counters?.service_files ?? 0
-  if (files.length > baselineFiles) {
+  // L6 逻辑服务数：只锁不增长。
+  // 兼容旧基线：旧快照只有物理 service_files，此时退化为按物理文件数比较。
+  const baselineLogical = baseline.counters?.logical_services ?? baseline.counters?.service_files ?? 0
+  if (logical.logical_services > baselineLogical) {
     violations.push({
-      kind: 'service-file-growth',
+      kind: 'logical-service-growth',
       path: SERVICE_DIR,
-      detail: `非测试 .ts ${files.length} 个 > 基线 ${baselineFiles} 个`,
-      why: '本层文件数是边界守护锚定的设计结果，不设下降目标，但不得继续增长；新服务请按域落位'
+      detail: `逻辑服务 ${logical.logical_services} 个 > 基线 ${baselineLogical} 个（服务根 ${logical.service_roots}，孤立模块 ${logical.orphan_modules}；物理文件 ${files.length} 个不计入门禁）`,
+      why: '新增服务域：本层按「服务根 + 无人引用的孤立模块」计数，拆分既有服务（mixin / helpers）不计增长；新服务请按域落位并评估是否复用既有服务'
     })
   }
 
@@ -466,7 +510,11 @@ export function scan(files, baseline, extraFiles = []) {
     ok: violations.length === 0,
     checkedFiles: files.length,
     counters: {
+      // 物理文件数仅作观测；门禁看 logical_services（见 L6）
       service_files: files.length,
+      logical_services: logical.logical_services,
+      service_roots: logical.service_roots,
+      orphan_modules: logical.orphan_modules,
       runtime_edges: [...graph.values()].reduce((sum, set) => sum + set.size, 0),
       runtime_cycles: cycles.length,
       runtime_max_depth: chain.depth,
@@ -486,11 +534,14 @@ export function scan(files, baseline, extraFiles = []) {
 export function buildBaseline(result) {
   return {
     comment:
-      'AR-07b 分层与 token 收口棘轮。数值只可收紧不可放宽；清理后运行 `node scripts/check-matrix-service-layering.mjs --update`。',
+      'AR-07b 分层与 token 收口棘轮。数值只可收紧不可放宽；清理后运行 `node scripts/check-matrix-service-layering.mjs --update`。L6 按 logical_services（服务根 + 孤立模块）计数，service_files 仅观测。',
     updated_at: new Date().toISOString(),
     scope: `${SERVICE_DIR}/** 非测试 .ts（运行时 import 边，不含 import type）`,
     counters: {
       service_files: result.counters.service_files,
+      logical_services: result.counters.logical_services,
+      service_roots: result.counters.service_roots,
+      orphan_modules: result.counters.orphan_modules,
       runtime_edges: result.counters.runtime_edges,
       runtime_cycles: result.counters.runtime_cycles,
       runtime_max_depth: result.counters.runtime_max_depth,
@@ -559,7 +610,7 @@ async function main() {
     fs.writeFileSync(path.join(projectRoot, BASELINE_PATH), `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8')
     console.log(`[matrix-layering] baseline 已更新 → ${BASELINE_PATH}`)
     console.log(
-      `  文件 ${snapshot.counters.service_files} · 边 ${snapshot.counters.runtime_edges} · 环 ${snapshot.counters.runtime_cycles} · 最长链 ${snapshot.counters.runtime_max_depth} · 副本 ${snapshot.counters.token_copies}`
+      `  逻辑服务 ${snapshot.counters.logical_services}（服务根 ${snapshot.counters.service_roots} + 孤立模块 ${snapshot.counters.orphan_modules}） · 物理文件 ${snapshot.counters.service_files} · 边 ${snapshot.counters.runtime_edges} · 环 ${snapshot.counters.runtime_cycles} · 最长链 ${snapshot.counters.runtime_max_depth} · 副本 ${snapshot.counters.token_copies}`
     )
     const sites = Object.entries(snapshot.token_read_sites)
     console.log(`  token 读取文件 ${sites.length} 个：`)
@@ -598,7 +649,7 @@ async function main() {
   const c = result.counters
   if (result.ok) {
     console.log(
-      `[matrix-layering] OK — 文件 ${c.service_files} · 运行时边 ${c.runtime_edges} · 环 ${c.runtime_cycles} · 最长链 ${c.runtime_max_depth} 层 · token 读取 ${c.token_read_sites} 处/副本 ${c.token_copies} 份`
+      `[matrix-layering] OK — 逻辑服务 ${c.logical_services}（服务根 ${c.service_roots} + 孤立 ${c.orphan_modules}） · 物理文件 ${c.service_files} · 运行时边 ${c.runtime_edges} · 环 ${c.runtime_cycles} · 最长链 ${c.runtime_max_depth} 层 · token 读取 ${c.token_read_sites} 处/副本 ${c.token_copies} 份`
     )
   } else {
     console.error('[matrix-layering] FAIL — AR-07b 分层或 token 收口回退：')

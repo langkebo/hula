@@ -151,6 +151,7 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
 
 import { type Options, sendNotification } from '@tauri-apps/plugin-notification'
 import { useI18nGlobal } from '@/services/i18n'
+import { makePagedRoomMessages } from '@/services/matrix/__tests__/fixtures/pagedRoomMessages'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import {
@@ -647,11 +648,7 @@ describe('ChatMessageStore', () => {
       hasLoadedOnce: true,
       liveFailed: { scope: 'live', reason: 'boom', category: 'unknown' }
     }
-    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
-      messages: [],
-      isLast: true,
-      cursor: ''
-    } as never)
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce(makePagedRoomMessages())
 
     await store.fetchCurrentRoomRemoteOnce()
 
@@ -667,11 +664,9 @@ describe('ChatMessageStore', () => {
       hasLoadedOnce: true,
       liveFailed: { scope: 'live', reason: 'boom', category: 'unknown' }
     }
-    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
-      messages: [],
-      isLast: false,
-      cursor: 'cursor-21'
-    } as never)
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce(
+      makePagedRoomMessages({ isLast: false, cursor: 'cursor-21' })
+    )
 
     await store.loadMore()
 
@@ -765,11 +760,9 @@ describe('ChatMessageStore', () => {
       hasLoadedOnce: true,
       loadFailed: { scope: 'initial', reason: 'network down', category: 'network' }
     }
-    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
-      messages: [],
-      isLast: false,
-      cursor: 'cursor-1'
-    } as never)
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce(
+      makePagedRoomMessages({ isLast: false, cursor: 'cursor-1' })
+    )
 
     await store.loadMore()
 
@@ -782,7 +775,7 @@ describe('ChatMessageStore', () => {
 
     // 先让 room-2 成功加载一页，留下游标 cursor-b
     globalStoreMock.currentSessionRoomId = 'room-2'
-    paged.mockResolvedValueOnce({ messages: [], isLast: false, cursor: 'cursor-b' } as never)
+    paged.mockResolvedValueOnce(makePagedRoomMessages({ isLast: false, cursor: 'cursor-b' }))
     await store.changeRoom()
     expect(store.currentMessageOptions.cursor).toBe('cursor-b')
     sessionStoreMock.markSessionRead.mockClear()

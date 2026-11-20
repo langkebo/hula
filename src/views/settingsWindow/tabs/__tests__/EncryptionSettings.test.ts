@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeKeyRotationStatus } from '@/services/matrix/crypto/__tests__/fixtures/encryption'
 import EncryptionSettings from '../EncryptionSettings.vue'
 import KeyBackupSection from '../sections/KeyBackupSection.vue'
 
@@ -720,7 +721,7 @@ describe('EncryptionSettings', () => {
   })
 
   it('在轮换弹窗更新后刷新轮换状态', async () => {
-    getKeyRotationStatusMock.mockResolvedValueOnce({ enabled: true, intervalMs: 1, needsRotation: false })
+    getKeyRotationStatusMock.mockResolvedValueOnce(makeKeyRotationStatus({ intervalMs: 1 }))
 
     const wrapper = mountComponent()
     await flushPromises()

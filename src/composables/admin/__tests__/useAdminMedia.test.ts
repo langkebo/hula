@@ -25,6 +25,15 @@ vi.mock('@/services/matrix/admin', () => ({
   }
 }))
 
+import {
+  GlobalMediaQuarantineChangeFixture,
+  GlobalMediaQuarantineChangesResponseFixture,
+  MediaQuarantineChangeFixture,
+  MediaQuarantineChangesResponseFixture,
+  RoomMediaItemFixture,
+  RoomMediaPageFixture,
+  UserMediaListFixture
+} from '@/services/matrix/__tests__/fixtures/generated'
 import { adminService } from '@/services/matrix/admin'
 import { makeMediaListPage, mediaInfoFixture } from '@/services/matrix/admin/__tests__/fixtures/media'
 import { useAdminMedia } from '../useAdminMedia'
@@ -50,25 +59,8 @@ describe('useAdminMedia', () => {
 
   it('loadMoreLibrary 携带游标追加并刷新游标', async () => {
     vi.mocked(adminService.getMediaList)
-      .mockResolvedValueOnce({
-        media: [
-          {
-            mediaId: 'm1',
-            mediaType: 'image/png',
-            createdAt: 1
-          }
-        ],
-        nextToken: 'cursor-2'
-      })
-      .mockResolvedValueOnce({
-        media: [
-          {
-            mediaId: 'm2',
-            mediaType: 'video/mp4',
-            createdAt: 2
-          }
-        ]
-      })
+      .mockResolvedValueOnce(makeMediaListPage([{ mediaId: 'm1', mediaType: 'image/png', createdAt: 1 }], 'cursor-2'))
+      .mockResolvedValueOnce(makeMediaListPage([{ mediaId: 'm2', mediaType: 'video/mp4', createdAt: 2 }]))
 
     const c = useAdminMedia()
     await c.loadLibrary()
@@ -134,7 +126,7 @@ describe('useAdminMedia', () => {
   })
 
   it('closeMediaDetail 清空详情', async () => {
-    vi.mocked(adminService.getMediaInfo).mockResolvedValueOnce({ media_id: 'm1' })
+    vi.mocked(adminService.getMediaInfo).mockResolvedValueOnce(mediaInfoFixture)
 
     const c = useAdminMedia()
     await c.openMediaDetail('m1')
@@ -146,12 +138,14 @@ describe('useAdminMedia', () => {
   it('loadQuarantineChanges 使用数值游标翻页', async () => {
     vi.mocked(adminService.getGlobalQuarantineChanges)
       .mockResolvedValueOnce({
+        ...GlobalMediaQuarantineChangesResponseFixture,
         next_batch: 42,
-        changes: [{ origin: 'a.example', media_id: 'm1', quarantined: true }]
+        changes: [{ ...GlobalMediaQuarantineChangeFixture, origin: 'a.example', media_id: 'm1', quarantined: true }]
       })
       .mockResolvedValueOnce({
+        ...GlobalMediaQuarantineChangesResponseFixture,
         next_batch: 43,
-        changes: [{ origin: 'a.example', media_id: 'm2', quarantined: false }]
+        changes: [{ ...GlobalMediaQuarantineChangeFixture, origin: 'a.example', media_id: 'm2', quarantined: false }]
       })
 
     const c = useAdminMedia()
@@ -180,10 +174,12 @@ describe('useAdminMedia', () => {
   it('loadMoreQuarantineChanges 本页为空时停止且不再发请求', async () => {
     vi.mocked(adminService.getGlobalQuarantineChanges)
       .mockResolvedValueOnce({
+        ...GlobalMediaQuarantineChangesResponseFixture,
         next_batch: 42,
-        changes: [{ origin: 'a.example', media_id: 'm1', quarantined: true }]
+        changes: [{ ...GlobalMediaQuarantineChangeFixture, origin: 'a.example', media_id: 'm1', quarantined: true }]
       })
       .mockResolvedValueOnce({
+        ...GlobalMediaQuarantineChangesResponseFixture,
         next_batch: 42,
         changes: []
       })
@@ -203,12 +199,14 @@ describe('useAdminMedia', () => {
   it('loadMoreQuarantineChanges 游标未前进时不重复追加且停止翻页', async () => {
     vi.mocked(adminService.getGlobalQuarantineChanges)
       .mockResolvedValueOnce({
+        ...GlobalMediaQuarantineChangesResponseFixture,
         next_batch: 42,
-        changes: [{ origin: 'a.example', media_id: 'm1', quarantined: true }]
+        changes: [{ ...GlobalMediaQuarantineChangeFixture, origin: 'a.example', media_id: 'm1', quarantined: true }]
       })
       .mockResolvedValueOnce({
+        ...GlobalMediaQuarantineChangesResponseFixture,
         next_batch: 42,
-        changes: [{ origin: 'a.example', media_id: 'm1', quarantined: true }]
+        changes: [{ ...GlobalMediaQuarantineChangeFixture, origin: 'a.example', media_id: 'm1', quarantined: true }]
       })
 
     const c = useAdminMedia()
@@ -225,8 +223,10 @@ describe('useAdminMedia', () => {
 
   it('loadMediaQuarantineHistory 返回变更列表，失败时为[]', async () => {
     vi.mocked(adminService.getMediaQuarantineChanges).mockResolvedValueOnce({
+      ...MediaQuarantineChangesResponseFixture,
       changes: [
         {
+          ...MediaQuarantineChangeFixture,
           stream_id: 1,
           media_id: 'm1',
           server_name: 'a.example',
@@ -248,8 +248,10 @@ describe('useAdminMedia', () => {
   it('loadRoomMedia 记录房间与字符串游标并支持追加', async () => {
     vi.mocked(adminService.getRoomMedia)
       .mockResolvedValueOnce({
+        ...RoomMediaPageFixture,
         media: [
           {
+            ...RoomMediaItemFixture,
             media_id: 'm1',
             media_type: 'image/png',
             upload_name: 'a.png',
@@ -261,8 +263,10 @@ describe('useAdminMedia', () => {
         next_batch: 'room-cursor-2'
       })
       .mockResolvedValueOnce({
+        ...RoomMediaPageFixture,
         media: [
           {
+            ...RoomMediaItemFixture,
             media_id: 'm2',
             media_type: 'image/png',
             upload_name: 'b.png',
@@ -295,7 +299,8 @@ describe('useAdminMedia', () => {
 
   it('loadUserMedia 写入用户媒体，失败时清空', async () => {
     vi.mocked(adminService.getUserMedia).mockResolvedValueOnce({
-      media: [{ media_id: 'm1' }],
+      ...UserMediaListFixture,
+      media: [{ ...mediaInfoFixture, media_id: 'm1' }],
       total: 1
     })
 
@@ -334,7 +339,7 @@ describe('useAdminMedia', () => {
   })
 
   it('deleteByPolicy 返回删除条数，服务层为 null 时抛出且复位 mutating', async () => {
-    vi.mocked(adminService.deleteMediaByPolicy).mockResolvedValueOnce({ deleted: 5 })
+    vi.mocked(adminService.deleteMediaByPolicy).mockResolvedValueOnce({ deleted: 5 }) // fixture-literal-ok: 返回体是 SDK 匿名 `{deleted}`，由 vi.mocked 类型签名逐键约束
 
     const c = useAdminMedia()
     await expect(c.deleteByPolicy({ beforeTs: 1234 })).resolves.toBe(5)

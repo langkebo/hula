@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeVoiceStats } from '@/services/matrix/media/__tests__/fixtures/voiceStats'
 import RoomVoiceStatsPanel from '../RoomVoiceStatsPanel.vue'
 
 const { getRoomVoiceStatsMock } = vi.hoisted(() => ({ getRoomVoiceStatsMock: vi.fn() }))
@@ -59,7 +60,7 @@ describe('RoomVoiceStatsPanel — VEN-01 房间语音统计', () => {
   it('失败后点击重试可恢复数据', async () => {
     getRoomVoiceStatsMock
       .mockRejectedValueOnce(new Error('HTTP 500'))
-      .mockResolvedValueOnce({ totalMessages: 2, totalDuration: 61, averageDuration: 30 })
+      .mockResolvedValueOnce(makeVoiceStats({ totalMessages: 2, totalDuration: 61, averageDuration: 30 }))
 
     const wrapper = await mountPanel()
     expect(wrapper.find('[data-testid="room-voice-stats-error"]').exists()).toBe(true)

@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RoomEncryptedEventsPanel from '../RoomEncryptedEventsPanel.vue'
+import { makeEncryptedEventsOutcome, makeEncryptedRoomEvent } from './fixtures/roomPanels'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -95,9 +96,13 @@ describe('RoomEncryptedEventsPanel — P2-9 房间加密事件列表面板', () 
   })
 
   it('重试成功后恢复加密事件列表', async () => {
-    getEncryptedEventsMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({
-      events: [{ event_id: '$e1:hs', algorithm: 'm.megolm.v1.aes-sha2', session_id: 'sess1' }]
-    })
+    getEncryptedEventsMock
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(
+        makeEncryptedEventsOutcome([
+          makeEncryptedRoomEvent({ event_id: '$e1:hs', algorithm: 'm.megolm.v1.aes-sha2', session_id: 'sess1' })
+        ])
+      )
     const wrapper = await mountPanel()
 
     await wrapper.find('[data-testid="error-retry"]').trigger('click')

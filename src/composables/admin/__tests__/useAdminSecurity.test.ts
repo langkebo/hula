@@ -10,6 +10,7 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminService } from '@/services/matrix/admin'
+import { makeAuditLogEntry, makeAuditLogPage } from '@/services/matrix/admin/__tests__/fixtures/security'
 
 describe('useAdminSecurity', () => {
   beforeEach(() => {
@@ -17,10 +18,9 @@ describe('useAdminSecurity', () => {
   })
 
   it('loadAuditLogs populates logs ref', async () => {
-    vi.mocked(adminService.security.getAuditLog).mockResolvedValueOnce({
-      logs: [{ id: 'e1' }],
-      next_batch: 'tok1'
-    })
+    vi.mocked(adminService.security.getAuditLog).mockResolvedValueOnce(
+      makeAuditLogPage([makeAuditLogEntry({ event_id: 'e1' })], 'tok1')
+    )
     const c = useAdminSecurity()
     await c.loadAuditLogs()
     expect(c.auditLogs.value).toHaveLength(1)
@@ -36,11 +36,13 @@ describe('useAdminSecurity', () => {
 
   it('loadAuditLogs appends when from token is provided', async () => {
     const c = useAdminSecurity()
+    const first = makeAuditLogEntry({ event_id: 'e1' })
+    const second = makeAuditLogEntry({ event_id: 'e2' })
     vi.mocked(adminService.security.getAuditLog)
-      .mockResolvedValueOnce({ logs: [{ id: 'e1' }], next_batch: 'tok1' })
-      .mockResolvedValueOnce({ logs: [{ id: 'e2' }] })
+      .mockResolvedValueOnce(makeAuditLogPage([first], 'tok1'))
+      .mockResolvedValueOnce(makeAuditLogPage([second]))
     await c.loadAuditLogs()
     await c.loadAuditLogs(50, 'tok1')
-    expect(c.auditLogs.value).toEqual([{ id: 'e1' }, { id: 'e2' }])
+    expect(c.auditLogs.value).toEqual([first, second])
   })
 })

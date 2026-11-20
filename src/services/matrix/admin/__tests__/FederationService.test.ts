@@ -1,6 +1,16 @@
 import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminFederationService } from '../FederationService'
+import {
+  makeFederationBlacklistEntry,
+  makeFederationBlacklistPage,
+  makeFederationCache,
+  makeFederationCacheEntry,
+  makeFederationDestination,
+  makePartialFederationDestination,
+  makePendingFederationList,
+  makePendingFederationServer
+} from './fixtures/federation'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -36,28 +46,25 @@ describe('AdminFederationService', () => {
     // SDK `FederationDestination` 的时间戳键是 `last_successful_ts`
     // （`admin-federation-types.d.ts:40`），不存在 `last_successful_stream_ordering`。
     admin.getFederationDestinations.mockResolvedValueOnce([
-      {
-        destination: 'remote.hs',
-        retry_last_ts: 1,
-        retry_interval: 2,
-        failure_ts: 3,
-        last_successful_ts: 4
-      }
+      makeFederationDestination({ retry_last_ts: 1, retry_interval: 2, failure_ts: 3, last_successful_ts: 4 })
     ])
 
+    // 夹具按契约补齐 `failure_count` / `status`，映射后这两个键必然出现。
     await expect(service.getFederationDestinations()).resolves.toEqual([
       {
         destination: 'remote.hs',
         retryLastTs: 1,
         retryInterval: 2,
         failureTs: 3,
-        lastSuccessfulTs: 4
+        lastSuccessfulTs: 4,
+        failureCount: 0,
+        status: 'active'
       }
     ])
   })
 
   it('getFederationDestination 缺 destination 字段时用入参回填', async () => {
-    admin.getFederationDestination.mockResolvedValueOnce({ retry_last_ts: 9 })
+    admin.getFederationDestination.mockResolvedValueOnce(makePartialFederationDestination())
 
     const result = await service.getFederationDestination('fallback.hs')
     expect(result?.destination).toBe('fallback.hs')
@@ -71,11 +78,9 @@ describe('AdminFederationService', () => {
   it('getFederationBlacklist 委托 AdminManager 并映射 server_name→domain', async () => {
     // 后端/SDK 返回的是**响应壳** `{blacklist, total, next_batch}`（`admin-federation-types.d.ts:14-18`），
     // 条目字段是 `added_at`（不是 `added_ts`）。旧 mock 直接给了一个数组 + 错误的键名。
-    admin.getFederationBlacklist.mockResolvedValueOnce({
-      blacklist: [{ server_name: 'evil.hs', reason: 'spam', added_at: 100 }],
-      total: 1,
-      next_batch: null
-    })
+    admin.getFederationBlacklist.mockResolvedValueOnce(
+      makeFederationBlacklistPage({ blacklist: [makeFederationBlacklistEntry()], total: 1 })
+    )
 
     await expect(service.getFederationBlacklist()).resolves.toEqual([
       { domain: 'evil.hs', reason: 'spam', addedBy: undefined, addedAt: 100 }
@@ -103,8 +108,7 @@ describe('AdminFederationService', () => {
 
   it('getFederationDestinations 映射 failure_count/status/updated_ts', async () => {
     admin.getFederationDestinations.mockResolvedValueOnce([
-      {
-        destination: 'remote.hs',
+      makeFederationDestination({
         retry_last_ts: null,
         retry_interval: null,
         failure_ts: 3,
@@ -112,7 +116,7 @@ describe('AdminFederationService', () => {
         failure_count: 7,
         status: 'rejected',
         updated_ts: 5
-      }
+      })
     ])
 
     await expect(service.getFederationDestinations()).resolves.toEqual([
@@ -130,10 +134,9 @@ describe('AdminFederationService', () => {
   })
 
   it('getFederationCache 映射 cache 壳并在失败时降级为空页', async () => {
-    admin.getFederationCache.mockResolvedValueOnce({
-      cache: [{ key: 'k1', value: { a: 1 }, expiry_ts: 100 }],
-      total: 1
-    })
+    admin.getFederationCache.mockResolvedValueOnce(
+      makeFederationCache({ cache: [makeFederationCacheEntry({ value: { a: 1 }, expiry_ts: 100 })], total: 1 })
+    )
     await expect(service.getFederationCache()).resolves.toEqual({
       entries: [{ key: 'k1', value: { a: 1 }, expiryTs: 100 }],
       total: 1
@@ -160,21 +163,13 @@ describe('AdminFederationService', () => {
   })
 
   it('getPendingFederationServers 映射分页壳并在失败时降级为空页', async () => {
-    admin.getPendingFederationServers.mockResolvedValueOnce({
-      servers: [
-        {
-          server_name: 'pending.hs',
-          failure_count: 3,
-          last_failed_connect_at: 10,
-          last_successful_connect_at: null,
-          status: 'pending',
-          updated_ts: 11
-        }
-      ],
-      total: 1,
-      limit: 20,
-      next_batch: 'cursor'
-    })
+    admin.getPendingFederationServers.mockResolvedValueOnce(
+      makePendingFederationList({
+        servers: [makePendingFederationServer({ failure_count: 3, last_failed_connect_at: 10, updated_ts: 11 })],
+        total: 1,
+        next_batch: 'cursor'
+      })
+    )
 
     await expect(service.getPendingFederationServers(undefined, 20)).resolves.toEqual({
       servers: [

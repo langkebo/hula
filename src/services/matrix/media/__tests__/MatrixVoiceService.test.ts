@@ -2,6 +2,7 @@ import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
+import { makeRoomStub } from '@/services/matrix/__tests__/fixtures/room'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
 import matrixClientService from '../../MatrixClientService'
 import { registerVoipCapabilityResolver } from '../voipHelpers'
@@ -174,17 +175,7 @@ describe('MatrixVoiceService', () => {
   })
 
   it('should resolve playback urls from room event content', async () => {
-    mockClient.getRoom.mockReturnValueOnce({
-      findEventById: vi.fn(() => ({
-        getContent: () => ({
-          url: 'mxc://example.org/voice-file',
-          info: {
-            mimetype: 'audio/ogg',
-            size: 2048
-          }
-        })
-      }))
-    } as unknown as Room)
+    mockClient.getRoom.mockReturnValueOnce(makeRoomStub() as unknown as Room)
 
     // getVoice was removed in Phase 2.3; replaced by registerEncryptedVoice path.
     // This test now verifies getPlayableUrl only.

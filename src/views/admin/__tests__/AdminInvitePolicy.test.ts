@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminInvitePolicy from '../AdminInvitePolicy.vue'
+import { makeImportGlobalUsersResult } from './fixtures/invitePolicy'
 
 const { showFeedbackMock, composable } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
@@ -180,7 +181,7 @@ describe('AdminInvitePolicy', () => {
   })
 
   it('粘贴批量导入按行拆分并提示导入统计', async () => {
-    composable.importGlobalUsers.mockResolvedValueOnce({ success: 2, failed: 1 })
+    composable.importGlobalUsers.mockResolvedValueOnce(makeImportGlobalUsersResult(2, 1))
     const wrapper = mount(AdminInvitePolicy)
 
     await wrapper

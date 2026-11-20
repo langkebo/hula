@@ -20,6 +20,12 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminFederationService, adminService } from '@/services/matrix/admin'
+import {
+  makeFederationCacheEntry,
+  makeFederationCachePage,
+  makePendingFederationPage,
+  makePendingFederationServer
+} from './fixtures/admin'
 
 describe('useAdminFederation', () => {
   beforeEach(() => {
@@ -91,10 +97,9 @@ describe('useAdminFederation', () => {
   })
 
   it('loadCache populates entries', async () => {
-    vi.mocked(adminFederationService.getFederationCache).mockResolvedValueOnce({
-      entries: [{ key: 'k1', value: 1, expiryTs: 10 }],
-      total: 1
-    })
+    vi.mocked(adminFederationService.getFederationCache).mockResolvedValueOnce(
+      makeFederationCachePage([makeFederationCacheEntry({ key: 'k1', value: 1, expiryTs: 10 })])
+    )
     const c = useAdminFederation()
     await c.loadCache()
     expect(c.cacheEntries.value).toEqual([{ key: 'k1', value: 1, expiryTs: 10 }])
@@ -143,20 +148,9 @@ describe('useAdminFederation', () => {
   })
 
   it('loadPending populates servers', async () => {
-    vi.mocked(adminFederationService.getPendingFederationServers).mockResolvedValueOnce({
-      servers: [
-        {
-          serverName: 'p.tld',
-          failureCount: 2,
-          lastFailedConnectAt: 1,
-          lastSuccessfulConnectAt: null,
-          status: 'pending',
-          updatedTs: 2
-        }
-      ],
-      total: 1,
-      limit: 20
-    })
+    vi.mocked(adminFederationService.getPendingFederationServers).mockResolvedValueOnce(
+      makePendingFederationPage([makePendingFederationServer({ serverName: 'p.tld' })])
+    )
     const c = useAdminFederation()
     await c.loadPending()
     expect(c.pendingServers.value).toHaveLength(1)

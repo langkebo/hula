@@ -1,5 +1,6 @@
 import { MatrixBurnDuration, MatrixContentField, MatrixMsgType } from '@/common/matrixConstants'
 import { MsgEnum } from '@/enums'
+import type { IContent } from '@/services/matrix/sdk'
 
 /**
  * 消息内容构建器 — 从 MatrixMessageService 抽离的纯函数模块。
@@ -8,8 +9,8 @@ import { MsgEnum } from '@/enums'
  * 涵盖文本/图片/视频/语音/文件/位置等消息类型。
  */
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+function asRecord(value: unknown): IContent {
+  return value && typeof value === 'object' ? (value as IContent) : {}
 }
 
 function convertMsgTypeToMatrix(msgType: MsgEnum): string {
@@ -37,13 +38,13 @@ function convertMsgTypeToMatrix(msgType: MsgEnum): string {
 
 /** 构建 Matrix 消息内容体
  */
-export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<string, unknown> {
+export function buildMatrixContent(msgType: MsgEnum, body: unknown): IContent {
   const bodyRecord = asRecord(body)
   const reply = asRecord(bodyRecord.reply)
   const encryptedFile = asRecord(bodyRecord.encryptedFile)
   const hasEncryptedFile = typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
 
-  const content: Record<string, unknown> = {
+  const content: IContent = {
     msgtype: convertMsgTypeToMatrix(msgType),
     body: ''
   }
@@ -67,7 +68,8 @@ export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<stri
       if (hasEncryptedFile) {
         content.file = encryptedFile
       } else {
-        content.url = bodyRecord.url
+        const url = bodyRecord.url as string | undefined
+        if (url !== undefined) content.url = url
       }
       content.info = {
         size: (bodyRecord.size as number | undefined) || 0,
@@ -85,7 +87,8 @@ export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<stri
       if (hasEncryptedFile) {
         content.file = encryptedFile
       } else {
-        content.url = bodyRecord.url
+        const url = bodyRecord.url as string | undefined
+        if (url !== undefined) content.url = url
       }
       content.info = {
         size: (bodyRecord.size as number | undefined) || 0,
@@ -100,9 +103,9 @@ export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<stri
         }
       }
       if (hasEncryptedThumbnail) {
-        ;(content.info as Record<string, unknown>).thumbnail_file = thumbnailEncryptedFile
+        ;(content.info as IContent).thumbnail_file = thumbnailEncryptedFile
       } else {
-        ;(content.info as Record<string, unknown>).thumbnail_url = bodyRecord.thumbUrl
+        ;(content.info as IContent).thumbnail_url = bodyRecord.thumbUrl
       }
       break
     }
@@ -111,7 +114,8 @@ export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<stri
       if (hasEncryptedFile) {
         content.file = encryptedFile
       } else {
-        content.url = bodyRecord.mxcUrl || bodyRecord.url
+        const mediaUrl = (bodyRecord.mxcUrl || bodyRecord.url) as string | undefined
+        if (mediaUrl !== undefined) content.url = mediaUrl
       }
       content.info = {
         size: (bodyRecord.size as number | undefined) || 0,
@@ -126,7 +130,8 @@ export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<stri
       if (hasEncryptedFile) {
         content.file = encryptedFile
       } else {
-        content.url = bodyRecord.url
+        const url = bodyRecord.url as string | undefined
+        if (url !== undefined) content.url = url
       }
       content.info = {
         size: (bodyRecord.size as number | undefined) || 0,
@@ -157,7 +162,7 @@ export function buildSendContent(payload: {
   body: unknown
   burnAfterRead?: boolean
   burnExpiresInMs?: number
-}): Record<string, unknown> {
+}): IContent {
   const content = buildMatrixContent(payload.msgType, payload.body)
   if (payload.burnAfterRead) {
     content['m.burn_after_read'] = {

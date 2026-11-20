@@ -8,7 +8,19 @@ import type {
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import { isNonEmptyString, isValidMatrixUserId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
-import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from './AdminTypes'
+import type {
+  AdminAccountInfo,
+  AdminAccountStatusInfo,
+  AdminLoginFailure,
+  AdminUserSession,
+  AdminUserStats,
+  AdminUserStatsOverview,
+  AdminWhoisInfo,
+  RateLimit,
+  ShadowBanStatus,
+  UserDevice,
+  UserInfo
+} from './AdminTypes'
 
 const logger = createLogger('UserService')
 
@@ -335,7 +347,7 @@ export class AdminUserService {
     }
   }
 
-  async getWhois(userId: string): Promise<Record<string, unknown> | null> {
+  async getWhois(userId: string): Promise<AdminWhoisInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.whois(userId)
@@ -372,7 +384,7 @@ export class AdminUserService {
     }
   }
 
-  async getUserStats(userId: string): Promise<Record<string, unknown> | null> {
+  async getUserStats(userId: string): Promise<AdminUserStats | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserStats(userId)
@@ -385,7 +397,10 @@ export class AdminUserService {
   }
 
   /** 获取用户统计列表。 */
-  async getUserStatsList(): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  async getUserStatsList(): Promise<{
+    stats: AdminUserStatsOverview[]
+    nextToken?: string | undefined
+  }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listUserStats()
@@ -486,11 +501,12 @@ export class AdminUserService {
     }
   }
 
-  async getUserSessions(userId: string): Promise<Array<Record<string, unknown>>> {
+  async getUserSessions(userId: string): Promise<AdminUserSession[]> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserSession(userId)
-      return [{ ...result }]
+      // SDK 返回的是 `{ user_id, sessions, total }` 信封，取其中的 sessions 数组
+      return result.sessions ?? []
     } catch (err) {
       if (this.isPermissionDenied(err)) return []
       logger.error(`[Admin] 获取用户会话失败: ${err}`)
@@ -510,11 +526,11 @@ export class AdminUserService {
     }
   }
 
-  async getAccountInfo(userId: string): Promise<Record<string, unknown> | null> {
+  async getAccountInfo(userId: string): Promise<AdminAccountInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getAccountDetails(userId)
-      return (result as Record<string, unknown>) ?? null
+      return (result as AdminAccountInfo) ?? null
     } catch (err) {
       if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取账户详情失败: ${err}`)
@@ -548,7 +564,7 @@ export class AdminUserService {
     }
   }
 
-  async getAccountStatus(userId: string): Promise<Record<string, unknown> | null> {
+  async getAccountStatus(userId: string): Promise<AdminAccountStatusInfo | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getAccountStatus(userId)
@@ -564,7 +580,7 @@ export class AdminUserService {
     limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{
-    failures: Array<Record<string, unknown>>
+    failures: AdminLoginFailure[]
     nextToken?: string | undefined
   }> {
     try {

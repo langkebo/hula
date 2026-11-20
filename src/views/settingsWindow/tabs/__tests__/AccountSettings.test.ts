@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeExtendedProfile } from '@/services/matrix/user/__tests__/fixtures/profile'
 import AccountSettings from '../AccountSettings.vue'
 
 const {
@@ -427,12 +428,14 @@ describe('AccountSettings', () => {
     await flushPromises()
     expect(wrapper.find('[data-test="extended-profile-error"]').exists()).toBe(true)
 
-    getExtendedProfileMock.mockResolvedValueOnce({
-      resume: '重试后的简介',
-      sex: 2,
-      region: '上海',
-      birthday: '1999-09-09'
-    })
+    getExtendedProfileMock.mockResolvedValueOnce(
+      makeExtendedProfile({
+        resume: '重试后的简介',
+        sex: 2,
+        region: '上海',
+        birthday: '1999-09-09'
+      })
+    )
     await wrapper.find('[data-test="extended-profile-error"] [data-testid="error-retry"]').trigger('click')
     await flushPromises()
 

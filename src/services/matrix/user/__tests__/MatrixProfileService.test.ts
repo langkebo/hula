@@ -1,5 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeProfileInfo, makeUploadResponse } from '@/services/matrix/user/__tests__/fixtures/profile'
 import { ExtendedProfileUnsupportedError, profileService, useProfile } from '../MatrixProfileService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -39,7 +40,7 @@ describe('ProfileService', () => {
 
   describe('initialize', () => {
     it('should set client', async () => {
-      mockClient.getProfileInfo.mockResolvedValueOnce({ displayname: 'Set Client User' })
+      mockClient.getProfileInfo.mockResolvedValueOnce(makeProfileInfo({ displayname: 'Set Client User' }))
 
       profileService.initialize(mockClient as unknown as MatrixClient)
 
@@ -58,26 +59,23 @@ describe('ProfileService', () => {
     })
 
     it('should return user profile', async () => {
-      mockClient.getProfileInfo.mockResolvedValueOnce({
-        displayname: 'Test User',
-        avatar_url: 'mxc://matrix.org/avatar123'
-      })
+      const profile = makeProfileInfo()
+      mockClient.getProfileInfo.mockResolvedValueOnce(profile)
 
       profileService.initialize(mockClient as unknown as MatrixClient)
       const result = await profileService.getProfile('@user:matrix.org')
 
       expect(result).toEqual({
         userId: '@user:matrix.org',
-        displayname: 'Test User',
-        avatarUrl: 'mxc://matrix.org/avatar123'
+        displayname: profile.displayname,
+        avatarUrl: profile.avatar_url
       })
     })
 
     it('should fallback to matrixClientService client when explicit initialize is skipped', async () => {
-      mockClient.getProfileInfo.mockResolvedValueOnce({
-        displayname: 'Fallback User',
-        avatar_url: 'mxc://matrix.org/fallback'
-      })
+      mockClient.getProfileInfo.mockResolvedValueOnce(
+        makeProfileInfo({ displayname: 'Fallback User', avatar_url: 'mxc://matrix.org/fallback' })
+      )
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
       const service = new (profileService.constructor as unknown as new () => typeof profileService)()
@@ -128,9 +126,7 @@ describe('ProfileService', () => {
     })
 
     it('should return display name', async () => {
-      mockClient.getProfileInfo.mockResolvedValueOnce({
-        displayname: 'Test User'
-      })
+      mockClient.getProfileInfo.mockResolvedValueOnce(makeProfileInfo({ displayname: 'Test User' }))
 
       profileService.initialize(mockClient as unknown as MatrixClient)
       const result = await profileService.getDisplayName('@user:matrix.org')
@@ -154,9 +150,7 @@ describe('ProfileService', () => {
     })
 
     it('should return avatar url', async () => {
-      mockClient.getProfileInfo.mockResolvedValueOnce({
-        avatar_url: 'mxc://matrix.org/avatar123'
-      })
+      mockClient.getProfileInfo.mockResolvedValueOnce(makeProfileInfo({ avatar_url: 'mxc://matrix.org/avatar123' }))
 
       profileService.initialize(mockClient as unknown as MatrixClient)
       const result = await profileService.getAvatarUrl('@user:matrix.org')
@@ -278,25 +272,26 @@ describe('ProfileService', () => {
     })
 
     it('should upload and set avatar successfully', async () => {
-      mockClient.uploadContent.mockResolvedValueOnce({
-        content_uri: 'mxc://matrix.org/uploaded123'
-      })
+      const upload = makeUploadResponse()
+      mockClient.uploadContent.mockResolvedValueOnce(upload)
       mockClient.setAvatarUrl.mockResolvedValueOnce(undefined)
       profileService.initialize(mockClient as unknown as MatrixClient)
 
       const file = new File(['content'], 'avatar.png', { type: 'image/png' })
       const result = await profileService.uploadAndSetAvatar(file)
 
-      expect(result).toBe('mxc://matrix.org/uploaded123')
+      expect(result).toBe(upload.content_uri)
       expect(mockClient.uploadContent).toHaveBeenCalledWith(file, {
         type: 'image/png',
         rawResponse: false
       })
-      expect(mockClient.setAvatarUrl).toHaveBeenCalledWith('mxc://matrix.org/uploaded123')
+      expect(mockClient.setAvatarUrl).toHaveBeenCalledWith(upload.content_uri)
     })
 
     it('无声明类型时按文件头推断，不再一律落成 octet-stream', async () => {
-      mockClient.uploadContent.mockResolvedValueOnce({ content_uri: 'mxc://matrix.org/uploaded456' })
+      mockClient.uploadContent.mockResolvedValueOnce(
+        makeUploadResponse({ content_uri: 'mxc://matrix.org/uploaded456' })
+      )
       mockClient.setAvatarUrl.mockResolvedValueOnce(undefined)
       profileService.initialize(mockClient as unknown as MatrixClient)
 
@@ -307,7 +302,9 @@ describe('ProfileService', () => {
     })
 
     it('无声明类型时按文件名扩展名推断', async () => {
-      mockClient.uploadContent.mockResolvedValueOnce({ content_uri: 'mxc://matrix.org/uploaded789' })
+      mockClient.uploadContent.mockResolvedValueOnce(
+        makeUploadResponse({ content_uri: 'mxc://matrix.org/uploaded789' })
+      )
       mockClient.setAvatarUrl.mockResolvedValueOnce(undefined)
       profileService.initialize(mockClient as unknown as MatrixClient)
 
@@ -322,15 +319,10 @@ describe('ProfileService', () => {
 describe('useProfile composable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockClient.getProfileInfo.mockResolvedValue({
-      displayname: 'Test User',
-      avatar_url: 'mxc://matrix.org/avatar123'
-    })
+    mockClient.getProfileInfo.mockResolvedValue(makeProfileInfo())
     mockClient.setDisplayName.mockResolvedValue(undefined)
     mockClient.setAvatarUrl.mockResolvedValue(undefined)
-    mockClient.uploadContent.mockResolvedValue({
-      content_uri: 'mxc://matrix.org/uploaded123'
-    })
+    mockClient.uploadContent.mockResolvedValue(makeUploadResponse())
     profileService.initialize(mockClient as unknown as MatrixClient)
   })
 

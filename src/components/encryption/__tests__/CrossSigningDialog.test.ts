@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeCrossSigningInfo } from '@/services/matrix/crypto/__tests__/fixtures/encryption'
 import CrossSigningDialog from '../CrossSigningDialog.vue'
 
 type CrossSigningDialogVm = {
@@ -127,12 +128,7 @@ describe('CrossSigningDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    getCrossSigningInfoMock.mockResolvedValue({
-      isSetup: false,
-      masterPublicKey: null,
-      selfSigningPublicKey: null,
-      userSigningPublicKey: null
-    })
+    getCrossSigningInfoMock.mockResolvedValue(makeCrossSigningInfo())
     setupCrossSigningMock.mockResolvedValue(undefined)
     resetCrossSigningMock.mockResolvedValue(undefined)
 
@@ -153,12 +149,14 @@ describe('CrossSigningDialog', () => {
     })
 
   it('在首次挂载且 show=true 时立即加载交叉签名信息', async () => {
-    getCrossSigningInfoMock.mockResolvedValueOnce({
-      isSetup: true,
-      masterPublicKey: '1234567890abcdef1234567890abcdef',
-      selfSigningPublicKey: 'self-signing-key',
-      userSigningPublicKey: 'user-signing-key'
-    })
+    getCrossSigningInfoMock.mockResolvedValueOnce(
+      makeCrossSigningInfo({
+        isSetup: true,
+        masterPublicKey: '1234567890abcdef1234567890abcdef',
+        selfSigningPublicKey: 'self-signing-key',
+        userSigningPublicKey: 'user-signing-key'
+      })
+    )
 
     const wrapper = mountComponent(true)
 
@@ -174,24 +172,16 @@ describe('CrossSigningDialog', () => {
 
   it('支持设置和重置交叉签名并刷新状态', async () => {
     getCrossSigningInfoMock
-      .mockResolvedValueOnce({
-        isSetup: false,
-        masterPublicKey: null,
-        selfSigningPublicKey: null,
-        userSigningPublicKey: null
-      })
-      .mockResolvedValueOnce({
-        isSetup: true,
-        masterPublicKey: 'master-key',
-        selfSigningPublicKey: 'self-key',
-        userSigningPublicKey: 'user-key'
-      })
-      .mockResolvedValueOnce({
-        isSetup: false,
-        masterPublicKey: null,
-        selfSigningPublicKey: null,
-        userSigningPublicKey: null
-      })
+      .mockResolvedValueOnce(makeCrossSigningInfo())
+      .mockResolvedValueOnce(
+        makeCrossSigningInfo({
+          isSetup: true,
+          masterPublicKey: 'master-key',
+          selfSigningPublicKey: 'self-key',
+          userSigningPublicKey: 'user-key'
+        })
+      )
+      .mockResolvedValueOnce(makeCrossSigningInfo())
 
     const wrapper = mountComponent(true)
 
@@ -209,12 +199,7 @@ describe('CrossSigningDialog', () => {
   })
 
   it('设置交叉签名必须携带 UIA 密码（否则适配层抛「需要认证参数」）', async () => {
-    getCrossSigningInfoMock.mockResolvedValue({
-      isSetup: false,
-      masterPublicKey: null,
-      selfSigningPublicKey: null,
-      userSigningPublicKey: null
-    })
+    getCrossSigningInfoMock.mockResolvedValue(makeCrossSigningInfo())
 
     const wrapper = mountComponent(true)
     await flushPromises()
@@ -227,12 +212,7 @@ describe('CrossSigningDialog', () => {
   })
 
   it('未输入密码时不得发起设置请求（避免必然失败的调用）', async () => {
-    getCrossSigningInfoMock.mockResolvedValue({
-      isSetup: false,
-      masterPublicKey: null,
-      selfSigningPublicKey: null,
-      userSigningPublicKey: null
-    })
+    getCrossSigningInfoMock.mockResolvedValue(makeCrossSigningInfo())
 
     const wrapper = mountComponent(true)
     await flushPromises()
@@ -245,12 +225,14 @@ describe('CrossSigningDialog', () => {
   })
 
   it('重置失败时不得提示成功（禁止假成功）', async () => {
-    getCrossSigningInfoMock.mockResolvedValue({
-      isSetup: true,
-      masterPublicKey: 'm',
-      selfSigningPublicKey: 's',
-      userSigningPublicKey: 'u'
-    })
+    getCrossSigningInfoMock.mockResolvedValue(
+      makeCrossSigningInfo({
+        isSetup: true,
+        masterPublicKey: 'm',
+        selfSigningPublicKey: 's',
+        userSigningPublicKey: 'u'
+      })
+    )
     resetCrossSigningMock.mockRejectedValueOnce(new Error('当前客户端不支持重置交叉签名'))
 
     const wrapper = mountComponent(true)
@@ -265,12 +247,14 @@ describe('CrossSigningDialog', () => {
 
   it('支持复制公钥并在失败时给出提示', async () => {
     writeTextMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('copy failed'))
-    getCrossSigningInfoMock.mockResolvedValueOnce({
-      isSetup: true,
-      masterPublicKey: 'master-key',
-      selfSigningPublicKey: 'self-key',
-      userSigningPublicKey: 'user-key'
-    })
+    getCrossSigningInfoMock.mockResolvedValueOnce(
+      makeCrossSigningInfo({
+        isSetup: true,
+        masterPublicKey: 'master-key',
+        selfSigningPublicKey: 'self-key',
+        userSigningPublicKey: 'user-key'
+      })
+    )
 
     const wrapper = mountComponent(true)
 

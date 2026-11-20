@@ -1,3 +1,4 @@
+import type { IContent } from '@/services/matrix/sdk'
 import { unknownToObject } from '@/utils/typeGuard'
 
 /**
@@ -133,16 +134,61 @@ export type RoomReceiptsOutcome =
   | { status: 'unsupported' }
   | { status: 'error' }
 
+/** 房间通知条目（与 SDK `RoomNotificationsResult.notifications` 同形）。 */
+export interface RoomNotificationEntry {
+  room_id: string
+  event_id: string
+  notification_type: string
+  sender: string
+  ts: number
+  content: IContent
+  is_read: boolean
+  client_action: string
+  type?: string
+  timestamp?: number
+  read?: boolean
+  highlight?: boolean
+}
+
+/** 房间通知列表（`next_token` 为当前服务层约定字段）。 */
+export interface RoomNotificationsOutcome {
+  notifications: RoomNotificationEntry[]
+  next_token?: string
+  next_batch?: string
+}
+
+/**
+ * 房间通话会话信息（后端 voip_tracking 端点未定型，SDK 声明为任意对象）。
+ */
+export interface RoomCallInfo {
+  call_id?: string
+  [key: string]: unknown
+}
+
 function toCountMap(value: unknown): Record<string, number> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
-  const entries = Object.entries(value as Record<string, unknown>)
-  return Object.fromEntries(
-    entries.filter(([, count]) => typeof count === 'number' && Number.isFinite(count) && count > 0)
-  ) as Record<string, number>
+  const counts: Record<string, number> = {}
+  for (const [key, count] of Object.entries(value)) {
+    if (typeof count === 'number' && Number.isFinite(count) && count > 0) counts[key] = count
+  }
+  return counts
 }
 
 function toSortedCountRows(map: Record<string, number>): Array<[string, number]> {
   return Object.entries(map).sort(([, a], [, b]) => b - a)
+}
+
+/** `event_perspective` 响应包（后端 synapse-rust 扩展，SDK 未声明）。 */
+interface RoomEventPerspectiveResponse {
+  perspective?: RoomEventPerspectivePayload
+}
+
+/** `event_perspective` 的 perspective 段（字段随后端版本变化）。 */
+interface RoomEventPerspectivePayload {
+  event_count?: unknown
+  latest_event_id?: unknown
+  sender_activity?: unknown
+  event_types?: unknown
 }
 
 /**
@@ -152,9 +198,9 @@ function toSortedCountRows(map: Record<string, number>): Array<[string, number]>
  */
 export function normalizePerspective(raw: unknown): RoomEventPerspectiveStats | null {
   if (typeof raw !== 'object' || raw === null) return null
-  const perspective = (raw as Record<string, unknown>).perspective
+  const perspective = (raw as RoomEventPerspectiveResponse).perspective
   if (typeof perspective !== 'object' || perspective === null) return null
-  const record = perspective as Record<string, unknown>
+  const record: RoomEventPerspectivePayload = perspective
 
   const senderActivity = toSortedCountRows(toCountMap(record.sender_activity)).map(([userId, count]) => ({
     userId,
@@ -190,8 +236,13 @@ export function readErrcode(err: unknown): string | null {
   return null
 }
 
+/** 后端媒体/事件条目的动态字段包（字段名随后端版本变化）。 */
+export interface UrlFieldRecord {
+  [field: string]: unknown
+}
+
 /** 按候选键顺序读取第一个非空字符串字段；全部缺失时返回空串。 */
-export function readUrlField(record: Record<string, unknown>, keys: string[]): string {
+export function readUrlField(record: UrlFieldRecord, keys: string[]): string {
   for (const key of keys) {
     const value = record[key]
     if (typeof value === 'string' && value.length > 0) return value

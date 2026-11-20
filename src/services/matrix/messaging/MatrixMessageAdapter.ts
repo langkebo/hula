@@ -1,6 +1,7 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
+import type { IContent } from '@/services/matrix/sdk'
 import type {
   BeaconBody,
   FileBody,
@@ -17,15 +18,15 @@ import { locationEventGeoUri, parseGeoUri } from '@/utils/location'
 interface MatrixMessageAdapter {
   convertMatrixEventToMessageType(event: MatrixEvent, roomId: string): MessageType
   getMsgTypeFromMatrixEvent(event: MatrixEvent): MsgEnum
-  getMsgTypeFromEventLike(eventType: string, content: Record<string, unknown>): MsgEnum
-  convertMatrixContent(content: Record<string, unknown>, msgType: MsgEnum): MessageBody
+  getMsgTypeFromEventLike(eventType: string, content: IContent): MsgEnum
+  convertMatrixContent(content: IContent, msgType: MsgEnum): MessageBody
 }
 
 const matrixMessageAdapter: MatrixMessageAdapter = {
   convertMatrixEventToMessageType(event: MatrixEvent, roomId: string): MessageType {
     const sender = event.getSender() ?? ''
     const senderMember = event.sender
-    const content = event.getContent() as Record<string, unknown>
+    const content = event.getContent()
     const msgType = this.getMsgTypeFromMatrixEvent(event)
 
     return {
@@ -50,10 +51,10 @@ const matrixMessageAdapter: MatrixMessageAdapter = {
   },
 
   getMsgTypeFromMatrixEvent(event: MatrixEvent): MsgEnum {
-    return this.getMsgTypeFromEventLike(event.getType(), event.getContent() as Record<string, unknown>)
+    return this.getMsgTypeFromEventLike(event.getType(), event.getContent())
   },
 
-  getMsgTypeFromEventLike(eventType: string, content: Record<string, unknown>): MsgEnum {
+  getMsgTypeFromEventLike(eventType: string, content: IContent): MsgEnum {
     if (eventType === 'm.room.redaction') {
       return MsgEnum.RECALL
     }
@@ -96,7 +97,7 @@ const matrixMessageAdapter: MatrixMessageAdapter = {
     return MsgEnum.UNKNOWN
   },
 
-  convertMatrixContent(content: Record<string, unknown>, msgType: MsgEnum): MessageBody {
+  convertMatrixContent(content: IContent, msgType: MsgEnum): MessageBody {
     const info = (content.info || {}) as {
       size?: number
       w?: number
@@ -105,7 +106,7 @@ const matrixMessageAdapter: MatrixMessageAdapter = {
       duration?: number
       thumbnail_info?: { w?: number; h?: number }
       thumbnail_url?: string
-      thumbnail_file?: Record<string, unknown>
+      thumbnail_file?: EncryptedAttachmentFile
       [key: string]: unknown
     }
     const encryptedFile = content.file as EncryptedAttachmentFile | undefined
@@ -138,7 +139,7 @@ const matrixMessageAdapter: MatrixMessageAdapter = {
             (typeof info.thumbnail_url === 'string' && info.thumbnail_url) ||
             (typeof info.thumbnail_file?.url === 'string' && info.thumbnail_file.url) ||
             '',
-          thumbnailEncryptedFile: info.thumbnail_file as EncryptedAttachmentFile | undefined,
+          thumbnailEncryptedFile: info.thumbnail_file,
           filename: (content.body as string) || '',
           encryptedFile
         } as VideoBody
@@ -176,10 +177,7 @@ const matrixMessageAdapter: MatrixMessageAdapter = {
         } as LocationBody
       }
       case MsgEnum.BEACON: {
-        const info = ((content['m.beacon_info'] as Record<string, unknown> | undefined) ?? content) as Record<
-          string,
-          unknown
-        >
+        const info = ((content['m.beacon_info'] as IContent | undefined) ?? content) as IContent
         return {
           description: (info.description as string | undefined) ?? '',
           timeout: (info.timeout as number | undefined) ?? 0,

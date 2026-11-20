@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeBeaconInfo, makeLocationData } from '@/composables/location/__tests__/fixtures/locationShare'
 
 // 提前声明 mock,便于在测试用例中访问
 const { mockSendLocation, mockCreateBeacon, mockStopBeacon, mockShowFeedback } = vi.hoisted(() => ({
@@ -173,7 +174,7 @@ describe('useLocationShare', () => {
   describe('sendLocation', () => {
     it('roomId 为空且 options.roomId 也为空时返回 false 并显示错误', async () => {
       const composable = useLocationShare({ roomId: null })
-      const location = { latitude: 1, longitude: 2, timestamp: 1 }
+      const location = makeLocationData({ latitude: 1, longitude: 2, timestamp: 1 })
       const result = await composable.sendLocation('', location)
 
       expect(result).toBe(false)
@@ -184,7 +185,7 @@ describe('useLocationShare', () => {
     it('roomId 入参为空时回退到 options.roomId', async () => {
       mockSendLocation.mockResolvedValueOnce('$event-1')
       const composable = useLocationShare({ roomId: '!room:server' })
-      const location = { latitude: 1, longitude: 2, timestamp: 1 }
+      const location = makeLocationData({ latitude: 1, longitude: 2, timestamp: 1 })
       const result = await composable.sendLocation('', location)
 
       expect(result).toBe(true)
@@ -194,7 +195,7 @@ describe('useLocationShare', () => {
     it('成功发送位置时显示成功反馈并返回 true', async () => {
       mockSendLocation.mockResolvedValueOnce('$event-1')
       const composable = useLocationShare({ roomId: '!room:server' })
-      const location = { latitude: 30.1, longitude: 120.2, timestamp: 1700000000000 }
+      const location = makeLocationData({ latitude: 30.1, longitude: 120.2, timestamp: 1700000000000 })
       const result = await composable.sendLocation('!room:server', location)
 
       expect(result).toBe(true)
@@ -205,7 +206,7 @@ describe('useLocationShare', () => {
     it('sendLocation 抛错时返回 false 并显示错误', async () => {
       mockSendLocation.mockRejectedValueOnce(new Error('network'))
       const composable = useLocationShare({ roomId: '!room:server' })
-      const location = { latitude: 1, longitude: 2, timestamp: 1 }
+      const location = makeLocationData({ latitude: 1, longitude: 2, timestamp: 1 })
       const result = await composable.sendLocation('!room:server', location)
 
       expect(result).toBe(false)
@@ -215,13 +216,7 @@ describe('useLocationShare', () => {
 
   describe('startBeacon', () => {
     it('成功开启共享时设置 sharing/beaconInfoEventId 并显示成功反馈', async () => {
-      mockCreateBeacon.mockResolvedValueOnce({
-        event_id: '$beacon-1',
-        room_id: '!room:server',
-        user_id: '@u:s',
-        is_live: true,
-        last_updated: 1
-      })
+      mockCreateBeacon.mockResolvedValueOnce(makeBeaconInfo({ event_id: '$beacon-1' }))
       const composable = useLocationShare({ roomId: '!room:server' })
       const result = await composable.startBeacon('!room:server')
 
@@ -236,13 +231,7 @@ describe('useLocationShare', () => {
     })
 
     it('支持自定义 duration 透传给 createBeacon', async () => {
-      mockCreateBeacon.mockResolvedValueOnce({
-        event_id: '$beacon-2',
-        room_id: '!room:server',
-        user_id: '@u:s',
-        is_live: true,
-        last_updated: 1
-      })
+      mockCreateBeacon.mockResolvedValueOnce(makeBeaconInfo({ event_id: '$beacon-2' }))
       const composable = useLocationShare({ roomId: '!room:server' })
       await composable.startBeacon('!room:server', 900000)
 
@@ -339,19 +328,13 @@ describe('useLocationShare', () => {
 
   describe('reset', () => {
     it('重置后所有状态恢复初始值', async () => {
-      mockCreateBeacon.mockResolvedValueOnce({
-        event_id: '$beacon-1',
-        room_id: '!room:server',
-        user_id: '@u:s',
-        is_live: true,
-        last_updated: 1
-      })
+      mockCreateBeacon.mockResolvedValueOnce(makeBeaconInfo({ event_id: '$beacon-1' }))
       mockStopBeacon.mockResolvedValueOnce(true)
       const composable = useLocationShare({ roomId: '!room:server' })
 
       // 制造一些状态
       await composable.startBeacon('!room:server')
-      composable.currentLocation.value = { latitude: 1, longitude: 2, timestamp: 1 }
+      composable.currentLocation.value = makeLocationData({ latitude: 1, longitude: 2, timestamp: 1 })
       composable.error.value = 'something'
 
       composable.reset()
@@ -364,7 +347,7 @@ describe('useLocationShare', () => {
     })
 
     it('reset 时若有在途 beacon 则调用 stopBeacon', async () => {
-      mockCreateBeacon.mockResolvedValueOnce({ event_id: '$beacon2' })
+      mockCreateBeacon.mockResolvedValueOnce(makeBeaconInfo({ event_id: '$beacon2' }))
       mockStopBeacon.mockResolvedValueOnce(true)
       const composable = useLocationShare({ roomId: '!room:hs' })
 
@@ -379,7 +362,7 @@ describe('useLocationShare', () => {
 
   describe('startBeacon reentry guard', () => {
     it('sharing 中再次 startBeacon 直接返回 false 且不重复创建', async () => {
-      mockCreateBeacon.mockResolvedValueOnce({ event_id: '$beacon1' })
+      mockCreateBeacon.mockResolvedValueOnce(makeBeaconInfo({ event_id: '$beacon1' }))
       const composable = useLocationShare({ roomId: '!room:hs' })
 
       expect(await composable.startBeacon('!room:hs')).toBe(true)

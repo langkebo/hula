@@ -11,6 +11,12 @@ vi.mock('@/services/matrix/admin', () => ({
 }))
 
 import { adminService } from '@/services/matrix/admin'
+import {
+  makeServerHealthInfo,
+  makeServerStatsInfo,
+  makeServerStatusInfo,
+  makeServerVersionInfo
+} from '@/services/matrix/admin/__tests__/fixtures/server'
 
 describe('useAdminServerLogs', () => {
   beforeEach(() => {
@@ -28,16 +34,10 @@ describe('useAdminServerLogs', () => {
 
   it('populates panel refs', async () => {
     const c = useAdminServerLogs()
-    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce({ status: 'online' })
-    vi.mocked(adminService.getServerHealth).mockResolvedValueOnce({ healthy: true, checks: { db: { status: 'ok' } } })
-    vi.mocked(adminService.getServerVersion).mockResolvedValueOnce({ serverVersion: '1.0.0', pythonVersion: 'Rust' })
-    vi.mocked(adminService.getServerStats).mockResolvedValueOnce({
-      userCount: 1,
-      roomCount: 2,
-      dailyActiveUsers: 3,
-      monthlyActiveUsers: 4,
-      messageCount: 5
-    })
+    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce(makeServerStatusInfo())
+    vi.mocked(adminService.getServerHealth).mockResolvedValueOnce(makeServerHealthInfo())
+    vi.mocked(adminService.getServerVersion).mockResolvedValueOnce(makeServerVersionInfo({ serverVersion: '1.0.0' }))
+    vi.mocked(adminService.getServerStats).mockResolvedValueOnce(makeServerStatsInfo())
     await c.loadPanel()
     expect(c.status.value).toEqual({ status: 'online' })
     expect(c.health.value?.healthy).toBe(true)
@@ -55,9 +55,9 @@ describe('useAdminServerLogs', () => {
 
   it('records per-panel errors and counts failures without dropping succeeded panels', async () => {
     const c = useAdminServerLogs()
-    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce({ status: 'online' })
+    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce(makeServerStatusInfo())
     vi.mocked(adminService.getServerHealth).mockRejectedValueOnce(new Error('HTTP 500'))
-    vi.mocked(adminService.getServerVersion).mockResolvedValueOnce({ serverVersion: '1.0.0', pythonVersion: 'Rust' })
+    vi.mocked(adminService.getServerVersion).mockResolvedValueOnce(makeServerVersionInfo({ serverVersion: '1.0.0' }))
     vi.mocked(adminService.getServerStats).mockRejectedValueOnce(new Error('HTTP 503'))
 
     await c.loadPanel()

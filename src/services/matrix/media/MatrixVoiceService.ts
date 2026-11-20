@@ -1,4 +1,4 @@
-import type { MatrixClient } from '@/services/matrix/sdk'
+import type { IContent, MatrixClient } from '@/services/matrix/sdk'
 import { VendorPrefix } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
@@ -79,6 +79,29 @@ type VoiceMessageRow = Awaited<ReturnType<VoiceManagerInstance['listRoomVoiceMes
 
 /** 列表页游标：后端 `next_batch` 是毫秒 `created_ts`（i64），不是字符串。 */
 type VoiceListPage = { messages: VoiceMessageRow[]; next_batch: number | null }
+
+/**
+ * 单个 RTC 传输协议配置（MSC4143 unstable `rtc/transports` 响应条目）。
+ *
+ * 服务端为开放配置包，除 `transport`/`version` 外可能携带后端扩展字段，
+ * 因此保留索引签名；这是唯一允许 `unknown` 值的位置。
+ */
+export interface RtcTransportConfig {
+  transport: string
+  version?: string
+  [key: string]: unknown
+}
+
+/**
+ * `GET /org.matrix.msc4143/rtc/transports` 的响应。
+ *
+ * 标准字段是 `transports` 数组；服务端可能附加其他能力/策略字段，
+ * 故保留索引签名。失败时服务返回空对象，`transports` 因此可选。
+ */
+export interface RtcTransportsResponse {
+  transports?: RtcTransportConfig[]
+  [key: string]: unknown
+}
 
 class MatrixVoiceService extends BaseMatrixService {
   // FT-122: 校验必需的 ID 参数非空，避免空字符串传给后端
@@ -352,7 +375,7 @@ class MatrixVoiceService extends BaseMatrixService {
    * 获取语音消息的原始内容。
    * 端点不可用或读取失败时返回 null。
    */
-  async getVoiceContent(messageId: string): Promise<Record<string, unknown> | null> {
+  async getVoiceContent(messageId: string): Promise<IContent | null> {
     this.requireNonEmpty(messageId, 'messageId')
     try {
       const available = await endpointCapabilityService.check('GET', MATRIX_PATHS.VOICE.CONTENT(messageId))
@@ -360,7 +383,7 @@ class MatrixVoiceService extends BaseMatrixService {
         return null
       }
       const result = await this.getVoiceMgr().getVoiceMessage(messageId, VendorPrefix)
-      return unknownToObject(result)
+      return unknownToObject<IContent>(result)
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
       return null
@@ -373,11 +396,11 @@ class MatrixVoiceService extends BaseMatrixService {
    * 通过 SDK VoiceManager.getRtcTransports 获取（MSC4143 unstable 端点）。
    * 失败时返回空对象，调用方按无 RTC 能力处理。
    */
-  async getRtcTransports(): Promise<Record<string, unknown>> {
+  async getRtcTransports(): Promise<RtcTransportsResponse> {
     try {
       const client = this.getClient()
       const result = await client.getVoiceManager().getRtcTransports()
-      return result as Record<string, unknown>
+      return result as RtcTransportsResponse
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getRtcTransports failed: ${err}`)
       return {}

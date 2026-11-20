@@ -1,7 +1,15 @@
 import type { AdminManager } from 'matrix-js-sdk/admin'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminRoomService } from '../RoomService'
-import { adminRoomTokenSyncFixture } from './fixtures/room'
+import {
+  adminRoomTokenSyncFixture,
+  makeAdminRoomWire,
+  makeCascadeRedactRaw,
+  makePurgeHistoryRaw,
+  makeRoomForwardExtremitiesRaw,
+  makeRoomsPaginatedWire,
+  makeShutdownRoomRaw
+} from './fixtures/room'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -68,37 +76,21 @@ describe('AdminRoomService', () => {
   })
 
   it('getRooms maps SDK room payload to RoomInfo', async () => {
-    ;(admin as any).getRoomsPaginated.mockResolvedValueOnce({
-      items: [
-        {
-          room_id: '!room:server.com',
-          name: 'Room',
-          topic: 'Topic',
-          joined_members: 5,
-          joined_local_members: 3,
-          invited_members: 2,
-          created_ts: 100,
-          creator: '@alice:server.com',
-          public: true
-        }
-      ],
-      nextToken: 'next'
-    })
+    ;(admin as any).getRoomsPaginated.mockResolvedValueOnce(makeRoomsPaginatedWire([makeAdminRoomWire()], 'next'))
 
     const result = await service.getRooms()
 
     expect(result).toEqual({
       rooms: [
         {
-          roomId: '!room:server.com',
+          roomId: '!room:server.test',
           name: 'Room',
           topic: 'Topic',
           joinedMembers: 5,
           joinedLocalMembers: 3,
-          invitedMembers: 2,
+          invitedMembers: 0,
           invitedLocalMembers: 0,
-          createTime: 100,
-          creator: '@alice:server.com',
+          creator: '@alice:server.test',
           public: true
         }
       ],
@@ -113,10 +105,12 @@ describe('AdminRoomService', () => {
   it('shutdownRoom maps kicked fields', async () => {
     // SDK/后端 `AdminShutdownRoomResult` 只有 `{closed_room, kicked_users, failed_to_kick_users}`
     // —— `local_aliases` / `new_room_id` 是本后端**从不返回**的字段（SDK 类型注释原文）。
-    ;(admin as any).shutdownRoom.mockResolvedValueOnce({
-      kicked_users: ['@u1:server.com'],
-      failed_to_kick_users: ['@u2:server.com']
-    })
+    ;(admin as any).shutdownRoom.mockResolvedValueOnce(
+      makeShutdownRoomRaw({
+        kicked_users: ['@u1:server.com'],
+        failed_to_kick_users: ['@u2:server.com']
+      })
+    )
 
     const result = await service.shutdownRoom('!room:server.com')
 
@@ -134,7 +128,7 @@ describe('AdminRoomService', () => {
   it('purgeHistory 只发送后端支持的字段并回传真实结果', async () => {
     // 后端 `admin/room/management.rs::purge_history` 只读 `purge_up_to_ts` / `dry_run`，
     // 返回 `{success, deleted_events, dry_run}`（无 `purge_id`；那是 purgeRoom 的字段）。
-    ;(admin as any).purgeRoomHistory.mockResolvedValueOnce({ success: true, deleted_events: 9, dry_run: false })
+    ;(admin as any).purgeRoomHistory.mockResolvedValueOnce(makePurgeHistoryRaw())
 
     const result = await service.purgeHistory('!room:server.com', { purgeUpToTs: 123, dryRun: true })
 
@@ -145,9 +139,19 @@ describe('AdminRoomService', () => {
     })
   })
 
-  it('getRoomForwardExtremities returns array directly', async () => {
-    ;(admin as any).getRoomForwardExtremities.mockResolvedValueOnce([{ event_id: '$a' }])
-    expect(await service.getRoomForwardExtremities('!room:server.com')).toEqual([{ event_id: '$a' }])
+  it('getRoomForwardExtremities 把真实的极点数响应归一为 camelCase', async () => {
+    ;(admin as any).getRoomForwardExtremities.mockResolvedValueOnce(
+      makeRoomForwardExtremitiesRaw({ room_id: '!room:server.com', forward_extremities: 3 })
+    )
+    expect(await service.getRoomForwardExtremities('!room:server.com')).toEqual({
+      roomId: '!room:server.com',
+      forwardExtremities: 3
+    })
+  })
+
+  it('getRoomForwardExtremities 读取失败返回 null（不伪造成空列表）', async () => {
+    ;(admin as any).getRoomForwardExtremities.mockRejectedValueOnce(new Error('boom'))
+    expect(await service.getRoomForwardExtremities('!room:server.com')).toBeNull()
   })
 
   it('setRoomPublicListing 上线走 setRoomPublicListing，下线走 deleteRoomPublicListing', async () => {
@@ -172,7 +176,7 @@ describe('AdminRoomService', () => {
   })
 
   it('cascadeRedactEvent 传递可选参数并返回 redacted_count', async () => {
-    ;(admin as any).cascadeRedactEvent.mockResolvedValueOnce({ redacted_count: 3 })
+    ;(admin as any).cascadeRedactEvent.mockResolvedValueOnce(makeCascadeRedactRaw())
 
     const count = await service.cascadeRedactEvent('!room:server.com', '$event', {
       maxDepth: 4,
@@ -188,7 +192,7 @@ describe('AdminRoomService', () => {
   })
 
   it('cascadeRedactEvent 省略未提供的可选参数', async () => {
-    ;(admin as any).cascadeRedactEvent.mockResolvedValueOnce({ redacted_count: 0 })
+    ;(admin as any).cascadeRedactEvent.mockResolvedValueOnce(makeCascadeRedactRaw({ redacted_count: 0 }))
 
     await service.cascadeRedactEvent('!room:server.com', '$event')
 

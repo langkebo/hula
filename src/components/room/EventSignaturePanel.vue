@@ -54,6 +54,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import type { RoomSignOutcome } from '@/services/matrix/room/AccountDataService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 
 const props = defineProps<{
@@ -66,14 +67,14 @@ const { showFeedback } = useActionFeedback()
 const eventId = ref('')
 const signing = ref(false)
 const verifying = ref(false)
-const signResult = ref<Record<string, unknown> | null>(null)
+const signResult = ref<RoomSignOutcome | null>(null)
 const verifyResult = ref<{ valid: boolean } | null>(null)
 
 function handleEventIdChange(value: string): void {
   eventId.value = value
 }
 
-function formatResult(result: Record<string, unknown>): string {
+function formatResult(result: RoomSignOutcome): string {
   return JSON.stringify(result)
 }
 

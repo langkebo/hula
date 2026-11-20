@@ -41,6 +41,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+import { makeEmojiUploadResult } from '@/services/matrix/messaging/__tests__/fixtures/emoji'
 import { useEmojiPackManager } from '../useEmojiPackManager'
 
 describe('useEmojiPackManager', () => {
@@ -200,7 +201,7 @@ describe('useEmojiPackManager', () => {
 
   describe('addEmoji', () => {
     it('上传成功后显示成功反馈并重新加载', async () => {
-      mockEmojiUpload.mockResolvedValueOnce({ id: 'emote_1', name: '笑脸', url: 'mxc://x', mxcUrl: 'mxc://x' })
+      mockEmojiUpload.mockResolvedValueOnce(makeEmojiUploadResult())
       mockEmojiList.mockResolvedValueOnce([])
 
       const manager = useEmojiPackManager()

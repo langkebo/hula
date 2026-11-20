@@ -5,6 +5,13 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
 
+import {
+  makeSetPermissionResponse,
+  makeWidget,
+  makeWidgetPermissionItem,
+  makeWidgetPermissionsResponse
+} from '@/services/matrix/widget/__tests__/fixtures/widget'
+
 const widgetServiceMock = {
   getWidgets: vi.fn(),
   createWidget: vi.fn(),
@@ -32,7 +39,8 @@ describe('useWidgets', () => {
   })
 
   it('loads widgets (non-throwing) and exposes loading state', async () => {
-    widgetServiceMock.getWidgets.mockResolvedValueOnce([{ id: 'w1', type: 'jitsi', url: 'u' }])
+    const widget = makeWidget({ id: 'w1', type: 'jitsi', url: 'u' })
+    widgetServiceMock.getWidgets.mockResolvedValueOnce([widget])
 
     const { widgets, loading, load } = useWidgets(() => '!room:example.com')
     const promise = load()
@@ -40,7 +48,7 @@ describe('useWidgets', () => {
     await promise
 
     expect(loading.value).toBe(false)
-    expect(widgets.value).toEqual([{ id: 'w1', type: 'jitsi', url: 'u' }])
+    expect(widgets.value).toEqual([widget])
     expect(widgetServiceMock.getWidgets).toHaveBeenCalledWith('!room:example.com', false)
   })
 
@@ -59,19 +67,20 @@ describe('useWidgets', () => {
   })
 
   it('create calls createWidget then reloads list', async () => {
-    widgetServiceMock.createWidget.mockResolvedValueOnce({ id: 'w1', type: 'custom', url: 'u' })
-    widgetServiceMock.getWidgets.mockResolvedValueOnce([{ id: 'w1', type: 'custom', url: 'u' }])
+    const created = makeWidget({ id: 'w1', type: 'custom', url: 'u' })
+    widgetServiceMock.createWidget.mockResolvedValueOnce(created)
+    widgetServiceMock.getWidgets.mockResolvedValueOnce([created])
 
     const { create, widgets } = useWidgets(() => '!r')
     const result = await create({ widgetType: 'custom', url: 'u', name: 'n' })
 
-    expect(result).toEqual({ id: 'w1', type: 'custom', url: 'u' })
+    expect(result).toEqual(created)
     expect(widgetServiceMock.createWidget).toHaveBeenCalledWith(
       '!r',
       { widgetType: 'custom', url: 'u', name: 'n' },
       true
     )
-    expect(widgets.value).toEqual([{ id: 'w1', type: 'custom', url: 'u' }])
+    expect(widgets.value).toEqual([created])
   })
 
   it('remove reloads list only when deletion succeeds', async () => {
@@ -133,9 +142,11 @@ describe('useWidgetPermissions', () => {
   })
 
   it('load populates rows from parsed response', async () => {
-    widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce({
-      permissions: [{ user_id: '@alice:e', permissions: ['read'] }]
-    })
+    widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce(
+      makeWidgetPermissionsResponse({
+        permissions: [makeWidgetPermissionItem({ user_id: '@alice:e', permissions: ['read'] })]
+      })
+    )
 
     const { load, rows } = useWidgetPermissions()
     await load('w1')
@@ -145,10 +156,12 @@ describe('useWidgetPermissions', () => {
   })
 
   it('grant calls setWidgetPermission and reloads rows', async () => {
-    widgetServiceMock.setWidgetPermission.mockResolvedValueOnce({ ok: true })
-    widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce({
-      permissions: [{ user_id: '@alice:e', permissions: ['read'] }]
-    })
+    widgetServiceMock.setWidgetPermission.mockResolvedValueOnce(makeSetPermissionResponse())
+    widgetServiceMock.getWidgetPermissions.mockResolvedValueOnce(
+      makeWidgetPermissionsResponse({
+        permissions: [makeWidgetPermissionItem({ user_id: '@alice:e', permissions: ['read'] })]
+      })
+    )
 
     const { grant, rows } = useWidgetPermissions()
     const ok = await grant('w1', '@alice:e', ['read'])

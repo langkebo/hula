@@ -6,6 +6,7 @@ import { RoomTypeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import type { SessionStorePort } from '../MatrixRuntimeSessionService'
+import { makeStoredTokens } from './fixtures/session'
 
 const mockInvoke = vi.fn()
 const mockEmit = vi.fn()
@@ -547,10 +548,7 @@ describe('MatrixRuntimeSessionService', () => {
   it('allows startup token fallback before runtime initialization', async () => {
     mockPort.matrix.isLoggedIn.mockReturnValue(false)
     mockPort.matrix.isInitialized.mockReturnValue(false)
-    mockInvoke.mockResolvedValueOnce({
-      token: 'startup-token',
-      refreshToken: null
-    })
+    mockInvoke.mockResolvedValueOnce(makeStoredTokens(null, 'startup-token'))
 
     const service = createService()
     const authenticated = await service.hasAuthenticatedSession()
@@ -562,10 +560,7 @@ describe('MatrixRuntimeSessionService', () => {
   it('rejects token-only auth after runtime initialized', async () => {
     mockPort.matrix.isLoggedIn.mockReturnValue(false)
     mockPort.matrix.isInitialized.mockReturnValue(true)
-    mockInvoke.mockResolvedValueOnce({
-      token: 'stale-token',
-      refreshToken: null
-    })
+    mockInvoke.mockResolvedValueOnce(makeStoredTokens(null, 'stale-token'))
 
     const service = createService()
     const authenticated = await service.hasAuthenticatedSession()

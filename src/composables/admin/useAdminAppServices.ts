@@ -1,5 +1,6 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
+import type { ApplicationServiceConfig } from '@/services/matrix/admin/ApplicationService'
 
 export interface AppServiceInfo {
   id: string
@@ -97,7 +98,7 @@ export function useAdminAppServices(): UseAdminAppServicesResult {
     }
   }
 
-  async function registerService(asToken: string, config: Record<string, unknown>): Promise<boolean> {
+  async function registerService(asToken: string, config: ApplicationServiceConfig): Promise<boolean> {
     registering.value = true
     try {
       await adminService.registerApplicationService(asToken, config)
@@ -117,7 +118,7 @@ export function useAdminAppServices(): UseAdminAppServicesResult {
     return true
   }
 
-  async function updateService(serviceId: string, config: Record<string, unknown>): Promise<boolean> {
+  async function updateService(serviceId: string, config: ApplicationServiceConfig): Promise<boolean> {
     await adminService.updateApplicationService(serviceId, config)
     await loadServices()
     if (selectedService.value?.id === serviceId) {

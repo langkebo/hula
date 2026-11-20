@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AdminManager } from '@/services/matrix/sdk'
+import { makeRegistrationTokenPage } from './fixtures/registrationToken'
 
 // P0-2 regression guard: registration tokens are bearer credentials and must
 // never appear verbatim in logs. Only a length + non-reversible fingerprint may
@@ -48,7 +49,7 @@ describe('AdminRegistrationTokensService — token redaction (P0-2)', () => {
 
   it('update never writes the raw token to logs', async () => {
     admin.updateRegistrationToken.mockResolvedValueOnce(undefined)
-    admin.getRegistrationTokens.mockResolvedValueOnce({ registration_tokens: [] })
+    admin.getRegistrationTokens.mockResolvedValueOnce(makeRegistrationTokenPage())
 
     await service.update(SECRET, { usesAllowed: 1 })
 

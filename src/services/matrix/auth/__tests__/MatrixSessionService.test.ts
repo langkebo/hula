@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
+import { makeDmRoomInfo } from '@/services/matrix/room/__tests__/fixtures/directMessage'
 import type { MatrixClient, Room } from '@/services/matrix/sdk'
 
 const mockDirectMessageService = {
@@ -449,10 +450,9 @@ describe('MatrixSessionService', () => {
     })
     mockDirectMessageService.getDmForUser.mockResolvedValueOnce(null)
     mockDirectMessageService.createDm.mockResolvedValueOnce('!new:example.com')
-    mockDirectMessageService.getDmRoomInfo.mockResolvedValueOnce({
-      roomId: '!new:example.com',
-      invitees: ['@bob:example.com']
-    })
+    mockDirectMessageService.getDmRoomInfo.mockResolvedValueOnce(
+      makeDmRoomInfo({ roomId: '!new:example.com', invitees: ['@bob:example.com'] })
+    )
     mockClient.getRoom.mockReturnValueOnce(null).mockReturnValueOnce(null).mockReturnValueOnce(room)
 
     const promise = matrixSessionService.getSessionDetailWithFriends('@bob:example.com')
