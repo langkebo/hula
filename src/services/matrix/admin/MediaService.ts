@@ -35,6 +35,8 @@ export class AdminMediaService {
         media: (result?.media ?? []).map((m) => ({
           mediaId: m.media_id ?? '',
           mediaType: m.media_type ?? '',
+          contentUri: m.content_uri ?? '',
+          serverName: m.server_name ?? '',
           createdAt: m.created_ts ?? 0,
           uploadName: m.upload_name,
           mediaLength: m.media_length,

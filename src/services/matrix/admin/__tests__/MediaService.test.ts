@@ -1,6 +1,14 @@
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
+import {
+  makeLegacyMediaItem,
+  makeLegacyMediaPage,
+  makeMediaDeleteResult,
+  makeMediaInfo,
+  makeUserMediaList,
+  purgeCacheResultWithoutDeleted
+} from '@/services/matrix/admin/__tests__/fixtures/media'
 import matrixClientService from '../../MatrixClientService'
 import { AdminMediaService } from '../MediaService'
 
@@ -87,26 +95,30 @@ describe('AdminMediaService', () => {
   })
 
   it('getMediaList 将 snake_case 映射为 facade 形状', async () => {
-    admin.getMedia.mockResolvedValueOnce({
-      media: [
-        {
-          media_id: 'm1',
-          media_type: 'image/png',
-          content_uri: 'mxc://hs/m1',
-          created_ts: 100,
-          upload_name: 'a.png',
-          media_length: 2048,
-          quarantined: true
-        }
-      ],
-      next_token: 'tok'
-    })
+    admin.getMedia.mockResolvedValueOnce(
+      makeLegacyMediaPage(
+        [
+          makeLegacyMediaItem({
+            media_id: 'm1',
+            media_type: 'image/png',
+            content_uri: 'mxc://hs/m1',
+            created_ts: 100,
+            upload_name: 'a.png',
+            media_length: 2048,
+            quarantined: true
+          })
+        ],
+        { next_token: 'tok' }
+      )
+    )
 
     await expect(service.getMediaList(20, 'from-1')).resolves.toEqual({
       media: [
         {
           mediaId: 'm1',
           mediaType: 'image/png',
+          contentUri: 'mxc://hs/m1',
+          serverName: '',
           createdAt: 100,
           uploadName: 'a.png',
           mediaLength: 2048,
@@ -129,13 +141,15 @@ describe('AdminMediaService', () => {
   })
 
   it('purgeMediaCache 缺省返回 deleted 0', async () => {
-    admin.purgeMediaCache.mockResolvedValueOnce({})
+    admin.purgeMediaCache.mockResolvedValueOnce(purgeCacheResultWithoutDeleted)
     await expect(service.purgeMediaCache(123)).resolves.toEqual({ deleted: 0 })
     expect(admin.purgeMediaCache).toHaveBeenCalledWith(123)
   })
 
   it('getMediaInfo 成功时透传媒体字段', async () => {
-    admin.getMediaInfo.mockResolvedValueOnce({ media_id: 'm9', media_type: 'image/jpeg', media_length: 123 })
+    admin.getMediaInfo.mockResolvedValueOnce(
+      makeMediaInfo({ media_id: 'm9', media_type: 'image/jpeg', media_length: 123 })
+    )
     await expect(service.getMediaInfo('m9')).resolves.toEqual({
       media_id: 'm9',
       media_type: 'image/jpeg',
@@ -165,10 +179,9 @@ describe('AdminMediaService', () => {
   })
 
   it('getUserMedia 成功时透传 media 与 total', async () => {
-    admin.getUserMedia.mockResolvedValueOnce({
-      media: [{ media_id: 'u1', media_type: 'image/png', media_length: 256 }],
-      total: 1
-    })
+    admin.getUserMedia.mockResolvedValueOnce(
+      makeUserMediaList([{ media_id: 'u1', media_type: 'image/png', media_length: 256 }])
+    )
     await expect(service.getUserMedia('@u:a')).resolves.toEqual({
       media: [{ media_id: 'u1', media_type: 'image/png', media_length: 256 }],
       total: 1
@@ -182,17 +195,19 @@ describe('AdminMediaService', () => {
   })
 
   it('getMediaList 优先使用 next_batch 作为游标', async () => {
-    admin.getMedia.mockResolvedValueOnce({
-      media: [{ media_id: 'm2', media_type: 'image/png', created_ts: 1 }],
-      total: 1,
-      next_batch: 'batch-1'
-    })
+    admin.getMedia.mockResolvedValueOnce(
+      makeLegacyMediaPage([makeLegacyMediaItem({ media_id: 'm2', media_type: 'image/png', created_ts: 1 })], {
+        next_batch: 'batch-1'
+      })
+    )
     const page = await service.getMediaList(10)
     expect(page.nextToken).toBe('batch-1')
     expect(page.media).toEqual([
       {
         mediaId: 'm2',
         mediaType: 'image/png',
+        contentUri: '',
+        serverName: '',
         createdAt: 1,
         uploadName: undefined,
         mediaLength: undefined
@@ -211,7 +226,7 @@ describe('AdminMediaService', () => {
   })
 
   it('deleteUserMedia 成功时透传 deleted', async () => {
-    admin.media.deleteUserMedia.mockResolvedValueOnce({ deleted: 7 })
+    admin.media.deleteUserMedia.mockResolvedValueOnce(makeMediaDeleteResult(7))
     await expect(service.deleteUserMedia('@u:a')).resolves.toEqual({ deleted: 7 })
     expect(admin.media.deleteUserMedia).toHaveBeenCalledWith('@u:a')
   })

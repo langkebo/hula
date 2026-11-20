@@ -42,7 +42,8 @@ export type MediaDomainSdkGetter = () => Promise<MediaAdminSdk>
  * 分页游标同时兼容 SDK 的 `next_batch` 与旧的 `next_token`。
  */
 export type LegacyMediaResult = Omit<MediaPage, 'media'> & {
-  media?: Array<MediaInfo & { content_uri?: string }>
+  /** `content_uri` / `server_name` 由后端 `/media` 列表在 2026-11-20 起返回 */
+  media?: Array<MediaInfo & { content_uri?: string; server_name?: string }>
   next_token?: string
 }
 
@@ -58,12 +59,15 @@ export interface AdminMediaListItem {
   mediaId: string
   mediaType: string
   /**
-   * ⚠️ **没有 `contentUri`**：后端 `get_all_media` 只返回 8 个字段
-   * （`media_id`/`media_type`/`upload_name`/`created_ts`/`last_access_ts`/
-   * `media_length`/`user_id`/`quarantined`），既不返回 `content_uri`，也不返回
-   * `server_name` —— 所以前端也构造不出 `mxc://<server>/<id>`。
-   * 此前这里有个 `contentUri: m.content_uri ?? ''`，**恒为空串**，属无效字段。
+   * 媒体内容的 `mxc://<server>/<media_id>`。
+   *
+   * 2026-11-20 起由后端 `get_all_media` 直接返回（此前只回 8 个字段、缺
+   * `content_uri`/`server_name`，前端构造不出 URL，只能把整块 JSON 拍给管理员）。
+   * 用 `MediaService.getMediaList` 里的空串兜底：老后端（未升级）仍会走空值。
    */
+  contentUri: string
+  /** 媒体所属服务器；与 `contentUri` 同源，单独给出便于按 server 过滤 */
+  serverName: string
   createdAt: number
   uploadName?: string | undefined
   mediaLength?: number | undefined
