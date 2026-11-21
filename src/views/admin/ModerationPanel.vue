@@ -19,7 +19,7 @@
               </n-button>
             </n-space>
 
-            <n-data-table
+            <AdminTable
               :columns="reportColumns"
               :data="openReports"
               :loading="loading"
@@ -97,7 +97,6 @@ import {
   type DataTableColumns,
   NButton,
   NCard,
-  NDataTable,
   NDrawer,
   NDrawerContent,
   NForm,
@@ -120,6 +119,7 @@ import { useModerationStore } from '@/stores/domains/chat/moderation'
 import type { Report } from '@/types/matrix-services'
 import ModerationAdminReportTab from './ModerationAdminReportTab.vue'
 import ModerationEventReportTab from './ModerationEventReportTab.vue'
+import AdminTable from '@/components/admin/AdminTable.vue'
 
 defineOptions({
   name: 'ModerationPanel'

@@ -32,5 +32,7 @@ export enum TauriCommand {
   /** 将任意绝对路径文件复制到应用作用域目录（供拖拽上传规避 fs scope 收窄） */
   COPY_FILE_TO_APP_SCOPE = 'copy_file_to_app_scope',
   /** 检查管理员状态 */
-  CHECK_ADMIN_STATUS = 'check_admin_status'
+  CHECK_ADMIN_STATUS = 'check_admin_status',
+  /** 打开外部链接（Rust 侧做协议白名单校验） */
+  OPEN_EXTERNAL_URL = 'open_external_url'
 }

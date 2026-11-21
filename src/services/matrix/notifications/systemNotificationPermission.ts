@@ -1,5 +1,5 @@
 import { isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification'
-import { openUrl } from '@tauri-apps/plugin-opener'
+import { openExternalUrl } from '@/utils/ExternalUrl'
 import { createLogger } from '@/utils/Logger'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
@@ -80,11 +80,9 @@ export async function openSystemNotificationSettings(): Promise<boolean> {
       : null
   if (!uri) return false
 
-  try {
-    await openUrl(uri)
-    return true
-  } catch (err) {
-    logger.warn(`[MatrixNotification] 打开系统通知设置失败: ${err}`)
-    return false
+  const opened = await openExternalUrl(uri)
+  if (!opened) {
+    logger.warn('[MatrixNotification] 打开系统通知设置失败')
   }
+  return opened
 }

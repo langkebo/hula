@@ -8,7 +8,7 @@
         </n-button>
       </n-flex>
 
-      <n-data-table
+      <AdminTable
         :columns="columns"
         :data="tokens"
         :loading="loading"
@@ -59,6 +59,7 @@ import { h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type RegistrationToken, useAdminRegistrationTokens } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import AdminTable from '@/components/admin/AdminTable.vue'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()

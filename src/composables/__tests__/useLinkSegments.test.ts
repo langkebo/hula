@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { extractLinkSegments, normalizeExternalUrl, openExternalUrl } from '@/composables/common/useLinkSegments'
 
-const openUrlMock = vi.fn()
+const invokeMock = vi.fn()
 const windowOpenMock = vi.fn()
 
-vi.mock('@tauri-apps/plugin-opener', () => ({
-  openUrl: (...args: unknown[]) => openUrlMock(...args)
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: (...args: unknown[]) => invokeMock(...args)
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -19,7 +19,12 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 describe('useLinkSegments', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    ;(window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {}
     window.open = windowOpenMock as typeof window.open
+  })
+
+  afterEach(() => {
+    delete (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__
   })
 
   describe('extractLinkSegments', () => {
@@ -125,27 +130,49 @@ describe('useLinkSegments', () => {
   })
 
   describe('openExternalUrl', () => {
-    it('opens allowed URLs with opener first', async () => {
-      await openExternalUrl('https://example.com')
+    it('opens allowed URLs through the Tauri command', async () => {
+      invokeMock.mockResolvedValueOnce(undefined)
 
-      expect(openUrlMock).toHaveBeenCalledWith('https://example.com')
+      const result = await openExternalUrl('https://example.com')
+
+      expect(result).toBe(true)
+      expect(invokeMock).toHaveBeenCalledWith('open_external_url', { url: 'https://example.com' })
       expect(windowOpenMock).not.toHaveBeenCalled()
     })
 
-    it('falls back to window.open when opener fails', async () => {
-      openUrlMock.mockRejectedValueOnce(new Error('opener unavailable'))
+    it('normalizes bare domains before opening', async () => {
+      invokeMock.mockResolvedValueOnce(undefined)
 
       await openExternalUrl('example.com')
 
-      expect(windowOpenMock).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer')
+      expect(invokeMock).toHaveBeenCalledWith('open_external_url', { url: 'https://example.com' })
+    })
+
+    it('returns false when the Tauri command rejects', async () => {
+      invokeMock.mockRejectedValueOnce(new Error('scheme not allowed'))
+
+      const result = await openExternalUrl('https://example.com')
+
+      expect(result).toBe(false)
+      expect(windowOpenMock).not.toHaveBeenCalled()
     })
 
     it('does not open rejected protocols', async () => {
       const result = await openExternalUrl('javascript:alert(1)')
 
       expect(result).toBe(false)
-      expect(openUrlMock).not.toHaveBeenCalled()
+      expect(invokeMock).not.toHaveBeenCalled()
       expect(windowOpenMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to window.open outside the Tauri runtime', async () => {
+      delete (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__
+
+      const result = await openExternalUrl('https://example.com')
+
+      expect(result).toBe(true)
+      expect(invokeMock).not.toHaveBeenCalled()
+      expect(windowOpenMock).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer')
     })
   })
 })

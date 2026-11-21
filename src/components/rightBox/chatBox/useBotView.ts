@@ -3,7 +3,6 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { Webview } from '@tauri-apps/api/webview'
 import { getCurrentWindow, type Window as TauriWindow } from '@tauri-apps/api/window'
 import { open } from '@tauri-apps/plugin-dialog'
-import { openUrl } from '@tauri-apps/plugin-opener'
 import DOMPurify from 'dompurify'
 import type { DropdownOption } from 'naive-ui'
 import { computed, nextTick, type Ref, ref, shallowRef, watch } from 'vue'
@@ -11,6 +10,7 @@ import { useI18n } from 'vue-i18n'
 import { type AssistantModelPreset, useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useBotStore } from '@/stores/domains/user/bot'
+import { openExternalUrl } from '@/utils/ExternalUrl'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
@@ -333,10 +333,8 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
       await destroyExternalWebview()
       isViewingLink.value = false
       currentUrl.value = ''
-      try {
-        await openUrl(url)
-      } catch (openError) {
-        logger.error('在浏览器中打开失败:', openError)
+      if (!(await openExternalUrl(url))) {
+        logger.error('在浏览器中打开失败:', url)
       }
     })
     webviewListeners.push(createdListener, errorListener)
@@ -357,10 +355,8 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
     if (!canEmbedWebview.value) {
       finishLoading()
       botStore.setWeb(url)
-      try {
-        await openUrl(url)
-      } catch (error) {
-        logger.error('在浏览器中打开失败:', error)
+      if (!(await openExternalUrl(url))) {
+        logger.error('在浏览器中打开失败:', url)
         errorLoading()
       }
       return
@@ -482,10 +478,8 @@ export const useBotView = ({ startLoading, finishLoading, errorLoading }: UseBot
 
   const openInBrowser = async () => {
     if (!currentUrl.value) return
-    try {
-      await openUrl(currentUrl.value)
-    } catch (error) {
-      logger.error('在浏览器中打开失败:', error)
+    if (!(await openExternalUrl(currentUrl.value))) {
+      logger.error('在浏览器中打开失败:', currentUrl.value)
     }
   }
 

@@ -1,5 +1,5 @@
-import { openUrl } from '@tauri-apps/plugin-opener'
 import { type ComputedRef, computed, type Ref, unref } from 'vue'
+import { openExternalUrl as openSystemExternalUrl } from '@/utils/ExternalUrl'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LinkSegments')
@@ -77,18 +77,7 @@ export const openExternalUrl = async (url: string) => {
     return false
   }
 
-  try {
-    await openUrl(normalizedUrl)
-    return true
-  } catch (error) {
-    logger.error('打开链接失败:', error)
-    if (typeof window !== 'undefined') {
-      window.open(normalizedUrl, '_blank', 'noopener,noreferrer')
-      return true
-    }
-  }
-
-  return false
+  return openSystemExternalUrl(normalizedUrl)
 }
 
 export const useLinkSegments = (source: MaybeRef<string | null | undefined>) => {

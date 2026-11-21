@@ -26,7 +26,7 @@
       </n-button>
     </n-space>
 
-    <n-data-table
+    <AdminTable
       :columns="eventReportColumns"
       :data="eventReports"
       :loading="eventReportLoading"
@@ -60,7 +60,6 @@ import { Icon } from '@iconify/vue'
 import {
   type DataTableColumns,
   NButton,
-  NDataTable,
   NDrawer,
   NDrawerContent,
   NInput,
@@ -75,6 +74,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { EventReport } from '@/services/matrix/admin/AdminTypes'
 import { matrixEventReportService } from '@/services/matrix/moderation/MatrixEventReportService'
 import type { ReportResponse } from '@/services/matrix/sdk'
+import AdminTable from '@/components/admin/AdminTable.vue'
 
 defineOptions({
   name: 'ModerationEventReportTab'

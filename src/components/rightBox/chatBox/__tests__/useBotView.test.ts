@@ -17,8 +17,8 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
   open: openMock
 }))
 
-vi.mock('@tauri-apps/plugin-opener', () => ({
-  openUrl: vi.fn()
+vi.mock('@/utils/ExternalUrl', () => ({
+  openExternalUrl: vi.fn()
 }))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({

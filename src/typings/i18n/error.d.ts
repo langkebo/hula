@@ -64,7 +64,10 @@ export type Messages = {
     "upload_header_forbidden": "不允许透传该请求头: {detail}",
     "drop_path_not_absolute": "拖拽文件路径必须是绝对路径: {detail}",
     "drop_file_missing": "拖拽的文件不存在: {detail}",
-    "drop_outside_home": "不允许复制主目录之外的文件: {detail}"
+    "drop_outside_home": "不允许复制主目录之外的文件: {detail}",
+    "external_url_invalid": "链接地址无效",
+    "external_url_scheme_not_allowed": "不允许打开该协议的链接: {detail}",
+    "external_url_open_failed": "打开链接失败: {detail}"
   }
 }
 
@@ -136,3 +139,6 @@ export type KeyPaths =
   | "error.cmd.drop_path_not_absolute"
   | "error.cmd.drop_file_missing"
   | "error.cmd.drop_outside_home"
+  | "error.cmd.external_url_invalid"
+  | "error.cmd.external_url_scheme_not_allowed"
+  | "error.cmd.external_url_open_failed"

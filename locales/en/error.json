@@ -59,6 +59,9 @@
     "upload_header_forbidden": "Forwarding this header is not allowed: {detail}",
     "drop_path_not_absolute": "Dropped file path must be absolute: {detail}",
     "drop_file_missing": "Dropped file not found: {detail}",
-    "drop_outside_home": "Copying files outside the home directory is not allowed: {detail}"
+    "drop_outside_home": "Copying files outside the home directory is not allowed: {detail}",
+    "external_url_invalid": "Invalid link address",
+    "external_url_scheme_not_allowed": "Opening links with this scheme is not allowed: {detail}",
+    "external_url_open_failed": "Failed to open the link: {detail}"
   }
 }

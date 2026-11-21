@@ -51,7 +51,7 @@
       clearable
       class="mb-16px max-w-[320px]" />
 
-    <n-data-table
+    <AdminTable
       :columns="columns"
       :data="filteredServers"
       :loading="loading"
@@ -66,7 +66,6 @@ import {
   type DataTableColumns,
   NButton,
   NCard,
-  NDataTable,
   NGi,
   NGrid,
   NInput,
@@ -80,6 +79,7 @@ import FedStatusBadge from '@/components/federation/FedStatusBadge.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
+import AdminTable from '@/components/admin/AdminTable.vue'
 
 const logger = createLogger('AdminFederationMonitor')
 const { t } = useI18n()

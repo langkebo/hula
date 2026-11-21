@@ -13,7 +13,7 @@
       </template>
     </n-page-header>
 
-    <n-data-table
+    <AdminTable
       :columns="columns"
       :data="notices"
       :loading="loading"
@@ -51,7 +51,6 @@
 import {
   type DataTableColumns,
   NButton,
-  NDataTable,
   NDrawer,
   NDrawerContent,
   NForm,
@@ -65,6 +64,7 @@ import { useI18n } from 'vue-i18n'
 import { type ServerNoticeInfo, useAdminNotices } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
+import AdminTable from '@/components/admin/AdminTable.vue'
 
 const logger = createLogger('AdminNotices')
 const { t } = useI18n()

@@ -23,7 +23,7 @@
       </n-flex>
 
       <!-- Data Table -->
-      <n-data-table
+      <AdminTable
         :columns="columns"
         :data="filteredFlags"
         :loading="loading"
@@ -126,7 +126,6 @@ import { Icon } from '@iconify/vue'
 import {
   type DataTableColumns,
   NButton,
-  NDataTable,
   NDatePicker,
   NDescriptions,
   NDescriptionsItem,
@@ -148,6 +147,7 @@ import { useI18n } from 'vue-i18n'
 import { type AdminFeatureFlag, type AdminFeatureFlagInput, useAdminMaintenance } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
+import AdminTable from '@/components/admin/AdminTable.vue'
 
 const logger = createLogger('FeatureFlagManager')
 const { t } = useI18n()

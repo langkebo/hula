@@ -636,6 +636,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
     use crate::command::ai_command::ai_message_cancel_stream;
     use crate::command::ai_command::check_openclaw_installation;
     use crate::command::asset_command::allow_asset_path;
+    use crate::command::external_url_command::open_external_url;
     use crate::command::markdown_command::get_readme_html;
     use crate::command::markdown_command::parse_markdown;
     #[cfg(mobile)]
@@ -740,6 +741,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         migrate_user_database,
         check_admin_status,
         allow_asset_path,
+        open_external_url,
         get_config,
         get_secret,
         set_secret,

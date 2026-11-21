@@ -9,7 +9,7 @@ const messageErrorMock = vi.fn()
 const messageInfoMock = vi.fn()
 const getVersionMock = vi.fn()
 const getTauriVersionMock = vi.fn()
-const openUrlMock = vi.fn()
+const openExternalUrlMock = vi.fn()
 const openPathMock = vi.fn()
 const appDataDirMock = vi.fn()
 
@@ -134,8 +134,11 @@ vi.mock('@tauri-apps/api/app', () => ({
   getTauriVersion: (...args: unknown[]) => getTauriVersionMock(...args)
 }))
 
+vi.mock('@/utils/ExternalUrl', () => ({
+  openExternalUrl: (...args: unknown[]) => openExternalUrlMock(...args)
+}))
+
 vi.mock('@tauri-apps/plugin-opener', () => ({
-  openUrl: (...args: unknown[]) => openUrlMock(...args),
   openPath: (...args: unknown[]) => openPathMock(...args)
 }))
 
@@ -169,7 +172,7 @@ describe('HelpSettings', () => {
     getVersionMock.mockResolvedValue('9.9.9')
     getTauriVersionMock.mockResolvedValue('2.1.0')
     appDataDirMock.mockResolvedValue('/tmp/hula')
-    openUrlMock.mockResolvedValue(undefined)
+    openExternalUrlMock.mockResolvedValue(true)
     openPathMock.mockResolvedValue(undefined)
 
     vi.stubGlobal('open', openWindowMock)
@@ -246,9 +249,15 @@ describe('HelpSettings', () => {
     vm.handleDownloadUpdate()
     vm.handleFeedback()
 
-    expect(openUrlMock).toHaveBeenNthCalledWith(1, 'https://matrix.org')
-    expect(openUrlMock).toHaveBeenNthCalledWith(2, 'https://github.com/nichuanfang/nichuanfang.github.io/releases')
-    expect(openUrlMock).toHaveBeenNthCalledWith(3, 'https://github.com/nichuanfang/nichuanfang.github.io/issues')
+    expect(openExternalUrlMock).toHaveBeenNthCalledWith(1, 'https://matrix.org')
+    expect(openExternalUrlMock).toHaveBeenNthCalledWith(
+      2,
+      'https://github.com/nichuanfang/nichuanfang.github.io/releases'
+    )
+    expect(openExternalUrlMock).toHaveBeenNthCalledWith(
+      3,
+      'https://github.com/nichuanfang/nichuanfang.github.io/issues'
+    )
     expect(openWindowMock).not.toHaveBeenCalled()
   })
 
