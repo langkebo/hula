@@ -1,6 +1,6 @@
-import { ref, shallowRef } from 'vue'
+import { ref } from 'vue'
 import { LARGE_PAGE_LIMIT } from '@/common/constants'
-import type { AdminMediaDetail, MediaInfo } from '@/services/matrix/admin'
+import type { MediaInfo } from '@/services/matrix/admin'
 import { adminService } from '@/services/matrix/admin'
 import type { GlobalMediaQuarantineChange, RoomMediaItem } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
@@ -23,9 +23,9 @@ export function useAdminMedia(): UseAdminMedia {
   const libraryNextBatch = ref<string | null>(null)
   const libraryLoading = ref(false)
 
-  // shallowRef 而非 ref：Vue 的 UnwrapRef 会把交叉类型 `MediaInfo & {...}`
-  // 化简回 MediaInfo，导致 content_uri 在模板里丢失（实测 TS2339）。
-  const selectedMedia = shallowRef<AdminMediaDetail | null>(null)
+  // SDK 的 MediaInfo 已含 content_uri / server_name（723be16c5）⇒ 直接用，
+  // 不再需要交叉类型，也不必再用 shallowRef 绕 UnwrapRef。
+  const selectedMedia = ref<MediaInfo | null>(null)
   const detailLoading = ref(false)
 
   const quarantineChanges = ref<GlobalMediaQuarantineChange[]>([])
@@ -70,7 +70,7 @@ export function useAdminMedia(): UseAdminMedia {
     await loadLibrary(false)
   }
 
-  async function loadMediaDetail(label: string, fetcher: () => Promise<AdminMediaDetail | null>) {
+  async function loadMediaDetail(label: string, fetcher: () => Promise<MediaInfo | null>) {
     detailLoading.value = true
     try {
       const info = await fetcher()

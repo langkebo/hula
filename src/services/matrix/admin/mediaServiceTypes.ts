@@ -55,19 +55,6 @@ export type LegacyMediaResult = Omit<MediaPage, 'media'> & {
  * - `createdAt` 来自 wire 的 `created_ts`（后端 `media.rs:132/162/246` 确认用这个键）
  * - `quarantined` 仅 `get_all_media` / `get_media_info` 返回
  */
-/**
- * 媒体详情。
- *
- * 后端 `GET /media/{id}` 自 2026-11-20 起额外返回 `content_uri` / `server_name`，
- * 但 SDK 的 `MediaInfo` 尚未声明这两个字段（改 SDK 需重新打包 tarball）。
- * 这里用交叉类型扩展，避免为了两个只读字段去动 fork。
- */
-export type AdminMediaDetail = MediaInfo & {
-  /** `mxc://<server_name>/<media_id>`，用于渲染预览 */
-  content_uri?: string
-  server_name?: string
-}
-
 export interface AdminMediaListItem {
   mediaId: string
   mediaType: string

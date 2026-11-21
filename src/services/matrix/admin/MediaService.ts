@@ -1,6 +1,7 @@
 import { LARGE_PAGE_LIMIT } from '@/common/constants'
 import type {
   GlobalMediaQuarantineChangesResponse,
+  MediaInfo,
   MediaProtectionResponse,
   MediaQuarantineChangesResponse,
   MediaUnprotectionResponse,
@@ -11,7 +12,7 @@ import type {
   UserMediaQuarantineResponse
 } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import type { AdminMediaDetail, AdminMediaListPage, LegacyMediaResult, MediaDomainSdkGetter } from './mediaServiceTypes'
+import type { AdminMediaListPage, LegacyMediaResult, MediaDomainSdkGetter } from './mediaServiceTypes'
 
 const logger = createLogger('MediaService')
 
@@ -54,12 +55,10 @@ export class AdminMediaService {
    * @param mediaId 媒体 ID。
    * @returns 媒体详情；失败时返回 null。
    */
-  async getMediaInfo(mediaId: string): Promise<AdminMediaDetail | null> {
+  async getMediaInfo(mediaId: string): Promise<MediaInfo | null> {
     try {
       const admin = await this.sdkAdmin()
-      // 后端额外返回 content_uri / server_name，SDK 的 MediaInfo 未声明这两个字段
-      // （改 fork 需重新打包 tarball）；此处按 AdminMediaDetail 收窄，字段缺失也不影响
-      return (await admin.getMediaInfo(mediaId)) as AdminMediaDetail | null
+      return await admin.getMediaInfo(mediaId)
     } catch (err) {
       logger.error(`[AdminMedia] 获取媒体详情失败: ${err}`)
       return null
@@ -72,10 +71,10 @@ export class AdminMediaService {
    * @param mediaId 媒体 ID。
    * @returns 媒体详情；失败时返回 null。
    */
-  async getMediaInfoByServer(serverName: string, mediaId: string): Promise<AdminMediaDetail | null> {
+  async getMediaInfoByServer(serverName: string, mediaId: string): Promise<MediaInfo | null> {
     try {
       const admin = await this.sdkAdmin()
-      return (await admin.getMediaInfoByServer(serverName, mediaId)) as AdminMediaDetail | null
+      return await admin.getMediaInfoByServer(serverName, mediaId)
     } catch (err) {
       logger.error(`[AdminMedia] 按服务器获取媒体详情失败: ${err}`)
       return null
