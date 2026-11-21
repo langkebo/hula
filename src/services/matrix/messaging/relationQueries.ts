@@ -7,7 +7,7 @@
 
 import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
-import { Direction, type MatrixClient, type MatrixEvent } from '../sdk'
+import { Direction, type IContent, type MatrixClient, type MatrixEvent } from '../sdk'
 import { collectChildEvents } from './relationEventSource'
 import type { MessageEdit, RelationContent, RelationsResponse, ReplyChain, ThreadInfo } from './relationTypes'
 
@@ -21,7 +21,7 @@ export function mapEditEvents(events: MatrixEvent[]): MessageEdit[] {
       return {
         eventId: event.getId()!,
         originalContent: content,
-        newContent: (content['m.new_content'] ?? {}) as Record<string, unknown>,
+        newContent: content['m.new_content'] ?? {},
         timestamp: event.getTs(),
         sender: event.getSender()!
       }
@@ -192,7 +192,7 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
         else if (options?.dir === 'f') opts.dir = Direction.Forward
         const result = await client.relations(roomId, eventId, null, null, opts)
         const response: RelationsResponse = {
-          chunk: result.events.map((e) => e.event as Record<string, unknown>)
+          chunk: result.events.map((e) => e.event as IContent)
         }
         if (result.nextBatch) response.next_batch = result.nextBatch
         if (result.prevBatch) response.prev_batch = result.prevBatch
@@ -221,7 +221,7 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
         else if (options?.dir === 'f') opts.dir = Direction.Forward
         const result = await client.relations(roomId, eventId, relType, null, opts)
         const response: RelationsResponse = {
-          chunk: result.events.map((e) => e.event as Record<string, unknown>)
+          chunk: result.events.map((e) => e.event as IContent)
         }
         if (result.nextBatch) response.next_batch = result.nextBatch
         if (result.prevBatch) response.prev_batch = result.prevBatch

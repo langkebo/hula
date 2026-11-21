@@ -46,7 +46,7 @@ export interface RoomSummaryStateEntry {
 export type RoomVaultDataOutcome = Partial<RoomVaultDataResult>
 
 /**
- * 内容扫描信息（后端 `/report/:eventId/scanner_info` 返回，SDK 声明为 `Record<string, unknown>`）。
+ * 内容扫描信息（后端 `/report/:eventId/scanner_info` 返回，SDK 声明为通用对象）。
  */
 export interface ContentScannerInfo {
   clean: boolean
@@ -116,7 +116,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
-  async setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void> {
+  async setRoomAccountData(roomId: string, eventType: string, content: IContent): Promise<void> {
     const mgr = this.getAccountDataMgr()
     try {
       await mgr.setRoomAccountData(roomId, eventType, content)
@@ -156,7 +156,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 设置保险库数据
    */
-  async setVaultData(roomId: string, content: Record<string, unknown>): Promise<void> {
+  async setVaultData(roomId: string, content: IContent): Promise<void> {
     const client = this.getClient()
     try {
       await client.getRoomSummaryManager().setRoomVaultData(roomId, content)

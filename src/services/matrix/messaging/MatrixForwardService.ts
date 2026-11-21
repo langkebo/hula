@@ -49,11 +49,12 @@ class MatrixForwardService {
         throw new Error('无法转发加密附件到未加密房间：这会泄露该附件的解密密钥。请先为目标房间开启加密。')
       }
 
+      const eventId = event.getId()
       return await matrixEventService.sendEvent(roomId, eventType, {
         ...content,
         'm.relates_to': {
           rel_type: 'm.reference',
-          event_id: event.getId()
+          ...(eventId !== undefined ? { event_id: eventId } : {})
         }
       })
     } catch (err) {

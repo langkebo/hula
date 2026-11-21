@@ -57,6 +57,22 @@ interface DeviceListUpdatesResponse {
 }
 
 /**
+ * `/keys/query` 返回的设备密钥条目。
+ *
+ * SDK 的 `getUserDevices` 只把内容声明为字典，这里按 keys/query 契约补齐本服务读取的字段。
+ */
+interface DeviceKeysContent {
+  device_id?: string
+  display_name?: string
+  last_seen_ts?: number
+  last_seen_ip?: string
+  last_seen_user_agent?: string
+  unsigned?: {
+    device_display_name?: string
+  }
+}
+
+/**
  * 设备列表变更请求
  */
 interface DeviceListUpdatesRequest {
@@ -149,13 +165,13 @@ class MatrixDeviceService extends BaseMatrixService {
   private async fetchUserDevices(userId: string): Promise<Device[]> {
     try {
       const deviceMap = (await this.getClient().getDeviceKeysManager().getUserDevices(userId)) ?? {}
-      const rawDevices = Object.values(deviceMap) as Array<Record<string, unknown>>
+      const rawDevices = Object.values(deviceMap) as DeviceKeysContent[]
       // 逐设备查**本地 crypto store** 的验证状态（见 loadDeviceVerification 的说明）。
       const verification = await loadDeviceVerification(userId, rawDevices)
       const devices: Device[] = rawDevices
         .map((content) => {
           // keys/query 返回的是设备密钥，display_name 通常位于 unsigned.device_display_name
-          const unsigned = (content.unsigned ?? {}) as Record<string, unknown>
+          const unsigned = content.unsigned ?? {}
           const displayName =
             typeof content.display_name === 'string'
               ? content.display_name

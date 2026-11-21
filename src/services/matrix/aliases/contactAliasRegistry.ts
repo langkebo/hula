@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('ContactAliasRegistry')
@@ -74,7 +75,10 @@ export function parseAliasBook(content: unknown): ContactAliasBook {
   const aliases = (content as { aliases?: unknown }).aliases
   if (!aliases || typeof aliases !== 'object') return book
 
-  for (const [userId, value] of Object.entries(aliases as Record<string, unknown>)) {
+  const aliasEntries = unknownToObject(aliases)
+  if (!aliasEntries) return book
+
+  for (const [userId, value] of Object.entries(aliasEntries)) {
     if (!userId.startsWith('@') || !value || typeof value !== 'object') continue
     const entry = value as { displayName?: unknown; avatarMxc?: unknown; updatedAt?: unknown }
     const displayName = typeof entry.displayName === 'string' ? sanitizeAliasDisplayName(entry.displayName) : null

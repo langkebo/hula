@@ -5,13 +5,20 @@
  * 保证既有 `import type { VideoGenerationRequest } from '@/services/matrix/ai/AIService'` 不变。
  */
 
+/**
+ * 供应商特有的生成参数：键由具体模型 / 供应商决定，透传给后端，属真·动态包。
+ */
+export interface AIGenerationOptions {
+  [option: string]: unknown
+}
+
 export interface ImageGenerationRequest {
   modelId: string
   prompt: string
   width?: number
   height?: number
   conversationId?: string
-  options?: Record<string, unknown>
+  options?: AIGenerationOptions
   [key: string]: unknown
 }
 
@@ -28,7 +35,7 @@ export interface VideoGenerationRequest {
   height?: number
   duration?: number
   conversationId?: string
-  options?: Record<string, unknown>
+  options?: AIGenerationOptions
   [key: string]: unknown
 }
 
@@ -36,7 +43,7 @@ export interface AudioGenerationRequest {
   modelId?: string | number
   prompt: string
   conversationId?: string
-  options?: Record<string, unknown>
+  options?: AIGenerationOptions
   [key: string]: unknown
 }
 

@@ -10,7 +10,7 @@ export interface RoomNotificationSettings {
 }
 
 export interface SessionTagContent {
-  tags?: Record<string, unknown>
+  tags?: { [tagName: string]: unknown }
 }
 
 export interface SessionInfo {

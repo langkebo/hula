@@ -52,10 +52,6 @@ interface VoiceMessageResult {
   mimetype?: string
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 /**
  * VoiceManager 实例类型。
  *
@@ -73,7 +69,7 @@ type VoiceManagerInstance = ReturnType<NonNullable<MatrixClient['getVoiceManager
  *
  * ⚠️ 此前这里声明的是 `{ event_id, sender, duration, timestamp }` —— 后端从未
  * 返回过这四个字段，调用方读到的永远是 `undefined`。声明式为假却没有触发类型
- * 报错，是因为响应体被 `Record<string, unknown>` + `as` 转换吞掉了。
+ * 报错，是因为响应体被宽泛的字典类型 + `as` 转换吞掉了。
  */
 type VoiceMessageRow = Awaited<ReturnType<VoiceManagerInstance['listRoomVoiceMessages']>>['messages'][number]
 
@@ -414,7 +410,8 @@ export const matrixVoiceService = new MatrixVoiceService()
  * 类型守卫：判定未知值是否为语音消息结果（含 filename 字段）。
  */
 export function isVoiceMessageResult(value: unknown): value is VoiceMessageResult {
-  return isObject(value) && typeof value.filename === 'string'
+  const record = unknownToObject(value)
+  return record !== null && typeof record.filename === 'string'
 }
 
 export default matrixVoiceService

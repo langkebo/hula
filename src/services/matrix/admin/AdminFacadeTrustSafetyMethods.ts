@@ -1,4 +1,5 @@
 import { DEFAULT_PAGE_LIMIT } from '@/common/constants'
+import type { IContent } from '@/services/matrix/sdk'
 import { AdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
 import type { AdminModerationService } from './AdminModerationService'
 import type { AdminServerNotificationService } from './AdminServerNotificationService'
@@ -40,7 +41,7 @@ export abstract class AdminFacadeTrustSafetyMethods extends AdminFacadeDomainMet
 
   // ==================== Notification Management ====================
 
-  async sendServerNotice(userId: string, content: Record<string, unknown>): Promise<ServerNoticeResult> {
+  async sendServerNotice(userId: string, content: IContent): Promise<ServerNoticeResult> {
     return this.serverNotifications.sendServerNotice(userId, content)
   }
 

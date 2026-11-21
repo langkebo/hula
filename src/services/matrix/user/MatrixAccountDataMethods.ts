@@ -1,7 +1,7 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getMatrixAccessToken } from '@/services/matrix/matrixClientAccessor'
-import type { Capabilities, IProtocol, MatrixClient } from '@/services/matrix/sdk'
+import type { Capabilities, IContent, IProtocol, MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import {
   cacheInvitePolicy,
@@ -25,12 +25,24 @@ export interface MyRoomEntry {
 }
 
 /**
+ * `/events` 返回的原始客户端事件条目：字段随事件类型变化，属真·动态包。
+ */
+export interface EventStreamChunkItem {
+  type?: string
+  sender?: string
+  event_id?: string
+  origin_server_ts?: number
+  content?: IContent
+  [field: string]: unknown
+}
+
+/**
  * `GET /events` 长轮询响应。
  * `chunk` 为原始客户端事件 JSON（字段随事件类型变化，保持开放），
  * 失败时本服务返回空对象，故全部字段可选。
  */
 export interface EventStreamResponse {
-  chunk?: Array<Record<string, unknown>>
+  chunk?: EventStreamChunkItem[]
   start?: string
   end?: string
 }
@@ -48,6 +60,15 @@ interface MyRoomsCapableClient {
   getRoomManager?: () => MyRoomsCapableRoomManager
 }
 
+/** SDK `/my_rooms` 返回的原始房间条目：字段类型不保证，逐项校验。 */
+interface RawMyRoomEntry {
+  room_id?: unknown
+  membership?: unknown
+  join_state?: unknown
+  name?: unknown
+  avatar_url?: unknown
+}
+
 /** SDK 返回的 room 条目字段与类型均不保证，逐项校验后映射为内部模型。 */
 function toMyRoomEntries(rooms: unknown): MyRoomEntry[] {
   if (!Array.isArray(rooms)) {
@@ -61,7 +82,7 @@ function toMyRoomEntries(rooms: unknown): MyRoomEntry[] {
     if (!room || typeof room !== 'object') {
       continue
     }
-    const record = room as Record<string, unknown>
+    const record = room as RawMyRoomEntry
     const roomId = typeof record.room_id === 'string' ? record.room_id : ''
     if (!roomId || seen.has(roomId)) {
       continue
@@ -90,7 +111,7 @@ function toMyRoomEntries(rooms: unknown): MyRoomEntry[] {
  * 控制在 400 行门槛以内；方法签名与日志 tag 保持不变。
  */
 export abstract class MatrixAccountDataMethods extends MatrixAccountProfileDeviceMethods {
-  async getAccountData<T = Record<string, unknown>>(eventType: string): Promise<T | null> {
+  async getAccountData<T = IContent>(eventType: string): Promise<T | null> {
     const client = this.getClient()
 
     try {

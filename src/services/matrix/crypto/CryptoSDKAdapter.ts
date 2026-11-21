@@ -15,6 +15,7 @@ import type {
   CryptoApi,
   GeneratedSecretStorageKey,
   KeyBackupManager,
+  MatrixAuthData,
   MatrixClientExtended,
   SecureBackupManager,
   VerificationRequest
@@ -197,7 +198,7 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     return this.securityAdapter.storeCrossSigningKeysInSecretStorage()
   }
 
-  setupCrossSigning(authParams?: { password?: string; authData?: unknown }): Promise<void> {
+  setupCrossSigning(authParams?: { password?: string; authData?: MatrixAuthData }): Promise<void> {
     return this.securityAdapter.setupCrossSigning(authParams)
   }
 
@@ -217,7 +218,7 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
       | {
           recoveryKey?: string
           password?: string
-          authData?: unknown
+          authData?: MatrixAuthData
           generatedKey?: GeneratedSecretStorageKey | null
         }
   ): Promise<string> {

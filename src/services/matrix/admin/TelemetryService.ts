@@ -103,14 +103,25 @@ interface TelemetryAlertQueryParams {
   refresh?: boolean
 }
 
+/** 单个组件的健康检查结果（字段由具体组件决定）。 */
+export interface TelemetryCheckDetail {
+  status?: string
+  [field: string]: unknown
+}
+
+/** 各组件健康检查结果的映射：键为组件名，部署侧可增减。 */
+export interface TelemetryChecks {
+  [component: string]: TelemetryCheckDetail
+}
+
 /** 健康检查响应（GET /telemetry/health）。 */
 export interface TelemetryHealthCheck {
   status: string
   service: string
   trace_enabled: boolean
   metrics_enabled: boolean
-  checks: Record<string, unknown>
-  database: Record<string, unknown>
+  checks: TelemetryChecks
+  database: TelemetryCheckDetail
   alerts: TelemetryAlert[]
 }
 

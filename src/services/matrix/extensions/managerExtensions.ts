@@ -1,5 +1,11 @@
 import type { MatrixClient } from '@/services/matrix/sdk'
 
+/** FriendManager 扩展的两种注入形态：访问器函数，或直接挂载的实例。 */
+interface FriendManagerExtension {
+  getFriendManager?: () => unknown
+  friendManager?: { start?: () => unknown } | null
+}
+
 /**
  * 单一真相：判断 MatrixClient 是否注册了 FriendManager 扩展。
  *
@@ -13,9 +19,6 @@ import type { MatrixClient } from '@/services/matrix/sdk'
  */
 export function isFriendManagerRegistered(client: MatrixClient | null): boolean {
   if (!client) return false
-  const c = client as MatrixClient & Record<string, unknown>
-  return (
-    typeof c.getFriendManager === 'function' ||
-    (c.friendManager != null && typeof (c.friendManager as Record<string, unknown>).start === 'function')
-  )
+  const c = client as MatrixClient & FriendManagerExtension
+  return typeof c.getFriendManager === 'function' || typeof c.friendManager?.start === 'function'
 }

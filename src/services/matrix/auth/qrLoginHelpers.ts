@@ -11,6 +11,7 @@ import { createLogger } from '@/utils/Logger'
 import { bytesToHex } from '@/utils/StringUtils'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { PREFIX_V3 } from '../paths'
+import type { MatrixJsonBody } from './authHelpers'
 import type { SdkRendezvousModule } from './qrLoginTypes'
 
 const logger = createLogger('QrLoginHelpers')
@@ -62,7 +63,7 @@ export { getRuntimeAwareFetch, logger, resolveMatrixRuntimeEndpointConfig }
 /**
  * FT-087: 通过 matrixHttpClient 发送未认证的 POST 请求（走 SDK 基础设施：重试、URL 解析）。
  */
-export async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
+export async function postJson<T>(path: string, body: MatrixJsonBody): Promise<T> {
   return matrixHttpClient.request<T>('POST', path, { body })
 }
 

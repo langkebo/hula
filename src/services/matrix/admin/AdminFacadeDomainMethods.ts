@@ -1,8 +1,9 @@
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
-import type { RoomStatsOverview } from '@/services/matrix/sdk'
+import type { RoomStatsOverview, SamlMetadata } from '@/services/matrix/sdk'
 import { AdminFacadeMediaMethods } from './AdminFacadeMediaMethods'
 import type {
   AdminAccountInfo,
+  AdminAccountInfoUpdate,
   AdminAccountStatusInfo,
   AdminAuditLogPage,
   AdminLoginFailure,
@@ -10,6 +11,7 @@ import type {
   AdminRoomEventItem,
   AdminRoomForwardExtremitiesInfo,
   AdminRoomListingsInfo,
+  AdminRoomMessageChunkItem,
   AdminRoomSearchResultItem,
   AdminRoomStatsInfo,
   AdminRoomTokenSync,
@@ -79,7 +81,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 更新 SAML 配置。 */
-  async updateSamlConfig(config: Record<string, unknown>): Promise<void> {
+  async updateSamlConfig(config: Partial<SamlMetadata>): Promise<void> {
     return this.security.updateSamlConfig(config)
   }
 
@@ -150,7 +152,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   }
 
   /** 更新指定账户信息。 */
-  async updateAccountInfo(userId: string, updates: Record<string, unknown>): Promise<void> {
+  async updateAccountInfo(userId: string, updates: AdminAccountInfoUpdate): Promise<void> {
     return this.users.updateAccountInfo(userId, updates)
   }
 
@@ -177,7 +179,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
     from?: string,
     dir: 'b' | 'f' = 'b'
   ): Promise<{
-    chunk: Array<Record<string, unknown>>
+    chunk: AdminRoomMessageChunkItem[]
     start?: string
     end?: string
   }> {

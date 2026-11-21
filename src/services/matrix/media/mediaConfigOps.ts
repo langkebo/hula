@@ -152,13 +152,31 @@ export async function fetchAuthenticatedMediaConfig(
   getMedia: () => MediaManager
 ): Promise<{ authenticated_media: boolean; [key: string]: unknown } | null> {
   try {
-    const result = (await getMedia().getMediaConfig(true)) as Record<string, unknown>
+    const result = (await getMedia().getMediaConfig(true)) as {
+      authenticated_media?: boolean
+      [key: string]: unknown
+    }
     logger.info('[MatrixMedia] 获取认证媒体配置成功')
-    return { authenticated_media: (result.authenticated_media as boolean) ?? false, ...result }
+    return { authenticated_media: result.authenticated_media ?? false, ...result }
   } catch (err) {
     logger.error(`[MatrixMedia] 获取认证媒体配置失败: ${err}`)
     return null
   }
+}
+
+/**
+ * 服务端原始 OpenGraph / Matrix 命名空间字段。
+ *
+ * SDK 的 `UrlPreview` 只声明归一化字段，而 synapse-rust 会原样透传 `og:*` 等键，
+ * 这里按实际契约补齐，全部可选：缺失时由 `normalizeUrlPreview` 走回退链。
+ */
+type UrlPreviewRawFields = {
+  'og:title'?: string
+  'og:description'?: string
+  'og:image'?: string
+  'og:site_name'?: string
+  site_name?: string
+  'matrix:site_name'?: string
 }
 
 /**
@@ -169,7 +187,7 @@ export async function fetchAuthenticatedMediaConfig(
  */
 function normalizeUrlPreview(preview: UrlPreview, fallbackUrl: string): MediaUrlPreview {
   // 服务端返回原始 OpenGraph 字段（og:*），SDK 类型则声明了归一化字段，两者都要兼容。
-  const raw = preview as UrlPreview & Record<string, unknown>
+  const raw: UrlPreview & UrlPreviewRawFields = preview
   const title = (preview.title ?? raw['og:title']) as string | undefined
   const description = (preview.description ?? raw['og:description']) as string | undefined
   const imageUrl = (preview.image_url ??

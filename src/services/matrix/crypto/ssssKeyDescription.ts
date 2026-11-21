@@ -93,19 +93,28 @@ export async function buildSsssKeyDescription(
 
 /* ── 密钥备份导入校验（同属密钥备份域工具，与 SSSS 描述共用此文件以免服务层文件数增长） ── */
 
+/**
+ * 备份导出中的单条房间密钥记录：字段随 SDK 备份格式变化，属真·动态包。
+ */
+export interface RoomKeyBackupEntry {
+  room_id?: string
+  sessions?: unknown
+  [field: string]: unknown
+}
+
 /** 从备份对象中取出 room keys 数组。
  *
  * @param keys 备份对象（数组或含 room_keys 的对象）
  * @returns room keys 数组
  * @throws 当 room_keys 不是数组时抛出可读错误
  */
-export function extractRoomKeys(keys: unknown): Array<Record<string, unknown>> {
+export function extractRoomKeys(keys: unknown): RoomKeyBackupEntry[] {
   const roomKeys =
     typeof keys === 'object' && keys !== null && 'room_keys' in keys ? (keys as { room_keys: unknown }).room_keys : keys
   if (!Array.isArray(roomKeys)) {
     throw new Error('[KeyBackup] 导入数据格式无效：room_keys 必须为数组')
   }
-  return roomKeys as Array<Record<string, unknown>>
+  return roomKeys as RoomKeyBackupEntry[]
 }
 
 /** 解析 JSON 备份文件并取出 room keys 数组。
@@ -114,7 +123,7 @@ export function extractRoomKeys(keys: unknown): Array<Record<string, unknown>> {
  * @returns room keys 数组
  * @throws 当文本不是合法 JSON 或 room_keys 不是数组时抛出可读错误
  */
-export function parseRoomKeysExport(data: string): Array<Record<string, unknown>> {
+export function parseRoomKeysExport(data: string): RoomKeyBackupEntry[] {
   let parsed: unknown
   try {
     parsed = JSON.parse(data)

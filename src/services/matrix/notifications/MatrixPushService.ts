@@ -23,6 +23,12 @@ const logger = createLogger('MatrixPushService')
 
 type PushRuleScope = 'global' | string
 
+/** 推送规则条件：直接复用 SDK 中 `IPushRule` 的声明，避免另抄一份结构。 */
+type PushRuleConditions = NonNullable<IPushRule['conditions']>
+
+/** 注册 pusher 的扩展请求体：tjg 需显式控制 device_id，而 SDK 请求类型把它 Omit 掉了。 */
+type PusherWithDeviceId = IPusher & { device_id?: string; profile_tag?: string }
+
 class MatrixPushService extends BaseMatrixService {
   /**
    * 获取当前账号已注册的全部推送设备（pusher）。
@@ -141,7 +147,7 @@ class MatrixPushService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const deviceId = client.getDeviceId()
-      const pusherData = pusher as IPusher & Record<string, unknown>
+      const pusherData = pusher as PusherWithDeviceId
 
       // 使用 SDK PushManager（SDK-7: device_id 必填化）
       // SDK 的 IPusherRequest 通过 Omit 移除了 device_id 字段（由 SDK 自动注入当前 device_id），
@@ -154,10 +160,10 @@ class MatrixPushService extends BaseMatrixService {
         device_display_name: pusher.device_display_name,
         lang: pusher.lang,
         data: pusher.data,
-        device_id: (pusherData.device_id as string) || deviceId || undefined
+        device_id: pusherData.device_id || deviceId || undefined
       } as IPusherRequest & { device_id?: string }
       if (pusherData.profile_tag) {
-        pusherRequest.profile_tag = pusherData.profile_tag as string
+        pusherRequest.profile_tag = pusherData.profile_tag
       }
       await client.getPushManager().setPusher(pusherRequest)
       logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
@@ -228,12 +234,12 @@ class MatrixPushService extends BaseMatrixService {
     kind: PushRuleKind | string,
     ruleId: string,
     actions: PushRuleAction[],
-    conditions?: Record<string, unknown>[],
+    conditions?: PushRuleConditions,
     pattern?: string
   ): Promise<void> {
     const client = this.getClient()
     try {
-      const rule: { actions: PushRuleAction[]; conditions?: Record<string, unknown>[]; pattern?: string } = {
+      const rule: { actions: PushRuleAction[]; conditions?: PushRuleConditions; pattern?: string } = {
         actions
       }
       if (conditions) rule.conditions = conditions

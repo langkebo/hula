@@ -77,7 +77,7 @@ type KeyBackupSetupInput =
   | {
       recoveryKey?: string
       password?: string
-      authData?: unknown
+      authData?: MatrixAuthData
       generatedKey?: GeneratedSecretStorageKey | null
     }
 
@@ -168,7 +168,7 @@ export class CryptoKeyBackupAdapter {
 
     const recoveryKey = typeof input === 'string' ? input : input?.recoveryKey
     let generatedKey = typeof input === 'string' ? null : (input?.generatedKey ?? null)
-    const authData = typeof input === 'string' ? undefined : (input?.authData as Record<string, unknown> | undefined)
+    const authData = typeof input === 'string' ? undefined : input?.authData
 
     if (recoveryKey) {
       log('分支 1: recoveryKey 已提供，调用 crypto.restoreKeyBackup()')
@@ -317,7 +317,7 @@ export class CryptoKeyBackupAdapter {
       return generatedKey.encodedPrivateKey
     } else {
       log('分支 4: 调用 resetKeyBackup (bootstrapSecretStorage 不可用)')
-      await crypto.resetKeyBackup(authData as MatrixAuthData)
+      await crypto.resetKeyBackup(authData)
       const key = generatedKey?.encodedPrivateKey || ''
       log('分支 4 完成: resetKeyBackup 成功')
       return key

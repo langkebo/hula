@@ -18,6 +18,13 @@ const logger = createLogger('SecretStorageKeyVault')
 const keys = new Map<string, Uint8Array<ArrayBuffer>>()
 
 /**
+ * SSSS 可用密钥集：键为密钥 ID，值由 SDK 定义（本层只消费键名）。
+ */
+export interface SecretStorageKeyMap {
+  [keyId: string]: unknown
+}
+
+/**
  * 从用户输入的恢复密钥解析并存入内存保险箱。
  *
  * 恢复密钥格式为 base58（含前缀与校验字节），由 SDK 的 `decodeRecoveryKey` 校验；
@@ -28,10 +35,7 @@ const keys = new Map<string, Uint8Array<ArrayBuffer>>()
  * @returns 实际写入的 keyId
  * @throws 恢复密钥格式非法，或没有可用的 keyId
  */
-export function setSecretStorageKeyFromRecoveryKey(
-  recoveryKey: string,
-  availableKeys: Record<string, unknown>
-): string {
+export function setSecretStorageKeyFromRecoveryKey(recoveryKey: string, availableKeys: SecretStorageKeyMap): string {
   const decoded = decodeRecoveryKey(recoveryKey)
 
   const keyIds = Object.keys(availableKeys ?? {})
@@ -71,7 +75,7 @@ export function storeSecretStorageKey(keyId: string, key: Uint8Array): void {
  *
  * @param availableKeys SDK 传入的待解密密钥集
  */
-export function getSecretStorageKey(availableKeys: Record<string, unknown>): [string, Uint8Array<ArrayBuffer>] | null {
+export function getSecretStorageKey(availableKeys: SecretStorageKeyMap): [string, Uint8Array<ArrayBuffer>] | null {
   for (const keyId of Object.keys(availableKeys ?? {})) {
     const key = keys.get(keyId)
     if (key) {
@@ -86,7 +90,7 @@ export function getSecretStorageKey(availableKeys: Record<string, unknown>): [st
  *
  * @param availableKeys SDK 传入的待解密密钥集
  */
-export function hasSecretStorageKey(availableKeys: Record<string, unknown>): boolean {
+export function hasSecretStorageKey(availableKeys: SecretStorageKeyMap): boolean {
   return getSecretStorageKey(availableKeys) !== null
 }
 

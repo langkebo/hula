@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { type IPusher, PushRuleActionName } from '@/services/matrix/sdk'
+import { ConditionKind, type IPusher, PushRuleActionName } from '@/services/matrix/sdk'
 import { matrixPushService } from '../MatrixPushService'
 
 /**
@@ -105,7 +105,7 @@ describe('MatrixPushService — SDK PushManager (FT-112)', () => {
     it('直接调用 getPushManager().createPushRule，组装 conditions/pattern', async () => {
       vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
       const actions = [PushRuleActionName.Notify]
-      const conditions = [{ kind: 'event_match', key: 'content.body', pattern: 'foo' }]
+      const conditions = [{ kind: ConditionKind.EventMatch, key: 'content.body', pattern: 'foo' } as const]
       await matrixPushService.addPushRule('global', 'override', '!rule:server', actions, conditions, 'foo')
       expect(pushManagerMocks.createPushRule).toHaveBeenCalledWith('global', 'override', '!rule:server', {
         actions,

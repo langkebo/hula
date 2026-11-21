@@ -396,13 +396,11 @@ class MatrixPresenceService extends BaseMatrixService {
    * 通用错误码匹配：检查 httpStatus / errcode（含 cause 链）
    */
   private matchError(err: unknown, httpStatus: number, errcode: string): boolean {
-    if (!err || typeof err !== 'object') return false
-    const e = err as Record<string, unknown>
+    const e = unknownToObject(err)
+    if (!e) return false
     if (e.httpStatus === httpStatus || e.errcode === errcode) return true
-    if (e.cause && typeof e.cause === 'object') {
-      const cause = e.cause as Record<string, unknown>
-      if (cause.httpStatus === httpStatus || cause.errcode === errcode) return true
-    }
+    const cause = unknownToObject(e.cause)
+    if (cause && (cause.httpStatus === httpStatus || cause.errcode === errcode)) return true
     return false
   }
 }

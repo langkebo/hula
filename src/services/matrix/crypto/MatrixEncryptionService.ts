@@ -1,5 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { GeneratedSecretStorageKey } from '@/types/matrix-extensions'
+import type { GeneratedSecretStorageKey, MatrixAuthData } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -46,7 +46,7 @@ export interface CrossSigningInfo {
 export interface SetupKeyBackupOptions {
   recoveryKey?: string
   password?: string
-  authData?: unknown
+  authData?: MatrixAuthData
   generatedKey?: GeneratedSecretStorageKey | null
 }
 
@@ -293,9 +293,10 @@ class MatrixEncryptionService extends BaseMatrixService {
       }
     }
     if (typeof err === 'object' && err !== null) {
-      const code = (err as Record<string, unknown>).httpStatus
-      if (code === 403) return true
-      const errCode = (err as Record<string, unknown>).errcode || (err as Record<string, unknown>).error
+      // 错误对象形状由 SDK 抛出方决定，这里只读取 403 判定所需字段
+      const { httpStatus, errcode, error } = err as { httpStatus?: unknown; errcode?: unknown; error?: unknown }
+      if (httpStatus === 403) return true
+      const errCode = errcode || error
       if (typeof errCode === 'string' && (errCode.includes('403') || errCode.toLowerCase().includes('forbidden'))) {
         return true
       }

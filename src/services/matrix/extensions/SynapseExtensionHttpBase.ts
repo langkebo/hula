@@ -13,6 +13,20 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
 const PROBE_TIMEOUT_MS = 5_000
 
 /**
+ * synapse-rust 扩展端点的可选包装信封。
+ *
+ * 除约定的 `data` / `status` / `code` / `message` 外，其余业务字段由各端点自定义，
+ * 属于真·动态包：解包时整体作为数据返回，不逐字段建模。
+ */
+interface SynapseEnvelope<T> {
+  data?: T
+  status?: string
+  code?: string
+  message?: string
+  [field: string]: unknown
+}
+
+/**
  * synapse-rust 私有扩展端点的共享 HTTP 基础设施。
  *
  * 历史背景：这些方法原先全部堆在 SynapseRustExtensionsService（1069 行"杂物抽屉"），
@@ -186,13 +200,13 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
     }
 
     if (response && typeof response === 'object' && 'data' in response) {
-      const wrapped = response as { data?: T; status?: string }
+      const wrapped = response as SynapseEnvelope<T>
       if (wrapped.data !== undefined) {
         return wrapped.data
       }
       if (wrapped.status === 'ok' && wrapped.data === undefined) {
         logger.warn('[SynapseRust] 响应 status=ok 但缺少 data 字段，尝试将整个响应作为数据返回')
-        const { data: _, status: __, code: ___, message: ____, ...rest } = wrapped as Record<string, unknown>
+        const { data: _, status: __, code: ___, message: ____, ...rest } = wrapped
         if (Object.keys(rest).length > 0) {
           return rest as T
         }

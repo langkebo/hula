@@ -43,6 +43,13 @@ export interface ExternalServiceHealth {
   consecutive_failures: number
 }
 
+/**
+ * 外部服务配置：键由具体服务类型（OpenClaw 等）决定，属真·动态包。
+ */
+interface ExternalServiceConfig {
+  [configKey: string]: unknown
+}
+
 /** 注册外部服务的请求体。 */
 interface RegisterExternalServiceRequest {
   service_type: string
@@ -50,14 +57,14 @@ interface RegisterExternalServiceRequest {
   display_name: string
   webhook_url?: string
   api_key?: string
-  config?: Record<string, unknown>
+  config?: ExternalServiceConfig
 }
 
 /** 更新外部服务的请求体（所有字段可选）。 */
 interface UpdateExternalServiceRequest {
   webhook_url?: string
   api_key?: string
-  config?: Record<string, unknown>
+  config?: ExternalServiceConfig
   is_enabled?: boolean
 }
 

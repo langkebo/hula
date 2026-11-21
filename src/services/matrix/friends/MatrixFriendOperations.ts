@@ -1,5 +1,6 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import { isConnectionClassError } from '../MatrixRequestHelper'
@@ -26,8 +27,8 @@ const FRIEND_CONFLICT_ERRCODES: ReadonlySet<string> = new Set([
  */
 function isFriendRequestConflict(err: unknown): boolean {
   if (!(err instanceof Error)) return false
-  const record = err as Error & Record<string, unknown>
-  const data = (record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>
+  const record = err as Error & { errcode?: unknown; httpStatus?: unknown; data?: unknown }
+  const data = unknownToObject(record.data) ?? {}
   const errcode =
     typeof record.errcode === 'string' ? record.errcode : typeof data.errcode === 'string' ? data.errcode : ''
   if (FRIEND_CONFLICT_ERRCODES.has(errcode)) return true

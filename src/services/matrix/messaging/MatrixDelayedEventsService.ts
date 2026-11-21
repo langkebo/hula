@@ -1,5 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import type { IContent } from '../sdk'
 import type { SendMessagePayload } from './MatrixMessageService'
 import { buildSendContent } from './messageContentBuilder'
 
@@ -19,7 +20,7 @@ export interface DelayedMessageInfo {
   delayMs: number
   /** 调度时刻（毫秒时间戳，服务端字段 delayed_since_ts）。 */
   scheduledAt: number
-  content: Record<string, unknown>
+  content: IContent
 }
 
 export type DelayedEventErrorReason = 'offline' | 'unsupported' | 'invalid_delay' | 'not_found' | 'unknown'
@@ -38,7 +39,7 @@ interface RawDelayedEventInfo {
   type: string
   delay_ms: number
   delayed_since_ts: number
-  content: Record<string, unknown>
+  content: IContent
 }
 
 function isNotFoundError(error: unknown): boolean {
@@ -99,7 +100,7 @@ class MatrixDelayedEventsService extends BaseMatrixService {
    * 调度一条延迟消息。离线、延迟非法或服务端不支持时抛出可判别错误，
    * 绝不返回本地伪 ID 假装调度成功。
    */
-  async scheduleMessage(roomId: string, content: Record<string, unknown>, delayMs: number): Promise<number> {
+  async scheduleMessage(roomId: string, content: IContent, delayMs: number): Promise<number> {
     if (!navigator.onLine) throw new DelayedEventError('offline')
     if (!roomId?.trim()) throw new DelayedEventError('invalid_delay')
     if (!Number.isInteger(delayMs) || delayMs <= 0 || delayMs > MAX_DELAYED_EVENT_MS) {

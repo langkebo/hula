@@ -157,7 +157,7 @@ export class CryptoHealthMonitor {
       for (const room of rooms) {
         for (const event of room.timeline) {
           const content = event.getContent()
-          if (content && (content as Record<string, unknown>).msgtype === 'm.bad.encrypted') {
+          if (content && content.msgtype === 'm.bad.encrypted') {
             count++
           }
         }
@@ -178,9 +178,9 @@ export class CryptoHealthMonitor {
       for (const room of rooms) {
         for (const event of room.timeline) {
           const content = event.getContent()
-          if (content && (content as Record<string, unknown>).msgtype === 'm.bad.encrypted') {
+          if (content && content.msgtype === 'm.bad.encrypted') {
             const wireContent = event.getWireContent()
-            const sessionId = (wireContent as Record<string, unknown>).session_id as string | undefined
+            const sessionId = typeof wireContent.session_id === 'string' ? wireContent.session_id : undefined
             const roomId = (room as { roomId?: string }).roomId
             if (sessionId && roomId) {
               try {

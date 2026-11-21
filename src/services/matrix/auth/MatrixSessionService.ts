@@ -17,8 +17,19 @@ export type {
 
 const logger = createLogger('MatrixSessionService')
 
+/**
+ * 房间标签元数据。
+ *
+ * synapse-rust 接受字符串形式的 `order`（调用方传 `'0.5'`），而 SDK 的 `ITagMetadata`
+ * 声明为 number；这里按后端实际契约放宽，避免为了类型去改动运行时值。
+ */
+interface RoomTagMetadata {
+  order?: string | number
+  [field: string]: unknown
+}
+
 type MatrixClientWithTags = MatrixClient & {
-  setRoomTag?: (roomId: string, tagName: string, metadata?: Record<string, unknown>) => Promise<unknown>
+  setRoomTag?: (roomId: string, tagName: string, metadata?: RoomTagMetadata) => Promise<unknown>
   deleteRoomTag?: (roomId: string, tagName: string) => Promise<unknown>
   removeRoomTag?: (roomId: string, tagName: string) => Promise<unknown>
 }

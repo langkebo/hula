@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 
 const logger = createLogger('NotificationConfig')
 
@@ -90,11 +91,11 @@ export function sanitizeNotificationEvents(value: unknown): Record<string, boole
  * @returns `value` 为清洗结果，`dropped` 表示是否有字段因类型非法被丢弃
  */
 function parseNotificationConfigFields(value: unknown): { value: Partial<NotificationConfig>; dropped: boolean } {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  const record = unknownToObject(value)
+  if (!record) {
     return { value: {}, dropped: false }
   }
 
-  const record = value as Record<string, unknown>
   const parsed: Partial<NotificationConfig> = {}
   let dropped = false
   for (const key of Object.keys(CONFIG_FIELD_PARSERS) as (keyof NotificationConfig)[]) {
@@ -106,8 +107,7 @@ function parseNotificationConfigFields(value: unknown): { value: Partial<Notific
       }
       continue
     }
-    // 逐字段赋值的键集合是静态的，这里的断言只用于收窄联合类型
-    ;(parsed as Record<string, unknown>)[key] = field
+    Object.assign(parsed, { [key]: field })
   }
   return { value: parsed, dropped }
 }

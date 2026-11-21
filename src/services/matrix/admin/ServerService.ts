@@ -5,7 +5,9 @@ import type {
   AdminInfo,
   AdminServerConfigInfo,
   AdminServerLogEntry,
+  ServerConfigUpdate,
   ServerHealth,
+  ServerHealthChecks,
   ServerStats,
   ServerStatus,
   ServerVersion
@@ -68,7 +70,7 @@ export class AdminServerService {
       const rawHealthy = result.healthy
       const healthy = typeof rawHealthy === 'boolean' ? rawHealthy : result.status === 'ok' && result.database === 'ok'
 
-      const checks = (result.checks as Record<string, unknown> | undefined) ?? {
+      const checks: ServerHealthChecks = unknownToObject<ServerHealthChecks>(result.checks) ?? {
         database: { status: result.database === 'ok' ? 'ok' : 'error' }
       }
 
@@ -104,7 +106,7 @@ export class AdminServerService {
     }
   }
 
-  async updateServerConfig(config: Record<string, unknown>): Promise<void> {
+  async updateServerConfig(config: ServerConfigUpdate): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
       await admin.updateServerConfig(config)

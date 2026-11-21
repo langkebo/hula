@@ -17,6 +17,8 @@ type MatrixVersionsResponse = {
 
 type MatrixCapabilitiesResponse = {
   capabilities?: MatrixCapabilities['capabilities']
+  /** `/_matrix/client/versions` 与 capabilities 都可能带不稳定特性开关。 */
+  unstable_features?: Record<string, boolean> | undefined
 }
 
 /**
@@ -310,9 +312,7 @@ class MatrixCapabilityService {
         const clientConfig = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
 
         // 合并 versions 和 capabilities 两个来源的 unstable_features
-        const capabilitiesUnstable = (capabilities as Record<string, unknown>).unstable_features as
-          | Record<string, boolean>
-          | undefined
+        const capabilitiesUnstable = capabilities.unstable_features
         const mergedUnstableFeatures = mergeUnstableFeatures(capabilitiesUnstable, versions.unstable_features)
 
         const result: MatrixCapabilities = {

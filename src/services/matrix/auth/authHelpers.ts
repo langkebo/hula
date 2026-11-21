@@ -44,7 +44,19 @@ export interface PasswordResetResponse {
   id_server_unbind_result?: 'success' | 'no-support'
 }
 
-type MatrixAuthPayload = Record<string, unknown>
+/**
+ * Matrix 认证请求体：键随登录 / 注册流程（m.login.*）变化，属真·动态包。
+ */
+export interface MatrixAuthPayload {
+  type?: string | undefined
+  session?: string | undefined
+  token?: string | undefined
+  threepid_creds?: { sid?: string | undefined; client_secret?: string | undefined }
+  [field: string]: unknown
+}
+
+/** 任意 Matrix JSON 端点请求体：字段由端点决定，属真·动态包。 */
+export type MatrixJsonBody = { [field: string]: unknown }
 // Tjg 侧流程名 → SDK `submitEmailToken(..., scope)` 的映射见 MatrixAuthService：
 // `password_reset` → `password`，其余 → `register`（后端三条路径挂同一处理器）。
 export type MatrixEmailTokenPurpose = 'register' | 'password_reset'
@@ -185,7 +197,7 @@ export async function runSdkFirst<T>(
 
 /** 发送 Matrix JSON 请求
  */
-export async function postMatrixJson<T>(path: string, body: Record<string, unknown>, failureLabel: string): Promise<T> {
+export async function postMatrixJson<T>(path: string, body: MatrixJsonBody, failureLabel: string): Promise<T> {
   const url = resolveMatrixClientUrl(path)
   let response: Response
 

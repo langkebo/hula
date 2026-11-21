@@ -1,5 +1,5 @@
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
-import type { VerificationRequest } from '@/types/matrix-extensions'
+import type { MatrixAuthData, VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import type { CryptoHealthCallbacks, CryptoHealthStatus } from './CryptoHealthMonitor'
@@ -219,7 +219,7 @@ class MatrixE2EEManager {
   /**
    * 初始化跨签名（可能需要密码或 UIA 认证参数）。
    */
-  async setupCrossSigning(authParams?: { password?: string; authData?: unknown }): Promise<void> {
+  async setupCrossSigning(authParams?: { password?: string; authData?: MatrixAuthData }): Promise<void> {
     return cryptoSDKAdapter.setupCrossSigning(authParams)
   }
 

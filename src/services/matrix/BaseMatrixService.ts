@@ -8,12 +8,15 @@ const productionProvider: MatrixClientProvider = {
   waitForClientReady: (opts) => matrixClientService.waitForClientReady(opts)
 }
 
+/** i18n 插值参数：键集合由各调用点的翻译文案决定，属真·动态包。 */
+export type I18nParams = { [param: string]: unknown }
+
 export abstract class BaseMatrixService {
   private fallbackClient: MatrixClient | null = null
   private hasExplicitFallback = false
   private readonly provider: MatrixClientProvider
 
-  protected readonly t = (key: string, params: Record<string, unknown> = {}): string => useI18nGlobal().t(key, params)
+  protected readonly t = (key: string, params: I18nParams = {}): string => useI18nGlobal().t(key, params)
 
   constructor(provider?: MatrixClientProvider) {
     this.provider = provider ?? productionProvider

@@ -8,6 +8,7 @@ import type {
   AdminRoomEventItem,
   AdminRoomForwardExtremitiesInfo,
   AdminRoomListingsInfo,
+  AdminRoomMessageChunkItem,
   AdminRoomSearchResultItem,
   AdminRoomStatsInfo,
   AdminRoomTokenSync,
@@ -84,7 +85,7 @@ export class AdminRoomService {
         state: (result?.state ?? []).map((event) => ({
           type: event.type ?? '',
           stateKey: event.state_key ?? '',
-          content: (event.content as Record<string, unknown>) ?? {}
+          content: event.content ?? {}
         }))
       }
     } catch (err) {
@@ -180,7 +181,7 @@ export class AdminRoomService {
     from?: string,
     dir: 'b' | 'f' = 'b'
   ): Promise<{
-    chunk: Array<Record<string, unknown>>
+    chunk: AdminRoomMessageChunkItem[]
     start?: string
     end?: string
   }> {
@@ -192,7 +193,7 @@ export class AdminRoomService {
         ...(from !== undefined ? { from } : {})
       })
       return {
-        chunk: (result?.chunk ?? []).map((msg) => unknownToObject(msg) ?? {}),
+        chunk: (result?.chunk ?? []).map((msg) => unknownToObject<AdminRoomMessageChunkItem>(msg) ?? {}),
         start: result?.start,
         end: result?.end
       }

@@ -52,9 +52,22 @@ function translateRoomPreview(key: RoomPreviewKey) {
 }
 
 /**
+ * 事件 content 的不可信形状。
+ *
+ * 服务端与历史数据可能出现畸形内容（例如 `body` 不是字符串），因此只用 `unknown`
+ * 建模预览涉及的键，其余键同样按未知处理，避免调用方误以为字段可信。
+ */
+export interface RoomEventContent {
+  msgtype?: unknown
+  body?: unknown
+  membership?: unknown
+  [field: string]: unknown
+}
+
+/**
  * 获取时间线事件预览文字
  */
-export function getRoomTimelinePreview(eventType: string, content: Record<string, unknown>): string | null {
+export function getRoomTimelinePreview(eventType: string, content: RoomEventContent): string | null {
   const cacheKey = `timeline:${eventType}:${JSON.stringify(content)}`
   if (previewCache.has(cacheKey)) return previewCache.get(cacheKey)!
 
@@ -85,7 +98,7 @@ export function getRoomTimelinePreview(eventType: string, content: Record<string
 /**
  * 获取消息预览文字
  */
-export function getMessagePreviewByType(type: MsgEnum, body: Record<string, unknown>): string {
+export function getMessagePreviewByType(type: MsgEnum, body: RoomEventContent): string {
   const cacheKey = `msg:${type}:${JSON.stringify(body)}`
   if (previewCache.has(cacheKey)) return previewCache.get(cacheKey)!
 

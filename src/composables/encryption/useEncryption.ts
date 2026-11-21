@@ -19,6 +19,7 @@ import {
   matrixVerificationService,
   type VerificationTransaction
 } from '@/services/matrix/crypto/MatrixVerificationService'
+import type { MatrixAuthData } from '@/types/matrix-extensions'
 import { unknownToObject } from '@/utils/typeGuard'
 
 export type { KeyRotationRecord } from '@/services/matrix/crypto/MatrixEncryptionService'
@@ -35,7 +36,7 @@ interface UseEncryptionResult {
   getEncryptionSettings: (roomId: string) => Promise<EncryptionSettings | null>
 
   getCrossSigningInfo: () => Promise<CrossSigningInfo>
-  setupCrossSigning: (authParams?: { password?: string; authData?: unknown }) => Promise<void>
+  setupCrossSigning: (authParams?: { password?: string; authData?: MatrixAuthData }) => Promise<void>
   resetCrossSigning: () => Promise<void>
   checkCrossSigningReady: () => Promise<boolean>
 
@@ -142,7 +143,7 @@ export function useEncryption(): UseEncryptionResult {
     } satisfies CrossSigningInfo
   }
 
-  async function setupCrossSigning(authParams?: { password?: string; authData?: unknown }) {
+  async function setupCrossSigning(authParams?: { password?: string; authData?: MatrixAuthData }) {
     await cryptoSDKAdapter.setupCrossSigning(authParams)
   }
 

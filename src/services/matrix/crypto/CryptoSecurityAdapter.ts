@@ -4,7 +4,7 @@
  * Extracted from CryptoSDKAdapter to keep file sizes under the 400-line budget.
  */
 
-import type { CryptoApi } from '@/types/matrix-extensions'
+import type { CryptoApi, MatrixAuthData } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import type {
   CrossSigningStatusResult,
@@ -13,6 +13,24 @@ import type {
 } from './cryptoAdapterTypes'
 
 const logger = createLogger('CryptoSecurityAdapter')
+
+/** UIA（用户交互式认证）错误载荷：服务端返回的认证上下文，键随认证流程变化。 */
+interface UiaErrorPayload {
+  session?: string
+  flows?: unknown
+  params?: unknown
+  data?: UiaErrorPayload
+  [field: string]: unknown
+}
+
+/** 上传设备签名密钥时透传给 SDK 的认证数据（密码登录等），键随登录类型变化。 */
+interface UiaAuthData {
+  type?: string
+  session?: string
+  user?: string
+  password?: string
+  [field: string]: unknown
+}
 
 export class CryptoSecurityAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
@@ -171,7 +189,7 @@ export class CryptoSecurityAdapter {
 
   /** 设置交叉签名
    */
-  async setupCrossSigning(authParams?: { password?: string; authData?: unknown }): Promise<void> {
+  async setupCrossSigning(authParams?: { password?: string; authData?: MatrixAuthData }): Promise<void> {
     const crypto = this.accessors.getCrypto()
     if (!crypto) {
       throw new Error('CryptoApi 不可用')
@@ -189,16 +207,16 @@ export class CryptoSecurityAdapter {
       }
     }
 
-    const extractUiaErrorData = (err: unknown) => {
+    const extractUiaErrorData = (err: unknown): UiaErrorPayload | null => {
       const candidates: unknown[] = [err]
       if (err && typeof err === 'object' && 'cause' in err) {
         candidates.push((err as { cause?: unknown }).cause)
       }
       for (const candidate of candidates) {
         if (!candidate || typeof candidate !== 'object') continue
-        const record = candidate as Record<string, unknown>
+        const record = candidate as UiaErrorPayload
         if (record.data && typeof record.data === 'object') {
-          const data = record.data as Record<string, unknown>
+          const data = record.data
           if ('session' in data || 'flows' in data || 'params' in data) return data
         }
         if ('session' in record || 'flows' in record || 'params' in record) return record
@@ -209,8 +227,8 @@ export class CryptoSecurityAdapter {
     try {
       await crypto.bootstrapCrossSigning?.({
         authUploadDeviceSigningKeys: async (makeRequest: (authData: unknown) => Promise<unknown>) => {
-          const baseAuthData =
-            (authParams?.authData as Record<string, unknown> | undefined) ?? buildPasswordAuthData(authParams?.password)
+          const baseAuthData: UiaAuthData | undefined =
+            (authParams?.authData as UiaAuthData | undefined) ?? buildPasswordAuthData(authParams?.password)
           if (baseAuthData) {
             try {
               return await makeRequest(baseAuthData)

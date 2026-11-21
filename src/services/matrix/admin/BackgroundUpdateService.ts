@@ -56,6 +56,16 @@ interface BackgroundUpdateStats {
   updated_ts: number
 }
 
+/**
+ * 后台更新任务的自由元数据。
+ *
+ * 键由各 job_type 的后端处理逻辑决定（部署侧可增删），属于真·动态包，
+ * 前端只做透传，不解释具体字段。
+ */
+type BackgroundUpdateMetadata = {
+  [field: string]: unknown
+}
+
 /** 创建后台更新任务的请求体。 */
 interface CreateBackgroundUpdateRequest {
   job_name: string
@@ -67,7 +77,7 @@ interface CreateBackgroundUpdateRequest {
   batch_size?: number
   sleep_ms?: number
   depends_on?: string[]
-  metadata?: Record<string, unknown>
+  metadata?: BackgroundUpdateMetadata
 }
 
 /** 后台更新汇总状态。 */

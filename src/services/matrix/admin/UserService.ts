@@ -10,6 +10,7 @@ import { isNonEmptyString, isValidMatrixUserId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import type {
   AdminAccountInfo,
+  AdminAccountInfoUpdate,
   AdminAccountStatusInfo,
   AdminLoginFailure,
   AdminUserSession,
@@ -538,13 +539,10 @@ export class AdminUserService {
     }
   }
 
-  async updateAccountInfo(userId: string, updates: Record<string, unknown>): Promise<void> {
+  async updateAccountInfo(userId: string, updates: AdminAccountInfoUpdate): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.updateAccountDetails(
-        userId,
-        updates as { displayname?: string; avatar_url?: string; admin?: boolean }
-      )
+      await admin.updateAccountDetails(userId, updates)
       logger.info(`[Admin] 更新账户详情: ${userId}`)
     } catch (err) {
       if (this.isPermissionDenied(err)) return

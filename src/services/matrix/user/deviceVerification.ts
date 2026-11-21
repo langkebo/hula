@@ -30,7 +30,7 @@ const logger = createLogger('MatrixDeviceService')
  */
 export const loadDeviceVerification = async (
   userId: string,
-  devices: Array<Record<string, unknown>>
+  devices: ReadonlyArray<{ device_id?: unknown }>
 ): Promise<Map<string, boolean>> => {
   const result = new Map<string, boolean>()
   // ⚠️ 取 crypto 本身必须防御：客户端未初始化 / crypto 未启用时这里会抛错，

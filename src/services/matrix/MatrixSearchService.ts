@@ -1,6 +1,6 @@
 import { DEFAULT_SEARCH_LIMIT } from '@/common/constants'
 import { useI18nGlobal } from '@/services/i18n'
-import type { MatrixClient, Room } from '@/services/matrix/sdk'
+import type { IContent, MatrixClient, Room } from '@/services/matrix/sdk'
 import type { SearchEventContext } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 import type { SearchMessageHit } from '@/workers/matrixWorkerTypes'
@@ -19,7 +19,7 @@ export interface SearchResult {
   roomId: string
   eventId: string
   sender: string
-  content: Record<string, unknown>
+  content: IContent
   timestamp: number
   roomName?: string | undefined
   context?: SearchEventContext | undefined
@@ -39,7 +39,7 @@ interface MatrixSearchEventResult {
     room_id: string
     event_id: string
     sender: string
-    content: Record<string, unknown>
+    content: IContent
     origin_server_ts: number
   }
   context?: {

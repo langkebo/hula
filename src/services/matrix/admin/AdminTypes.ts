@@ -43,6 +43,13 @@ export interface ServerHealth {
   checks?: ServerHealthChecks
 }
 
+/**
+ * 服务器配置更新载荷：键由 synapse-rust 配置项决定，部署侧可增删，属真·动态包。
+ */
+export interface ServerConfigUpdate {
+  [configKey: string]: unknown
+}
+
 export interface ServerVersion {
   serverVersion: string
   pythonVersion?: string
@@ -92,6 +99,16 @@ export interface RoomInfo {
 
 export interface RoomState {
   state: Array<{ type: string; stateKey: string; content: IContent }>
+}
+
+/** 房间消息条目：后端 `getRoomMessages` 返回的原始客户端事件，字段随事件类型变化。 */
+export interface AdminRoomMessageChunkItem {
+  event_id?: string
+  type?: string
+  sender?: string
+  origin_server_ts?: number
+  content?: IContent
+  [field: string]: unknown
 }
 
 export interface ShutdownRoomResult {
@@ -474,6 +491,9 @@ export type AdminWhoisInfo = Partial<WhoisResponse>
 
 /** 账户详情（SDK `AdminAccountDetails`）。 */
 export type AdminAccountInfo = Partial<AdminAccountDetails>
+
+/** 账户信息更新载荷：只提交允许修改的字段，未列出的字段由服务端忽略。 */
+export type AdminAccountInfoUpdate = Partial<AdminAccountDetails>
 
 /** 账户状态（SDK `AccountStatus`）。 */
 export type AdminAccountStatusInfo = Partial<AccountStatus>

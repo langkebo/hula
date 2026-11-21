@@ -1,4 +1,4 @@
-import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
+import type { IContent, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { isMessageEventType, MatrixBurnDuration, MatrixEventType, MatrixFormat } from '@/common/matrixConstants'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
@@ -31,7 +31,7 @@ interface ThumbnailInfo {
   mimetype?: string
 }
 
-type EventContent = Record<string, unknown>
+type EventContent = IContent
 type MessageSendSource = File | string
 
 // scrollback / 反向分页的超时保护：避免 SlidingSync 下 scrollback 挂起导致 UI 永久卡在骨架屏。
@@ -334,10 +334,7 @@ class MatrixEventService extends BaseMatrixService {
     } else if (msgType === MsgEnum.LINK_PREVIEW) {
       body = content
     } else {
-      body = matrixMessageAdapter.convertMatrixContent(
-        content as Record<string, unknown>,
-        msgType
-      ) as MessageType['message']['body']
+      body = matrixMessageAdapter.convertMatrixContent(content, msgType) as MessageType['message']['body']
     }
 
     // 线程内消息：m.relates_to.rel_type === 'm.thread'，event_id 指向线程根。
