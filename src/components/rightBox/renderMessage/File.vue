@@ -316,15 +316,31 @@ const handleIconError = (event: Event) => {
   target.src = '/file/other.svg'
 }
 
-// 校验目标路径是否位于当前会话文件目录内，避免消息内容诱导打开任意本地路径
-const isWithinChatFilesDir = async (targetPath: string) => {
-  const roomDir = await userStore.getUserRoomAbsoluteDir()
-  const normalize = (value: string) => value.replace(/\\/g, '/').replace(/\/+$/, '')
-  const normalizedDir = normalize(roomDir)
-  if (!normalizedDir) return false
+// 逐段折叠 `.` / `..` 后重建绝对路径；越出根目录时返回空串表示不可信
+const collapsePathSegments = (value: string): string => {
+  const segments: string[] = []
+  for (const segment of value.replace(/\\/g, '/').split('/')) {
+    if (segment === '' || segment === '.') continue
+    if (segment === '..') {
+      if (segments.length === 0) return ''
+      segments.pop()
+      continue
+    }
+    segments.push(segment)
+  }
+  return `/${segments.join('/')}`
+}
 
-  const normalizedTarget = normalize(targetPath.replace(/^file:\/\//i, ''))
-  return normalizedTarget === normalizedDir || normalizedTarget.startsWith(`${normalizedDir}/`)
+// 校验目标路径是否位于当前会话文件目录内，避免消息内容诱导打开任意本地路径。
+// 必须先折叠 `..` 再比较：仅做字符串前缀判断时，`<roomDir>/../../other/secret` 会被误判为合法。
+const isWithinChatFilesDir = async (targetPath: string) => {
+  const roomDir = collapsePathSegments(await userStore.getUserRoomAbsoluteDir())
+  if (roomDir === '/') return false
+
+  const target = collapsePathSegments(targetPath.replace(/^file:\/\//i, ''))
+  if (!target) return false
+
+  return target === roomDir || target.startsWith(`${roomDir}/`)
 }
 
 // 处理文件点击
