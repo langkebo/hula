@@ -11,6 +11,8 @@
  * 本模块把探测结果分成五类，并给出各自的处置含义，供日志与 UI 使用。
  */
 
+import { hasOwn } from '@/utils/webCompat'
+
 export type AdminApiAvailabilityStatus =
   /** 探测成功（HTTP 200）：Admin API 在，且当前凭证可用 */
   | 'available'
@@ -184,7 +186,7 @@ export function readOptionalCapabilityFlag(
 ): boolean | null {
   if (!unstableFeatures) return null
   const flag = ADMIN_OPTIONAL_CAPABILITY_FLAGS[capability]
-  if (!Object.hasOwn(unstableFeatures, flag)) return null
+  if (!hasOwn(unstableFeatures, flag)) return null
   return unstableFeatures[flag] === true
 }
 

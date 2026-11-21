@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import { arrayAt } from '@/utils/webCompat'
 
 const logger = createLogger('startupPerf')
 
@@ -25,7 +26,7 @@ export function runAfterFirstPaint(task: () => Promise<void>): void {
 export function endPerfSpan(name: string): number {
   performance.mark(`${name}-end`)
   performance.measure(name, `${name}-start`, `${name}-end`)
-  const duration = performance.getEntriesByName(name).at(-1)?.duration ?? 0
+  const duration = arrayAt(performance.getEntriesByName(name), -1)?.duration ?? 0
   if (import.meta.env.DEV) {
     logger.debug(`Perf measure [${name}]: ${duration.toFixed(2)}ms`)
   }

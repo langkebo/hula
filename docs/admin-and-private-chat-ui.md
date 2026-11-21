@@ -28,11 +28,8 @@
 - 仅当用户角色为 `admin` 时显示
 - 点击后跳转至 `/admin` 路由
 
-**移动端**:
-- 底部 Tab 栏"我的"页面内
-- 折叠在"高级设置"分组中
-- 使用 🔧 扳手图标 + "管理后台"文字
-- 仅当用户角色为 `admin` 时显示
+**移动端不需要实现**:
+
 
 #### 1.1.2 权限判断
 
@@ -86,42 +83,7 @@ const isAdmin = computed(() => {
 - 顶部栏背景: `#ffffff`
 - 阴影: `--hula-shadow-sm`
 
-#### 1.2.2 移动端布局
 
-```
-┌────────────────────┐
-│  ← 管理后台        │
-├────────────────────┤
-│                    │
-│  📊 仪表盘          │
-│  ───────────────── │
-│  👥 用户管理        │
-│  ───────────────── │
-│  🏠 房间管理        │
-│  ───────────────── │
-│  🔔 通知管理        │
-│  ───────────────── │
-│  🛡️ 安全设置        │
-│  ───────────────── │
-│  📈 数据统计        │
-│  ───────────────── │
-│  ⚙️ 系统配置        │
-│                    │
-│  ───────────────── │
-│  📝 审计日志        │
-│  ───────────────── │
-│  🔧 运维工具        │
-│                    │
-└────────────────────┘
-```
-
-**设计规范**:
-- 全屏列表布局
-- 列表项高度: 56px
-- 分隔线: `1px solid --hula-border-muted`
-- 点击后进入子页面（栈式导航）
-
----
 
 ### 1.3 功能模块详细设计
 
@@ -400,8 +362,9 @@ const isAdmin = computed(() => {
 - 倒计时进度条（底部细条，红色）
 
 **销毁后**:
-- 消息替换为 "🔥 消息已销毁" 占位
-- 占位样式: 半透明 + 斜体 + 灰色文字
+- 本地倒计时结束时，消息替换为 "🔥 消息已销毁" 占位（半透明 + 斜体 + 灰色）
+- ⚠️ 服务端 sweep 到期后推送 `BURN_MESSAGE_BURNED`，届时消息被**整体移除**，占位不再显示
+- 两条清理路径的差异与影响见 §2.3.5
 
 #### 2.3.2 接收方视角
 
@@ -417,6 +380,55 @@ const isAdmin = computed(() => {
 - 渐隐效果（300ms）
 - 火焰特效（可选）
 - 最终显示: "🔥 消息已销毁"
+
+---
+
+#### 2.3.5 实现状态与已知限制（2026-11-21 审计）
+
+本节记录**代码实际行为**，与上文的设计意图可能有差异，以实现为准。
+
+**已落地的链路**（非界面伪装）：
+
+| 环节 | 实现位置 | 行为 |
+| --- | --- | --- |
+| 发送标记 | `messageContentBuilder.ts` | 内容写入 `m.burn_after_read = { expires_in }` |
+| 服务端登记 | `synapse-rust` `burn_after_read_service/schedule` | **per-user** 记录 `delete_ts`（每人一行，不是房间级） |
+| 自动调度 | SDK `burn-after-read` 收到含 `expires_in` 的消息时调 `scheduleBurn` | 客户端无需手动触发 |
+| 阅读上报 | `BurnMessage.vue` 进入视口 → `markMessageRead` | 成功后 `isBurning = true`，启动倒计时 |
+| 发送方感知 | 后端 `MessageRead` → `BURN_MESSAGE_READ` → `updateMsg({ isBurning: true })` | 发送方也看到倒计时 |
+| 本地到期 | `BurnMessage.completeBurn()` | `isBurned = true`，渲染「已销毁」占位 |
+| 服务端到期 | `sweep.process_expired_burns` → `BURN_MESSAGE_BURNED` → `chatStore.deleteMsg` | **直接移除消息** |
+| 后台清扫 | `start_burn_processor` | 定时扫过期行，标记 processed，失败重试（上限 5 次转 dead letter） |
+
+**已知限制（必须知道）**：
+
+1. **「焚毁」是本地遮罩，不是物理删除。**
+   服务端**不 redact 房间事件**——因为房间事件是所有成员共享的，一个读者到期就 redact 等于
+   「一人已读、全员丢消息」。物理删除交给 retention 策略（房间级）。
+   代码注释原文见 `MatrixBurnAfterReadService.ts` 的「遮罩语义」说明。
+
+2. **两条清理路径行为不一致。**
+   本地倒计时结束 → 显示「已销毁」占位（`isBurned = true`，保留视觉痕迹）；
+   服务端 sweep 到期 → `deleteMsg` **直接移除**。
+   谁先发生取决于 sweep 周期，所以用户可能先看到占位、随后消息整体消失。
+
+3. **重新加载可能恢复。**
+   客户端**没有持久化「已焚毁黑名单」**，消息列表也没按 pending 过滤。
+   `getPendingBurns` 目前只被「待焚毁列表」页与房间设置页使用，未参与消息渲染过滤。
+   因此重新进入会话 / 重新 sync 后，已到期的消息**可能重新出现**（直到服务端 sweep 后
+   再来一次 `BURN_MESSAGE_BURNED`）。
+
+4. **恶意客户端可以拒绝上报。**
+   `markMessageRead` 由客户端主动调用；改包/拒调即可让消息永不进入倒计时。
+   服务端的 per-user 登记表只在客户端上报后才存在，**没有服务端侧的强制到期**。
+   因此该功能防的是「普通用户的随手翻看」，**不是**防有技术能力的接收方。
+
+5. **发送方可截屏/复制。**
+   §2.4 的防截屏仅覆盖本端窗口，无法阻止对方拍照或用另一台设备记录。
+
+**结论**：功能**真实可用**（有后端登记 + 后台清扫 + 事件推送 + UI 全链路），
+但**不具备密码学意义的「不可恢复销毁」**。对外沟通应表述为「阅后即焚（本地销毁）」，
+不要承诺「服务端不保留」。
 
 ---
 
@@ -527,3 +539,18 @@ const adminGuard = async (to, from, next) => {
 | 审计日志 | `GET /_synapse/admin/v1/directory/list/audit` |
 | 私密模式切换 | `PUT /_matrix/client/v3/rooms/{roomId}/state/com.hula.privacy` |
 | 阅后即焚标记 | `POST /_matrix/client/v3/rooms/{roomId}/receipt/{receiptType}/{eventId}` |
+
+### B.2 阅后即焚 API（`/_matrix/vendor/v1`）
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| `GET` | `/rooms/{room_id}/burn` | 读房间焚毁设置 |
+| `PUT` | `/rooms/{room_id}/burn` | 开/关房间焚毁（`burn_after_ms`） |
+| `GET` | `/rooms/{room_id}/burn/pending` | 列出本人待焚毁/已处理的行 |
+| `PUT` | `/rooms/{room_id}/burn/{event_id}` | 为一个事件登记销毁时间 |
+| `DELETE` | `/rooms/{room_id}/burn/{event_id}` | 取消某事件的销毁登记 |
+| `PUT` | `/user/burn/config` | 设置本人默认时长 |
+| `GET` | `/user/burn/stats` | 焚毁统计（房间数 / 总数） |
+
+服务端实现：`synapse-services/src/burn_after_read_service/`（`consume` / `sweep` / `settings`）。
+前端服务：`src/services/matrix/messaging/MatrixBurnAfterReadService.ts`。
