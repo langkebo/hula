@@ -38,18 +38,16 @@
           <EmptyState v-else compact variant="subtle" :description="t('admin.push.noSupportedKeys')" />
         </div>
 
-        <n-data-table
+        <AdminTable
           :columns="configColumns"
           :data="configRows"
           :loading="configLoading"
           :row-key="(row: ConfigRow) => row.key"
-          :scroll-x="640" />
-
-        <EmptyState
-          v-if="!configLoading && configRows.length === 0"
-          compact
-          data-testid="admin-push-config-empty"
-          :description="t('admin.push.configEmpty')" />
+          :scroll-x="640">
+          <template #empty>
+            <EmptyState compact data-testid="admin-push-config-empty" :description="t('admin.push.configEmpty')" />
+          </template>
+        </AdminTable>
       </n-space>
     </n-card>
 
@@ -143,20 +141,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type DataTableColumns,
-  NAlert,
-  NButton,
-  NCard,
-  NDataTable,
-  NInput,
-  NInputNumber,
-  NSpace,
-  NTag,
-  useDialog
-} from 'naive-ui'
+import { type DataTableColumns, NAlert, NButton, NCard, NInput, NInputNumber, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { useAdminPush } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'

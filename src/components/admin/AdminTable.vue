@@ -7,7 +7,8 @@
     :bordered="bordered"
     :striped="striped"
     :remote="remote"
-    v-bind="rowKey ? { rowKey } : {}">
+    :size="size"
+    v-bind="{ ...(rowKey ? { rowKey } : {}), ...$attrs }">
     <template v-if="isEmptyData" #empty>
       <slot name="empty">
         <EmptyState compact :description="t('admin.common.noData')" />
@@ -21,6 +22,10 @@ import { type DataTableColumns, NDataTable } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
+
+// attrs 显式下发到 n-data-table（class / data-testid / ref 等），
+// 否则它们会落在根节点上，跨页面迁移时行为不一致。
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
@@ -40,9 +45,15 @@ const props = withDefaults(
     rowKey?: (row: T) => string | number
     /** 远程模式：排序/筛选/分页由外部控制 */
     remote?: boolean
+    /**
+     * 行密度。管理后台默认用 `small`：一屏能多放几行，
+     * 与 `--tjg-space-*` 的紧凑节奏一致。
+     */
+    size?: 'small' | 'medium' | 'large'
   }>(),
   {
     loading: false,
+    size: 'small',
     pagination: () => ({ pageSize: 20 }),
     bordered: false,
     striped: true,

@@ -33,13 +33,12 @@
       </template>
     </n-page-header>
 
-    <n-data-table
+    <AdminTable
       :columns="columns"
       :data="displayedLogs"
       :loading="loading"
       :pagination="pagination"
       :row-key="(row: AuditEntry) => row.id"
-      striped
       class="mt-16px" />
 
     <n-drawer v-model:show="detailVisible" placement="right" :width="520">
@@ -66,7 +65,6 @@ import {
   type DataTableColumns,
   NButton,
   NCode,
-  NDataTable,
   NDatePicker,
   NDescriptions,
   NDescriptionsItem,
@@ -80,6 +78,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { type AuditEntryView as AuditEntry, useAdminAudit } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'

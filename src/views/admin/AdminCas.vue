@@ -18,17 +18,16 @@
           @close="servicesError = null">
           {{ servicesError }}
         </n-alert>
-        <n-data-table
+        <AdminTable
           :columns="serviceColumns"
           :data="services"
           :loading="servicesLoading"
           :row-key="(row: CasServiceInfo) => row.id"
-          :scroll-x="720" />
-        <EmptyState
-          v-if="servicesEmpty"
-          compact
-          data-testid="admin-cas-services-empty"
-          :description="t('admin.cas.servicesEmpty')" />
+          :scroll-x="720">
+          <template #empty>
+            <EmptyState compact data-testid="admin-cas-services-empty" :description="t('admin.cas.servicesEmpty')" />
+          </template>
+        </AdminTable>
       </n-space>
     </n-card>
 
@@ -79,17 +78,19 @@
           {{ attributesError }}
         </n-alert>
 
-        <n-data-table
+        <AdminTable
           :columns="attributeColumns"
           :data="attributes"
           :loading="attributesLoading"
           :row-key="(row: CasUserAttribute) => row.name"
-          :scroll-x="640" />
-        <EmptyState
-          v-if="attributesEmpty"
-          compact
-          data-testid="admin-cas-attributes-empty"
-          :description="t('admin.cas.attributesEmpty')" />
+          :scroll-x="640">
+          <template #empty>
+            <EmptyState
+              compact
+              data-testid="admin-cas-attributes-empty"
+              :description="t('admin.cas.attributesEmpty')" />
+          </template>
+        </AdminTable>
 
         <n-alert :bordered="false" type="info">{{ t('admin.cas.attributeWriteHint') }}</n-alert>
         <n-space align="center" :wrap="true">
@@ -117,9 +118,10 @@
 </template>
 
 <script setup lang="ts">
-import { type DataTableColumns, NAlert, NButton, NCard, NDataTable, NInput, NSpace, NTag, useDialog } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { type DataTableColumns, NAlert, NButton, NCard, NInput, NSpace, NTag, useDialog } from 'naive-ui'
+import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { useAdminCas } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { CasServiceInfo, CasUserAttribute } from '@/services/matrix/admin'
@@ -147,8 +149,6 @@ const {
 } = useAdminCas()
 
 /** 加载完成且无数据时才展示空态，避免加载中抢先渲染空提示 */
-const servicesEmpty = computed(() => !servicesLoading.value && services.value.length === 0)
-const attributesEmpty = computed(() => !attributesLoading.value && attributes.value.length === 0)
 
 const draftId = ref('')
 const draftName = ref('')
