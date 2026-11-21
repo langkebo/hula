@@ -167,7 +167,10 @@
     "samlLogoutFailed": "Failed to log out SAML session",
     "samlLogoutSuccess": "SAML session logged out",
     "serverInfo": "Server Info",
-    "statsOverviewEmpty": "No server statistics available"
+    "statsOverviewEmpty": "No server statistics available",
+    "empty": "No users yet",
+    "emptyFiltered": "No users match your filters. Try relaxing them.",
+    "clearFilters": "Clear filters"
   },
   "rooms": {
     "search": "Search room ID, name or topic",

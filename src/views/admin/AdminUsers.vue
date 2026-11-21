@@ -57,7 +57,17 @@
       :data="filteredUsers"
       :loading="loading"
       :pagination="{ pageSize: 20 }"
-      :row-key="(row: UserInfo) => row.userId" />
+      :row-key="(row: UserInfo) => row.userId">
+      <!-- 空态要区分「确实没有用户」和「筛选把结果筛没了」——
+           两者对管理员的下一步动作完全不同（邀请 vs 放宽条件）。 -->
+      <template #empty>
+        <EmptyState compact :description="hasActiveFilter ? t('admin.users.emptyFiltered') : t('admin.users.empty')">
+          <template v-if="hasActiveFilter" #actions>
+            <n-button size="small" @click="clearFilters">{{ t('admin.users.clearFilters') }}</n-button>
+          </template>
+        </EmptyState>
+      </template>
+    </AdminTable>
 
     <div class="admin-users-footer">
       <span>{{ t('admin.users.loadedCount', { count: filteredUsers.length }) }}</span>
@@ -112,6 +122,17 @@ const searchQuery = admin.searchQuery
 const filterRole = admin.filterRole
 const filterStatus = admin.filterStatus
 const filteredUsers = admin.filteredUsers
+
+/** 任一筛选项偏离「全部」即为 true。用于决定空态文案与是否给「清除筛选」。 */
+const hasActiveFilter = computed(
+  () => Boolean(searchQuery.value?.trim()) || filterRole.value !== 'all' || filterStatus.value !== 'all'
+)
+
+function clearFilters() {
+  searchQuery.value = ''
+  filterRole.value = 'all'
+  filterStatus.value = 'all'
+}
 const selectedUserIds = admin.selectedUserIds
 
 const columns = computed(() => [

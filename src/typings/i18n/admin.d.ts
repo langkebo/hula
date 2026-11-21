@@ -172,7 +172,10 @@ export type Messages = {
     "samlLogoutFailed": "SAML 登出失败",
     "samlLogoutSuccess": "SAML 会话已注销",
     "serverInfo": "服务端信息",
-    "statsOverviewEmpty": "暂无服务端统计"
+    "statsOverviewEmpty": "暂无服务端统计",
+    "empty": "还没有用户",
+    "emptyFiltered": "没有匹配的用户，试试放宽筛选条件",
+    "clearFilters": "清除筛选"
   },
   "rooms": {
     "search": "搜索房间ID、名称或话题",
@@ -1636,6 +1639,9 @@ export type KeyPaths =
   | "admin.users.samlLogoutSuccess"
   | "admin.users.serverInfo"
   | "admin.users.statsOverviewEmpty"
+  | "admin.users.empty"
+  | "admin.users.emptyFiltered"
+  | "admin.users.clearFilters"
   | "admin.rooms.search"
   | "admin.rooms.searchBtn"
   | "admin.rooms.searchFailed"
