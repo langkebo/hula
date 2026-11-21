@@ -30,8 +30,8 @@ export function useCanvasTool(
     color: 'red',
     isDrawing: false,
     brushSize: 10,
-    actions: [],
-    undoStack: []
+    actions: [] as ImageData[],
+    undoStack: [] as ImageData[]
   })
 
   const currentTool = ref('')
@@ -301,14 +301,15 @@ export function useCanvasTool(
 
   const saveAction = () => {
     const imageData = drawCtx.value.getImageData(0, 0, drawCanvas.value.width, drawCanvas.value.height)
-    drawConfig.value.actions.push(imageData as never)
+    drawConfig.value.actions.push(imageData)
     drawConfig.value.undoStack = [] // 清空撤销堆栈
   }
 
   const undo = () => {
     closeListen()
     if (drawConfig.value.actions.length > 0) {
-      drawConfig.value.undoStack.push(drawConfig.value.actions.pop() as never)
+      const last = drawConfig.value.actions.pop()
+      if (last) drawConfig.value.undoStack.push(last)
       drawCtx.value.clearRect(0, 0, drawCanvas.value.width, drawCanvas.value.height)
       if (drawConfig.value.actions.length > 0) {
         drawCtx.value.putImageData(drawConfig.value.actions[drawConfig.value.actions.length - 1], 0, 0)
@@ -321,7 +322,7 @@ export function useCanvasTool(
     if (drawConfig.value.undoStack.length > 0) {
       const imageData = drawConfig.value.undoStack.pop()
       if (imageData) {
-        drawConfig.value.actions.push(imageData as never)
+        drawConfig.value.actions.push(imageData)
         drawCtx.value.putImageData(imageData, 0, 0)
       }
     }
