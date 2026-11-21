@@ -17,17 +17,18 @@
       </n-button>
     </n-space>
 
-    <n-data-table
+    <AdminTable
       :columns="providerColumns"
       :data="providers"
       :loading="providersLoading"
       :row-key="(row: AdminPasswordAuthProvider) => row.id"
-      :scroll-x="760" />
-
-    <EmptyState
-      v-if="showProvidersEmpty"
-      data-testid="account-policy-provider-empty"
-      :description="t('admin.accountPolicy.providers.empty')" />
+      :scroll-x="760">
+      <template #empty>
+        <EmptyState
+          data-testid="account-policy-provider-empty"
+          :description="t('admin.accountPolicy.providers.empty')" />
+      </template>
+    </AdminTable>
 
     <n-card :title="t('admin.accountPolicy.providers.createTitle')">
       <n-form label-placement="top">
@@ -82,7 +83,6 @@ import {
   NAlert,
   NButton,
   NCard,
-  NDataTable,
   NForm,
   NFormItem,
   NInput,
@@ -91,8 +91,9 @@ import {
   NSwitch,
   NTag
 } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminAccountPolicy } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -108,8 +109,6 @@ const { providers, providersLoading, providersSaving, providersError, loadProvid
 const providerDraft = ref({ providerName: '', providerType: '', isEnabled: true })
 const providerPriority = ref<number | null>(100)
 const providerConfig = ref('{}')
-
-const showProvidersEmpty = computed(() => !providersLoading.value && providers.value.length === 0)
 
 function formatTs(ts: number | null | undefined): string {
   return ts ? new Date(ts).toLocaleString() : '-'

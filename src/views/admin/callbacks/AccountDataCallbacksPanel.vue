@@ -20,17 +20,16 @@
       {{ accountDataError }}
     </n-alert>
 
-    <n-data-table
+    <AdminTable
       :columns="accountDataColumns"
       :data="accountDataCallbacks"
       :loading="accountDataLoading"
       :row-key="(row: AdminAccountDataCallback) => row.id"
-      :scroll-x="720" />
-
-    <EmptyState
-      v-if="showAccountDataEmpty"
-      data-testid="admin-callbacks-account-empty"
-      :description="t('admin.callbacks.accountData.empty')" />
+      :scroll-x="720">
+      <template #empty>
+        <EmptyState data-testid="admin-callbacks-account-empty" :description="t('admin.callbacks.accountData.empty')" />
+      </template>
+    </AdminTable>
 
     <n-card :title="t('admin.callbacks.accountData.createTitle')">
       <n-form label-placement="top">
@@ -80,7 +79,6 @@ import {
   NAlert,
   NButton,
   NCard,
-  NDataTable,
   NForm,
   NFormItem,
   NInput,
@@ -88,8 +86,9 @@ import {
   NSwitch,
   NTag
 } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminCallbacks } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -114,8 +113,6 @@ const accountDraft = ref({
   dataTypes: '',
   isEnabled: true
 })
-
-const showAccountDataEmpty = computed(() => !accountDataLoading.value && accountDataCallbacks.value.length === 0)
 
 function formatTs(ts: number | null): string {
   if (!ts) return '-'

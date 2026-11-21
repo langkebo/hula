@@ -2,7 +2,6 @@
 import {
   type DataTableColumns,
   NButton,
-  NDataTable,
   NDatePicker,
   NDescriptions,
   NDescriptionsItem,
@@ -17,6 +16,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { type MediaLibraryItem, type UseAdminMedia, useAdminMedia } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -67,7 +67,6 @@ const previewUrl = computed<string | null>(() => {
   return resolveMxcToHttp(matrixClientService.getClient(), uri, 480, 480)
 })
 /** 加载完成且媒体库为空时才展示空态 */
-const isEmptyLibrary = computed(() => !libraryLoading.value && library.value.length === 0)
 /** 按「服务器名 + 媒体 ID」直查：用于媒体库列表未覆盖跨服务器场景。 */
 const queryServerName = ref(matrixClientService.getClient()?.getDomain() ?? '')
 const queryMediaId = ref('')
@@ -289,13 +288,15 @@ onMounted(() => {
       </n-button>
     </n-space>
 
-    <n-data-table
+    <AdminTable
       :columns="columns"
       :data="library"
       :loading="libraryLoading"
-      :row-key="(row: MediaLibraryItem) => row.mediaId"
-      striped />
-    <EmptyState v-if="isEmptyLibrary" :description="t('admin.media.empty.library')" />
+      :row-key="(row: MediaLibraryItem) => row.mediaId">
+      <template #empty>
+        <EmptyState :description="t('admin.media.empty.library')" />
+      </template>
+    </AdminTable>
 
     <div v-if="libraryNextBatch" class="mt-12px flex justify-center">
       <n-button :loading="libraryLoading" @click="loadMoreLibrary">
@@ -337,7 +338,7 @@ onMounted(() => {
         </n-descriptions>
 
         <h4 class="mt-16px mb-8px">{{ t('admin.media.detail.history') }}</h4>
-        <n-data-table :columns="historyColumns" :data="history" size="small" :loading="detailLoading" />
+        <AdminTable :columns="historyColumns" :data="history" size="small" :loading="detailLoading" />
       </n-drawer-content>
     </n-drawer>
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { type DataTableColumns, NButton, NCard, NDataTable, NInput, NPopconfirm, NSpace } from 'naive-ui'
+import { type DataTableColumns, NButton, NCard, NInput, NPopconfirm, NSpace } from 'naive-ui'
 import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { type UseAdminMedia, useAdminMedia } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { formatBytes } from '@/utils/Formatting'
@@ -125,8 +126,6 @@ const handleDeleteUserAll = async (): Promise<void> => {
 }
 
 /** 房间/用户媒体为空：加载完成且当前无数据时才展示空态，避免首屏闪空 */
-const roomMediaEmpty = computed(() => roomLoaded.value && !roomMediaLoading.value && roomMedia.value.length === 0)
-const userMediaEmpty = computed(() => userLoaded.value && !userMediaLoading.value && userMedia.value.length === 0)
 
 const renderDeleteAction = (onDelete: () => void, disabled: boolean) =>
   h(
@@ -200,8 +199,11 @@ const userColumns = computed<DataTableColumns<UserMediaItem>>(() => [
             </n-button>
           </n-space>
 
-          <n-data-table :columns="roomColumns" :data="roomMedia" :loading="roomMediaLoading" size="small" />
-          <EmptyState v-if="roomMediaEmpty" compact :description="t('admin.media.empty.roomMedia')" />
+          <AdminTable :columns="roomColumns" :data="roomMedia" :loading="roomMediaLoading" size="small">
+            <template #empty>
+              <EmptyState compact :description="t('admin.media.empty.roomMedia')" />
+            </template>
+          </AdminTable>
 
           <div v-if="roomMediaNextBatch" class="flex justify-center">
             <n-button :loading="roomMediaLoading" @click="loadMoreRoomMedia">
@@ -233,8 +235,11 @@ const userColumns = computed<DataTableColumns<UserMediaItem>>(() => [
             </n-button>
           </n-space>
 
-          <n-data-table :columns="userColumns" :data="userMedia" :loading="userMediaLoading" size="small" />
-          <EmptyState v-if="userMediaEmpty" compact :description="t('admin.media.empty.userMedia')" />
+          <AdminTable :columns="userColumns" :data="userMedia" :loading="userMediaLoading" size="small">
+            <template #empty>
+              <EmptyState compact :description="t('admin.media.empty.userMedia')" />
+            </template>
+          </AdminTable>
 
           <div class="flex justify-end">
             <n-space align="center">

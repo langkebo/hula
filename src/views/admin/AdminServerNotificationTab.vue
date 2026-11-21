@@ -18,17 +18,16 @@
       </n-button>
     </n-space>
 
-    <n-data-table
+    <AdminTable
       :columns="columns"
       :data="notifications"
       :loading="loading"
       :row-key="(row: SystemNotificationInfo) => row.id"
-      :scroll-x="720" />
-
-    <EmptyState
-      v-if="showNotificationsEmpty"
-      data-testid="server-notification-empty"
-      :description="t('admin.notifications.server.empty')" />
+      :scroll-x="720">
+      <template #empty>
+        <EmptyState data-testid="server-notification-empty" :description="t('admin.notifications.server.empty')" />
+      </template>
+    </AdminTable>
   </n-space>
 
   <n-drawer v-model:show="drawerVisible" :width="420" placement="right">
@@ -73,7 +72,6 @@ import {
   type DataTableColumns,
   NAlert,
   NButton,
-  NDataTable,
   NDrawer,
   NDrawerContent,
   NForm,
@@ -86,6 +84,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminServerNotifications } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -113,8 +112,6 @@ const drawerVisible = ref(false)
 const editingId = ref<string | null>(null)
 const targetsInput = ref('')
 const draft = ref({ content: '', type: 'info' })
-
-const showNotificationsEmpty = computed(() => !loading.value && notifications.value.length === 0)
 
 const typeOptions = computed(() => [
   { label: t('admin.notifications.server.typeOptions.info'), value: 'info' },

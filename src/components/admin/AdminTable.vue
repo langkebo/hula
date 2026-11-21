@@ -1,5 +1,13 @@
 <template>
+  <!--
+    空态放在表格外面而不是 n-data-table 的 #empty 插槽里，原因有两个：
+    1. 插槽方案在 jsdom 下不渲染（Naive UI 依赖真实渲染时机），空态的测试会静默失效；
+    2. 空列表时连表头一起显示其实是噪音 —— 直接不画表格更干净。
+
+    这也是各页面原本「表格 + 外部 EmptyState」的写法，迁移后视觉与之前一致。
+  -->
   <n-data-table
+    v-if="!showEmpty"
     :columns="columns"
     :data="data"
     :loading="loading"
@@ -8,13 +16,10 @@
     :striped="striped"
     :remote="remote"
     :size="size"
-    v-bind="{ ...(rowKey ? { rowKey } : {}), ...$attrs }">
-    <template v-if="isEmptyData" #empty>
-      <slot name="empty">
-        <EmptyState compact :description="t('admin.common.noData')" />
-      </slot>
-    </template>
-  </n-data-table>
+    v-bind="{ ...(rowKey ? { rowKey } : {}), ...$attrs }" />
+  <slot v-else name="empty">
+    <EmptyState compact :description="t('admin.common.noData')" />
+  </slot>
 </template>
 
 <script setup lang="ts" generic="T extends Record<string, any>">
@@ -63,5 +68,6 @@ const props = withDefaults(
 
 const { t } = useI18n()
 
-const isEmptyData = computed(() => !props.loading && props.data.length === 0)
+/** 空列表且非加载中：此时不渲染表格，直接给空态。 */
+const showEmpty = computed(() => !props.loading && props.data.length === 0)
 </script>

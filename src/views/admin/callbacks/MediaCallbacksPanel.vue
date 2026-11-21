@@ -25,17 +25,16 @@
       {{ mediaError }}
     </n-alert>
 
-    <n-data-table
+    <AdminTable
       :columns="mediaColumns"
       :data="mediaCallbacks"
       :loading="mediaLoading"
       :row-key="(row: AdminMediaCallback) => row.id"
-      :scroll-x="960" />
-
-    <EmptyState
-      v-if="showMediaEmpty"
-      data-testid="admin-callbacks-media-empty"
-      :description="t('admin.callbacks.media.empty')" />
+      :scroll-x="960">
+      <template #empty>
+        <EmptyState data-testid="admin-callbacks-media-empty" :description="t('admin.callbacks.media.empty')" />
+      </template>
+    </AdminTable>
 
     <n-card :title="t('admin.callbacks.media.createTitle')">
       <n-form label-placement="top">
@@ -98,7 +97,6 @@ import {
   NAlert,
   NButton,
   NCard,
-  NDataTable,
   NForm,
   NFormItem,
   NInput,
@@ -107,8 +105,9 @@ import {
   NSwitch,
   NTag
 } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminCallbacks } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -131,8 +130,6 @@ const mediaDraft = ref({
   retryCount: 0,
   isEnabled: true
 })
-
-const showMediaEmpty = computed(() => !mediaLoading.value && mediaCallbacks.value.length === 0)
 
 function formatTs(ts: number | null): string {
   if (!ts) return '-'

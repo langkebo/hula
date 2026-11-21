@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { type DataTableColumns, NButton, NDataTable, NTag } from 'naive-ui'
-import { computed, h, onMounted } from 'vue'
+import { type DataTableColumns, NButton, NTag } from 'naive-ui'
+import { h, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { type UseAdminMedia, useAdminMedia } from '@/composables/admin'
 
@@ -11,7 +12,6 @@ const { t } = useI18n()
 const { quarantineChanges, quarantineLoading, loadQuarantineChanges, loadMoreQuarantineChanges } = useAdminMedia()
 
 /** 加载完成且排除记录为空时才展示空态 */
-const isEmptyQuarantineChanges = computed(() => !quarantineLoading.value && quarantineChanges.value.length === 0)
 
 const columns: DataTableColumns<QuarantineChange> = [
   { title: t('admin.media.column.origin'), key: 'origin', width: 220, ellipsis: { tooltip: true } },
@@ -34,8 +34,11 @@ onMounted(() => {
 
 <template>
   <div class="media-quarantine-changes-panel">
-    <n-data-table :columns="columns" :data="quarantineChanges" :loading="quarantineLoading" />
-    <EmptyState v-if="isEmptyQuarantineChanges" :description="t('admin.media.empty.changes')" />
+    <AdminTable :columns="columns" :data="quarantineChanges" :loading="quarantineLoading">
+      <template #empty>
+        <EmptyState :description="t('admin.media.empty.changes')" />
+      </template>
+    </AdminTable>
 
     <div v-if="quarantineChanges.length > 0" class="mt-12px flex justify-center">
       <n-button :loading="quarantineLoading" @click="loadMoreQuarantineChanges">
