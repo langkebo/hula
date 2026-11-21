@@ -141,6 +141,7 @@
     "@breezystack/lamejs": "^1.2.7",
     "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@iconify/vue": "^5.0.1",
+    "@langkebo/matrix-js-sdk": "file:vendor/matrix-js-sdk.tgz",
     "@matrix-org/matrix-sdk-crypto-wasm": "^17.1.0",
     "@shikijs/core": "^4.4.3",
     "@tauri-apps/api": "2.11.1",

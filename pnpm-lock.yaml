@@ -191,6 +191,9 @@ importers:
       '@iconify/vue':
         specifier: ^5.0.1
         version: 5.0.1(vue@3.5.42(typescript@6.0.3))
+      '@langkebo/matrix-js-sdk':
+        specifier: file:vendor/matrix-js-sdk.tgz
+        version: file:vendor/matrix-js-sdk.tgz
       '@matrix-org/matrix-sdk-crypto-wasm':
         specifier: ^17.1.0
         version: 17.1.0
@@ -1464,7 +1467,7 @@ packages:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
   '@langkebo/matrix-js-sdk@file:vendor/matrix-js-sdk.tgz':
-    resolution: {tarball: file:vendor/matrix-js-sdk.tgz}
+    resolution: {integrity: sha512-POlWIYqJPdgk7E6jG5mnhlUbl91TY5KB6rb5HwilElZ786EsrMiZJJyfjElVAVxcB1fBiDDrbld3HcQeMrmldg==, tarball: file:vendor/matrix-js-sdk.tgz}
     version: 40.2.0-langkebo.9
     engines: {node: '>=22.0.0'}
 
