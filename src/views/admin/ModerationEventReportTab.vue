@@ -70,11 +70,11 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { EventReport } from '@/services/matrix/admin/AdminTypes'
 import { matrixEventReportService } from '@/services/matrix/moderation/MatrixEventReportService'
 import type { ReportResponse } from '@/services/matrix/sdk'
-import AdminTable from '@/components/admin/AdminTable.vue'
 
 defineOptions({
   name: 'ModerationEventReportTab'

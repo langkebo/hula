@@ -62,24 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type DataTableColumns,
-  NButton,
-  NCard,
-  NGi,
-  NGrid,
-  NInput,
-  NPageHeader,
-  NSpace,
-  NStatistic
-} from 'naive-ui'
+import { type DataTableColumns, NButton, NCard, NGi, NGrid, NInput, NPageHeader, NSpace, NStatistic } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import FedStatusBadge from '@/components/federation/FedStatusBadge.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
-import AdminTable from '@/components/admin/AdminTable.vue'
 
 const logger = createLogger('AdminFederationMonitor')
 const { t } = useI18n()

@@ -114,12 +114,12 @@ import {
 import { storeToRefs } from 'pinia'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useModerationStore } from '@/stores/domains/chat/moderation'
 import type { Report } from '@/types/matrix-services'
 import ModerationAdminReportTab from './ModerationAdminReportTab.vue'
 import ModerationEventReportTab from './ModerationEventReportTab.vue'
-import AdminTable from '@/components/admin/AdminTable.vue'
 
 defineOptions({
   name: 'ModerationPanel'

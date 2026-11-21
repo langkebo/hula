@@ -57,9 +57,9 @@
 import { NButton, NDrawer, NDrawerContent, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { type RegistrationToken, useAdminRegistrationTokens } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import AdminTable from '@/components/admin/AdminTable.vue'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()

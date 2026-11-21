@@ -144,10 +144,10 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { type AdminFeatureFlag, type AdminFeatureFlagInput, useAdminMaintenance } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
-import AdminTable from '@/components/admin/AdminTable.vue'
 
 const logger = createLogger('FeatureFlagManager')
 const { t } = useI18n()
