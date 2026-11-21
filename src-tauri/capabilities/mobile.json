@@ -50,6 +50,10 @@
     "mic-recorder:allow-stop-recording",
     "core:app:allow-set-app-theme",
     {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "$APPDATA/userData/**" }]
+    },
+    {
       "identifier": "fs:write-files",
       "allow": [
         { "path": "$APPDATA/tjg/**" },
