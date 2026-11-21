@@ -43,15 +43,18 @@
     </section>
 
     <section class="bu-section">
-      <n-data-table
+      <AdminTable
         :columns="columns"
         :data="updates"
         :loading="loading"
-        :locale="{ emptyText: t('background_updates.empty') }"
         :pagination="{ pageSize: 20 }"
         :row-key="(row: BackgroundUpdate) => row.job_name"
-        size="small"
-        striped />
+        size="small">
+        <!-- 原来靠 :locale.emptyText 给文案，但空列表时整个表格不渲染，locale 就没机会生效 -->
+        <template #empty>
+          <EmptyState compact :description="t('background_updates.empty')" />
+        </template>
+      </AdminTable>
     </section>
   </div>
 </template>
@@ -61,7 +64,6 @@ import {
   type DataTableColumns,
   NAlert,
   NButton,
-  NDataTable,
   NDescriptions,
   NDescriptionsItem,
   NPageHeader,
@@ -73,6 +75,8 @@ import {
 } from 'naive-ui'
 import { h, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminBackgroundUpdates } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { BackgroundUpdate } from '@/services/matrix/admin/BackgroundUpdateService'
