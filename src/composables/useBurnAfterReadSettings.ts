@@ -6,7 +6,11 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useBurnAfterRead } from './useBurnAfterRead'
 
 /** 阅后即焚可选时长（秒），桌面与移动端共用 */
-const BURN_DURATION_VALUES = [30, 60, 300, 3600, 86400] as const
+/**
+ * 可选存续时长（秒）。产品口径固定三档：1 / 5 / 30 分钟。
+ * 与后端 `MAX_BURN_AFTER_MS`（30 分钟）保持一致，超出的值会被拒。
+ */
+const BURN_DURATION_VALUES = [60, 300, 1800] as const
 
 /**
  * 阅后即焚设置页共享逻辑（桌面 Naive UI / 移动 Vant 各自只保留模板）。

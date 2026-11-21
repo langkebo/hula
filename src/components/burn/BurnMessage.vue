@@ -147,6 +147,13 @@ async function completeBurn() {
   if (props.eventId) {
     markEventBurned(props.eventId)
   }
+  // 到期即从消息列表移除（接收端自动删除）。
+  //
+  // 为什么不用 SDK 的 MessageBurned 事件：它要 /redact 成功才 emit，而
+  // can_redact_event 只对「作者本人（v11+）」或「power >= 50」放行，
+  // 接收方是普通成员 ⇒ 403 ⇒ 事件永不触发 ⇒ deleteMsg 永不执行。
+  // 本地倒计时是接收端唯一可靠的到期信号，删除必须挂在这里。
+  chatStore.deleteMsg(props.msgId)
   // Fix 5: 移除 markMessageRead 调用（已在消息可见时调用）
   // 持久化 burned 状态到 store，防止组件重建后重复触发
   chatStore.updateMsg({

@@ -400,6 +400,9 @@ const isAdmin = computed(() => {
 | 服务端到期 | `sweep.process_expired_burns` → `BURN_MESSAGE_BURNED` → `chatStore.deleteMsg` | **直接移除消息** |
 | 后台清扫 | `start_burn_processor` | 定时扫过期行，标记 processed，失败重试（上限 5 次转 dead letter） |
 
+**时长口径**：仅支持 **1 / 5 / 30 分钟**三档（前端 `BURN_DURATION_VALUES`，
+后端 `MAX_BURN_AFTER_MS = 30 分钟`；超出上限会被服务端拒绝）。
+
 **已知限制（必须知道）**：
 
 1. **「焚毁」是本地遮罩，不是物理删除。**
@@ -407,10 +410,14 @@ const isAdmin = computed(() => {
    「一人已读、全员丢消息」。物理删除交给 retention 策略（房间级）。
    代码注释原文见 `MatrixBurnAfterReadService.ts` 的「遮罩语义」说明。
 
-2. **两条清理路径行为不一致。**
-   本地倒计时结束 → 显示「已销毁」占位（`isBurned = true`，保留视觉痕迹）；
-   服务端 sweep 到期 → `deleteMsg` **直接移除**。
-   谁先发生取决于 sweep 周期，所以用户可能先看到占位、随后消息整体消失。
+2. ~~两条清理路径行为不一致。~~ **已统一（2026-11-21）。**
+   原状：本地倒计时结束只置 `isBurned`（占位留痕），服务端 sweep 才删。
+   现实现：`BurnMessage.completeBurn()` 在到期时**直接 `chatStore.deleteMsg`**，
+   接收端在本地时间到达即移除消息。
+
+   ⚠️ 这里刻意**不走 SDK 的 `MessageBurned` 事件**：它要 `/redact` 成功才 emit，
+   而 `can_redact_event` 只对「作者本人（v11+）」或「power >= 50」放行 ——
+   接收方是普通成员必然 403，事件永不触发。**本地倒计时是接收端唯一可靠的到期信号。**
 
 3. ~~重新加载可能恢复。~~ **已修复（2026-11-21）。**
    原状：客户端没有持久化「已焚毁黑名单」，消息列表也不按 pending 过滤，
