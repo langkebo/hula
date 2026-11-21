@@ -86,13 +86,12 @@
       </n-gi>
     </n-grid>
 
-    <n-data-table
+    <AdminTable
       :columns="columns"
       :data="policies"
       :loading="loading"
       :pagination="pagination"
-      :row-key="(row: RetentionPolicy) => row.roomId"
-      striped />
+      :row-key="(row: RetentionPolicy) => row.roomId" />
 
     <n-drawer v-model:show="editVisible" placement="right" :width="380">
       <n-drawer-content :title="t('admin.retention.edit_title')" closable>
@@ -124,7 +123,6 @@ import {
   NAlert,
   NButton,
   NCard,
-  NDataTable,
   NDescriptions,
   NDescriptionsItem,
   NDrawer,
@@ -144,6 +142,7 @@ import {
 } from 'naive-ui'
 import { h, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { type RetentionPolicyView as RetentionPolicy, useAdminRetention } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'

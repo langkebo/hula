@@ -145,7 +145,7 @@
 
       <section class="telemetry-section">
         <h4 class="telemetry-section-title">{{ t('telemetry.section.alerts') }}</h4>
-        <n-data-table
+        <AdminTable
           :columns="alertColumns"
           :data="alerts"
           :bordered="false"
@@ -174,7 +174,6 @@ import {
   type DataTableColumns,
   NAlert,
   NButton,
-  NDataTable,
   NDescriptions,
   NDescriptionsItem,
   NEmpty,
@@ -185,6 +184,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { useAdminTelemetry } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type {

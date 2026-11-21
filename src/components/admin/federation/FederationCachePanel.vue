@@ -18,23 +18,25 @@
       {{ cacheError }}
     </n-alert>
 
-    <n-spin :show="cacheLoading">
-      <n-data-table
-        :columns="columns"
-        :data="cacheEntries"
-        :pagination="{ pageSize: 20 }"
-        :bordered="false"
-        striped
-        :row-key="(row: FederationCacheEntry) => row.key" />
-      <EmptyState v-if="isEmptyCacheEntries" data-test="cache-empty" :description="t('admin.federation.cacheEmpty')" />
-    </n-spin>
+    <AdminTable
+      :columns="columns"
+      :data="cacheEntries"
+      :loading="cacheLoading"
+      :pagination="{ pageSize: 20 }"
+      :bordered="false"
+      :row-key="(row: FederationCacheEntry) => row.key">
+      <template #empty>
+        <EmptyState data-test="cache-empty" :description="t('admin.federation.cacheEmpty')" />
+      </template>
+    </AdminTable>
   </div>
 </template>
 
 <script setup lang="ts">
-import { type DataTableColumns, NAlert, NButton, NDataTable, NSpin, useDialog } from 'naive-ui'
+import { type DataTableColumns, NAlert, NButton, useDialog } from 'naive-ui'
 import { computed, h, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminFederation } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -46,7 +48,6 @@ const { showFeedback } = useActionFeedback()
 const { cacheEntries, cacheLoading, cacheError, loadCache, clearCache, removeCacheEntry } = useAdminFederation()
 
 /** 加载完成、无错误且无缓存条目时才展示空态 */
-const isEmptyCacheEntries = computed(() => !cacheLoading.value && !cacheError.value && cacheEntries.value.length === 0)
 
 function formatTime(ts: number | null): string {
   return ts ? new Date(ts).toLocaleString() : '-'

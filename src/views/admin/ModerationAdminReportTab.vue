@@ -24,7 +24,7 @@
       </n-button>
     </n-alert>
 
-    <n-data-table
+    <AdminTable
       v-else
       data-testid="admin-report-table"
       :columns="columns"
@@ -120,7 +120,6 @@ import {
   type DataTableColumns,
   NAlert,
   NButton,
-  NDataTable,
   NDescriptions,
   NDescriptionsItem,
   NDrawer,
@@ -133,6 +132,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import ReportScannerInfo from '@/components/admin/moderation/ReportScannerInfo.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'

@@ -26,15 +26,13 @@
           </n-button>
         </div>
 
-        <n-spin :show="destLoading">
-          <n-data-table
-            :columns="destColumns"
-            :data="filteredDestinations"
-            :pagination="{ pageSize: 20 }"
-            :bordered="false"
-            striped
-            :row-key="(row: FederationDestination) => row.destination" />
-        </n-spin>
+        <AdminTable
+          :columns="destColumns"
+          :data="filteredDestinations"
+          :loading="destLoading"
+          :pagination="{ pageSize: 20 }"
+          :bordered="false"
+          :row-key="(row: FederationDestination) => row.destination" />
       </n-tab-pane>
 
       <n-tab-pane name="blacklist" :tab="t('admin.federation.blacklist')">
@@ -67,15 +65,13 @@
           </n-space>
         </div>
 
-        <n-spin :show="blacklistLoading">
-          <n-data-table
-            :columns="blacklistColumns"
-            :data="filteredBlacklist"
-            :pagination="{ pageSize: 20 }"
-            :bordered="false"
-            striped
-            :row-key="(row: BlacklistEntry) => row.domain" />
-        </n-spin>
+        <AdminTable
+          :columns="blacklistColumns"
+          :data="filteredBlacklist"
+          :loading="blacklistLoading"
+          :pagination="{ pageSize: 20 }"
+          :bordered="false"
+          :row-key="(row: BlacklistEntry) => row.domain" />
       </n-tab-pane>
 
       <n-tab-pane name="cache" :tab="t('admin.federation.cache')">
@@ -154,6 +150,7 @@
 import { NButton, NDrawer, NDrawerContent, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import FederationCachePanel from '@/components/admin/federation/FederationCachePanel.vue'
 import FederationPendingPanel from '@/components/admin/federation/FederationPendingPanel.vue'
 import { type FederationBlacklistView, type FederationDestination, useAdminFederation } from '@/composables/admin'

@@ -25,8 +25,7 @@
           </n-button>
         </n-space>
 
-        <n-data-table
-          v-if="results.length > 0"
+        <AdminTable
           :columns="resultColumns"
           :data="results"
           :bordered="false"
@@ -38,9 +37,10 @@
 </template>
 
 <script setup lang="ts">
-import { NAlert, NButton, NDataTable, NDrawer, NDrawerContent, NInput, NSpace, NTag } from 'naive-ui'
+import { NAlert, NButton, NDrawer, NDrawerContent, NInput, NSpace, NTag } from 'naive-ui'
 import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import type { BatchCreateUserInput, UseAdminUsersResult } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminErrorHandler } from './useAdminError'

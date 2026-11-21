@@ -17,7 +17,7 @@
     :remote="remote"
     :size="size"
     v-bind="{ ...(rowKey ? { rowKey } : {}), ...$attrs }" />
-  <slot v-else name="empty">
+  <slot v-else-if="!emptyHidden" name="empty">
     <EmptyState compact :description="t('admin.common.noData')" />
   </slot>
 </template>
@@ -55,10 +55,18 @@ const props = withDefaults(
      * 与 `--tjg-space-*` 的紧凑节奏一致。
      */
     size?: 'small' | 'medium' | 'large'
+    /**
+     * 空列表时是否**不显示**空态。
+     *
+     * 用于「错误提示已经在上面了，再叠一个空态是噪音」的场景 ——
+     * 原页面用 `v-if="!error && empty"` 表达这个语义，迁移后由该开关接管。
+     */
+    emptyHidden?: boolean
   }>(),
   {
     loading: false,
     size: 'small',
+    emptyHidden: false,
     pagination: () => ({ pageSize: 20 }),
     bordered: false,
     striped: true,

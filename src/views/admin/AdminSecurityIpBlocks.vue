@@ -8,16 +8,16 @@
     </n-button>
   </div>
 
-  <n-spin :show="loading">
-    <EmptyState v-if="isEmptyBlocks" :description="t('admin.security.no_ip_blocks')" />
-    <n-data-table
-      v-else
-      :columns="columns"
-      :data="blocks"
-      :pagination="{ pageSize: 20 }"
-      :row-key="(row: Record<string, unknown>) => String(row.ip ?? row.id)"
-      striped />
-  </n-spin>
+  <AdminTable
+    :columns="columns"
+    :data="blocks"
+    :loading="loading"
+    :pagination="{ pageSize: 20 }"
+    :row-key="(row: Record<string, unknown>) => String(row.ip ?? row.id)">
+    <template #empty>
+      <EmptyState :description="t('admin.security.no_ip_blocks')" />
+    </template>
+  </AdminTable>
 
   <n-drawer v-model:show="showBlockIpDialog" placement="right" :width="380">
     <n-drawer-content :title="t('admin.security.block_ip')" closable>
@@ -51,18 +51,17 @@ import {
   type DataTableColumns,
   type FormInst,
   NButton,
-  NDataTable,
   NDrawer,
   NDrawerContent,
   NForm,
   NFormItem,
   NIcon,
   NInput,
-  NPopconfirm,
-  NSpin
+  NPopconfirm
 } from 'naive-ui'
-import { computed, h, reactive, ref } from 'vue'
+import { h, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
@@ -81,8 +80,6 @@ const blockIpForm = reactive({ ip: '', reason: '' })
 const blockIpRules = {
   ip: { required: true, message: t('admin.security.ip_required'), trigger: 'blur' }
 }
-
-const isEmptyBlocks = computed(() => blocks.value.length === 0)
 
 const columns: DataTableColumns<Record<string, unknown>> = [
   {
