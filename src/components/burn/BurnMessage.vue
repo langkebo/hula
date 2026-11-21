@@ -30,6 +30,7 @@ import { useI18n } from 'vue-i18n'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
+import { markEventBurned } from '@/utils/burnedMessages'
 import BurnIndicator from './BurnIndicator.vue'
 
 const { t } = useI18n()
@@ -142,6 +143,10 @@ async function completeBurn() {
   internalIsBurning.value = false
   internalIsBurned.value = true
   internalRemainingSeconds.value = 0
+  // 记入跨会话黑名单：否则重进会话/重新 sync 后这条消息会复活（服务端不 redact）。
+  if (props.eventId) {
+    markEventBurned(props.eventId)
+  }
   // Fix 5: 移除 markMessageRead 调用（已在消息可见时调用）
   // 持久化 burned 状态到 store，防止组件重建后重复触发
   chatStore.updateMsg({

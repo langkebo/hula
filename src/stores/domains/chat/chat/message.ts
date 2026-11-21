@@ -10,6 +10,7 @@ import type { CustomForwardTask, MessageBody, MessageType, RecalledMessage } fro
 
 export type { MessageBody, MessageType }
 
+import { isEventBurned } from '@/utils/burnedMessages'
 import type { MessageLoadFailure } from './messageLoadFailure'
 import { createMessageLoading } from './messageLoading'
 import { createMessageMutations } from './messageMutations'
@@ -196,12 +197,20 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
   const chatMessageList = computed(() => {
     const roomId = globalStore.currentSessionRoomId
     if (!roomId || !sortedMessageKeys[roomId]) return []
-    return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
+    // 已焚毁的条目从排序键里过滤掉：服务端不 redact、本地也没有持久化记忆时，
+    // 重进会话/重新 sync 会让到期消息复活；黑名单就是那份记忆。
+    return sortedMessageKeys[roomId]
+      .map((id) => messageMap[roomId][id])
+      .filter((m) => Boolean(m) && !isEventBurned(m.message.id))
   })
 
   const chatMessageListByRoomId = computed(() => (roomId: string) => {
     if (!sortedMessageKeys[roomId]) return []
-    return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
+    // 已焚毁的条目从排序键里过滤掉：服务端不 redact、本地也没有持久化记忆时，
+    // 重进会话/重新 sync 会让到期消息复活；黑名单就是那份记忆。
+    return sortedMessageKeys[roomId]
+      .map((id) => messageMap[roomId][id])
+      .filter((m) => Boolean(m) && !isEventBurned(m.message.id))
   })
 
   // O(1) 末条消息：取排序键最后一项 + messageMap 对应项，不再重建整条数组（供会话列表预览细粒度订阅）

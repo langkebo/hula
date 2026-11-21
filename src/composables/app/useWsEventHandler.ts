@@ -20,6 +20,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { markEventBurned } from '@/utils/burnedMessages'
 import { createLogger } from '@/utils/Logger'
 import { normalizeMatrixUserId } from '@/utils/userIdentity'
 
@@ -239,6 +240,9 @@ export function useWsEventHandler() {
     useMitt.on<{ eventId: string; burnedAt: number }>(MittEnum.BURN_MESSAGE_BURNED, (payload) => {
       logger.debug('[ManagerEvent] 阅后即焚消息已焚毁', payload)
       if (payload?.eventId) {
+        // 先落黑名单再删：deleteMsg 只清当前房间的内存视图，
+        // 不记下来重载后仍会复活。
+        markEventBurned(payload.eventId)
         chatStore.deleteMsg(payload.eventId)
       }
     })

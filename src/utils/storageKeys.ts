@@ -41,6 +41,16 @@ export const WEB_SESSION_FALLBACK_STORAGE_KEY = 'tjg:session:web-fallback'
 
 /** 离线消息队列的持久化键（`OfflineQueueService` 与 e2e 断网用例共用）。 */
 export const OFFLINE_QUEUE_STORAGE_KEY = 'tjg-offline-queue'
+/**
+ * 已焚毁消息的事件 ID 黑名单（JSON 数组，最多保留 {@link BURNED_MESSAGE_LIMIT} 条）。
+ *
+ * 阅后即焚在服务端是 per-user 时间登记，不做 redact；客户端原本也没有持久化
+ * 「哪些已经烧掉了」，所以重进会话/重新 sync 后到期消息会复活。
+ * 这个键就是补上那份记忆，让「重载后不再出现」成立。
+ */
+export const BURNED_MESSAGES_STORAGE_KEY = 'tjg:burned-messages'
+/** 黑名单容量上限；超出时丢弃最早写入的条目（按数组顺序）。 */
+export const BURNED_MESSAGE_LIMIT = 1000
 
 /** 搜索索引 IndexedDB 库名（`searchIndexDb` 与 e2e 校验用例共用）。 */
 export const SEARCH_INDEX_DB_NAME = 'tjg-worker-cache'
@@ -54,5 +64,6 @@ export const ALL_STORAGE_KEYS: readonly string[] = [
   MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY,
   WEB_SESSION_FALLBACK_STORAGE_KEY,
   OFFLINE_QUEUE_STORAGE_KEY,
+  BURNED_MESSAGES_STORAGE_KEY,
   SEARCH_INDEX_DB_NAME
 ]
