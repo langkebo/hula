@@ -1437,7 +1437,7 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 
 视觉与规范：
 
-- [x] 无新增 `#xxx` / `rgb()` / `rgba()` 字面量，全部走 `--tjg-*`。 —— 证据：`pnpm check:ratchet` exit 0（`hardcoded_radius 0/0`、`inline_style 5/5` 均在 allowlist、`important_css 39/39`）；`pnpm check:tokens` 224 个 token 零引用 0、使用率 100%。
+- [x] 无新增 `#xxx` / `rgb()` / `rgba()` 字面量，全部走 `--tjg-*`。 —— 证据：`pnpm check:ratchet` exit 0（`hardcoded_radius 0/0`、`inline_style 5/5` 均在 allowlist、`important_css 39/39`；2026-11-21 复跑已收紧至 `important_css 20/20`、`backdrop_filter_raw 4/4`）；`pnpm check:tokens` 224 个 token 零引用 0、使用率 100%。
 - [x] 无 emoji 图标；新增图标为 SVG 且尺寸一致。 —— 证据：模板段静态扫描（排除 `__tests__`）命中 4 个文件，逐行核对均为注释或装饰字符 `✓`，无 emoji 作图标；`pnpm check:icon-colors` exit 0（585 处已迁移 token）、`pnpm check:svg-aria` exit 0（587 处 SVG 图标）。
 - [x] 过渡 150-250ms，且 `prefers-reduced-motion` 下关闭非必要动效。 —— 证据：`src` 下 608 个 `.vue` / `.scss` / `.css` 文件扫描，仅 2 处超出区间且均属例外：`BurnIndicator.vue:158` 的 `transition: width 1s linear`（倒计时进度条，属进度动画而非交互动效）、`design-tokens.css:731` 的 `transition-duration: 0.01ms !important`（reduced-motion 全局关闭开关）；`prefers-reduced-motion` 覆盖 66 个文件 68 处，含 `mobile.scss:283` 全局规则。
 - [x] 375px / 768px / 1024px / 1440px 四档无横向滚动、无遮挡。 —— 2026-11-16 在 `pnpm dev`（`http://127.0.0.1:6130/login`）用 Playwright 1.63 + Chromium 设置视口实测：四档 `documentElement.scrollWidth === clientWidth`（375/375、768/768、1024/1024、1440/1440），`overflowCount = 0`，关键元素无裁切/重叠、`elementFromPoint` 命中自身（未被遮挡），品牌图已加载（`naturalWidth 256`）。**范围限制**：仅覆盖未登录态可达的登录页；依赖账号的内页仍归 §19.3 的 P2 分批回归。
@@ -1756,7 +1756,7 @@ useGlassEffectStore().mode = 'off'
 
 ### 18.7 视觉一致性检查清单
 
-- [x] 无新增硬编码颜色，`pnpm check:ratchet` 通过。 —— 2026-11-15 复跑 exit 0：`hardcoded_radius 0`、`inline_style 5/5`（allowlist 内）、`important_css 39/39`、`zh_literal_vue 0`、`as_unknown_as 0`。
+- [x] 无新增硬编码颜色，`pnpm check:ratchet` 通过。 —— 2026-11-15 复跑 exit 0：`hardcoded_radius 0`、`inline_style 5/5`（allowlist 内）、`important_css 39/39`、`zh_literal_vue 0`、`as_unknown_as 0`。2026-11-21 复跑 exit 0：`important_css 20/20`、`backdrop_filter_raw 4/4`，其余持平。
 - [x] 无 emoji 图标，新增图标为 24×24 SVG、线宽 1.5px。 —— 模板段扫描无 emoji 图标；`pnpm check:icon-colors` exit 0（585 处走 token）、`pnpm check:svg-aria` exit 0（587 处 SVG 装饰图标）。24×24 与 1.5px 线宽的逐图标几何抽查并入 §19.3 运行态视觉走查。
 - [x] 间距/圆角/阴影只取自 token 阶梯。 —— `pnpm check:tokens` exit 0：token 总数 224、零引用 0、使用率 100.0%（阈值 85%）；`check:ratchet` 的 `hardcoded_radius` 为 0。
 - [x] 加载、空、错误三态均有统一实现，无手写空态块。 —— 2026-11-16 已将该口径固化为 `check-ratchet` 的 `handwritten_empty_state` 计数器，七批迁移后 **0 处 / 0 文件**、基线锁定 0（`pnpm check:ratchet` exit 0，批次明细见 §19.8）；后续任何新增手写空态会直接 FAIL。
@@ -1899,7 +1899,7 @@ useGlassEffectStore().mode = 'off'
 | 相关单测 | `pnpm vitest run src/composables/settings/__tests__/useServiceCapabilityItems.test.ts src/components/common/__tests__/ServiceCapabilityPanel.test.ts src/components/settings` | 6 文件 / 57 例全过（新用例 5 例、面板 6 例） |
 | Lint + i18n | `pnpm check` | exit 0（Biome 无诊断、`i18n check passed`、token 使用率 100%、icon-button-aria / svg-aria / dead-handlers / capabilities-sync 全 OK） |
 | i18n 类型重建 | `pnpm gen:i18n` | exit 0（103 个命名空间文件、6865 key paths） |
-| 硬编码 / 分支 ratchet | `pnpm check:ratchet` | exit 0（`hardcoded_radius 0/0`、`inline_style 5/5`、`important_css 39/39`、`backdrop_filter_raw 60/60`、`zh_literal_vue 0/0`、`is_mobile_branch 19/19`） |
+| 硬编码 / 分支 ratchet | `pnpm check:ratchet` | exit 0（`hardcoded_radius 0/0`、`inline_style 5/5`、`important_css 39/39`、`backdrop_filter_raw 60/60`、`zh_literal_vue 0/0`、`is_mobile_branch 19/19`；2026-11-21 复跑：`important_css 20/20`、`backdrop_filter_raw 4/4`、`is_mobile_branch 0/0`） |
 | 设计令牌 | `pnpm check:tokens` | exit 0（224 个 token、零引用 0、使用率 100.0%） |
 | 图标可访问性 | `pnpm check:icon-button-aria`、`pnpm check:svg-aria`、`pnpm check:icon-colors` | 全部 exit 0（587 处装饰图标 `aria-hidden`、585 处图标已迁移 token） |
 | 移动端 CSS | `pnpm check:mobile-css` | exit 0 |
@@ -3370,7 +3370,7 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 | 全量单测 | `pnpm test:run` | `1057 passed (1057)` / `11684 passed (11684)`，exit 0 |
 | 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
 | 文件体量 | `node scripts/check-file-size.mjs` | 刷新基线后 `OK — oversized file count 122 (baseline 122)` / `all 1513 source files within size constraints` |
-| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`inline_style 5`、`important_css 39`、`backdrop_filter_raw 60`、`is_mobile_branch 5`、`handwritten_empty_state 0`），无可收紧项 |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`inline_style 5`、`important_css 39`、`backdrop_filter_raw 60`、`is_mobile_branch 5`、`handwritten_empty_state 0`），无可收紧项；2026-11-21 复跑已收紧至 `important_css 20`、`backdrop_filter_raw 4`、`is_mobile_branch 0` |
 | 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline (587)`（current 573，14 个方法新补注释） |
 | 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
 | SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 扫描 1648 文件、命中 3 条全在白名单 / 无漂移、无未登记幻影 |
