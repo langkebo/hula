@@ -207,15 +207,3 @@ export const createWebVitalsObserver = (): WebVitalsObserver => {
 
   return { start, stop }
 }
-
-/** 默认单例：应用级 WebVitals 监控实例。 */
-const webVitalsObserver = createWebVitalsObserver()
-
-// 向后兼容：保留模块级便捷函数，委托到默认单例。
-export const startWebVitalObserver = (options?: WebVitalsObserverOptions): void => {
-  webVitalsObserver.start(options)
-}
-
-export const stopWebVitalObserver = (): void => {
-  webVitalsObserver.stop()
-}

@@ -49,11 +49,17 @@ export type CapabilityStatus = 'supported' | 'unsupported' | 'unknown'
  *
  * 说明（S-01 订正 2026-11-18）：SDK 的 `./server-capabilities` **在 package exports 里**（52 条之一），
  * `SynapseRustFeature` 可直接派生；此前「未暴露」的说法是错的。映射表仍留本地（14 个能力位与
- * SDK feature 非一一对应），但由 `MatrixCapabilityService.drift.test.ts` 做真值漂移校验。
+ * SDK 12 个 feature 非一一对应），但由 `MatrixCapabilityService.drift.test.ts` 做真值漂移校验。
+ *
+ * 派生口径（2026-11-21 最小收口）：SDK 有同名常量的主键一律引用 `SynapseRustFeature.*`，
+ * 避免同一 key 在前端手抄；SDK 未导出的协议别名仍以字面量保留，并逐条标注来源面。
+ * SDK 新增能力时由 drift 测试报红，不会静默漏接。
  */
 export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
-    unstable: ['org.matrix.msc3886.sliding_sync', 'org.matrix.msc3575', 'org.matrix.simplified_msc3575'],
+    // 后两条为 MSC3575 原始/简化名，SDK 未导出，来源：homeserver /versions 宣告面。
+    unstable: [SynapseRustFeature.SlidingSync, 'org.matrix.msc3575', 'org.matrix.simplified_msc3575'],
+    // SDK 仅在别名表里给出，不作为 feature 常量导出。
     capabilities: ['io.hula.sliding_sync']
   },
   // E2EE 属客户端能力：服务端 /capabilities 与 /versions 都不宣告，
@@ -63,12 +69,14 @@ export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]
     capabilities: []
   },
   voip: {
-    unstable: ['org.matrix.msc3245.voice', 'org.matrix.msc3245'],
+    // `org.matrix.msc3245` 是 MSC 短名，SDK 未导出。
+    unstable: [SynapseRustFeature.Voice, 'org.matrix.msc3245'],
+    // 稳定面 key 与后端扩展名，SDK 未导出。
     capabilities: ['m.voice', 'm.voip', 'io.hula.voice_extended']
   },
   'friend-list': {
-    unstable: ['io.hula.friends'],
-    capabilities: ['io.hula.friends']
+    unstable: [SynapseRustFeature.Friends],
+    capabilities: [SynapseRustFeature.Friends]
   },
   // 后台管理权限由 /_synapse/admin/* 的 is_admin 校验，不经 capabilities 面宣告；
   // 能力位只表示"本客户端暴露 admin 入口"，由桌面端 admin 桥接层注册的
@@ -78,11 +86,11 @@ export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]
     capabilities: []
   },
   'burn-after-read': {
-    unstable: ['io.hula.burn_after_read'],
-    capabilities: ['io.hula.burn_after_read']
+    unstable: [SynapseRustFeature.BurnAfterRead],
+    capabilities: [SynapseRustFeature.BurnAfterRead]
   },
   'dehydrated-device': {
-    unstable: ['org.matrix.msc3814'],
+    unstable: [SynapseRustFeature.DehydratedDevice],
     capabilities: []
   },
   'sticky-events': {
@@ -99,10 +107,11 @@ export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]
   },
   'account-status': {
     unstable: [],
-    capabilities: ['org.matrix.msc3720.account_status']
+    capabilities: [SynapseRustFeature.AccountStatus]
   },
   'extended-profile': {
-    unstable: ['uk.tcpip.msc4133'],
+    unstable: [SynapseRustFeature.ExtendedProfile],
+    // `m.profile_fields` 为稳定面 key，SDK 未导出。
     capabilities: ['m.profile_fields']
   },
   'qr-rendezvous': {

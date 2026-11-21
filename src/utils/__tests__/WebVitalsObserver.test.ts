@@ -39,21 +39,22 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn()
 }))
 
-import { createWebVitalsObserver, startWebVitalObserver, stopWebVitalObserver } from '../WebVitalsObserver'
+import { createWebVitalsObserver } from '../WebVitalsObserver'
 
 describe('WebVitalsObserver — 单次执行守卫', () => {
+  let observer: ReturnType<typeof createWebVitalsObserver>
+
   beforeEach(() => {
     vi.clearAllMocks()
-    // 确保 stop 状态干净
-    stopWebVitalObserver()
+    observer = createWebVitalsObserver()
   })
 
   afterEach(() => {
-    stopWebVitalObserver()
+    observer.stop()
   })
 
   it('start 后 web-vitals 回调各注册一次', () => {
-    startWebVitalObserver()
+    observer.start()
 
     expect(mockOnCLS).toHaveBeenCalledTimes(1)
     expect(mockOnFCP).toHaveBeenCalledTimes(1)
@@ -63,8 +64,8 @@ describe('WebVitalsObserver — 单次执行守卫', () => {
   })
 
   it('串行调用 start 两次，web-vitals 回调仍只注册一次（幂等）', () => {
-    startWebVitalObserver()
-    startWebVitalObserver()
+    observer.start()
+    observer.start()
 
     expect(mockOnCLS).toHaveBeenCalledTimes(1)
     expect(mockOnFCP).toHaveBeenCalledTimes(1)
@@ -75,19 +76,19 @@ describe('WebVitalsObserver — 单次执行守卫', () => {
 
   it('并发调用 start 两次（同一 tick），web-vitals 回调仍只注册一次', () => {
     // 同步连续调用（start 是同步函数，不会真正"并发"，但模拟快速重复调用场景）
-    startWebVitalObserver()
-    startWebVitalObserver()
+    observer.start()
+    observer.start()
 
     expect(mockOnCLS).toHaveBeenCalledTimes(1)
   })
 
   it('stop 后再次 start，web-vitals 回调重新注册（可重启）', () => {
-    startWebVitalObserver()
+    observer.start()
     expect(mockOnCLS).toHaveBeenCalledTimes(1)
 
-    stopWebVitalObserver()
+    observer.stop()
 
-    startWebVitalObserver()
+    observer.start()
     expect(mockOnCLS).toHaveBeenCalledTimes(2)
   })
 
@@ -109,10 +110,10 @@ describe('WebVitalsObserver — 单次执行守卫', () => {
 
     vi.stubGlobal('PerformanceObserver', MockPerformanceObserver)
 
-    startWebVitalObserver()
+    observer.start()
     expect(mockObserve).toHaveBeenCalledTimes(1)
 
-    stopWebVitalObserver()
+    observer.stop()
     expect(mockDisconnect).toHaveBeenCalledTimes(1)
 
     // 恢复

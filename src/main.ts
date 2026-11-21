@@ -32,7 +32,7 @@ import { errorTracker } from '@/utils/ErrorTracker'
 import { initializePlatform, isIOS } from '@/utils/PlatformConstants'
 import { applyPerformanceTier } from '@/utils/performanceTier'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
+import { createWebVitalsObserver } from '@/utils/WebVitalsObserver'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { markTjgAppReady } from '@/utils/AppReady'
 import { createLogger } from '@/utils/Logger'
@@ -51,7 +51,8 @@ registerStorageLayout()
 registerPlatformBoot()
 registerSessionEventStrategy()
 const prometheusEndpoint = import.meta.env.VITE_PROMETHEUS_ENDPOINT
-startWebVitalObserver({
+// 实例由组合根创建，工具模块不再维护全局单例（CQ-06）。
+createWebVitalsObserver().start({
   ...(prometheusEndpoint === undefined ? {} : { prometheusEndpoint }),
   debug: import.meta.env.DEV
 })
