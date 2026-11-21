@@ -11,6 +11,9 @@ import type { CallStats, TurnServerConfig, VoIPCall } from './voipTypes'
 
 const logger = createLogger('VoIPHelpers')
 
+/** RTC 统计条目：标准 RTCStats 字段之外，浏览器按 report.type 附加任意指标键。 */
+type RTCStatsEntry = RTCStats & { [field: string]: unknown }
+
 /**
  * 根据 ID 获取通话实例。
  *
@@ -39,7 +42,7 @@ export async function getCallStatsFromPeerConn(call: VoIPCall): Promise<CallStat
     let jitter = 0
     let roundTripTime = 0
 
-    stats.forEach((report: RTCStats & Record<string, unknown>) => {
+    stats.forEach((report: RTCStatsEntry) => {
       if (report.type === 'inbound-rtp') {
         bytesReceived += (report.bytesReceived as number) || 0
         packetsLost = (report.packetsLost as number) || 0

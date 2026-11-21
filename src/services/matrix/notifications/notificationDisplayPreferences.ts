@@ -210,6 +210,11 @@ function cleanupLegacyKeys(storage: NotificationDisplayPreferencesStorage): void
 }
 
 /**
+ * 本地存储中的展示偏好原始对象：字段集随版本变化，仅在运行时按 validator 校验。
+ */
+type StoredDisplayPreferencesObject = { [key: string]: unknown }
+
+/**
  * 从本地存储读取展示偏好；读取失败或数据非法时回落默认值，
  * 并顺带完成旧关键词 key 的幂等迁移。
  */
@@ -225,7 +230,7 @@ export function loadNotificationDisplayPreferences(
   }
 
   const isValidShape = (val: unknown): val is Partial<NotificationDisplayPreferences> =>
-    validateObject<Record<string, unknown>>(val, [], {
+    validateObject<StoredDisplayPreferencesObject>(val, [], {
       contentSummary: (v) => v === undefined || typeof v === 'boolean',
       keywordHighlight: (v) => v === undefined || typeof v === 'boolean',
       keywordNotifications: (v) => v === undefined || typeof v === 'boolean',

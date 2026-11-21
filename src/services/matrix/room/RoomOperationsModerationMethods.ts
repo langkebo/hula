@@ -1,5 +1,5 @@
 import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
-import type { IPowerLevelsContent, MatrixClient } from '@/services/matrix/sdk'
+import type { IContent, IPowerLevelsContent, MatrixClient } from '@/services/matrix/sdk'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
@@ -194,7 +194,7 @@ export abstract class RoomOperationsModerationMethods extends RoomOperationsStat
 
   /** 设置房间权限等级
    */
-  async setPowerLevels(roomId: string, content: Record<string, unknown>): Promise<void> {
+  async setPowerLevels(roomId: string, content: IContent): Promise<void> {
     const client = this.getClient()
     await client.sendStateEvent(roomId, 'm.room.power_levels', content, '')
   }

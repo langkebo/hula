@@ -1,4 +1,5 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
+import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { cryptoSDKAdapter } from '../crypto/CryptoSDKAdapter'
 import { matrixEventService } from '../MatrixEventService'
@@ -13,7 +14,7 @@ interface ForwardResult {
   error?: string
 }
 
-type EventContent = Record<string, unknown>
+type EventContent = IContent
 
 /**
  * 判断内容是否携带**已解密**的加密附件描述符。
@@ -40,7 +41,7 @@ class MatrixForwardService {
   async forwardEvent(event: MatrixEvent, roomId: string): Promise<string> {
     try {
       const eventType = event.getType()
-      const content = event.getContent() as EventContent
+      const content = event.getContent()
       const carriesEncryptedMedia = hasEncryptedFile(content) || hasEncryptedThumbnail(content)
 
       // 安全门：带加密描述符的消息只能转发进加密房间。

@@ -1,4 +1,4 @@
-import { type MatrixClient, SlidingSync, SlidingSyncEvent, SlidingSyncState } from 'matrix-js-sdk'
+import { type MatrixClient, type MSC3575Filter, SlidingSync, SlidingSyncEvent, SlidingSyncState } from 'matrix-js-sdk'
 import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
@@ -105,7 +105,7 @@ export class MatrixSyncManager {
     // spec §5 P3-3：已移除 friends 列表。原过滤常量 im.hula.friend_list 与后端不符
     // （后端好友列表房间 room_type 为 m.friends），该 list 恒空；且前端与 SDK 均无消费点
     // （好友数据走 SDK FriendManager → REST /friends），好友列表房间仍由 default 列表覆盖。
-    const extensionListFilters: Record<string, Record<string, unknown>> = {
+    const extensionListFilters: { [listName: string]: MSC3575Filter } = {
       spaces: { room_types: ['m.space'] },
       dms: { is_dm: true }
     }

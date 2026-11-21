@@ -230,7 +230,7 @@ export class MatrixClientAuth {
 
     try {
       const loginFlow = await client.loginFlows()
-      const ssoFlow = loginFlow.flows.find((flow: Record<string, unknown>) => flow.type === 'm.login.sso')
+      const ssoFlow = loginFlow.flows.find((flow) => flow.type === 'm.login.sso')
 
       if (!ssoFlow) {
         throw new Error(useI18nGlobal().t('matrix_error.auth.sso_not_supported'))

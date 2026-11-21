@@ -18,7 +18,7 @@ export function isEdited(event: MatrixEvent): boolean {
 
 /** 获取编辑后的消息内容
  */
-export function getEditedContent(event: MatrixEvent): Record<string, unknown> {
+export function getEditedContent(event: MatrixEvent): RelationContent {
   const content = event.getContent() as RelationContent
   if (content['m.new_content']) {
     return content['m.new_content'] as RelationContent

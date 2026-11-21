@@ -32,6 +32,12 @@ interface MatrixClientTelemetryDeps {
 }
 
 /**
+ * 运行时按 `getXxxManager` 名称反射访问 client 上的 manager 访问器。
+ * 名称来自对 client 自身属性的正则提取，无法静态收敛，故以索引签名承载该动态读取。
+ */
+type ClientWithManagerGetters = MatrixClient & { [field: string]: unknown }
+
+/**
  * 遥测协作类。
  *
  * 持有 TelemetryManager 引用（由主类在 client 创建后注入），
@@ -64,7 +70,7 @@ export class MatrixClientTelemetry {
     const getterNames = this.extractManagerGetterNames(client)
 
     for (const getterName of getterNames) {
-      const getter: unknown = (client as MatrixClient & Record<string, unknown>)[getterName]
+      const getter: unknown = (client as ClientWithManagerGetters)[getterName]
       if (typeof getter !== 'function') continue
       try {
         const manager = (getter as () => unknown).call(client)

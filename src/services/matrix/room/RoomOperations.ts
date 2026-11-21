@@ -1,4 +1,5 @@
 import { ConditionKind, PushRuleActionName, PushRuleKind, TweakName } from 'matrix-js-sdk'
+import type { IContent } from '@/services/matrix/sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
@@ -137,7 +138,7 @@ export class RoomOperations extends RoomOperationsModerationMethods {
     }
   }
 
-  async setStickyEvents(roomId: string, events: Record<string, unknown>): Promise<void> {
+  async setStickyEvents(roomId: string, events: IContent): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('pin', roomId, { roomId, type: 'sticky', events })
       return

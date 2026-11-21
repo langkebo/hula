@@ -502,7 +502,9 @@ export class MatrixConnectionManager {
 // createClient()，竞争 IndexedDB crypto 句柄。
 // 与 MatrixClientService 的 __TJG_MATRIX_CLIENT_SERVICE__ 守卫对齐。
 const CONNECTION_MANAGER_SINGLETON_KEY = '__TJG_MATRIX_CONNECTION_MANAGER__'
-const __g = globalThis as Record<string, unknown>
+/** globalThis 上的进程级单例挂载表：键为固定 CONNECTION_MANAGER_SINGLETON_KEY，值由本模块写入并读回。 */
+type GlobalSingletonRegistry = { [field: string]: unknown }
+const __g = globalThis as GlobalSingletonRegistry
 
 /**
  * 获取 MatrixConnectionManager 的进程级单例。

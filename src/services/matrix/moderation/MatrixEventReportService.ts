@@ -19,12 +19,20 @@ const logger = createLogger('MatrixEventReportService')
 
 type EventReportManagerCompat = EventReportManager
 
+/**
+ * SDK 在部分版本才挂载 `getEventReportManager`，且官方类型未声明该访问器；
+ * 这里按其真实契约补齐可选方法，避免用无约束的字典类型探测。
+ */
+type ClientWithEventReportManager = MatrixClient & {
+  getEventReportManager?: () => EventReportManager
+}
+
 class MatrixEventReportService extends BaseMatrixService {
   private eventReportManager: EventReportManagerCompat | null = null
   private observedClient: MatrixClient | null = null
 
   private getEventReportManager(client: MatrixClient): EventReportManagerCompat | null {
-    const clientWithMethods = client as MatrixClient & Record<string, unknown>
+    const clientWithMethods = client as ClientWithEventReportManager
     if (typeof clientWithMethods.getEventReportManager === 'function') {
       try {
         const manager = clientWithMethods.getEventReportManager()

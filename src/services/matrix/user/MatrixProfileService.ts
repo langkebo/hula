@@ -14,6 +14,9 @@ interface MatrixProfile {
   avatarUrl?: string | undefined
 }
 
+/** 扩展资料中允许出现的嵌套对象值（MSC4133 自定义字段内容不定）。 */
+type ExtendedProfileObject = { [key: string]: unknown }
+
 interface MatrixExtendedProfile {
   sex?: number
   resume?: string
@@ -22,7 +25,7 @@ interface MatrixExtendedProfile {
   displayBirthdayTag?: boolean
   displayAge?: boolean
   displayConstellation?: boolean
-  [key: string]: string | number | boolean | null | undefined | Record<string, unknown> | Array<unknown>
+  [key: string]: string | number | boolean | null | undefined | ExtendedProfileObject | Array<unknown>
 }
 
 export class ExtendedProfileUnsupportedError extends Error {

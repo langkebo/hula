@@ -32,6 +32,9 @@ export const INVITE_POLICY_MODES = ['allow_all', 'blocklist', 'allowlist'] as co
 
 export type InvitePolicyMode = (typeof INVITE_POLICY_MODES)[number]
 
+/** 本地存储中的邀请策略对象：字段集随版本变化，仅在运行时按 validator 校验。 */
+type StoredInvitePolicyObject = { [key: string]: unknown }
+
 export interface InvitePolicy {
   /** `allow_all` 不按名单拒绝；`blocklist` 仅表示「默认放行」（名单本身与 mode 正交）；`allowlist` 仅放行名单内。 */
   mode: InvitePolicyMode
@@ -244,7 +247,7 @@ export function loadInvitePolicy(
   }
 
   const isValidShape = (val: unknown): val is Partial<InvitePolicy> =>
-    validateObject<Record<string, unknown>>(val, [], {
+    validateObject<StoredInvitePolicyObject>(val, [], {
       mode: (v) => v === undefined || isInvitePolicyMode(v),
       blocklist: (v) => v === undefined || Array.isArray(v),
       allowlist: (v) => v === undefined || Array.isArray(v),

@@ -24,6 +24,9 @@ export const DEFAULT_DM_PRIVACY_PREFERENCES: DmPrivacyPreferences = {
   encryptByDefault: true
 }
 
+/** 本地存储中的偏好对象：字段集随版本变化，仅在运行时按 validator 校验。 */
+type StoredPreferencesObject = { [key: string]: unknown }
+
 /** 归一化任意输入为完整的私聊偏好：非法字段回落默认值。 */
 export function normalizeDmPrivacyPreferences(input: unknown): DmPrivacyPreferences {
   if (!input || typeof input !== 'object') {
@@ -75,7 +78,7 @@ export function loadDmPrivacyPreferences(storage: Pick<Storage, 'getItem'> = loc
   }
 
   const isValidShape = (val: unknown): val is Partial<DmPrivacyPreferences> =>
-    validateObject<Record<string, unknown>>(val, [], {
+    validateObject<StoredPreferencesObject>(val, [], {
       encryptByDefault: (v) => v === undefined || typeof v === 'boolean'
     })
 

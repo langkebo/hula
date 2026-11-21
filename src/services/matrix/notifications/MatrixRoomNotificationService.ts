@@ -22,7 +22,13 @@ interface RoomUnreadCountPayload {
   highlight_count: number
 }
 
-interface RoomNotificationSettings {
+/**
+ * 房间级通知设置内容。
+ *
+ * 用 `type` 而非 `interface`：`setRoomAccountData` 的 content 契约是带索引签名的对象字典，
+ * 对象字面量类型具备隐式索引签名而 interface 没有，改用 type 后可直接传值、无需断言。
+ */
+type RoomNotificationSettings = {
   shield?: boolean
   muteNotification?: NotificationTypeEnum
 }
@@ -50,7 +56,7 @@ class MatrixRoomNotificationService extends BaseMatrixService {
       ...updates
     }
 
-    await client.setRoomAccountData(roomId, ROOM_NOTIFICATION_SETTINGS_EVENT, nextSettings as Record<string, unknown>)
+    await client.setRoomAccountData(roomId, ROOM_NOTIFICATION_SETTINGS_EVENT, nextSettings)
   }
 
   /**

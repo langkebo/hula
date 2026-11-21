@@ -29,7 +29,7 @@ class MatrixSlidingSyncService {
       notification_count?: number | undefined
       highlight_count?: number | undefined
       timeline?: unknown[] | undefined
-      /** SDK 的 roomData 字段（旧代码误写为 state: Record<string,unknown>，恒为 undefined） */
+      /** SDK 的 roomData 字段（旧代码误写为匿名字典，恒为 undefined） */
       required_state?: unknown[] | undefined
     }
   > = new Map()

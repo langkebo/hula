@@ -1,3 +1,4 @@
+import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import {
   NOTIFICATION_CONFIG_ACCOUNT_DATA_TYPE,
@@ -10,9 +11,10 @@ const logger = createLogger('NotificationConfigSync')
 /**
  * 账号数据同步只需要 `setAccountData` / `getAccountData`，因此不引用完整 `MatrixClient`：
  * 结构化的最小接口既避免 SDK 边界扩散，也让测试可以直接传桩对象。
+ * content 沿用 SDK `IContent` 契约（账号数据内容即事件内容）。
  */
 export interface NotificationAccountDataClient {
-  setAccountData(type: string, content: Record<string, unknown>): Promise<unknown>
+  setAccountData(type: string, content: IContent): Promise<unknown>
   getAccountData(type: string): { getContent(): unknown } | undefined
 }
 

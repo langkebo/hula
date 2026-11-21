@@ -10,6 +10,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 
 export type {
+  AuthDict,
   Capabilities,
   IClientWellKnown,
   IContent,
@@ -22,6 +23,7 @@ export type {
   MatrixClient,
   MatrixEvent,
   MBeaconEventContent,
+  MSC3575Filter,
   PushRuleAction,
   Room,
   RoomMember,

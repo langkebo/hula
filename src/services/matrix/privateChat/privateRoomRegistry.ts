@@ -99,7 +99,7 @@ async function persist(userId: string | null, roomIds: Set<string>): Promise<voi
   if (!client) {
     throw new Error('客户端未就绪，无法保存私密房间标记')
   }
-  const content: Record<string, unknown> = { version: 1, roomIds: [...roomIds] }
+  const content = { version: 1, roomIds: [...roomIds] }
   await client.setAccountData(PRIVATE_ROOMS_ACCOUNT_DATA, content)
   writeCache(userId, roomIds)
 }

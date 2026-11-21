@@ -20,7 +20,7 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixReceiptService } from './MatrixReceiptService'
-import type { MessageContent } from './threadTypes'
+import type { IContent, MessageContent } from './threadTypes'
 
 const logger = createLogger('MatrixThreadState')
 
@@ -66,7 +66,7 @@ export class MatrixThreadState extends BaseMatrixService {
 
   /** 判断消息体是否在话题中
    */
-  isBodyInThread(body: Record<string, unknown>): boolean {
+  isBodyInThread(body: IContent): boolean {
     const relatesTo = body[MatrixContentField.RELATES_TO] as { rel_type?: string } | undefined
     return relatesTo?.rel_type === MatrixRelType.THREAD
   }

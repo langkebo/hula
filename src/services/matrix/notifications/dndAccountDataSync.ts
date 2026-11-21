@@ -1,3 +1,4 @@
+import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import type { DndWindow } from './dndWindow'
 
@@ -6,9 +7,9 @@ const logger = createLogger('DndAccountDataSync')
 /** 账号数据里的勿扰时段类型（跨设备同步）。 */
 export const DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
 
-/** 账号数据同步只需要 `setAccountData`，不依赖完整客户端。 */
+/** 账号数据同步只需要 `setAccountData`，不依赖完整客户端（content 沿用 SDK `IContent` 契约）。 */
 interface DndAccountDataWriter {
-  setAccountData(type: string, content: Record<string, unknown>): Promise<unknown>
+  setAccountData(type: string, content: IContent): Promise<unknown>
 }
 
 /**

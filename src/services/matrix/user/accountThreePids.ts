@@ -1,5 +1,5 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
-import type { MatrixClient } from '@/services/matrix/sdk'
+import type { AuthDict, MatrixClient } from '@/services/matrix/sdk'
 
 import { createLogger } from '@/utils/Logger'
 import { PREFIX_V3 } from '../paths/prefixes'
@@ -146,7 +146,7 @@ export async function addThreePid(
   getClient: () => MatrixClient,
   sid: string,
   clientSecret: string,
-  auth?: Record<string, unknown>
+  auth?: AuthDict
 ): Promise<void> {
   const client = getClient()
 

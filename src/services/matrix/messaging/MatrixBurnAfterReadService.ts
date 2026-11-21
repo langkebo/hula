@@ -1,3 +1,4 @@
+import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 
@@ -223,7 +224,7 @@ class MatrixBurnAfterReadService {
 
   async sendMessage(
     roomId: string,
-    content: Record<string, unknown>,
+    content: IContent,
     expiresIn?: number,
     encrypt?: boolean,
     throwOnError = false

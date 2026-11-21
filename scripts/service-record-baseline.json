@@ -1,31 +1,5 @@
 {
   "comment": "服务层匿名 Record 棘轮：src/services/matrix 下 Record<string, unknown> 的处数，按文件计，只降不升。能从 SDK 契约派生的必须派生；确属动态包必须具名并注释，行内 `// record-type-ok: <理由>` 豁免。",
-  "updated_at": "2026-11-21T01:06:45.524Z",
-  "counts": {
-    "src/services/matrix/MatrixClientAuth.ts": 1,
-    "src/services/matrix/MatrixClientService.ts": 1,
-    "src/services/matrix/MatrixClientTelemetry.ts": 1,
-    "src/services/matrix/MatrixConnectionManager.ts": 1,
-    "src/services/matrix/MatrixSyncManager.ts": 1,
-    "src/services/matrix/media/voipHelpers.ts": 1,
-    "src/services/matrix/messaging/MatrixBurnAfterReadService.ts": 1,
-    "src/services/matrix/messaging/MatrixForwardService.ts": 1,
-    "src/services/matrix/messaging/MatrixThreadService.ts": 1,
-    "src/services/matrix/messaging/MatrixThreadState.ts": 1,
-    "src/services/matrix/messaging/relationEventHelpers.ts": 1,
-    "src/services/matrix/moderation/MatrixEventReportService.ts": 1,
-    "src/services/matrix/notifications/MatrixRoomNotificationService.ts": 1,
-    "src/services/matrix/notifications/configAccountDataSync.ts": 1,
-    "src/services/matrix/notifications/dndAccountDataSync.ts": 1,
-    "src/services/matrix/notifications/notificationDecisionGate.ts": 1,
-    "src/services/matrix/notifications/notificationDisplayPreferences.ts": 1,
-    "src/services/matrix/privateChat/privateRoomRegistry.ts": 1,
-    "src/services/matrix/room/RoomOperations.ts": 1,
-    "src/services/matrix/room/RoomOperationsModerationMethods.ts": 1,
-    "src/services/matrix/sync/MatrixSlidingSyncService.ts": 1,
-    "src/services/matrix/user/MatrixProfileService.ts": 1,
-    "src/services/matrix/user/accountThreePids.ts": 1,
-    "src/services/matrix/user/dmPrivacyPreferences.ts": 1,
-    "src/services/matrix/user/invitePolicy.ts": 1
-  }
+  "updated_at": "2026-11-21T01:33:29.033Z",
+  "counts": {}
 }

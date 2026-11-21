@@ -379,7 +379,9 @@ class MatrixClientService {
 // 单例：使用 globalThis 守卫，防止 Vite HMR 模块重载或动态/静态导入混用
 // 导致重复实例化（两个实例会并发调用 initRustCrypto，竞争 IndexedDB 句柄）
 const SINGLETON_KEY = '__TJG_MATRIX_CLIENT_SERVICE__'
-const g = globalThis as Record<string, unknown>
+/** globalThis 上的进程级单例挂载表：键为固定 SINGLETON_KEY，值由本模块写入并读回。 */
+type GlobalSingletonRegistry = { [field: string]: unknown }
+const g = globalThis as GlobalSingletonRegistry
 const existing = g[SINGLETON_KEY] as MatrixClientService | undefined
 export const matrixClientService = existing ?? new MatrixClientService()
 if (!existing) {

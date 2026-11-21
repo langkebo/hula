@@ -18,6 +18,7 @@ import { MatrixThreadState } from './MatrixThreadState'
 import { collectChildEvents } from './relationEventSource'
 import { buildThreadsFromTimeline } from './threadTimelineScan'
 import type {
+  IContent,
   MessageContent,
   Thread,
   ThreadDisplayMessage,
@@ -328,7 +329,7 @@ class MatrixThreadService extends BaseMatrixService {
   isInThread(event: MatrixEvent) {
     return this.state.isInThread(event)
   }
-  isBodyInThread(body: Record<string, unknown>) {
+  isBodyInThread(body: IContent) {
     return this.state.isBodyInThread(body)
   }
   getThreadRootId(event: MatrixEvent) {
