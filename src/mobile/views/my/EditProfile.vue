@@ -343,6 +343,8 @@ onActivated(async () => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 :deep(.van-cell.van-field) {
   padding: 10px 16px;
 }
@@ -353,12 +355,7 @@ onActivated(async () => {
 
 /* 旧 WebView 只认 -webkit- 前缀；仓库未接 autoprefixer，不能用 UnoCSS 的 backdrop 工具类 */
 .avatar-scrim {
-  -webkit-backdrop-filter: blur(4px) saturate(100%) contrast(100%);
-  backdrop-filter: blur(4px) saturate(100%) contrast(100%);
-}
-
-html.low-perf .avatar-scrim {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  @include backdrop-filter-pair('blur(4px) saturate(100%) contrast(100%)');
+  @include backdrop-blur-fallback;
 }
 </style>

@@ -514,9 +514,8 @@ onBeforeUnmount(() => {
       cursor: pointer;
     }
 
-    /* 需 !important：压过 naive-ui 菜单项的选中态背景 */
     &.active {
-      background-color: var(--tjg-color-primary-500) !important;
+      background-color: var(--tjg-color-primary-500);
     }
 
     &:last-child {
@@ -546,11 +545,11 @@ onBeforeUnmount(() => {
 
 .emoji-panel-series > .n-scrollbar-rail.n-scrollbar-rail--vertical {
   // 仅隐藏外层滚动条，不影响内层虚拟列表
-  display: none !important;
+  display: none;
 }
 
-.emoji-panel-series {
-  padding: 14px 0 0 0 !important;
+.n-scrollbar.emoji-panel-series {
+  padding: 14px 0 0 0;
 }
 
 .fade-enter-active,

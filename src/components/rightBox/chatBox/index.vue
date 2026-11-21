@@ -64,7 +64,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent !important;
+  background: transparent;
   z-index: 998;
   position: relative;
   // 确保不干扰 ChatFooter 的顶部边框

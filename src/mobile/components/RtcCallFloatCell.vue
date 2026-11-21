@@ -161,6 +161,8 @@ onUnmounted(clearCall)
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 .rtc-call-card {
   background: var(--tjg-surface-darkest);
 
@@ -172,18 +174,14 @@ onUnmounted(clearCall)
     );
   }
 
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium));
-  backdrop-filter: blur(var(--tjg-glass-blur-medium));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-medium))');
   border: 1px solid var(--tjg-border-contrast);
   border-radius: var(--tjg-radius-panel);
   padding: 12px 16px;
   box-shadow: var(--tjg-shadow-call-float);
 
   /* 低性能设备关闭实时模糊，半透明底色仍保证可读 */
-  html.low-perf & {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+  @include backdrop-blur-fallback;
 }
 
 .avatar-shell {
@@ -194,13 +192,9 @@ onUnmounted(clearCall)
     border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 14%, transparent);
   }
 
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-soft));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-soft))');
 
-  html.low-perf & {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+  @include backdrop-blur-fallback;
 }
 
 .rtc-action-button {

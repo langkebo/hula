@@ -137,9 +137,8 @@ defineOptions({
   color: var(--tjg-text-primary);
 }
 
-/* 需 !important：覆盖 naive-ui 文本组件对该色值的默认前景色 */
 .warning-text {
-  color: var(--tjg-color-warning-500) !important;
+  color: var(--tjg-color-warning-500);
   font-weight: 500;
 }
 

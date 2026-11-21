@@ -50,8 +50,7 @@ onUnmounted(() => {
 /* 输入坞：整块作为一块悬浮玻璃，内容滚动到下方时可透出模糊 */
 .footer-bar {
   background: var(--tjg-glass-nav-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong))');
   border-top: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
 
@@ -86,7 +85,7 @@ onUnmounted(() => {
 }
 
 /* 不支持 backdrop-filter 时退回实色，避免半透明面板叠字 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@include without-backdrop-filter-support {
   .footer-bar {
     background: var(--tjg-surface-panel);
     -webkit-backdrop-filter: none;

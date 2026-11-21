@@ -220,12 +220,13 @@ function isFirstPinned(item: MobileSessionListItem, index: number): boolean {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 :deep(.van-cell.van-field) {
   padding: 10px 14px;
   border-radius: var(--tjg-radius-xl);
   background: var(--tjg-glass-input-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft))');
   border: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight);
   transition:

@@ -429,10 +429,10 @@ onMounted(async () => {
   border-radius: 14px;
 }
 
-/* 需 !important：本块为全局样式（无 scoped 特异性可借），仍要压过 naive-ui 日期面板底部按钮 */
-.n-date-panel-actions .n-button {
-  background-color: var(--tjg-color-primary-400) !important;
-  border: none !important;
-  color: var(--tjg-color-primary-500) !important;
+/* 全局样式无 scoped 特异性可借，用祖先类抬高特异性压过 naive-ui 按钮的默认/悬停态 */
+.n-date-panel .n-date-panel-actions .n-button {
+  background-color: var(--tjg-color-primary-400);
+  border: none;
+  color: var(--tjg-color-primary-500);
 }
 </style>

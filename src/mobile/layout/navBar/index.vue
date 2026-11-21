@@ -32,10 +32,9 @@
   position: relative;
   height: 44px;
   background: var(--tjg-glass-nav-bg);
-  /* 模糊：显式双声明，不用 @apply backdrop-blur-* —— 工具类不带 -webkit- 前缀，
+  /* 模糊：走统一 mixin 输出双声明，不用 @apply backdrop-blur-* —— 工具类不带 -webkit- 前缀，
      旧 iOS/Android WebView 会丢弃整条声明。 */
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
-  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong))');
   border-bottom: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight);
   /* 低性能设备关闭模糊；选择器优先级高于原规则 */

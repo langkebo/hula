@@ -317,14 +317,13 @@ const handleOpenHiddenSessions = () => {
 @use '@/styles/scss/mixins/liquid-glass' as *;
 
 /**
- * 遮罩模糊：显式双声明，不用 UnoCSS 的 `backdrop-blur-sm` ——
+ * 遮罩模糊：走统一 mixin 输出双声明，不用 UnoCSS 的 `backdrop-blur-sm` ——
  * 仓库未接 autoprefixer，工具类只产不带前缀的 backdrop-filter，
  * 旧 iOS/Android WebView 直接丢掉，等于没有模糊。
  * 值与原先的 blur-sm 一致（4px）。
  */
 .mobile-mask--blurred {
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  @include backdrop-filter-pair('blur(4px)');
 }
 
 /* 低性能设备关闭遮罩模糊，保留正常态的 bg-black/20 */
@@ -338,8 +337,7 @@ const handleOpenHiddenSessions = () => {
   border: var(--tjg-glass-border-soft);
   border-radius: var(--tjg-radius-xl);
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft))');
   color: var(--tjg-text-primary);
 }
 
@@ -356,7 +354,7 @@ const handleOpenHiddenSessions = () => {
   fill: var(--tjg-glass-sheet-bg);
 }
 
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@include without-backdrop-filter-support {
   .long-press-menu {
     background: var(--tjg-surface-panel);
     -webkit-backdrop-filter: none;

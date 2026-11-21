@@ -15,15 +15,34 @@
 //   .search-pane--glass { @include liquid-glass(16px, 0.9, 1.5); }
 // ============================================================================
 
+@use 'sass:string';
+
+/// 成对输出 `-webkit-backdrop-filter` / `backdrop-filter`
+/// 仓库未接 autoprefixer，手写模糊必须自带 `-webkit-` 前缀（iOS Safari / 旧 Android WebView）。
+/// @param {String} $value 完整过滤器链，如 `'blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft))'`
+@mixin backdrop-filter-pair($value) {
+  -webkit-backdrop-filter: string.unquote($value);
+  backdrop-filter: string.unquote($value);
+}
+
+/// 不支持 backdrop-filter 时的降级容器
+/// 把 `@supports not ((backdrop-filter: ...) or (-webkit-backdrop-filter: ...))` 收敛到一处，
+/// 避免每个组件各写一份探测条件。
+@mixin without-backdrop-filter-support {
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @content;
+  }
+}
+
 /// 玻璃质感 mixin
 /// @param {Number} $blur 模糊半径（默认 20px）
 /// @param {Number} $opacity 不透明度 0-1（默认 0.85）
 /// @param {Number} $saturate 饱和度倍数（默认 1.8）
 @mixin liquid-glass($blur: 20px, $opacity: 0.85, $saturate: 1.8) {
-  background: color-mix(in srgb, var(--tjg-surface-panel) #{$opacity * 100%}, transparent);
   // sass 1.102+ 将 saturate() 解析为颜色函数，用字符串插值避免冲突
-  backdrop-filter: blur(#{$blur}) #{'saturate(' + ($saturate * 100%) + ')'};
-  -webkit-backdrop-filter: blur(#{$blur}) #{'saturate(' + ($saturate * 100%) + ')'};
+  $saturate-fn: 'saturate(' + ($saturate * 100%) + ')';
+  background: color-mix(in srgb, var(--tjg-surface-panel) #{$opacity * 100%}, transparent);
+  @include backdrop-filter-pair('blur(#{$blur}) #{$saturate-fn}');
   border: 1px solid color-mix(in srgb, var(--tjg-border-layout-divider) 50%, transparent);
 
   // 深色模式调整：降低不透明度以增强通透感
@@ -61,12 +80,10 @@
   }
 }
 
-/// 成对输出 `-webkit-backdrop-filter` / `backdrop-filter`
-/// 仓库未接 autoprefixer，手写模糊必须自带 `-webkit-` 前缀（iOS Safari / 旧 Android WebView）。
+/// 成对输出单档模糊（`backdrop-filter-pair` 的常用简写）
 /// @param {String} $blur 模糊值，默认跟随设计 token
 @mixin backdrop-blur-pair($blur: var(--tjg-glass-blur-soft)) {
-  -webkit-backdrop-filter: blur(#{$blur});
-  backdrop-filter: blur(#{$blur});
+  @include backdrop-filter-pair('blur(#{$blur})');
 }
 
 /// 手写模糊 + 低性能降级：仅关闭模糊，不改写背景色

@@ -239,10 +239,9 @@ onUnmounted(() => {
   --friends-item-height: 75px;
 }
 
-/* 遮罩模糊：显式双声明（UnoCSS 工具类不产 -webkit- 前缀，旧 WebView 会丢），值同 blur-sm = 4px */
+/* 遮罩模糊：走统一 mixin 输出双声明（UnoCSS 工具类不产 -webkit- 前缀，旧 WebView 会丢），值同 blur-sm = 4px */
 .mobile-mask--blurred {
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  @include backdrop-filter-pair('blur(4px)');
 }
 
 /* 低性能设备关闭遮罩模糊，保留正常态的 bg-black/20 */

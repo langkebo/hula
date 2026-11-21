@@ -233,11 +233,10 @@ describe('接线契约（防止「降级类无人写入」回归）', () => {
     expect(block).toContain('--van-toast-background: var(--tjg-glass-sheet-bg)')
     expect(block).toContain('--van-toast-text-color: var(--tjg-text-primary)')
     expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(/)
-    // 仓库未接 autoprefixer，必须手写 -webkit- 前缀
-    expect(block).toContain('-webkit-backdrop-filter:')
-    expect(block).toContain('backdrop-filter:')
+    // 仓库未接 autoprefixer：模糊统一走 mixin 成对输出 -webkit- 前缀
+    expect(block).toContain('@include backdrop-filter-pair(')
 
-    const supportsBlock = mobileSource.match(/@supports not[\s\S]*?\n\}/)![0]
+    const supportsBlock = mobileSource.match(/@include without-backdrop-filter-support\s*\{[\s\S]*?\n\}/)![0]
     const reduceBlock = mobileSource.match(/@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\n\}/)![0]
     const lowPerfBlock = mobileSource.match(/html\.low-perf\s*\{[\s\S]*?\n\}/)![0]
 

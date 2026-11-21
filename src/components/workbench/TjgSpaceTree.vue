@@ -256,18 +256,4 @@ const {
     transform: translateX(110%);
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .tjg-space-tree__item-content,
-  .tjg-space-tree__item-icon svg,
-  .tjg-space-tree-child-expand-enter-active,
-  .tjg-space-tree-child-expand-leave-active {
-    transition: none !important;
-  }
-
-  .tjg-space-tree__item-content.is-selected,
-  .tjg-space-tree__item-content.is-selected::after {
-    animation: none !important;
-  }
-}
 </style>

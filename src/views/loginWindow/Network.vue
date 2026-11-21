@@ -253,9 +253,8 @@ const updateTauriSettings = async (proxySettings: ProxySettings) => {
   font-display: swap;
 }
 
-/* 需 !important：全局 `* { font-family: ... !important }`（variable.scss）只能用同为 !important 的类规则覆盖 */
 .textFont {
-  font-family: 'AliFangYuan', sans-serif !important;
+  font-family: 'AliFangYuan', sans-serif;
 }
 
 :deep(.n-input .n-input__input-el) {

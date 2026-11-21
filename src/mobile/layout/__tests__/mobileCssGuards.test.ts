@@ -44,19 +44,13 @@ describe('mobile backdrop blur performance fallback', () => {
       return /\.(vue|scss)$/.test(entry.name) ? [path] : []
     })
 
-  /** 不走 mixin 的模糊面：依赖下方独立用例的 -webkit- 前缀守卫 */
-  const prefixOnlySurfaces = new Set([
-    'src/mobile/components/RtcCallFloatCell.vue',
-    'src/mobile/views/my/EditProfile.vue'
-  ])
-
+  /** 不走 mixin 的模糊面已全部收口到统一 mixin，前缀由 mixin 保证 */
   // 只认真实模糊声明，避免命中 `@include backdrop-blur-fallback` 自身导致空转
-  const blurUsage = /backdrop-blur-(?:sm|md)|backdrop-filter\s*:/
+  const blurUsage =
+    /backdrop-blur-(?:sm|md)|backdrop-filter\s*:|@include (?:backdrop-filter-pair|backdrop-blur-pair|glass-blur)\(/
   const lowPerfFallback = /@include backdrop-blur-fallback|html\.low-perf/
 
-  const blurSurfaces = walkMobileSources(MOBILE_ROOT).filter(
-    (path) => !prefixOnlySurfaces.has(path) && blurUsage.test(read(path))
-  )
+  const blurSurfaces = walkMobileSources(MOBILE_ROOT).filter((path) => blurUsage.test(read(path)))
 
   it('exposes a blur-only fallback mixin driven by html.low-perf', () => {
     const source = read('src/styles/scss/mixins/_liquid-glass.scss')
@@ -83,11 +77,8 @@ describe('mobile backdrop blur performance fallback', () => {
     expect(missing).toEqual([])
   })
 
-  it('keeps the prefix-only exemption list valid', () => {
-    for (const path of prefixOnlySurfaces) {
-      expect(pathExists(path)).toBe(true)
-      expect(read(path)).toMatch(blurUsage)
-    }
+  it('keeps the blur surface scan non-empty', () => {
+    expect(blurSurfaces.length).toBeGreaterThanOrEqual(4)
   })
 })
 
@@ -105,22 +96,29 @@ describe('移动端 FooterBar 死代码清理', () => {
 })
 
 describe('移动端 backdrop-filter 前缀兼容', () => {
+  it('统一 mixin 成对输出 -webkit- 前缀', () => {
+    const source = read('src/styles/scss/mixins/_liquid-glass.scss')
+    const start = source.indexOf('@mixin backdrop-filter-pair')
+    expect(start).toBeGreaterThan(-1)
+    const block = source.slice(start, source.indexOf('\n}', start) + 2)
+    expect(block).toContain('-webkit-backdrop-filter: string.unquote($value)')
+    expect(block).toContain('backdrop-filter: string.unquote($value)')
+  })
+
   it.each(['src/mobile/components/RtcCallFloatCell.vue', 'src/mobile/views/my/EditProfile.vue'])(
-    '%s 的每条模糊声明都配 -webkit- 前缀',
+    '%s 的模糊走统一 mixin，不手写无前缀声明',
     (path) => {
       const source = read(path)
-      const unprefixed = source.match(/(?<!-webkit-)backdrop-filter\s*:/g) ?? []
-      const prefixed = source.match(/-webkit-backdrop-filter\s*:/g) ?? []
       // 守卫防空转：目标文件必须仍有模糊效果
-      expect(unprefixed.length).toBeGreaterThan(0)
-      expect(prefixed.length).toBe(unprefixed.length)
+      expect(source).toContain('@include backdrop-filter-pair(')
+      expect(source).not.toMatch(/(?<!-webkit-)backdrop-filter\s*:/)
     }
   )
 
   it('EditProfile 不再依赖 UnoCSS 的 backdrop 工具类', () => {
     // 仓库未接 autoprefixer，UnoCSS 产出的 backdrop-filter 不会带 -webkit-
     const source = read('src/mobile/views/my/EditProfile.vue')
-    expect(source).not.toMatch(/backdrop-(?:blur|saturate|contrast)-/)
+    expect(source).not.toMatch(/\bbackdrop-(?:blur|saturate|contrast)-(?:none|sm|md|lg|xl|2xl|3xl)\b/)
   })
 })
 

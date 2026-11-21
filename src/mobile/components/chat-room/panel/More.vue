@@ -296,8 +296,7 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
 /* 通话选择弹层：底部玻璃抽屉 + 44px 行高 */
 .rtc-sheet {
   background: var(--tjg-glass-sheet-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft))');
   border-top: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
 
@@ -305,7 +304,7 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
   @include backdrop-blur-fallback;
 }
 
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@include without-backdrop-filter-support {
   .rtc-sheet {
     background: var(--tjg-surface-panel);
     -webkit-backdrop-filter: none;

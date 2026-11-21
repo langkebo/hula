@@ -150,7 +150,7 @@ onUnmounted(async () => {
 }
 
 /* 渐变按钮样式 */
-.n-button {
-  color: var(--tjg-text-inverse) !important;
+.secret-chat-modal .n-button {
+  color: var(--tjg-text-inverse);
 }
 </style>

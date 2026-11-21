@@ -550,9 +550,8 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 @use '@/styles/scss/login';
 
-/* 需 !important：抵消 `@use '@/styles/scss/login'` 中 non-scoped 的 margin-left: 22px 规则 */
 :deep(.no-indent-input.n-input .n-input__input),
 :deep(.no-indent-input.n-input .n-input__textarea) {
-  margin-left: 0 !important;
+  margin-left: 0;
 }
 </style>

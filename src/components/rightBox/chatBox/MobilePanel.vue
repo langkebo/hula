@@ -58,8 +58,7 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
   flex-direction: column;
   /* 功能面板：一块从输入坞下方升起的玻璃抽屉 */
   background: var(--tjg-glass-sheet-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft))');
   /* 低性能设备只关闭模糊，保留 sheet 底色与顶部描边 */
   @include backdrop-blur-fallback;
   border-top: var(--tjg-glass-border-soft);
@@ -69,7 +68,7 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
 }
 
 /* 不支持模糊时退回实色抽屉 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@include without-backdrop-filter-support {
   .panel-container {
     background: var(--tjg-surface-panel);
     -webkit-backdrop-filter: none;

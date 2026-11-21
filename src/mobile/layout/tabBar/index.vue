@@ -97,8 +97,7 @@ const navItems = computed(() => resolveNavItems(t))
   border: 0;
   border-radius: var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0 0;
   background: var(--tjg-glass-tabbar-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong))');
   box-shadow: var(--tjg-glass-shadow-strong), var(--tjg-glass-inner-highlight);
   @include backdrop-blur-fallback;
 }
@@ -113,8 +112,7 @@ const navItems = computed(() => resolveNavItems(t))
 
 /* 中配设备：strong 档模糊降为 medium 档 */
 html.medium-perf .tab-bar-wrap .tab-bar-glass.tj-glass {
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
-  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+  @include backdrop-filter-pair('blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong))');
 }
 
 .tab-bar {
@@ -188,11 +186,10 @@ html.medium-perf .tab-bar-wrap .tab-bar-glass.tj-glass {
     border-radius: 0 var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0;
   }
 
-  /* 需 !important：覆盖 Vant Tabbar 的横向 flex 默认值 */
   .tab-bar {
     height: 100%;
     width: 100%;
-    flex-direction: column !important;
+    flex-direction: column;
     /* 横屏安全区改由 padding-left 承担，底部不再叠加安全区 */
     padding-bottom: 0;
   }

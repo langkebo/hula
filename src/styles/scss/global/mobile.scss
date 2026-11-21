@@ -1,3 +1,5 @@
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 /* 只有当安全区域不为0时才应用 */
 @supports (top: env(safe-area-inset-top)) {
   :root {
@@ -72,8 +74,9 @@ nav {
 .tjg-glass {
   position: relative;
   background: var(--tjg-glass-tint);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft))'
+  );
   border: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-shadow-soft), var(--tjg-glass-inner-highlight);
 }
@@ -101,28 +104,32 @@ nav {
 /* 变体：按层级分配模糊强度与染色浓度 */
 .tjg-glass--nav {
   background: var(--tjg-glass-nav-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
-  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong))'
+  );
 }
 
 .tjg-glass--tabbar {
   background: var(--tjg-glass-tabbar-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong))'
+  );
   box-shadow: var(--tjg-glass-shadow-strong), var(--tjg-glass-inner-highlight);
 }
 
 .tjg-glass--sheet {
   background: var(--tjg-glass-sheet-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft))'
+  );
   box-shadow: var(--tjg-glass-shadow-strong), var(--tjg-glass-inner-highlight);
 }
 
 .tjg-glass--input {
   background: var(--tjg-glass-input-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft))'
+  );
 }
 
 /* 按下反馈：只做透明度/亮度变化，不缩放布局，避免列表抖动 */
@@ -139,8 +146,9 @@ nav {
 /* 消息气泡：接收方半透明玻璃，发送方保留深色底以确保白字对比度 ≥ 4.5:1 */
 .bubble {
   background-color: var(--tjg-glass-tint-bubble-received);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft))'
+  );
   border: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-soft);
 }
@@ -148,8 +156,9 @@ nav {
 .bubble-oneself {
   background-color: var(--tjg-glass-tint-bubble-sent);
   background-image: var(--tjg-glass-sheen);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft))'
+  );
   border: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-soft);
 }
@@ -168,8 +177,9 @@ nav {
   /* Picker 内部默认是实色底，透明后才会透出弹层玻璃 */
   --van-picker-background: transparent;
 
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft))'
+  );
 }
 
 /* Toast 由函数式调用渲染并 teleport 到 body，拿不到页面级包裹，只能按全局类名接线。
@@ -179,8 +189,9 @@ nav {
   --van-toast-text-color: var(--tjg-text-primary);
   --van-toast-loading-icon-color: var(--tjg-text-secondary);
 
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+  @include backdrop-filter-pair(
+    'blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft))'
+  );
   border: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
 }
@@ -191,7 +202,7 @@ nav {
 }
 
 /* 降级 1：不支持 backdrop-filter 时退回实色，保证可读性与层级 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@include without-backdrop-filter-support {
   .tjg-glass,
   .tjg-glass--nav,
   .tjg-glass--tabbar,
@@ -270,13 +281,15 @@ nav {
  * strong 档模糊降为 medium 档；特殊说明：--nav / --input / 气泡本就是 soft-medium，无需覆盖。 */
 html.medium-perf {
   .tjg-glass--tabbar {
-    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
-    backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+    @include backdrop-filter-pair(
+      'blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong))'
+    );
   }
 
   .tjg-glass--sheet {
-    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
-    backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+    @include backdrop-filter-pair(
+      'blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft))'
+    );
   }
 }
 
