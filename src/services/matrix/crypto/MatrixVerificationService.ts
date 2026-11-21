@@ -208,19 +208,19 @@ export class VerificationService extends BaseMatrixService {
     if (!client || this.observedClient === client) return
 
     if (this.observedClient) {
-      this.observedClient.off(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived as never)
+      this.observedClient.off(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived)
       // 换 client（登出/换账号）时旧事务不可再操作，必须一并丢弃（D11）
       this.clearTransactions()
     }
 
-    client.on(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived as never)
+    client.on(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived)
     this.observedClient = client
   }
 
   /** 仅供测试与登出清理：断开对当前 client 的事件订阅 */
   reset(): void {
     if (this.observedClient) {
-      this.observedClient.off(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived as never)
+      this.observedClient.off(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived)
       this.observedClient = null
     }
     this.clearTransactions()

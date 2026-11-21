@@ -1,23 +1,16 @@
-import type { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk'
+import type { MatrixClient, MatrixEvent, Room, RoomMember, RoomState } from 'matrix-js-sdk'
 import { RoomTypeEnum } from '@/enums'
 import type { RoomInfo } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import matrixEventServiceLocal from '../MatrixEventService'
 import { matrixReadStateService } from '../messaging/MatrixReadStateService'
-import { ClientEvent, RoomEvent } from '../sdk'
+import { ClientEvent, RoomEvent, RoomStateEvent } from '../sdk'
 import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixRoomCreationService } from './CreationService'
 import { findDmCounterpart, isDirectMessageRoomFromRoom } from './roomTypeUtils'
 
 const logger = createLogger('MatrixRoomRealtimeService')
-
-const ROOM_EVENTS = {
-  Timeline: 'Room.timeline',
-  Name: 'Room.name',
-  Avatar: 'Room.avatar',
-  Member: 'Room.member'
-} as const
 
 /**
  * 实时位置共享（beacon）中可渲染为独立 BEACON 气泡的事件类型，含 MSC3672 不稳定前缀。
@@ -233,15 +226,15 @@ export class MatrixRoomRealtimeService {
         }
       }
 
-      client.on(ROOM_EVENTS.Timeline, handler)
-      return () => client.off(ROOM_EVENTS.Timeline, handler)
+      client.on(RoomEvent.Timeline, handler)
+      return () => client.off(RoomEvent.Timeline, handler)
     })
   }
 
   onRoomNameChange(callback: (roomId: string, name: string) => void): void {
     this.bindClientListener('name', (client) => {
-      // `Room.name` 由 Room 实例发出（client 不转发），直接监听 client 永远收不到。
-      // 逐房间绑定，并为后续新建的房间补挂；初始 state 到达时 Room 也会 emit Name。
+      // `Room.name` 在 Room 实例上 emit；逐房间绑定，并为后续新建的房间补挂。
+      // 初始 state 到达时 Room 也会 emit Name，故绑定后补发一次当前值。
       const unsubscribers: Array<() => void> = []
       const bindRoom = (room: Room): void => {
         const handler = (): void => callback(room.roomId, room.name)
@@ -265,17 +258,21 @@ export class MatrixRoomRealtimeService {
 
   onRoomAvatarChange(callback: (roomId: string, avatarUrl: string | null) => void): void {
     this.bindClientListener('avatar', (client) => {
-      const handler = (room: Room): void => {
-        callback(room.roomId, room.getMxcAvatarUrl?.() ?? null)
+      // SDK 无 `Room.avatar` 事件；头像变更以 `m.room.avatar` 状态事件经 RoomState.events 上抛。
+      const handler = (event: MatrixEvent, state: RoomState): void => {
+        if (event.getType() !== 'm.room.avatar') return
+        const room = client.getRoom(state.roomId)
+        callback(state.roomId, room?.getMxcAvatarUrl?.() ?? null)
       }
-      client.on(ROOM_EVENTS.Avatar, handler)
-      return () => client.off(ROOM_EVENTS.Avatar, handler)
+      client.on(RoomStateEvent.Events, handler)
+      return () => client.off(RoomStateEvent.Events, handler)
     })
   }
 
   onRoomMemberChange(callback: (roomId: string, roomInfo: RoomInfo) => void): void {
     this.bindClientListener('member', (client) => {
-      const handler = (_event: MatrixEvent, member: RoomMember): void => {
+      // SDK 无 `Room.member` 事件；成员变更经 RoomState.members 上抛（三参签名）。
+      const handler = (_event: MatrixEvent, _state: RoomState, member: RoomMember): void => {
         const roomId = member.roomId
         const room = client.getRoom(roomId)
         if (room) {
@@ -283,8 +280,8 @@ export class MatrixRoomRealtimeService {
           callback(roomId, roomInfo)
         }
       }
-      client.on(ROOM_EVENTS.Member, handler)
-      return () => client.off(ROOM_EVENTS.Member, handler)
+      client.on(RoomStateEvent.Members, handler)
+      return () => client.off(RoomStateEvent.Members, handler)
     })
   }
 

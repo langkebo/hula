@@ -87,6 +87,12 @@ async function loadPrefixConstants() {
   for (const m of text.matchAll(/export\s+const\s+([A-Z][A-Z0-9_]*)\s*=\s*['"]([^'"]+)['"]/g)) {
     consts[m[1]] = m[2]
   }
+  // 派生常量：`export const X = `${ROOT}/seg`` — 只有引用的常量已解析时才代入，
+  // 保证 prefixes.ts 仍是前缀唯一来源（避免为了能被扫描而重复写字面量）。
+  for (const m of text.matchAll(/export\s+const\s+([A-Z][A-Z0-9_]*)\s*=\s*`([^`]*)`/g)) {
+    const resolved = m[2].replace(/\$\{([A-Z][A-Z0-9_]*)\}/g, (whole, name) => consts[name] ?? whole)
+    if (!resolved.includes('${')) consts[m[1]] = resolved
+  }
   return consts
 }
 

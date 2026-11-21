@@ -437,10 +437,11 @@ describe('MatrixRoomRealtimeService', () => {
     })
 
     it('onRoomAvatarChange forwards roomId + avatar, defaults to null', () => {
-      const { on } = setupClient()
+      const { on, getRoom } = setupClient()
+      getRoom.mockReturnValueOnce(makeRoom({ getMxcAvatarUrl: () => null }))
       const cb = vi.fn()
       service.onRoomAvatarChange(cb)
-      on.mock.calls[0][1]({ roomId: '!r:e', getMxcAvatarUrl: () => undefined })
+      on.mock.calls[0][1]({ getType: () => 'm.room.avatar' }, { roomId: '!r:e' })
       expect(cb).toHaveBeenCalledWith('!r:e', null)
     })
 
@@ -450,7 +451,7 @@ describe('MatrixRoomRealtimeService', () => {
       convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
       const cb = vi.fn()
       service.onRoomMemberChange(cb)
-      on.mock.calls[0][1]({ getType: () => 'm.room.member' }, { roomId: '!r:e' })
+      on.mock.calls[0][1]({ getType: () => 'm.room.member' }, { roomId: '!r:e' }, { roomId: '!r:e' })
       expect(cb).toHaveBeenCalledWith('!r:e', { roomId: '!r:e' })
     })
 
@@ -459,7 +460,7 @@ describe('MatrixRoomRealtimeService', () => {
       getRoom.mockReturnValueOnce(null)
       const cb = vi.fn()
       service.onRoomMemberChange(cb)
-      on.mock.calls[0][1]({}, { roomId: '!missing' })
+      on.mock.calls[0][1]({}, { roomId: '!missing' }, { roomId: '!missing' })
       expect(cb).not.toHaveBeenCalled()
     })
   })

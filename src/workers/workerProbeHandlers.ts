@@ -14,6 +14,7 @@
 
 import { useI18nGlobal } from '@/services/i18n'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { CLIENT_VERSIONS, PREFIX_V3 } from '@/services/matrix/paths/prefixes'
 
 const runtimeFetch = getRuntimeAwareFetch()
 
@@ -32,7 +33,7 @@ export async function handleGetServerVersions(payload: GetServerVersionsPayload)
     throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
-  const url = `${trimmed}/_matrix/client/versions`
+  const url = `${trimmed}${CLIENT_VERSIONS}`
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (payload.accessToken) {
     headers.Authorization = `Bearer ${payload.accessToken}`
@@ -66,7 +67,7 @@ export async function handleGetLoginFlows(payload: GetLoginFlowsPayload): Promis
     throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
-  const url = `${trimmed}/_matrix/client/v3/login`
+  const url = `${trimmed}${PREFIX_V3}/login`
   const response = await runtimeFetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
   if (!response.ok) {
     throw new Error(`getLoginFlows HTTP ${response.status}`)
@@ -141,7 +142,7 @@ export async function handleProbeCors(payload: ProbeCorsPayload): Promise<CorsPr
     throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
-  const response = await runtimeFetch(`${trimmed}/_matrix/client/versions`, { method: 'OPTIONS' })
+  const response = await runtimeFetch(`${trimmed}${CLIENT_VERSIONS}`, { method: 'OPTIONS' })
   return {
     'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
     'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
@@ -162,7 +163,7 @@ export async function handleGetCapabilities(payload: GetCapabilitiesPayload): Pr
     throw new Error(useI18nGlobal().t('matrix_error.client.access_token_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
-  const url = `${trimmed}/_matrix/client/v3/capabilities`
+  const url = `${trimmed}${PREFIX_V3}/capabilities`
   const response = await runtimeFetch(url, {
     method: 'GET',
     headers: {

@@ -38,12 +38,12 @@ export class UserDevicesCache {
   private ensureSubscription(client: MatrixClient): void {
     if (this.observedClient === client) return
     if (this.observedClient) {
-      this.observedClient.off(CryptoEvent.DevicesUpdated, this.handleDevicesUpdated as never)
+      this.observedClient.off(CryptoEvent.DevicesUpdated, this.handleDevicesUpdated)
     }
     this.observedClient = client
     this.cache.clear()
     this.inFlight.clear()
-    client.on(CryptoEvent.DevicesUpdated, this.handleDevicesUpdated as never)
+    client.on(CryptoEvent.DevicesUpdated, this.handleDevicesUpdated)
   }
 
   /** 失效设备列表缓存；省略 userId 时清空全部。 */

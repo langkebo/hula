@@ -6,7 +6,7 @@
  */
 /// <reference types="vite/client" />
 
-import type { Room, RoomMember } from 'matrix-js-sdk'
+import type { Room } from 'matrix-js-sdk'
 
 declare module 'matrix-js-sdk' {
   interface MatrixClient {
@@ -177,49 +177,6 @@ declare module 'matrix-js-sdk' {
     // getKeyVerificationManager 已随死后端面（keys/device_signing/verify_*）一并删除
     // getTypingManager now available in SDK
     // getReadReceiptsManager now available in SDK
-    on(event: 'room', listener: (room: Room) => void): void
-    on(event: 'Room.timeline', listener: (event: MatrixEvent, room: Room | undefined) => void): void
-    on(event: 'Room.name', listener: (room: Room) => void): void
-    on(event: 'Room.avatar', listener: (room: Room) => void): void
-    on(event: 'Room.member', listener: (event: MatrixEvent, member: RoomMember) => void): void
-    on(event: 'room_timeline', listener: (event: MatrixEvent, room?: Room) => void): void
-    on(event: 'accountData', listener: (event: MatrixEvent) => void): void
-    on(event: 'Call.incoming', listener: (call: MatrixCall) => void): void
-    on(event: 'Call.hangup', listener: (call: MatrixCall) => void): void
-    on(event: 'Call.replaced', listener: (newCall: MatrixCall, oldCall: MatrixCall) => void): void
-    on(event: string, listener: (...args: unknown[]) => void): void
-    off(event: 'sync', listener: (state: string) => void): void
-    off(event: 'room', listener: (room: Room) => void): void
-    off(event: 'Room.timeline', listener: (event: MatrixEvent, room: Room | undefined) => void): void
-    off(event: 'Room.name', listener: (room: Room) => void): void
-    off(event: 'Room.avatar', listener: (room: Room) => void): void
-    off(event: 'Room.member', listener: (event: MatrixEvent, member: RoomMember) => void): void
-    off(event: 'room_timeline', listener: (event: MatrixEvent, room?: Room) => void): void
-    off(event: 'accountData', listener: (event: MatrixEvent) => void): void
-    off(event: 'Call.incoming', listener: (call: MatrixCall) => void): void
-    off(event: 'Call.hangup', listener: (call: MatrixCall) => void): void
-    off(event: 'Call.replaced', listener: (newCall: MatrixCall, oldCall: MatrixCall) => void): void
-    off(
-      event: 'crypto.verification.requested',
-      listener: (request: { transactionId: string; userId: string; deviceId: string; methods: string[] }) => void
-    ): void
-    off(
-      event: 'crypto.verification.finished',
-      listener: (request: { transactionId: string; userId: string; deviceId: string }) => void
-    ): void
-    off(
-      event: 'crypto.verification.cancelled',
-      listener: (request: { transactionId: string; userId: string; deviceId: string; cancelReason?: string }) => void
-    ): void
-    off(
-      event: 'crypto.verification.started',
-      listener: (request: { transactionId: string; userId: string; deviceId: string }) => void
-    ): void
-    off(
-      event: 'crypto.verification.ready',
-      listener: (request: { transactionId: string; userId: string; deviceId: string; methods: string[] }) => void
-    ): void
-    off(event: string, listener: (...args: unknown[]) => void): void
     // Manager accessors (synapse-rust extensions)
     // 注：getDirectMessageManager/getDeviceManager/getKeyBackupManager/getDeviceKeysManager/
     // getCryptoKeysManager 已由 SDK matrix-client-extensions.d.ts 声明（getKeyVerificationManager 已删除）

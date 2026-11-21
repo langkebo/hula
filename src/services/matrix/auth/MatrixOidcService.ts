@@ -2,7 +2,7 @@ import { createLogger } from '@/utils/Logger'
 import { requireSubtleCrypto } from '@/utils/webCompat'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixHttpClient } from '../MatrixHttpClient'
-import { MATRIX_PATHS } from '../paths'
+import { MATRIX_PATHS, PREFIX_V3 } from '../paths'
 import { createTemporaryMatrixClient } from './authHelpers'
 
 const logger = createLogger('MatrixOidcService')
@@ -327,7 +327,7 @@ class MatrixOidcService {
         access_token: string
         device_id: string
         refresh_token?: string
-      }>('POST', `${homeserverUrl}/_matrix/client/v3/oidc/token`, {
+      }>('POST', `${homeserverUrl}${PREFIX_V3}/oidc/token`, {
         body: {
           grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
           oidc_access_token: oidcAccessToken,

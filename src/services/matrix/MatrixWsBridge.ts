@@ -3,12 +3,13 @@ import { WsResponseMessageType, type WsTokenExpire } from '@/services/legacy/wsT
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import {
   ClientEvent,
+  type ClientEventHandlerMap,
   type MatrixClient,
   type MatrixEvent,
   type Room,
   RoomEvent,
-  type RoomState,
-  RoomStateEvent
+  RoomStateEvent,
+  SyncState
 } from '@/services/matrix/sdk'
 import type { RevokedMsgType } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
@@ -38,8 +39,8 @@ class MatrixWsBridge {
   /** 已上抛的撤回事件标识 → 上抛时间。 */
   private readonly handledRecalls = new Map<string, number>()
 
-  private readonly onSync = (state: string, _prev?: string, data?: unknown) => {
-    if (state !== 'ERROR') return
+  private readonly onSync: ClientEventHandlerMap[ClientEvent.Sync] = (state, _prev, data) => {
+    if (state !== SyncState.Error) return
     const errLike = data as SyncErrorLike | undefined
     const code = errLike?.errcode ?? errLike?.data?.errcode
     if (code !== 'M_UNKNOWN_TOKEN' && code !== 'M_MISSING_TOKEN') return
@@ -88,19 +89,19 @@ class MatrixWsBridge {
   }
 
   /** 通道一：SDK 命中目标事件后 emit 的 RoomEvent.Redaction。 */
-  private readonly onRedaction = (event: MatrixEvent, room: Room) => {
+  private readonly onRedaction: ClientEventHandlerMap[RoomEvent.Redaction] = (event, room) => {
     this.emitRecall(event, room)
   }
 
   /** 通道二：live timeline 里的 m.room.redaction（目标不在 timeline 时唯一可达的通道）。 */
-  private readonly onTimelineEvent = (event: MatrixEvent, room?: Room) => {
+  private readonly onTimelineEvent: ClientEventHandlerMap[RoomEvent.Timeline] = (event, room) => {
     if (!event.isRedaction()) return
     const targetRoom = room ?? this.client?.getRoom(event.getRoomId() ?? '')
     if (!targetRoom) return
     this.emitRecall(event, targetRoom)
   }
 
-  private readonly onRoomStateEvent = (event: MatrixEvent, state: RoomState) => {
+  private readonly onRoomStateEvent: ClientEventHandlerMap[RoomStateEvent.Events] = (event, state) => {
     const type = event.getType()
     if (type !== 'm.room.name' && type !== 'm.room.avatar') return
 
@@ -124,20 +125,20 @@ class MatrixWsBridge {
     }
 
     this.client = client
-    client.on(ClientEvent.Sync, this.onSync as never)
-    client.on(RoomEvent.Redaction, this.onRedaction as never)
-    client.on(RoomEvent.Timeline, this.onTimelineEvent as never)
-    client.on(RoomStateEvent.Events, this.onRoomStateEvent as never)
+    client.on(ClientEvent.Sync, this.onSync)
+    client.on(RoomEvent.Redaction, this.onRedaction)
+    client.on(RoomEvent.Timeline, this.onTimelineEvent)
+    client.on(RoomStateEvent.Events, this.onRoomStateEvent)
     this.started = true
     logger.info('MatrixWsBridge 已启动')
   }
 
   stop(): void {
     if (!this.started || !this.client) return
-    this.client.off(ClientEvent.Sync, this.onSync as never)
-    this.client.off(RoomEvent.Redaction, this.onRedaction as never)
-    this.client.off(RoomEvent.Timeline, this.onTimelineEvent as never)
-    this.client.off(RoomStateEvent.Events, this.onRoomStateEvent as never)
+    this.client.off(ClientEvent.Sync, this.onSync)
+    this.client.off(RoomEvent.Redaction, this.onRedaction)
+    this.client.off(RoomEvent.Timeline, this.onTimelineEvent)
+    this.client.off(RoomStateEvent.Events, this.onRoomStateEvent)
     this.client = null
     this.started = false
     this.handledRecalls.clear()

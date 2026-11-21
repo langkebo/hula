@@ -49,7 +49,7 @@ class MatrixAnnouncementService {
 
   private async getPinnedEventIds(roomId: string): Promise<string[]> {
     const room = await this.getRoom(roomId)
-    const pinnedEvents = room.currentState.getStateEvents('m.room.pinned_events' as never, '')
+    const pinnedEvents = room.currentState.getStateEvents('m.room.pinned_events', '')
     const content = (pinnedEvents?.getContent() ?? {}) as PinnedEventsContent
     return Array.isArray(content.pinned)
       ? content.pinned.filter((item): item is string => typeof item === 'string')
@@ -66,7 +66,7 @@ class MatrixAnnouncementService {
   async getAnnouncementById(roomId: string, announcementId: string): Promise<Announcement | null> {
     try {
       const room = await this.getRoom(roomId)
-      const topicEvent = room.currentState.getStateEvents('m.room.topic' as never, '')
+      const topicEvent = room.currentState.getStateEvents('m.room.topic', '')
 
       if (topicEvent && (announcementId === 'topic' || announcementId === topicEvent.getId())) {
         const content = (topicEvent.getContent() ?? {}) as TopicContent
@@ -109,7 +109,7 @@ class MatrixAnnouncementService {
 
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: options.content }, '')
         const refreshedRoom = await this.getRoom(roomId)
-        const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic' as never, '')
+        const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic', '')
         logger.info(`[Announcement] 更新置顶公告: ${roomId}`)
         return topicEvent?.getId() || 'topic'
       }
@@ -135,7 +135,7 @@ class MatrixAnnouncementService {
 
         await client.sendStateEvent(roomId, 'm.room.topic', { topic: options.content }, '')
         const refreshedRoom = await this.getRoom(roomId)
-        const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic' as never, '')
+        const topicEvent = refreshedRoom.currentState.getStateEvents('m.room.topic', '')
         logger.info(`[Announcement] 编辑置顶公告: ${roomId}`)
         return topicEvent?.getId() || options.id
       }
@@ -156,7 +156,7 @@ class MatrixAnnouncementService {
   async deleteAnnouncement(roomId: string, announcementId: string): Promise<void> {
     try {
       const room = await this.getRoom(roomId)
-      const topicEvent = room.currentState.getStateEvents('m.room.topic' as never, '')
+      const topicEvent = room.currentState.getStateEvents('m.room.topic', '')
       if (announcementId === 'topic' || announcementId === topicEvent?.getId()) {
         const client = this.getClient()
         if (!client) throw new Error('Matrix client not initialized')

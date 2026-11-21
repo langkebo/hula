@@ -1,7 +1,7 @@
 import type { UploadSceneEnum } from '@/enums'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { getMatrixAccessToken } from '@/services/matrix/matrixClientAccessor'
-import { PREFIX_V3 } from '@/services/matrix/paths'
+import { MATRIX_ROOT, PREFIX_V3 } from '@/services/matrix/paths'
 import { HttpClient, HttpClientError } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 
@@ -66,7 +66,7 @@ interface UploadProviderResponse {
 /** 预签名地址判定：绝对 http(s) 且不是 Matrix 媒体端点 */
 function looksLikePresignedUrl(url: string): boolean {
   if (!/^https?:\/\//i.test(url)) return false
-  return !url.includes('/_matrix/')
+  return !url.includes(`${MATRIX_ROOT}/`)
 }
 
 /**

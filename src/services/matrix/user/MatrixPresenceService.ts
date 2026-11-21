@@ -8,7 +8,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { isShowOnlineStatusEnabled } from '@/services/matrix/privacyPreferences'
-import type { IPresenceEvent } from '@/services/matrix/sdk'
+import { type IPresenceEvent, type MatrixEvent, type User, UserEvent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { recordSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
@@ -47,18 +47,7 @@ interface PresenceListResponse {
  */
 class MatrixPresenceService extends BaseMatrixService {
   private readonly presenceHandlers = new Set<(info: PresenceInfo) => void>()
-  private clientPresenceListener:
-    | ((
-        event: unknown,
-        user: {
-          userId: string
-          presence?: string
-          presenceStatusMsg?: string
-          lastActiveAgo?: number
-          currentlyActive?: boolean
-        }
-      ) => void)
-    | null = null
+  private clientPresenceListener: ((event: MatrixEvent | undefined, user: User) => void) | null = null
   private pendingPresenceRegistration: Promise<void> | null = null
 
   private emitPresence(user: {
@@ -92,7 +81,7 @@ class MatrixPresenceService extends BaseMatrixService {
       this.emitPresence(user)
     }
 
-    client.on('User.presence' as never, this.clientPresenceListener as never)
+    client.on(UserEvent.Presence, this.clientPresenceListener)
   }
 
   private ensurePresenceListenerRegistered(): void {
@@ -368,7 +357,7 @@ class MatrixPresenceService extends BaseMatrixService {
       if (this.presenceHandlers.size === 0 && this.clientPresenceListener) {
         try {
           const client = this.getClient()
-          client.off('User.presence' as never, this.clientPresenceListener as never)
+          client.off(UserEvent.Presence, this.clientPresenceListener)
         } catch (err) {
           // 客户端销毁/登出时的预期清理失败，降级为 debug 避免告警噪音
           logger.debug('Presence update failed (client may be gone):', err)

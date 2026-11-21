@@ -113,7 +113,7 @@ export async function loadContactAliases(force = false): Promise<void> {
   }
 
   try {
-    const event = matrixClient.getAccountData(CONTACT_ALIAS_ACCOUNT_DATA as never)
+    const event = matrixClient.getAccountData(CONTACT_ALIAS_ACCOUNT_DATA)
     cached = parseAliasBook(event?.getContent())
   } catch (err) {
     logger.warn('读取联系人别名失败（按空表处理）:', err)
@@ -166,7 +166,7 @@ export async function saveContactAlias(
     }
   }
 
-  await matrixClient.setAccountData(CONTACT_ALIAS_ACCOUNT_DATA, next as never)
+  await matrixClient.setAccountData(CONTACT_ALIAS_ACCOUNT_DATA, next)
   cached = next
   aliasVersion.value += 1
   return next.aliases[userId]
@@ -186,7 +186,7 @@ export async function removeContactAlias(userId: string): Promise<void> {
   const { [userId]: _removed, ...rest } = cached.aliases
   const next: ContactAliasBook = { version: 1, aliases: rest }
 
-  await matrixClient.setAccountData(CONTACT_ALIAS_ACCOUNT_DATA, next as never)
+  await matrixClient.setAccountData(CONTACT_ALIAS_ACCOUNT_DATA, next)
   cached = next
   aliasVersion.value += 1
 }

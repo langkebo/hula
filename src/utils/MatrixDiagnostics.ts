@@ -1,6 +1,6 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import { CLIENT_VERSIONS, MATRIX_PATHS } from '@/services/matrix/paths'
+import { CLIENT_VERSIONS, MATRIX_PATHS, PREFIX_V3 } from '@/services/matrix/paths'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from './Logger'
@@ -69,7 +69,7 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getLoginFlows(this.homeserverUrl)
-        : await HttpClient.get<{ flows?: Array<{ type: string }> }>(`${this.homeserverUrl}/_matrix/client/v3/login`, {
+        : await HttpClient.get<{ flows?: Array<{ type: string }> }>(`${this.homeserverUrl}${PREFIX_V3}/login`, {
             // homeserver 由 env/用户配置（动态 host）
             allowDynamicHost: true
           })

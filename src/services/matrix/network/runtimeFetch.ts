@@ -1,5 +1,6 @@
 import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { createRateLimitedFetch } from '@/services/matrix/MatrixRateLimitInterceptor'
+import { MATRIX_ROOT } from '@/services/matrix/paths/prefixes'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { computeBackoffDelay, sleep } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
@@ -76,7 +77,10 @@ export function rewriteToDevProxyUrl(url: string): string {
   try {
     const parsed = new URL(url)
     // 只重写 matrix.test 等 dev 域名的 _matrix 请求
-    if (parsed.pathname.startsWith('/_matrix/') && RELAXED_TLS_HOST_SUFFIXES.some((s) => parsed.hostname.endsWith(s))) {
+    if (
+      parsed.pathname.startsWith(`${MATRIX_ROOT}/`) &&
+      RELAXED_TLS_HOST_SUFFIXES.some((s) => parsed.hostname.endsWith(s))
+    ) {
       return `${window.location.origin}${parsed.pathname}${parsed.search}`
     }
   } catch {

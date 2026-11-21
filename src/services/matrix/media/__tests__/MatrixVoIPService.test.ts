@@ -59,11 +59,12 @@ describe('MatrixVoIPService', () => {
     await matrixVoIPService.initialize()
 
     expect(oldClient.off).toHaveBeenCalledWith('Call.incoming', expect.any(Function))
-    expect(oldClient.off).toHaveBeenCalledWith('Call.hangup', expect.any(Function))
-    expect(oldClient.off).toHaveBeenCalledWith('Call.replaced', expect.any(Function))
+    // CallEvent.Hangup / CallEvent.Replaced 的运行时值就是 'hangup' / 'replaced'
+    expect(oldClient.off).toHaveBeenCalledWith('hangup', expect.any(Function))
+    expect(oldClient.off).toHaveBeenCalledWith('replaced', expect.any(Function))
     expect(newClient.on).toHaveBeenCalledWith('Call.incoming', expect.any(Function))
-    expect(newClient.on).toHaveBeenCalledWith('Call.hangup', expect.any(Function))
-    expect(newClient.on).toHaveBeenCalledWith('Call.replaced', expect.any(Function))
+    expect(newClient.on).toHaveBeenCalledWith('hangup', expect.any(Function))
+    expect(newClient.on).toHaveBeenCalledWith('replaced', expect.any(Function))
     expect(matrixVoIPService.getActiveCalls()).toEqual([])
   })
 

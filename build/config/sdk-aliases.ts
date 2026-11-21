@@ -66,13 +66,16 @@ export const sdkAliasEntries: SdkAliasEntry[] = [
   { alias: 'matrix-js-sdk/device', segments: ['device', 'index.ts'] },
   { alias: 'matrix-js-sdk/telemetry', segments: ['telemetry', 'index.ts'] },
   { alias: 'matrix-js-sdk/rendezvous', segments: ['rendezvous', 'index.ts'] },
-  // 以下 6 条为 2026-11-18 补齐：这些子路径在 src/ 里已被 import，但此前未登记。
-  // 后果最严重的是 `server-capabilities`——它是**值导入**（`export { ... }`），
+  // 以下 9 条为 2026-11-18 补齐：这些子路径在 src/ 里已被 import，但此前未登记。
+  // `server-capabilities` 与 `core` 是**值导入**（`export { ... }`），
   // 未登记时会命中末尾兜底 `matrix-js-sdk → src/index.ts`，被拼成
-  // `src/index.ts/server-capabilities` ⇒ dev server 报
-  // `Failed to resolve import`，`__TJG_APP_READY__` 永不置真，桌面端整片白屏。
-  // 其余 5 条当前是 `export type` / `import type`（编译期擦除，不触发 resolve），
+  // `src/index.ts/<subpath>` ⇒ 构建报 `Could not load ...`（dev server 则为
+  // `Failed to resolve import`），`core` 缺失会直接中断 `pnpm build`。
+  // 其余 7 条当前是 `export type` / `import type`（编译期擦除，不触发 resolve），
   // 但一旦改成值导入就会以同样方式炸，故一并登记。
+  { alias: 'matrix-js-sdk/core', segments: ['core.ts'] },
+  { alias: 'matrix-js-sdk/dehydrated-device', segments: ['dehydrated-device', 'index.ts'] },
+  { alias: 'matrix-js-sdk/room-summary', segments: ['room-summary', 'index.ts'] },
   { alias: 'matrix-js-sdk/server-capabilities', segments: ['server-capabilities', 'index.ts'] },
   { alias: 'matrix-js-sdk/device-keys', segments: ['device-keys', 'index.ts'] },
   { alias: 'matrix-js-sdk/event-report', segments: ['event-report', 'index.ts'] },

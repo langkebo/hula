@@ -1,25 +1,12 @@
 import { computed } from 'vue'
-import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import type { MatrixCapabilities } from '@/types/message'
 import { SingleFlight } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
 import { matrixEncryptionContextService } from './crypto/MatrixEncryptionContextService'
 import { matrixClientService } from './MatrixClientService'
-import { MATRIX_PATHS } from './paths'
-import { matrixAccountService } from './user/MatrixAccountService'
+import { SynapseRustFeature } from './sdk'
 
 const logger = createLogger('MatrixCapabilityService')
-
-type MatrixVersionsResponse = {
-  unstable_features?: Record<string, boolean> | undefined
-}
-
-type MatrixCapabilitiesResponse = {
-  capabilities?: MatrixCapabilities['capabilities']
-  /** `/_matrix/client/versions` 与 capabilities 都可能带不稳定特性开关。 */
-  unstable_features?: Record<string, boolean> | undefined
-}
 
 /**
  * Matrix server capability detection service.
@@ -99,15 +86,15 @@ export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]
     capabilities: []
   },
   'sticky-events': {
-    unstable: ['org.matrix.msc4354'],
+    unstable: [SynapseRustFeature.StickyEvents],
     capabilities: []
   },
   'scheduled-send': {
-    unstable: ['org.matrix.msc4140'],
+    unstable: [SynapseRustFeature.ScheduledSend],
     capabilities: []
   },
   'rtc-transports': {
-    unstable: ['org.matrix.msc4143'],
+    unstable: [SynapseRustFeature.RtcTransports],
     capabilities: []
   },
   'account-status': {
@@ -119,7 +106,7 @@ export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]
     capabilities: ['m.profile_fields']
   },
   'qr-rendezvous': {
-    unstable: ['org.matrix.msc4108'],
+    unstable: [SynapseRustFeature.QrRendezvous],
     capabilities: []
   },
   'mutual-rooms': {
@@ -135,17 +122,6 @@ export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]
 }
 
 const THREAD_UNSTABLE_FEATURES = ['org.matrix.msc3983', 'org.matrix.msc3983.thread', 'org.matrix.msc3026']
-
-function mergeUnstableFeatures(...sources: Array<Record<string, boolean> | undefined>): Record<string, boolean> {
-  const merged: Record<string, boolean> = {}
-  for (const source of sources) {
-    if (!source) continue
-    for (const [key, enabled] of Object.entries(source)) {
-      merged[key] = merged[key] === true || enabled === true
-    }
-  }
-  return merged
-}
 
 export class CapabilityUnavailableError extends Error {
   capability: string
@@ -287,7 +263,12 @@ class MatrixCapabilityService {
    * Fetch server capabilities without writing to any store.
    * The caller is responsible for persisting the result.
    *
-   * SingleFlight：并发调用时复用同一 Promise，只发一次 /versions + /capabilities + /client_config。
+   * 数据来源是 SDK 的 `ServerCapabilitiesManager.getCapabilitySnapshot()`（P0-3）：
+   * 一次取 `/versions` + `/capabilities` + `/config/client`，由 SDK 负责缓存、
+   * 单端点失败降级与 `unstable_features` 合并，本服务不再自建 HTTP 请求。
+   *
+   * SingleFlight：SDK 只在请求完成后写缓存，登录收尾与 startClient 的并发首探
+   * 仍会在服务层合并成一次探测。
    */
   async fetchCapabilities(): Promise<MatrixCapabilities | null> {
     const client = matrixClientService.getClient()
@@ -296,35 +277,19 @@ class MatrixCapabilityService {
       return null
     }
 
-    const baseUrl = client.getHomeserverUrl()
-    logger.info(`[CapabilityService] Detecting server capabilities: ${baseUrl}`)
-
     return this.capabilityFlight.run(async () => {
       try {
-        const [versionsResult, capabilitiesResult, clientConfigResult] = await Promise.allSettled([
-          this.fetchVersions(baseUrl),
-          matrixAccountService.getCapabilities() as Promise<MatrixCapabilitiesResponse>,
-          this.fetchClientConfig(baseUrl)
-        ])
-
-        const versions = versionsResult.status === 'fulfilled' ? versionsResult.value : { unstable_features: {} }
-        const capabilities = capabilitiesResult.status === 'fulfilled' ? capabilitiesResult.value : { capabilities: {} }
-        const clientConfig = clientConfigResult.status === 'fulfilled' ? clientConfigResult.value : null
-
-        // 合并 versions 和 capabilities 两个来源的 unstable_features
-        const capabilitiesUnstable = capabilities.unstable_features
-        const mergedUnstableFeatures = mergeUnstableFeatures(capabilitiesUnstable, versions.unstable_features)
-
+        const snapshot = await client.getServerCapabilitiesManager().getCapabilitySnapshot()
         const result: MatrixCapabilities = {
-          unstable_features: mergedUnstableFeatures,
-          capabilities: capabilities.capabilities || {},
-          client_config: clientConfig || {}
+          unstable_features: { ...(snapshot.unstableFeatures ?? {}) },
+          capabilities: { ...(snapshot.capabilities ?? {}) } as MatrixCapabilities['capabilities'],
+          client_config: { ...(snapshot.clientConfig ?? {}) }
         }
 
-        logger.info('[CapabilityService] Server capability detection complete')
+        logger.info(`[CapabilityService] Server capability snapshot complete: ${client.getHomeserverUrl()}`)
         return result
       } catch (err) {
-        logger.error(`[CapabilityService] Server capability detection partially failed: ${err}`)
+        logger.error(`[CapabilityService] Capability snapshot failed: ${err}`)
         return null
       }
     })
@@ -349,50 +314,6 @@ class MatrixCapabilityService {
         client_config: {}
       }
     )
-  }
-
-  private async fetchVersions(baseUrl: string): Promise<MatrixVersionsResponse> {
-    if (matrixWorkerHost.isStarted) {
-      try {
-        const data = await matrixWorkerHost.getServerVersions(baseUrl)
-        return { unstable_features: data.unstable_features }
-      } catch (err) {
-        // FT-131-B: 记录 versions 拉取失败，避免静默吞错导致能力检测异常无法排查
-        logger.warn(`[CapabilityService] fetchVersions (worker) failed: ${err}`)
-        return {}
-      }
-    }
-    try {
-      const url = `${baseUrl}/_matrix/client/versions`
-      const response = await getRuntimeAwareFetch()(url)
-      if (!response.ok) {
-        // FT-131-B: HTTP 非 2xx 也需记录，避免静默降级掩盖服务端错误
-        logger.warn(`[CapabilityService] fetchVersions got HTTP ${response.status}`)
-        return {}
-      }
-      return (await response.json()) as MatrixVersionsResponse
-    } catch (err) {
-      // FT-131-B: 记录 versions 拉取失败，避免静默吞错导致能力检测异常无法排查
-      logger.warn(`[CapabilityService] fetchVersions failed: ${err}`)
-      return {}
-    }
-  }
-
-  private async fetchClientConfig(baseUrl: string): Promise<MatrixCapabilities['client_config']> {
-    try {
-      const url = `${baseUrl}${MATRIX_PATHS.CLIENT_CONFIG.CLIENT}`
-      const response = await getRuntimeAwareFetch()(url)
-      if (!response.ok) {
-        // FT-131-B: HTTP 非 2xx 也需记录，避免静默降级掩盖服务端错误
-        logger.warn(`[CapabilityService] fetchClientConfig got HTTP ${response.status}`)
-        return {} as MatrixCapabilities['client_config']
-      }
-      return (await response.json()) as MatrixCapabilities['client_config']
-    } catch (err) {
-      // FT-131-B: 记录 client_config 拉取失败，避免静默吞错导致能力检测异常无法排查
-      logger.warn(`[CapabilityService] fetchClientConfig failed: ${err}`)
-      return {} as MatrixCapabilities['client_config']
-    }
   }
 }
 

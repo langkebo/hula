@@ -128,9 +128,7 @@ export function resolveDmRoomId(peerUserId: string): string | null {
   if (!matrixClient) return null
 
   try {
-    const direct = matrixClient.getAccountData('m.direct' as never)?.getContent() as
-      | Record<string, string[]>
-      | undefined
+    const direct = matrixClient.getAccountData('m.direct')?.getContent() as Record<string, string[]> | undefined
     const candidates = direct?.[peerUserId]
     if (Array.isArray(candidates)) {
       const existing = candidates.find((id) => Boolean(matrixClient.getRoom(id)))

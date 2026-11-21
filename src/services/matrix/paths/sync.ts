@@ -1,4 +1,4 @@
-import { PREFIX_UNSTABLE } from './prefixes'
+import { PREFIX_UNSTABLE, PREFIX_V4 } from './prefixes'
 
 /**
  * Sliding Sync 候选端点列表（用于连通性诊断）。
@@ -8,5 +8,5 @@ import { PREFIX_UNSTABLE } from './prefixes'
  */
 export const SYNC = {
   /** Sliding Sync 候选端点（用于 /utils/MatrixDiagnostics 连通性检查） */
-  SLIDING_SYNC_CANDIDATES: [`${PREFIX_UNSTABLE}/org.matrix.simplified_msc3575/sync`, `/_matrix/client/v4/sync`]
+  SLIDING_SYNC_CANDIDATES: [`${PREFIX_UNSTABLE}/org.matrix.simplified_msc3575/sync`, `${PREFIX_V4}/sync`]
 } as const

@@ -16,7 +16,7 @@ import { HULA_CAPABILITY_ALIASES } from '../MatrixCapabilityService'
  * 本文件把两侧对上：
  * 1）SDK **已绑定**的能力（`SynapseRustFeature` 里有的），其**全部 SDK 认可串**（主键 + 别名）
  *    都必须出现在 Tjg 的别名表里 —— SDK 改名时这里立刻红；
- * 2）SDK **未绑定**的能力（如 MSC4140 定时发送，SDK 未在 `SynapseRustFeature` 中登记），
+ * 2）SDK **未绑定**的能力（如 e2ee、admin-api 这类客户端判定位），
  *    必须在 `SDK_UNBOUND` 里写明理由，防止「悄悄清空别名」被当成通过；
  * 3）Tjg 允许比 SDK 多写别名（服务端兼容串），但多写的不能反过来冒充 SDK 真值。
  */
@@ -24,11 +24,7 @@ import { HULA_CAPABILITY_ALIASES } from '../MatrixCapabilityService'
 /** SDK 的 `SynapseRustFeature` 未绑定、但 Tjg 需要自行识别的能力（必须写清依据） */
 const SDK_UNBOUND: Record<string, string> = {
   e2ee: '客户端能力，服务端 /capabilities 与 /versions 都不宣告（由 crypto 初始化态判定）',
-  'admin-api': '管理员权限由 /_synapse/admin 的 is_admin 判定，不经 capabilities 面',
-  'sticky-events': 'MSC4354 未进 SDK SynapseRustFeature；Tjg 按 /versions 直接识别',
-  'scheduled-send': 'MSC4140 未进 SDK SynapseRustFeature；Tjg 按 /versions 直接识别',
-  'rtc-transports': 'MSC4143 未进 SDK SynapseRustFeature；Tjg 按 /versions 直接识别',
-  'qr-rendezvous': 'MSC4108 未进 SDK SynapseRustFeature；Tjg 按 /versions 直接识别'
+  'admin-api': '管理员权限由 /_synapse/admin 的 is_admin 判定，不经 capabilities 面'
 }
 
 /** 服务端不宣告、因而别名表必须留空的能力位（有明确依据才允许） */

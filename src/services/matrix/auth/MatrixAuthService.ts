@@ -4,7 +4,7 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { type IClientWellKnown, initializeManagerExtensions } from '@/services/matrix/sdk'
 import { matrixClientService } from '../MatrixClientService'
-import { MATRIX_PATHS } from '../paths'
+import { MATRIX_PATHS, PREFIX_CLIENT } from '../paths'
 import { logger, normalizeSdkMatrixError } from './authErrors'
 import {
   buildRegisterAuth,
@@ -434,7 +434,9 @@ export class MatrixAuthService {
 
     try {
       const homeserverUrl = client.getHomeserverUrl()
-      const baseUrl = homeserverUrl.replace(/\/_matrix\/client\/?$/, '').replace(/\/$/, '')
+      // homeserver 可能带 `/_matrix/client` 尾缀（部分部署把 API 基址当 homeserver 存），先剥离再拼 well-known
+      const trimmedUrl = homeserverUrl.endsWith('/') ? homeserverUrl.slice(0, -1) : homeserverUrl
+      const baseUrl = trimmedUrl.endsWith(PREFIX_CLIENT) ? trimmedUrl.slice(0, -PREFIX_CLIENT.length) : trimmedUrl
       const response = await getRuntimeAwareFetch()(`${baseUrl}${MATRIX_PATHS.WELL_KNOWN.CLIENT}`)
       if (!response.ok) {
         return {}

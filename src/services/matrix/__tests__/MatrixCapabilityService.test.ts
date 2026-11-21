@@ -1,4 +1,4 @@
-import { warn as logWarn } from '@tauri-apps/plugin-log'
+import { error as logError, warn as logWarn } from '@tauri-apps/plugin-log'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../MatrixClientService'
@@ -7,14 +7,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
-}))
-
-vi.mock('../user/MatrixAccountService', () => ({
-  matrixAccountService: { getCapabilities: vi.fn().mockResolvedValue({}) }
-}))
-
-vi.mock('../MatrixWorkerHost', () => ({
-  matrixWorkerHost: { isStarted: false }
 }))
 
 // E2EE 属客户端能力：服务端不宣告，判定只看 crypto 是否初始化（CAP-08）
@@ -26,11 +18,6 @@ vi.mock('../crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: () => cryptoContextMock
   }
-}))
-
-const throwingFetch = vi.fn((): Promise<unknown> => Promise.reject(new Error('network down')))
-vi.mock('../network/runtimeFetch', () => ({
-  getRuntimeAwareFetch: () => throwingFetch
 }))
 
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
@@ -285,38 +272,40 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
   })
 })
 
-// FT-131-B: fetchVersions / fetchClientConfig 不能静默吞错，必须记录日志以便排查能力检测失败
-describe('FT-131-B: capability fetch error logging', () => {
+// FT-131-B: 能力快照探测失败不能静默吞错，必须记录日志以便排查能力检测失败
+describe('FT-131-B: capability snapshot error logging', () => {
+  const snapshotMock = vi.fn()
+
   beforeEach(() => {
     const pinia = createPinia()
     setActivePinia(pinia)
     registerCapabilityStoreResolver(() => useCapabilityStore())
     vi.clearAllMocks()
-    throwingFetch.mockReset()
-    throwingFetch.mockImplementation(() => Promise.reject(new Error('network down')))
+    snapshotMock.mockReset()
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
-      getHomeserverUrl: () => 'https://matrix.test'
+      getHomeserverUrl: () => 'https://matrix.test',
+      getServerCapabilitiesManager: () => ({ getCapabilitySnapshot: snapshotMock })
     } as never)
   })
 
-  it('fetchVersions 失败时记录 warn 日志（不再静默吞错）', async () => {
-    await matrixCapabilityService.fetchCapabilities()
-    expect(logWarn).toHaveBeenCalled()
-    const allWarnCalls = vi.mocked(logWarn).mock.calls.map((c) => String(c[0]))
-    expect(allWarnCalls.some((msg) => msg.includes('versions') || msg.includes('Versions'))).toBe(true)
-  })
+  it('快照探测失败时记录 error 日志（不再静默吞错）', async () => {
+    snapshotMock.mockRejectedValue(new Error('network down'))
 
-  it('fetchClientConfig 失败时记录 warn 日志（不再静默吞错）', async () => {
-    await matrixCapabilityService.fetchCapabilities()
-    expect(logWarn).toHaveBeenCalled()
-    const allWarnCalls = vi.mocked(logWarn).mock.calls.map((c) => String(c[0]))
-    expect(allWarnCalls.some((msg) => msg.includes('client_config') || msg.includes('ClientConfig'))).toBe(true)
-  })
-
-  it('能力检测整体仍返回降级结果（不因日志而破坏降级）', async () => {
     const result = await matrixCapabilityService.fetchCapabilities()
+
+    expect(result).toBeNull()
+    const allErrorCalls = vi.mocked(logError).mock.calls.map((c) => String(c[0]))
+    expect(allErrorCalls.some((msg) => msg.includes('Capability snapshot failed'))).toBe(true)
+  })
+
+  it('SDK 单端点降级时仍返回可消费的空结构', async () => {
+    snapshotMock.mockResolvedValue({ unstableFeatures: {} })
+
+    const result = await matrixCapabilityService.fetchCapabilities()
+
     expect(result).not.toBeNull()
     expect(result?.unstable_features).toEqual({})
+    expect(result?.capabilities).toEqual({})
     expect(result?.client_config).toEqual({})
   })
 })
@@ -341,33 +330,26 @@ describe('R-16: error logging', () => {
   })
 })
 
-// Phase 2 ⑥: 并发去重 — fetchCapabilities 并发调用只发一次 HTTP
+// Phase 2 ⑥: 并发去重 — fetchCapabilities 并发调用只探测一次
 describe('Phase 2 ⑥: capability 探测并发去重（SingleFlight）', () => {
-  let fetchCallCount: number
+  const snapshotMock = vi.fn()
 
   beforeEach(() => {
     const pinia = createPinia()
     setActivePinia(pinia)
     registerCapabilityStoreResolver(() => useCapabilityStore())
     vi.clearAllMocks()
-    fetchCallCount = 0
 
-    // 可计数的 resolved mock fetch
-    throwingFetch.mockReset()
-    throwingFetch.mockImplementation(() => {
-      fetchCallCount++
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ unstable_features: { 'io.hula.friends': true } })
-      })
-    })
+    snapshotMock.mockReset()
+    snapshotMock.mockResolvedValue({ unstableFeatures: { 'io.hula.friends': true } })
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
-      getHomeserverUrl: () => 'https://matrix.test'
+      getHomeserverUrl: () => 'https://matrix.test',
+      getServerCapabilitiesManager: () => ({ getCapabilitySnapshot: snapshotMock })
     } as never)
   })
 
-  it('并发调用 fetchCapabilities 3 次，/versions 只发 1 次 HTTP 请求', async () => {
+  it('并发调用 fetchCapabilities 3 次，只探测 1 次', async () => {
     const [r1, r2, r3] = await Promise.all([
       matrixCapabilityService.fetchCapabilities(),
       matrixCapabilityService.fetchCapabilities(),
@@ -377,37 +359,27 @@ describe('Phase 2 ⑥: capability 探测并发去重（SingleFlight）', () => {
     // 三个返回值相同（同一 Promise 的结果）
     expect(r1).toBe(r2)
     expect(r2).toBe(r3)
-
-    // fetchVersions + fetchClientConfig 各调用 1 次（共 2 次 fetch）
-    // matrixAccountService.getCapabilities 被 mock，不走 fetch
-    expect(fetchCallCount).toBe(2)
+    expect(snapshotMock).toHaveBeenCalledTimes(1)
   })
 
-  it('串行调用 fetchCapabilities 2 次（第一次完成后），每次都发 HTTP（不缓存结果）', async () => {
+  it('串行调用 fetchCapabilities 2 次（第一次完成后），每次都重新探测（服务层不缓存结果）', async () => {
     await matrixCapabilityService.fetchCapabilities()
-    const firstCallCount = fetchCallCount
-
     await matrixCapabilityService.fetchCapabilities()
 
-    // 第二次调用应重新发请求（in-flight 已清空，不缓存结果）
-    expect(fetchCallCount).toBeGreaterThan(firstCallCount)
+    // 第二次调用应重新探测（in-flight 已清空，不缓存结果）
+    expect(snapshotMock).toHaveBeenCalledTimes(2)
   })
 
   it('fetchCapabilities 失败后清空 in-flight，允许重试', async () => {
     // 第一次失败
-    throwingFetch.mockImplementationOnce(() => Promise.reject(new Error('timeout')))
+    snapshotMock.mockRejectedValueOnce(new Error('timeout'))
     const r1 = await matrixCapabilityService.fetchCapabilities()
-    expect(r1).not.toBeNull() // 降级返回空对象，不 throw
+    expect(r1).toBeNull()
 
     // 第二次应能正常执行（in-flight 已清空）
-    throwingFetch.mockImplementation(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ unstable_features: { 'io.hula.friends': true } })
-      })
-    )
     const r2 = await matrixCapabilityService.fetchCapabilities()
     expect(r2?.unstable_features['io.hula.friends']).toBe(true)
+    expect(snapshotMock).toHaveBeenCalledTimes(2)
   })
 })
 

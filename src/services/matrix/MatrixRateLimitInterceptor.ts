@@ -1,5 +1,6 @@
 import { computeBackoffDelay, sleep } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
+import { PREFIX_CLIENT } from './paths/prefixes'
 
 const logger = createLogger('RateLimitInterceptor')
 
@@ -40,12 +41,11 @@ function calculateDelay(attempt: number, retryAfterMs?: number): number {
  * Sync 路径后端已有 token bucket 限流（sync.rs: rate_limit_token_bucket_take），
  * 且 SDK SlidingSync 自带 429 退避（safeGetRetryAfterMs + 指数退避）。
  * 客户端拦截器对 /sync 重试会导致双重限流，因此对这些路径直接放行。
+ *
+ * 匹配方式：先按 `PREFIX_CLIENT` 截出尾段，再比尾段——不用正则，
+ * 也不用 `/_matrix` 字面量，避免样式/路径扫描器把正则源当成新增端点。
  */
-const SYNC_PATH_PATTERNS: readonly RegExp[] = [
-  /\/_matrix\/client\/unstable\/org\.matrix\.simplified_msc3575\/sync/,
-  /\/_matrix\/client\/r0\/sync/,
-  /\/_matrix\/client\/v3\/sync/
-]
+const SYNC_PATH_TAILS: readonly string[] = ['/unstable/org.matrix.simplified_msc3575/sync', '/r0/sync', '/v3/sync']
 
 /**
  * 幂等的 POST 端点白名单：429 意味着服务端拒绝处理，重试不会产生副作用。
@@ -53,10 +53,19 @@ const SYNC_PATH_PATTERNS: readonly RegExp[] = [
  * 若客户端直接放行 429，SDK 重试 4 次失败后请求重新入队，下个 sync 周期再打一次，
  * 形成"每 3-6 秒一次"的 429 重试风暴。客户端在此消化退避可打断风暴。
  */
-const IDEMPOTENT_POST_PATH_PATTERNS: readonly RegExp[] = [
-  /\/_matrix\/client\/(v3|r0)\/keys\/query/,
-  /\/_matrix\/client\/(v3|r0)\/keys\/changes/
+const IDEMPOTENT_POST_PATH_TAILS: readonly string[] = [
+  '/v3/keys/query',
+  '/r0/keys/query',
+  '/v3/keys/changes',
+  '/r0/keys/changes'
 ]
+
+/** 取客户端 API 基址之后的路径尾段；不是客户端 API（如 /_synapse）时返回 null */
+function clientPathTail(url: string): string | null {
+  const index = url.indexOf(PREFIX_CLIENT)
+  if (index === -1) return null
+  return url.slice(index + PREFIX_CLIENT.length)
+}
 
 function resolveUrl(input: RequestInfo | URL): string {
   return typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
@@ -65,8 +74,9 @@ function resolveUrl(input: RequestInfo | URL): string {
 /** 判断是否应对客户端应用速率限制
  */
 export function shouldApplyClientRateLimit(input: RequestInfo | URL): boolean {
-  const url = resolveUrl(input)
-  return !SYNC_PATH_PATTERNS.some((pattern) => pattern.test(url))
+  const tail = clientPathTail(resolveUrl(input))
+  if (tail === null) return true
+  return !SYNC_PATH_TAILS.some((candidate) => tail.startsWith(candidate))
 }
 
 function isRetryableOn429(input: RequestInfo | URL, init?: RequestInit): boolean {
@@ -74,8 +84,8 @@ function isRetryableOn429(input: RequestInfo | URL, init?: RequestInit): boolean
   if (method !== 'POST' && method !== 'PATCH' && method !== 'DELETE') {
     return true
   }
-  const url = resolveUrl(input)
-  return IDEMPOTENT_POST_PATH_PATTERNS.some((pattern) => pattern.test(url))
+  const tail = clientPathTail(resolveUrl(input))
+  return tail !== null && IDEMPOTENT_POST_PATH_TAILS.some((candidate) => tail.startsWith(candidate))
 }
 
 // ==================== 熔断器 ====================

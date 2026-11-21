@@ -2,6 +2,7 @@ import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { ClientEvent } from '../sdk'
 
 const logger = createLogger('MatrixSpecialFriendService')
 
@@ -36,7 +37,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     }
 
     if (this.observedClient) {
-      this.observedClient.off('accountData', this.accountDataListener)
+      this.observedClient.off(ClientEvent.AccountData, this.accountDataListener)
     }
 
     this.cache = null
@@ -46,7 +47,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     }
 
     this.hasWarnedBeforeClientReady = false
-    client.on('accountData', this.accountDataListener)
+    client.on(ClientEvent.AccountData, this.accountDataListener)
   }
 
   protected getClient(): MatrixClient {

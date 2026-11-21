@@ -1,4 +1,4 @@
-import type { MatrixClient } from '@/services/matrix/sdk'
+import { CallEvent, type MatrixClient } from '@/services/matrix/sdk'
 import {
   loadMediaDevicePreferences,
   type MediaDevicePreferences,
@@ -12,6 +12,21 @@ import { resolveCallState } from './voipState'
 import type { CallInfo, CallOptions, VoIPCall, VoIPCallFeed } from './voipTypes'
 
 const logger = createLogger('MatrixVoIP')
+
+/**
+ * 通话事件的客户端视图。SDK 的 `CallEventHandlerEvent`（值 "Call.incoming"）未从任何
+ * package exports 子路径导出，且 `MatrixCall` 与本地 `VoIPCall` 视图结构不兼容：
+ * client 在运行时对三者都 re-emit 同一个 MatrixCall（call.js / callEventHandler.js），
+ * 因此这里只针对这三条事件把监听器签名收口到 `VoIPCall`，避免调用点做类型断言。
+ */
+type ClientCallEventSource = MatrixClient & {
+  on(event: 'Call.incoming', listener: (call: VoIPCall) => void): void
+  off(event: 'Call.incoming', listener: (call: VoIPCall) => void): void
+  on(event: CallEvent.Hangup, listener: (call: VoIPCall) => void): void
+  off(event: CallEvent.Hangup, listener: (call: VoIPCall) => void): void
+  on(event: CallEvent.Replaced, listener: (newCall: VoIPCall, oldCall: VoIPCall) => void): void
+  off(event: CallEvent.Replaced, listener: (newCall: VoIPCall, oldCall: VoIPCall) => void): void
+}
 
 /** Matrix VoIP 服务 — 通话生命周期、事件处理、媒体控制、状态订阅。类型见 voipTypes，纯函数见 voipHelpers/voipDiagnostics。 */
 class MatrixVoIPService extends BaseMatrixService {
@@ -50,14 +65,14 @@ class MatrixVoIPService extends BaseMatrixService {
 
     try {
       if (this.observedClient && this.observedClient !== client) {
-        this.detachCallHandlers(this.observedClient)
+        this.detachCallHandlers(this.observedClient as ClientCallEventSource)
         this.resetRuntimeState()
         this.observedClient = null
       }
 
       if ((client as { callEventHandler?: unknown }).callEventHandler) {
         if (this.observedClient === client) return
-        this.setupCallHandlers(client)
+        this.setupCallHandlers(client as ClientCallEventSource)
         this.observedClient = client
         logger.info('[VoIP] VoIP 模块初始化成功')
       } else {
@@ -68,16 +83,16 @@ class MatrixVoIPService extends BaseMatrixService {
     }
   }
 
-  private setupCallHandlers(client: MatrixClient): void {
+  private setupCallHandlers(client: ClientCallEventSource): void {
     client.on('Call.incoming', this.incomingCallListener)
-    client.on('Call.hangup', this.hangupCallListener)
-    client.on('Call.replaced', this.replacedCallListener)
+    client.on(CallEvent.Hangup, this.hangupCallListener)
+    client.on(CallEvent.Replaced, this.replacedCallListener)
   }
 
-  private detachCallHandlers(client: MatrixClient): void {
+  private detachCallHandlers(client: ClientCallEventSource): void {
     client.off('Call.incoming', this.incomingCallListener)
-    client.off('Call.hangup', this.hangupCallListener)
-    client.off('Call.replaced', this.replacedCallListener)
+    client.off(CallEvent.Hangup, this.hangupCallListener)
+    client.off(CallEvent.Replaced, this.replacedCallListener)
   }
 
   private resetRuntimeState(): void {

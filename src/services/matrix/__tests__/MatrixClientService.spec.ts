@@ -75,6 +75,10 @@ vi.mock('matrix-js-sdk', () => {
     PendingEventOrdering: {
       Detached: 'detached'
     },
+    // MatrixEventRouter 订阅 RoomMemberEvent.Typing（根出口枚举），mock 需补齐
+    RoomMemberEvent: {
+      Typing: 'RoomMember.typing'
+    },
     SlidingSync: class {
       start = vi.fn()
       stop = vi.fn()

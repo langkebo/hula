@@ -18,7 +18,8 @@ vi.mock('matrix-js-sdk', () => ({
     RequestFinished: 'request-finished',
     Complete: 'complete',
     RecatchUp: 'recatch-up'
-  }
+  },
+  RoomMemberEvent: { Typing: 'RoomMember.typing' }
 }))
 
 const workerHostMock = vi.hoisted(() => ({
@@ -134,11 +135,11 @@ describe('MatrixEventRouter', () => {
       expect(events).toEqual(
         expect.arrayContaining([
           'sync',
-          'room',
-          'room_timeline',
-          'Event.redaction',
+          'Room',
+          'Room.timeline',
+          'Room.redaction',
           'Event.decrypted',
-          'Room.typing',
+          'RoomMember.typing',
           'Room.receipt'
         ])
       )
@@ -207,7 +208,7 @@ describe('MatrixEventRouter', () => {
       router.setup(client as never, syncManager as never)
       const room = makeRoom()
 
-      const roomHandler = client.handlers.get('room')
+      const roomHandler = client.handlers.get('Room')
       expect(roomHandler).toBeDefined()
       roomHandler?.(room as never)
 
@@ -229,7 +230,7 @@ describe('MatrixEventRouter', () => {
     it('RoomState.events 中 m.room.name 事件触发 updateRoom', () => {
       router.setup(client as never, syncManager as never)
       const room = makeRoom()
-      client.handlers.get('room')?.(room as never)
+      client.handlers.get('Room')?.(room as never)
 
       expect(workerHostMock.upsertSearchRooms).toHaveBeenCalledTimes(1)
 
@@ -243,7 +244,7 @@ describe('MatrixEventRouter', () => {
     it('RoomState.events 中非相关类型不触发 updateRoom', () => {
       router.setup(client as never, syncManager as never)
       const room = makeRoom()
-      client.handlers.get('room')?.(room as never)
+      client.handlers.get('Room')?.(room as never)
 
       const eventsHandler = room.on.mock.calls.find((call) => call[0] === 'RoomState.events')?.[1]
       const matrixEvent = makeMatrixEvent({ getType: vi.fn(() => 'm.room.topic') })
@@ -255,7 +256,7 @@ describe('MatrixEventRouter', () => {
     it('detachRoomListeners 注销 Room 级监听器并清理', () => {
       router.setup(client as never, syncManager as never)
       const room = makeRoom()
-      client.handlers.get('room')?.(room as never)
+      client.handlers.get('Room')?.(room as never)
 
       router.detachRoomListeners()
 
@@ -264,7 +265,7 @@ describe('MatrixEventRouter', () => {
       expect(room.off).toHaveBeenCalledWith('RoomState.events', expect.any(Function))
 
       // 再次触发 room 事件应重新注册（roomListeners 已被清空）
-      client.handlers.get('room')?.(room as never)
+      client.handlers.get('Room')?.(room as never)
       expect(room.on).toHaveBeenCalledTimes(4)
     })
   })
@@ -334,17 +335,17 @@ describe('MatrixEventRouter', () => {
   })
 
   describe('typing / receipt / redaction / decrypted / timeline', () => {
-    it('Room.typing 触发 useMitt.emit(ROOM_TYPING_CHANGED)', () => {
+    it('RoomMember.typing 触发 useMitt.emit(ROOM_TYPING_CHANGED)', () => {
       router.setup(client as never, syncManager as never)
       const room = makeRoom()
-      client.handlers.get('Room.typing')?.(undefined, room as never)
+      client.handlers.get('RoomMember.typing')?.(undefined, room as never)
 
       expect(mittMock.emit).toHaveBeenCalledWith('roomTypingChanged', { roomId: '!room:hs' })
     })
 
-    it('Room.typing 无 room 时不触发 useMitt', () => {
+    it('RoomMember.typing 无 room 时不触发 useMitt', () => {
       router.setup(client as never, syncManager as never)
-      client.handlers.get('Room.typing')?.('@typer:hs', undefined)
+      client.handlers.get('RoomMember.typing')?.('@typer:hs', undefined)
 
       expect(mittMock.emit).not.toHaveBeenCalled()
     })
@@ -357,18 +358,18 @@ describe('MatrixEventRouter', () => {
       expect(mittMock.emit).toHaveBeenCalledWith('roomReceiptChanged', { roomId: '!room:hs' })
     })
 
-    it('Event.redaction 有关联 id 时调用 worker redactSearchEvent', () => {
+    it('Room.redaction 有关联 id 时调用 worker redactSearchEvent', () => {
       router.setup(client as never, syncManager as never)
       const event = makeMatrixEvent({ getAssociatedId: vi.fn(() => '$redacted1') })
-      client.handlers.get('Event.redaction')?.(event as never)
+      client.handlers.get('Room.redaction')?.(event as never)
 
       expect(workerHostMock.redactSearchEvent).toHaveBeenCalledWith('$redacted1')
     })
 
-    it('Event.redaction 无关联 id 时不调用 worker', () => {
+    it('Room.redaction 无关联 id 时不调用 worker', () => {
       router.setup(client as never, syncManager as never)
       const event = makeMatrixEvent({ getAssociatedId: vi.fn(() => undefined) })
-      client.handlers.get('Event.redaction')?.(event as never)
+      client.handlers.get('Room.redaction')?.(event as never)
 
       expect(workerHostMock.redactSearchEvent).not.toHaveBeenCalled()
     })
@@ -395,8 +396,8 @@ describe('MatrixEventRouter', () => {
       try {
         router.setup(client as never, syncManager as never)
         const room = makeRoom()
-        client.handlers.get('room_timeline')?.(makeMatrixEvent() as never, room as never)
-        client.handlers.get('room_timeline')?.(
+        client.handlers.get('Room.timeline')?.(makeMatrixEvent() as never, room as never)
+        client.handlers.get('Room.timeline')?.(
           makeMatrixEvent({ getId: vi.fn(() => '$event2') }) as never,
           room as never
         )
@@ -421,7 +422,7 @@ describe('MatrixEventRouter', () => {
         getType: vi.fn(() => 'm.room.message'),
         getContent: vi.fn(() => ({ msgtype: 'm.image' }))
       })
-      client.handlers.get('room_timeline')?.(event as never, makeRoom() as never)
+      client.handlers.get('Room.timeline')?.(event as never, makeRoom() as never)
 
       expect(workerHostMock.upsertSearchEvents).not.toHaveBeenCalled()
     })

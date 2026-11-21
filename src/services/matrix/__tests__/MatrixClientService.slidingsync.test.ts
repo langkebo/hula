@@ -39,6 +39,10 @@ vi.mock('matrix-js-sdk', () => ({
   PendingEventOrdering: {
     Detached: 'detached'
   },
+  // MatrixEventRouter 订阅 RoomMemberEvent.Typing（根出口枚举），mock 需补齐
+  RoomMemberEvent: {
+    Typing: 'RoomMember.typing'
+  },
   // W2: storeFactory 走 MemoryStore fallback 时需要这些类。
   MemoryStore: class {},
   IndexedDBStore: class {}

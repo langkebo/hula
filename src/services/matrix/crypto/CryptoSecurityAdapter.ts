@@ -4,6 +4,7 @@
  * Extracted from CryptoSDKAdapter to keep file sizes under the 400-line budget.
  */
 
+import { CrossSigningKey } from '@/services/matrix/sdk'
 import type { CryptoApi, MatrixAuthData } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import type {
@@ -168,7 +169,14 @@ export class CryptoSecurityAdapter {
       return null
     }
     try {
-      return await crypto.getCrossSigningKeyId(type as never)
+      const keyType = type
+        ? {
+            master: CrossSigningKey.Master,
+            self_signing: CrossSigningKey.SelfSigning,
+            user_signing: CrossSigningKey.UserSigning
+          }[type]
+        : undefined
+      return await crypto.getCrossSigningKeyId(keyType)
     } catch (err) {
       logger.warn(`Get cross-signing key id failed (type=${type ?? 'master'}):`, err)
       return null

@@ -9,9 +9,12 @@
 // ---- 核心 ----
 import type { MatrixClient } from 'matrix-js-sdk'
 
+// ClientEventHandlerMap：事件名 → 精确监听器签名，用于替代 `handler as never` 的
+// 类型逃逸写法（`client.on(ClientEvent.Sync, handler)` 可被完整校验）。
 export type {
   AuthDict,
   Capabilities,
+  ClientEventHandlerMap,
   IClientWellKnown,
   IContent,
   ICreateRoomOpts,
@@ -32,6 +35,7 @@ export type {
   User
 } from 'matrix-js-sdk'
 export {
+  CallEvent,
   ConditionKind,
   ContentHelpers,
   createClient,
@@ -43,8 +47,10 @@ export {
   Preset,
   PushRuleActionName,
   PushRuleKind,
+  RoomMemberEvent,
   RoomVersionStability,
   SlidingSyncState,
+  SyncState,
   TweakName,
   Visibility
 } from 'matrix-js-sdk'
@@ -119,8 +125,10 @@ export type {} from 'matrix-js-sdk/contract'
 // 这里转发而非让 paths/sdk-paths.ts 直接 import，是为了保持「SDK 只有一个咽喉点」的边界约定
 // —— scripts/check-sdk-boundary.mjs 只放行本文件这类白名单模块。
 export { SDK_CONTRACT_ROUTE_TABLES } from 'matrix-js-sdk/contract'
+// UserEvent / MatrixEventEvent 只在 `matrix-js-sdk/core` 出口提供（根出口未转发）。
+export { MatrixEventEvent, UserEvent } from 'matrix-js-sdk/core'
 export type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
-export { CryptoEvent, decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
+export { CrossSigningKey, CryptoEvent, decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
 export type {
   ClaimDehydratedDeviceResponse,
   CreateDehydratedDeviceRequest,

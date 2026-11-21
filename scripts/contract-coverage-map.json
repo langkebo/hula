@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-11-19T04:22:42.620Z",
+  "generatedAt": "2026-11-21T08:52:05.880Z",
   "scanned": 312,
-  "callerFiles": 62,
-  "totalCalls": 165,
-  "totalUrls": 8,
+  "callerFiles": 63,
+  "totalCalls": 164,
+  "totalUrls": 0,
   "ledger": {
     "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.default.json",
     "schemaVersion": "4",
     "synapseRustCommit": "cbd8a51baacbfbfe216576f60b2b5bb0bf9676b8",
     "entryCount": 959,
-    "matchedPathCount": 7,
-    "uncoveredPathCount": 752
+    "matchedPathCount": 0,
+    "uncoveredPathCount": 759
   },
   "unmatchedUrls": [],
   "uncoveredLedger": [
@@ -90,6 +90,8 @@
     "/_matrix/client/v3/account/deactivate",
     "/_matrix/client/v3/account/guest",
     "/_matrix/client/v3/account/guest/upgrade",
+    "/_matrix/client/v3/account/password",
+    "/_matrix/client/v3/account/password/email/requestToken",
     "/_matrix/client/v3/account/password/email/submitToken",
     "/_matrix/client/v3/account/whoami",
     "/_matrix/client/v3/admin/room/{room_id}/redact",
@@ -124,6 +126,7 @@
     "/_matrix/client/v3/keys/upload",
     "/_matrix/client/v3/keys/upload/{device_id}",
     "/_matrix/client/v3/knock/{room_id_or_alias}",
+    "/_matrix/client/v3/login",
     "/_matrix/client/v3/login/saml/callback",
     "/_matrix/client/v3/login/sso/redirect/cas",
     "/_matrix/client/v3/login/sso/redirect/cas/callback",
@@ -155,9 +158,13 @@
     "/_matrix/client/v3/pushrules/{scope}/{kind}/{rule_id}/actions",
     "/_matrix/client/v3/pushrules/{scope}/{kind}/{rule_id}/enabled",
     "/_matrix/client/v3/refresh",
+    "/_matrix/client/v3/register",
     "/_matrix/client/v3/register/available",
     "/_matrix/client/v3/register/captcha/clean",
+    "/_matrix/client/v3/register/captcha/send",
     "/_matrix/client/v3/register/captcha/status",
+    "/_matrix/client/v3/register/captcha/verify",
+    "/_matrix/client/v3/register/email/requestToken",
     "/_matrix/client/v3/register/email/submitToken",
     "/_matrix/client/v3/register/guest",
     "/_matrix/client/v3/room_keys/batch_recover",
@@ -794,8 +801,8 @@
     },
     {
       "file": "src/services/matrix/MatrixCapabilityService.ts",
-      "callCount": 3,
-      "kinds": ["sdk", "http"],
+      "callCount": 1,
+      "kinds": ["sdk"],
       "urlCount": 0,
       "ledgerRoutes": [],
       "unmatchedUrls": []
@@ -876,13 +883,8 @@
       "file": "src/services/matrix/auth/MatrixAuthCaptcha.ts",
       "callCount": 4,
       "kinds": ["sdk", "http"],
-      "urlCount": 1,
-      "ledgerRoutes": [
-        {
-          "path": "/_matrix/client/v3/register/captcha/verify",
-          "methods": ["POST"]
-        }
-      ],
+      "urlCount": 0,
+      "ledgerRoutes": [],
       "unmatchedUrls": []
     },
     {
@@ -913,13 +915,8 @@
       "file": "src/services/matrix/auth/MatrixQrLoginSdkService.ts",
       "callCount": 4,
       "kinds": ["sdk", "http"],
-      "urlCount": 1,
-      "ledgerRoutes": [
-        {
-          "path": "/_matrix/client/v3/login",
-          "methods": ["GET", "POST"]
-        }
-      ],
+      "urlCount": 0,
+      "ledgerRoutes": [],
       "unmatchedUrls": []
     },
     {
@@ -942,33 +939,8 @@
       "file": "src/services/matrix/auth/authHelpers.ts",
       "callCount": 10,
       "kinds": ["sdk", "http"],
-      "urlCount": 6,
-      "ledgerRoutes": [
-        {
-          "path": "/_matrix/client/v3/login",
-          "methods": ["GET", "POST"]
-        },
-        {
-          "path": "/_matrix/client/v3/register",
-          "methods": ["GET", "POST"]
-        },
-        {
-          "path": "/_matrix/client/v3/register/email/requestToken",
-          "methods": ["POST"]
-        },
-        {
-          "path": "/_matrix/client/v3/account/password/email/requestToken",
-          "methods": ["POST"]
-        },
-        {
-          "path": "/_matrix/client/v3/register/captcha/send",
-          "methods": ["POST"]
-        },
-        {
-          "path": "/_matrix/client/v3/account/password",
-          "methods": ["POST"]
-        }
-      ],
+      "urlCount": 0,
+      "ledgerRoutes": [],
       "unmatchedUrls": []
     },
     {
@@ -1247,6 +1219,14 @@
       "file": "src/services/matrix/room/spaceQueries.ts",
       "callCount": 1,
       "kinds": ["sdk"],
+      "urlCount": 0,
+      "ledgerRoutes": [],
+      "unmatchedUrls": []
+    },
+    {
+      "file": "src/services/matrix/user/MatrixAccountDataMethods.ts",
+      "callCount": 1,
+      "kinds": ["http"],
       "urlCount": 0,
       "ledgerRoutes": [],
       "unmatchedUrls": []

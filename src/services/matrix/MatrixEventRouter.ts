@@ -21,7 +21,16 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { createLogger } from '@/utils/Logger'
 import type { SearchEventDoc } from '@/workers/matrixWorkerTypes'
 import type { MatrixSyncManager } from './MatrixSyncManager'
-import { type MatrixClient, type MatrixEvent, type Room, SlidingSyncState } from './sdk'
+import {
+  ClientEvent,
+  type MatrixClient,
+  type MatrixEvent,
+  MatrixEventEvent,
+  type Room,
+  RoomEvent,
+  RoomMemberEvent,
+  SlidingSyncState
+} from './sdk'
 
 /** 同步状态处理回调（由 facade 设置，委托给 ConnectionManager） */
 type SyncStateHandler = (state: string, prevState?: string, data?: unknown) => void
@@ -240,13 +249,13 @@ export class MatrixEventRouter {
     const clientAny = client as { setMaxListeners?: (n: number) => void }
     clientAny.setMaxListeners?.(50)
 
-    client.on('sync', this.syncListener)
-    client.on('room', this.roomListener)
-    client.on('room_timeline', this.roomTimelineListener)
-    client.on('Event.redaction', this.redactionListener)
-    client.on('Event.decrypted', this.eventDecryptedListener as never)
-    client.on('Room.typing', this.typingListener)
-    client.on('Room.receipt', this.receiptListener)
+    client.on(ClientEvent.Sync, this.syncListener)
+    client.on(ClientEvent.Room, this.roomListener)
+    client.on(RoomEvent.Timeline, this.roomTimelineListener)
+    client.on(RoomEvent.Redaction, this.redactionListener)
+    client.on(MatrixEventEvent.Decrypted, this.eventDecryptedListener)
+    client.on(RoomMemberEvent.Typing, this.typingListener)
+    client.on(RoomEvent.Receipt, this.receiptListener)
 
     // 订阅 SlidingSync Lifecycle 事件，补全 SDK 瞬时错误感知 seam。
     this.syncManager_onLifecycleEvent(syncManager, this.syncLifecycleListener)
@@ -263,13 +272,13 @@ export class MatrixEventRouter {
    * - Room 级监听器批量清理
    */
   detach(client: MatrixClient, syncManager: MatrixSyncManager): void {
-    client.off('sync', this.syncListener)
-    client.off('room', this.roomListener)
-    client.off('room_timeline', this.roomTimelineListener)
-    client.off('Event.redaction', this.redactionListener)
-    client.off('Event.decrypted', this.eventDecryptedListener as never)
-    client.off('Room.typing', this.typingListener)
-    client.off('Room.receipt', this.receiptListener)
+    client.off(ClientEvent.Sync, this.syncListener)
+    client.off(ClientEvent.Room, this.roomListener)
+    client.off(RoomEvent.Timeline, this.roomTimelineListener)
+    client.off(RoomEvent.Redaction, this.redactionListener)
+    client.off(MatrixEventEvent.Decrypted, this.eventDecryptedListener)
+    client.off(RoomMemberEvent.Typing, this.typingListener)
+    client.off(RoomEvent.Receipt, this.receiptListener)
 
     this.syncManager_offLifecycleEvent(syncManager, this.syncLifecycleListener)
     this.flushSearchEvents()
@@ -372,7 +381,7 @@ export class MatrixEventRouter {
     syncManager: MatrixSyncManager,
     handler: (state: SlidingSyncState, resp: unknown, err?: Error) => void
   ): void {
-    syncManager.onLifecycleEvent(handler as never)
+    syncManager.onLifecycleEvent(handler)
   }
 
   /** 封装 syncManager.offLifecycleEvent 调用，便于测试 mock */
@@ -380,6 +389,6 @@ export class MatrixEventRouter {
     syncManager: MatrixSyncManager,
     handler: (state: SlidingSyncState, resp: unknown, err?: Error) => void
   ): void {
-    syncManager.offLifecycleEvent(handler as never)
+    syncManager.offLifecycleEvent(handler)
   }
 }

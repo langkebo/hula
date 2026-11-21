@@ -81,13 +81,16 @@ describe('VerificationService 事务注册表', () => {
     service = new VerificationService()
     receivedHandler = undefined
 
+    const on = vi.fn()
+    on.mockImplementation((event: unknown, handler: unknown) => {
+      if (event === CryptoEvent.VerificationRequestReceived) {
+        receivedHandler = handler as (request: unknown) => void
+      }
+    })
+
     mockClient = {
       getCrypto: vi.fn(() => ({}) as never),
-      on: vi.fn((event: string, handler: (request: unknown) => void) => {
-        if (event === CryptoEvent.VerificationRequestReceived) {
-          receivedHandler = handler
-        }
-      }),
+      on,
       off: vi.fn(),
       getUserId: vi.fn(() => '@test:example.com'),
       getDeviceId: vi.fn(() => 'TEST_DEVICE')
@@ -215,13 +218,16 @@ describe('VerificationService SAS 视图', () => {
     service = new VerificationService()
     receivedHandler = undefined
 
+    const on = vi.fn()
+    on.mockImplementation((event: unknown, handler: unknown) => {
+      if (event === CryptoEvent.VerificationRequestReceived) {
+        receivedHandler = handler as (request: unknown) => void
+      }
+    })
+
     const mockClient: Partial<MatrixClient> = {
       getCrypto: vi.fn(() => ({}) as never),
-      on: vi.fn((event: string, handler: (request: unknown) => void) => {
-        if (event === CryptoEvent.VerificationRequestReceived) {
-          receivedHandler = handler
-        }
-      }),
+      on,
       off: vi.fn(),
       getUserId: vi.fn(() => '@test:example.com'),
       getDeviceId: vi.fn(() => 'TEST_DEVICE')

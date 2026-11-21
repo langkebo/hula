@@ -218,7 +218,7 @@ export class SessionRestoreService {
       const finish = (state: string, source: 'event' | 'poll') => {
         if (settled) return
         settled = true
-        matrixClientService.off('sync', off as never)
+        matrixClientService.off('sync', off)
         if (pollHandle) clearTimeout(pollHandle)
         logger.info(`waitSyncPrepared: sync 状态 ${state}（${source}），继续 bootstrap`)
         resolve()
@@ -236,7 +236,7 @@ export class SessionRestoreService {
       // 这并不代表 sync 真正进入 PREPARED/SYNCING 状态。
       // 必须等待 SDK 的 sync 事件确认 sync 已就绪，否则后续 loadRooms/getSessionList
       // 会在 sync 未完成时执行，导致空数据或卡住。
-      matrixClientService.on('sync', off as never)
+      matrixClientService.on('sync', off)
 
       // 竞态修复：注册监听器后立即检查 getSyncState()，避免错过已触发的 sync 事件。
       // settlePostLoginStartup 中的 startClient() 可能在 bootstrapPostLoginState
@@ -261,7 +261,7 @@ export class SessionRestoreService {
       setTimeout(() => {
         if (settled) return
         settled = true
-        matrixClientService.off('sync', off as never)
+        matrixClientService.off('sync', off)
         if (pollHandle) clearTimeout(pollHandle)
         logger.warn(`waitSyncPrepared 超时 ${timeoutMs}ms，使用当前状态继续 bootstrap`)
         resolve()
