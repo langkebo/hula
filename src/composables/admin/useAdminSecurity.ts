@@ -1,11 +1,12 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
+import type { AdminAuditLogEntry } from '@/services/matrix/admin/AdminTypes'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminSecurity')
 
 interface UseAdminSecurityResult {
-  auditLogs: Ref<Array<Record<string, unknown>>>
+  auditLogs: Ref<AdminAuditLogEntry[]>
   loading: Ref<boolean>
   nextBatch: Ref<string | undefined>
 
@@ -19,7 +20,7 @@ interface UseAdminSecurityResult {
  * avoiding unimplemented legacy security event endpoints.
  */
 export function useAdminSecurity(): UseAdminSecurityResult {
-  const auditLogs = ref<Array<Record<string, unknown>>>([])
+  const auditLogs = ref<AdminAuditLogEntry[]>([])
   const loading = ref(false)
   const nextBatch = ref<string | undefined>(undefined)
 

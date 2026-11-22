@@ -17,11 +17,10 @@
         <n-alert type="info" class="mb-12px">
           {{ t('admin.security.audit_info') }}
         </n-alert>
-        <n-data-table
+        <AdminTable
           remote
-          ref="table"
           :columns="auditColumns"
-          :data="auditLogs"
+          :data="auditRows"
           :loading="loading"
           :pagination="auditPagination"
           :row-key="(row: AuditLogRow) => row.id"
@@ -60,7 +59,7 @@
         <n-spin :show="securityEventsLoading">
           <EmptyState v-if="securityEventsEmpty" :description="t('admin.security.no_security_events')" />
           <template v-else-if="!securityEventsError">
-            <n-data-table
+            <AdminTable
               :columns="securityEventColumns"
               :data="securityEvents"
               :pagination="{ pageSize: 20 }"
@@ -84,7 +83,7 @@
       <n-tab-pane name="login_failures" :tab="t('admin.security.login_failures_tab')">
         <n-spin :show="loginFailuresLoading">
           <EmptyState v-if="loginFailuresEmpty" :description="t('admin.security.no_login_failures')" />
-          <n-data-table
+          <AdminTable
             v-else
             :columns="loginFailureColumns"
             :data="loginFailures"
@@ -182,7 +181,6 @@ import {
   type DataTableColumns,
   NAlert,
   NButton,
-  NDataTable,
   NForm,
   NFormItem,
   NIcon,
@@ -200,6 +198,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminTable from '@/components/admin/AdminTable.vue'
 import { useAdminSecurity } from '@/composables/admin/useAdminSecurity'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
@@ -211,6 +210,24 @@ const logger = createLogger('AdminSecurity')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { auditLogs, loading, nextBatch, loadAuditLogs } = useAdminSecurity()
+
+/**
+ * `useAdminSecurity` 的 `auditLogs` 是 wire 形状（`AdminAuditLogEntry`：
+ * `event_id` / `actor_id` / `created_ts`），列定义用的是视图别名 `AuditLogRow`
+ * （`id` / `timestamp`）。字段名不同就必须显式映射：双重断言只骗过编译器，
+ * 运行时 `row.id` / `row.timestamp` 仍是 undefined，row-key 与时间列都会失真。
+ */
+const auditRows = computed<AuditLogRow[]>(() =>
+  auditLogs.value.map((entry) => ({
+    id: entry.event_id ?? '',
+    action: entry.action ?? '',
+    result: entry.result ?? '',
+    actor_id: entry.actor_id ?? '',
+    resource_type: entry.resource_type ?? '',
+    resource_id: entry.resource_id ?? '',
+    timestamp: entry.created_ts ?? 0
+  }))
+)
 // ===== Tab 状态 =====
 const activeTab = ref('audit')
 // ===== 审计日志 =====
@@ -222,7 +239,6 @@ interface AuditLogRow {
   resource_type: string
   resource_id: string
   timestamp: number
-  details?: string
 }
 
 const auditPagination = reactive({
