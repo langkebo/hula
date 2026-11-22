@@ -133,7 +133,9 @@ describe('AdminTelemetry', () => {
     expect(wrapper.text()).toContain('25%')
     expect(wrapper.text()).toContain(':9000/metrics')
     expect(wrapper.text()).toContain('12')
-    expect(wrapper.find('[data-test="NDataTable"]').exists()).toBe(true)
+    // 告警列表为空时 AdminTable 不画表头，改为空态
+    expect(wrapper.find('[data-test="NDataTable"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('admin.common.noData')
   })
 
   it('刷新按钮触发重新加载', async () => {

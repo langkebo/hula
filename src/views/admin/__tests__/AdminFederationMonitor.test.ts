@@ -168,9 +168,8 @@ describe('AdminFederationMonitor', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    // 页面仍然渲染，表格为空
-    const table = wrapper.findComponent({ name: 'NDataTable' })
-    expect(table.exists()).toBe(true)
-    expect(table.text()).toBe('[]')
+    // 页面仍然渲染；空列表时 AdminTable 不画表头，改为空态
+    expect(wrapper.findComponent({ name: 'NDataTable' }).exists()).toBe(false)
+    expect(wrapper.find('.empty-state').exists()).toBe(true)
   })
 })

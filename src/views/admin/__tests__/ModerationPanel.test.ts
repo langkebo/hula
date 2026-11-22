@@ -23,11 +23,15 @@ vi.mock('@iconify/vue', () => ({
 // dialog.warning 需要可控的确认/取消状态，否则 “取消” 用例永绿。
 const confirmState = vi.hoisted(() => ({ value: true }))
 /**
- * store 的 loading 需要可被用例驱动（四态里「加载中」要能断言）。
+ * store 的 loading / openReports 需要可被用例驱动（四态里「加载中」要能断言；
+ * 空列表会被 AdminTable 换成空态，需要非空数据才能断言表格的 loading 收起）。
  * 注意必须是**真 ref**：页面用 `storeToRefs(store)` 取它，普通对象会被跳过 ⇒ binding 变 undefined，
  * 用例会因「断言 undefined 为 false」而假绿（本轮踩到）。
  */
-const moderationRefs = vi.hoisted(() => ({ loading: null as null | { value: boolean } }))
+const moderationRefs = vi.hoisted(() => ({
+  loading: null as null | { value: boolean },
+  reports: null as null | { value: unknown[] }
+}))
 vi.mock('naive-ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('naive-ui')>()
   return {
@@ -70,6 +74,7 @@ vi.mock('@/stores/domains/chat/moderation', async () => {
   const openReports = ref<unknown[]>([])
   const enabledFilters = ref<unknown[]>([])
   moderationRefs.loading = loading
+  moderationRefs.reports = openReports
   return {
     useModerationStore: () => ({
       openReports,
@@ -200,6 +205,8 @@ function setupDialogConfirm(returnValue: boolean) {
 describe('ModerationPanel — P1-4 事件举报管理', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    moderationRefs.loading!.value = false
+    moderationRefs.reports!.value = []
     listReportsMock.mockResolvedValue([])
     getReportsCountMock.mockResolvedValue({ total_reports: 0 })
     getStatusCountMock.mockResolvedValue({ status: 'open', count: 0 })
@@ -437,6 +444,10 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
 
   it('加载期间数据表处于 loading，完成后收起', async () => {
     moderationRefs.loading!.value = true
+    // 空列表会被 AdminTable 换成空态，这里给一行数据以保留表格断言
+    moderationRefs.reports!.value = [
+      { id: 'r1', reporterUserId: '@alice:hs', reportedUserId: '@bob:hs', reason: 'spam', createdAt: 1700000000000 }
+    ]
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -457,7 +468,9 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     const wrapper = mountPanel()
     await flushPromises()
 
-    expect(wrapper.find('.n-data-table').attributes('data-count')).toBe('0')
+    // 空列表时 AdminTable 不画表头，改为空态
+    expect(wrapper.find('.n-data-table').exists()).toBe(false)
+    expect(wrapper.find('.empty-state').exists()).toBe(true)
     expect(wrapper.findAll('.n-data-table-row')).toHaveLength(0)
     expect(wrapper.find('[data-testid="event-report-stat-total"]').text()).toContain('0')
     // 空列表不得被当成失败：不出现错误反馈
