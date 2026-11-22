@@ -3,17 +3,23 @@
     <div class="p-15px text-14px font-medium">
       {{ t('mobile_chat_setting.setting_type', { t: title }) }}
     </div>
-    <div class="flex justify-between items-center px-15px pb-12px">
+    <!-- 整行可点：20px 的 switch 可点区不足 44px，整行点击更符合设置项习惯 -->
+    <div
+      class="flex justify-between items-center px-15px py-12px min-h-[44px] cursor-pointer"
+      @click="handleTop(!activeItem?.top)">
       <div class="text-14px">{{ t('mobile_chat_setting.pintop') }}</div>
-      <van-switch :model-value="!!activeItem?.top" @update:model-value="handleTop" size="20px" />
+      <van-switch :model-value="!!activeItem?.top" size="20px" @update:model-value="handleTop" @click.stop />
     </div>
     <div class="mx-15px border-b border-[--tjg-border-default]"></div>
-    <div class="flex justify-between p-15px items-center">
+    <div
+      class="flex justify-between p-15px items-center min-h-[44px] cursor-pointer"
+      @click="handleNotification(activeItem?.muteNotification !== NotificationTypeEnum.NOT_DISTURB)">
       <div class="text-14px">{{ t('mobile_chat_setting.silent') }}</div>
       <van-switch
         :model-value="activeItem?.muteNotification === NotificationTypeEnum.NOT_DISTURB"
+        size="20px"
         @update:model-value="handleNotification"
-        size="20px" />
+        @click.stop />
     </div>
     <div v-if="canUpgrade" class="mx-15px border-b border-[--tjg-border-default]"></div>
     <div

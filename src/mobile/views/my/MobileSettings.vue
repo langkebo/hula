@@ -166,10 +166,14 @@
               v-for="item in advancedSettingsItems"
               :key="item.path"
               :title="t(item.titleKey)"
-              is-link
-              @click="router.push(item.path)">
+              :is-link="!item.comingSoon"
+              clickable
+              @click="handleAdvancedItem(item)">
               <template #icon>
                 <SettingCellIcon :icon="item.icon" :color="item.iconColor" :background="item.iconBackgroundColor" />
+              </template>
+              <template v-if="item.comingSoon" #value>
+                <van-tag type="default" size="medium">{{ t('mobile_integrations.unavailable_badge') }}</van-tag>
               </template>
             </van-cell>
           </van-cell-group>
@@ -190,6 +194,7 @@
 </template>
 
 <script setup lang="ts">
+import { showToast } from 'vant'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -200,7 +205,11 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { APP_VERSION } from '@/utils/appVersion'
 import MobileAppearanceSection from './components/MobileAppearanceSection.vue'
 import MobileSettingsSearch from './components/MobileSettingsSearch.vue'
-import { filterMobileSettingsItems, MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
+import {
+  filterMobileSettingsItems,
+  MOBILE_ADVANCED_SETTINGS_ITEMS,
+  type MobileSettingsNavItem
+} from './mobileSettingsConfig'
 import type { MobileSettingsSearchEntry } from './mobileSettingsSearchIndex'
 import {
   MOBILE_SETTINGS_DEVICES_PATH,
@@ -219,6 +228,15 @@ const capability = useServerCapability()
 const advancedSettingsItems = computed(() =>
   filterMobileSettingsItems(MOBILE_ADVANCED_SETTINGS_ITEMS, capability.isLoaded.value, capability.isCapabilityAvailable)
 )
+
+/** 未上线的占位入口只提示状态，不跳转到空白页 */
+function handleAdvancedItem(item: MobileSettingsNavItem) {
+  if (item.comingSoon) {
+    showToast(t('mobile_integrations.unavailable_badge'))
+    return
+  }
+  void router.push(item.path)
+}
 
 // ── 设置搜索 ────────────────────────────────────────────────
 // 关键词同步到 route.query，从二级页返回时由 keep-alive / 重新挂载都能回填（Y-16）

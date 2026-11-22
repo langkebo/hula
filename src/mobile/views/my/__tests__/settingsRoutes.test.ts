@@ -8,6 +8,7 @@ import { MOBILE_SETTINGS_SEARCH_ENTRIES } from '../mobileSettingsSearchIndex'
 import {
   MOBILE_SETTINGS_HELP_ABOUT_PATH,
   MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH,
+  MOBILE_SETTINGS_LABS_PATH,
   MOBILE_SETTINGS_RELATIVE_PATHS,
   MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
 } from '../settingsRoutes'
@@ -16,6 +17,12 @@ const MOBILE_SETTINGS_BASE_PATH = '/mobile/mobileMy'
 
 /** 「我的」首屏直达、但不在设置子路由表里的二级页 */
 const MOBILE_HUB_ONLY_PATHS = [`${MOBILE_SETTINGS_BASE_PATH}/myMessages`]
+
+/**
+ * 未上线占位页不纳入搜索：搜得到却只有一句「未上线」，比搜不到更让人困惑。
+ * 入口仍在设置列表里，并带「未上线」角标说明状态。
+ */
+const PLACEHOLDER_PATHS = [MOBILE_SETTINGS_LABS_PATH, MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH]
 
 describe('settingsRoutes', () => {
   it('keeps mobile canonical paths aligned with the shared settings schema', () => {
@@ -37,7 +44,7 @@ describe('settingsRoutes', () => {
     const expectedPaths = [
       ...MOBILE_MY_SETTINGS_CHILD_ROUTES.map((route) => `${MOBILE_SETTINGS_BASE_PATH}/${route.path}`),
       ...MOBILE_HUB_ONLY_PATHS
-    ]
+    ].filter((path) => !PLACEHOLDER_PATHS.includes(path))
 
     expect(expectedPaths.filter((path) => !indexedPaths.has(path))).toEqual([])
   })

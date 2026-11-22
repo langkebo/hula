@@ -141,6 +141,7 @@ describe('MobileSettings', () => {
         stubs: {
           'van-cell-group': { template: '<div><slot /></div>' },
           'van-cell': VanCellStub,
+          'van-tag': { template: '<span><slot /></span>', props: ['type', 'size'] },
           'van-radio-group': { template: '<div><slot /></div>', props: ['modelValue', 'direction'] },
           'van-radio': { template: '<label><slot /></label>', props: ['name'] },
           'van-button': { template: '<button><slot /></button>', props: ['type', 'block', 'disabled', 'loading'] }
@@ -164,13 +165,15 @@ describe('MobileSettings', () => {
     expect(wrapper.text()).not.toContain('mobile_setting.integrations')
   })
 
-  it('navigates to labs from the first-level settings list', async () => {
+  it('marks labs as coming soon instead of navigating to a placeholder page', async () => {
     const wrapper = mountComponent()
     const labsCell = wrapper.findAll('.van-cell').find((cell) => cell.text().includes('mobile_setting.labs'))
 
     expect(labsCell).toBeDefined()
+    expect(labsCell!.text()).toContain('mobile_integrations.unavailable_badge')
     await labsCell!.trigger('click')
-    expect(routerPushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_LABS_PATH)
+    expect(showToastMock).toHaveBeenCalledWith('mobile_integrations.unavailable_badge')
+    expect(routerPushMock).not.toHaveBeenCalledWith(MOBILE_SETTINGS_LABS_PATH)
   })
 
   it('keeps every entry while capability detection is not loaded', () => {

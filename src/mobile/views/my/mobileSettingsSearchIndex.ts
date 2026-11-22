@@ -209,18 +209,8 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     path: '/mobile/mobileMy/storage',
     keywords: ['storage', '存储', '缓存', '空间', 'quota', '配额']
   },
-  {
-    labelKey: 'mobile_setting.labs',
-    groupKey: 'mobile_setting.advanced_section',
-    path: '/mobile/mobileMy/labs',
-    keywords: ['labs', '实验', '内测', 'beta', '新功能']
-  },
-  {
-    labelKey: 'mobile_setting.integrations',
-    groupKey: 'mobile_setting.advanced_section',
-    path: '/mobile/mobileMy/labs/integrations',
-    keywords: ['integration', '集成', 'widget', 'bot', '机器人']
-  },
+  // 「实验功能 / 集成」仍是未上线占位页，不纳入搜索：
+  // 搜得到却点进去看「未上线」，比搜不到更让人困惑。
   {
     labelKey: 'mobile_setting.homeserver',
     groupKey: 'mobile_setting.advanced_section',

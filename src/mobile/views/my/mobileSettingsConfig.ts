@@ -16,6 +16,11 @@ export interface MobileSettingsNavItem {
    * 缺一即隐藏，避免后端未开放能力时点进去空白或报错。
    */
   requiredCapability?: TjgCapability | TjgCapability[]
+  /**
+   * 未上线占位入口：保留可见性（告知用户功能在规划中），但不可点击跳转，
+   * 避免点进去只有一张「未上线」的空白页。
+   */
+  comingSoon?: boolean
 }
 
 export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
@@ -55,7 +60,8 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
     path: MOBILE_SETTINGS_LABS_PATH,
     icon: 'mdi:flask',
     iconColor: 'var(--tjg-color-beta-500)',
-    iconBackgroundColor: 'var(--tjg-color-beta-100)'
+    iconBackgroundColor: 'var(--tjg-color-beta-100)',
+    comingSoon: true
   },
   {
     titleKey: 'mobile_setting.homeserver',
