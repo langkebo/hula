@@ -73,6 +73,7 @@ const canUseVoip = useServerCapability().canUseVoip
 const pickRtcCall = ref(false)
 
 // 对齐原型《移动端聊天输入栏》九宫格：图片 / 文件 / 语音 / 视频 / 位置
+// 图片 / 文件的点击由上方 van-uploader 的 after-read 接管，这里 onClick 仅占位保持配置结构一致
 const options = ref([
   { type: 'image', labelKey: 'mobile_chat.input_panel.image', icon: 'photo', onClick: () => {}, isShow: () => true },
   { type: 'file', labelKey: 'mobile_chat.input_panel.file', icon: 'file', onClick: () => {}, isShow: () => true },
