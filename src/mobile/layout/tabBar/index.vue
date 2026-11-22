@@ -128,7 +128,7 @@ html.medium-perf .tab-bar-wrap .tab-bar-glass.tj-glass {
   min-width: 44px;
   /* 触摸热区 >= 48x48px，配合 min-h-48px 确保可点击区域 */
   min-height: 48px;
-  font-size: var(--tjg-font-size-2xs);
+  font-size: var(--tjg-font-size-sm);
   /* 安全区统一由 .tab-bar 承担，item 不再重复叠加 */
   padding-bottom: 0;
   touch-action: manipulation;
