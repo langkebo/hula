@@ -21,7 +21,6 @@ const NotificationSettings = () => import('#/views/my/NotificationSettings.vue')
 const PasswordSettings = () => import('#/views/my/PasswordSettings.vue')
 const PreferencesSettings = () => import('#/views/my/PreferencesSettings.vue')
 const SecuritySettings = () => import('#/views/my/SecuritySettings.vue')
-const SimpleBio = () => import('#/views/my/SimpleBio.vue')
 const VoiceVideoSettings = () => import('#/views/my/VoiceVideoSettings.vue')
 
 /**
@@ -51,11 +50,6 @@ export const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
     path: MOBILE_SETTINGS_RELATIVE_PATHS.ignoredUsers,
     name: MOBILE_SETTINGS_ROUTE_NAMES.ignoredUsers,
     component: MobileIgnoredUsers
-  },
-  {
-    path: MOBILE_SETTINGS_RELATIVE_PATHS.simpleBio,
-    name: 'mobileSimpleBio',
-    component: SimpleBio
   },
   {
     path: MOBILE_SETTINGS_RELATIVE_PATHS.securityKey,

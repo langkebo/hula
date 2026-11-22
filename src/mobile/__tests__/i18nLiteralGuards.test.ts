@@ -33,8 +33,7 @@ describe('移动端其余用户可见页面中文字面量收口', () => {
     'src/mobile/views/my/MobileSettings.vue',
     'src/mobile/views/space/SpaceView.vue',
     'src/mobile/views/my/EditProfile.vue',
-    'src/mobile/views/my/MobileSecurityKeySetup.vue',
-    'src/mobile/views/my/SimpleBio.vue'
+    'src/mobile/views/my/MobileSecurityKeySetup.vue'
   ])('%s 的中文文案全部走 i18n', (path) => {
     expect(chineseSegments(readWithoutComments(path))).toEqual([])
   })

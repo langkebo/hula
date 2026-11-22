@@ -1,9 +1,4 @@
 {
-  "photos": "相册",
-  "files": "文件",
-  "appearance": "个性装扮",
-  "default_bio": "用户很懒没写简介~",
-  "online": "在线",
   "actions": {
     "messages": "我的消息",
     "scan": "扫一扫",

@@ -1,9 +1,4 @@
 {
-  "photos": "Photos",
-  "files": "Files",
-  "appearance": "Appearance",
-  "default_bio": "Here to share, connect, and maybe overthink a little.",
-  "online": "Online",
   "actions": {
     "messages": "My messages",
     "scan": "Scan",

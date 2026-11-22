@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
  * 背景（实测缺陷）：`SecuritySettings.vue` 的「已忽略用户」单元格
  * `router.push('/mobile/mobileMy/ignoredUsers')`，但**该路由从未注册**，
  * 对应的视图文件也不存在——用户点击后什么都不发生（vue-router 控制台只报
- * 一行 warn）。同类问题还有 `/mobile/mobileMy/simpleBio`。
+ * 一行 warn）。
  *
  * 这类缺陷 vue-tsc 与单元测试都看不见：字符串路径既不受类型检查约束，
  * 测试也只是断言「push 被调用」，不会验证目标是否存在。本守卫直接对

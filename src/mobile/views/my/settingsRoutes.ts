@@ -11,7 +11,6 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   securityPrivacy: SETTINGS_CANONICAL_ROUTE_SEGMENTS.securityPrivacy,
   password: 'password',
   ignoredUsers: 'ignoredUsers',
-  simpleBio: 'simpleBio',
   securityKey: 'securityKey',
   encryption: 'encryption',
   storage: 'storage',

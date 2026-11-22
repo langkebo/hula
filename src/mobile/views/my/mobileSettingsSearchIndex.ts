@@ -60,12 +60,6 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     keywords: ['profile', '昵称', '头像', '简介', 'avatar', 'nickname', '资料']
   },
   {
-    labelKey: 'mobile_edit_profile.bio',
-    groupKey: 'mobile_setting.account_section',
-    path: '/mobile/mobileMy/simpleBio',
-    keywords: ['bio', '简介', '个人简介', 'profile', '主页', '个人信息']
-  },
-  {
     labelKey: 'mobile_mymessage.title',
     groupKey: 'mobile_setting.account_section',
     path: '/mobile/mobileMy/myMessages',

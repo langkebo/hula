@@ -4,11 +4,6 @@
  */
 
 export type Messages = {
-  "photos": "相册",
-  "files": "文件",
-  "appearance": "个性装扮",
-  "default_bio": "用户很懒没写简介~",
-  "online": "在线",
   "actions": {
     "messages": "我的消息",
     "scan": "扫一扫",
@@ -26,11 +21,6 @@ export type Messages = {
  * 不会被某个点分 t() key 直接寻址。
  */
 export type KeyPaths =
-  | "mobile_my.photos"
-  | "mobile_my.files"
-  | "mobile_my.appearance"
-  | "mobile_my.default_bio"
-  | "mobile_my.online"
   | "mobile_my.actions.messages"
   | "mobile_my.actions.scan"
   | "mobile_my.actions.settings"

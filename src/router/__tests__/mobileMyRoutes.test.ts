@@ -37,11 +37,4 @@ describe('mobileMy routes', () => {
     expect(encryption?.parentNames).toContain('mobileMyLayout')
     expect(`/mobile/mobileMy/${encryption?.path}`).toBe(MOBILE_SETTINGS_ENCRYPTION_PATH)
   })
-
-  it('registers SimpleBio exactly once, under the settings child routes', () => {
-    const simpleBioRoutes = flatRoutes.filter((item) => item.name === 'mobileSimpleBio')
-
-    expect(simpleBioRoutes).toHaveLength(1)
-    expect(simpleBioRoutes[0]?.parentNames).toContain('mobileMyLayout')
-  })
 })

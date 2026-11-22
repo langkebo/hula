@@ -19,7 +19,7 @@
 
     <NavBar>
       <template #left>
-        <MobileSessionHeader @click="toSimpleBio" />
+        <MobileSessionHeader @click="toMyProfile" />
       </template>
 
       <template #right>
@@ -286,8 +286,8 @@ const intoRoom = (item: SessionItem) => {
   }, 0)
 }
 
-const toSimpleBio = () => {
-  router.push('/mobile/mobileMy/simpleBio')
+const toMyProfile = () => {
+  router.push('/mobile/my')
 }
 
 /**
