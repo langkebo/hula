@@ -67,6 +67,7 @@
       :is-enable-pull-refresh="isEnablePullRefresh"
       :long-press-option="longPressOption"
       @refresh="onRefresh"
+      @new-chat="showNewChatDialog = true"
       @scroll="onScroll"
       @into-room="intoRoom"
       @swipe-open="handleSwipeOpen"

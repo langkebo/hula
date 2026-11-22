@@ -22,6 +22,7 @@ export type Messages = {
   "outbox_failed": "{count} 条消息发送失败",
   "outbox_retry": "重试",
   "outbox_clear": "清除",
+  "room_unavailable": "会话已失效，已返回消息列表",
   "input_panel": {
     "video_call": "视频通话",
     "audio_call": "语音通话",
@@ -107,6 +108,7 @@ export type KeyPaths =
   | "mobile_chat.outbox_failed"
   | "mobile_chat.outbox_retry"
   | "mobile_chat.outbox_clear"
+  | "mobile_chat.room_unavailable"
   | "mobile_chat.input_panel.video_call"
   | "mobile_chat.input_panel.audio_call"
   | "mobile_chat.input_panel.image"

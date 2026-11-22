@@ -58,12 +58,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import MobileBatchToolbar from '#/components/chat-room/MobileBatchToolbar.vue'
 import PrivateModeConfirmDialog from '#/components/chat-room/PrivateModeConfirmDialog.vue'
 import MobileOutboxBar from '#/components/message/MobileOutboxBar.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
 import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
 import RoomEncryptionBanner from '@/components/encryption/RoomEncryptionBanner.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useRoomEncryptionStatus } from '@/composables/encryption/useRoomEncryptionStatus'
 import { MittEnum, RoomTypeEnum } from '@/enums'
@@ -77,6 +79,8 @@ import { createLogger } from '@/utils/Logger'
 import { extractServerName } from '@/utils/userIdentity'
 
 const logger = createLogger('MobileChatMain')
+const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 defineOptions({
   name: 'mobileChatRoomDefault'
@@ -144,6 +148,7 @@ const openRoomFromRoute = async (raw?: string) => {
   }
   if (!session) {
     logger.warn('route session not found, falling back to message list:', roomId, raw)
+    showFeedback(t('mobile_chat.room_unavailable'), 'warning')
     await router.replace('/mobile/message')
     return
   }

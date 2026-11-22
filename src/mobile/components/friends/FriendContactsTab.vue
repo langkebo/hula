@@ -37,7 +37,11 @@
     @update:model-value="onRefreshingUpdate"
     @refresh="emit('refresh')">
     <div v-if="viewState === 'empty'" class="flex items-center justify-center px-16px text-center min-h-240px">
-      <van-empty :description="t('friend.list.empty')" />
+      <van-empty :description="t('friend.list.empty')">
+        <van-button size="small" type="primary" round @click="emit('add-friend')">
+          {{ t('mobile_contact.add_friend') }}
+        </van-button>
+      </van-empty>
     </div>
     <div v-else-if="isLocalSearchEmpty" class="flex items-center justify-center px-16px text-center min-h-240px">
       <van-empty :description="t('mobile_contact.search_no_result')" />
@@ -198,6 +202,7 @@ const emit = defineEmits<{
   'update:activeCollapseNames': [value: string[]]
   refresh: []
   retry: []
+  'add-friend': []
   select: [userId: string]
   'delete-contact': [userId: string]
 }>()

@@ -10,6 +10,14 @@
           <van-loading size="24px" />
         </div>
 
+        <div v-else-if="loadError" class="notice-detail__state">
+          <van-empty :description="t('mobile_chat.notice.fetch_failed')">
+            <van-button size="small" type="primary" plain @click="loadAnnouncementDetail">
+              {{ t('common.retry') }}
+            </van-button>
+          </van-empty>
+        </div>
+
         <div v-else-if="announcement" class="notice-detail__card">
           <div class="flex items-start justify-between gap-12px">
             <div class="flex flex-col gap-8px">
@@ -45,7 +53,11 @@
         </div>
 
         <div v-else class="notice-detail__state">
-          <van-empty :description="t('mobile_chat.notice.not_found')" />
+          <van-empty :description="t('mobile_chat.notice.not_found')">
+            <van-button size="small" type="primary" plain @click="router.back()">
+              {{ t('common.back') }}
+            </van-button>
+          </van-empty>
         </div>
       </div>
     </template>
@@ -78,6 +90,7 @@ const globalStore = useGlobalStore()
 
 const loading = ref(false)
 const deleting = ref(false)
+const loadError = ref(false)
 const announcement = ref<Announcement | null>(null)
 
 /** 公告属于房间状态事件，只有群主 / 管理员有写权限 */
@@ -102,15 +115,13 @@ const loadAnnouncementDetail = async () => {
   }
 
   loading.value = true
+  loadError.value = false
   try {
     announcement.value = await matrixAnnouncementService.getAnnouncementById(roomId.value, announcementId.value)
-    if (!announcement.value) {
-      showFeedback(t('mobile_chat.notice.not_found'), 'warning')
-    }
   } catch (error) {
     logger.error('Failed to load announcement details:', error)
     announcement.value = null
-    showFeedback(t('mobile_chat.notice.fetch_failed'), 'error')
+    loadError.value = true
   } finally {
     loading.value = false
   }

@@ -22,10 +22,17 @@
             v-if="spacesState !== 'ready'"
             :state="spacesState"
             :error-text="spacesError ?? ''"
-            :empty-text="t('space.empty')"
             test-id="space-list"
             min-height="240px"
-            @retry="loadSpaces" />
+            @retry="loadSpaces">
+            <template #empty>
+              <van-empty :description="t('space.empty')">
+                <van-button size="small" type="primary" round @click="showCreateSheet = true">
+                  {{ t('space.create') }}
+                </van-button>
+              </van-empty>
+            </template>
+          </MobileAsyncState>
           <div v-else class="space-grid">
             <SpaceCard v-for="space in spaces" :key="space.spaceId" :space="space" @select="handleSpaceClick" />
           </div>

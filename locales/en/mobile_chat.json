@@ -17,6 +17,7 @@
   "outbox_failed": "{count} message(s) failed to send",
   "outbox_retry": "Retry",
   "outbox_clear": "Clear",
+  "room_unavailable": "This conversation is no longer available. Returning to messages.",
   "input_panel": {
     "video_call": "Video Call",
     "audio_call": "Voice Call",

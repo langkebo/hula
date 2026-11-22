@@ -40,8 +40,15 @@
         test-id="session-list"
         :error-text="t('mobile_home.session_load_failed')"
         :error-detail="loadError || ''"
-        :empty-text="t('mobile_home.empty_session')"
-        @retry="emit('refresh')" />
+        @retry="emit('refresh')">
+        <template #empty>
+          <van-empty :description="t('mobile_home.empty_session')">
+            <van-button round type="primary" size="small" @click="emit('new-chat')">
+              {{ t('mobile_home.menu.new_chat') }}
+            </van-button>
+          </van-empty>
+        </template>
+      </MobileAsyncState>
       <SmartVirtualList
         v-else
         class="mobile-session-list flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
@@ -197,6 +204,7 @@ const emit = defineEmits<{
   (e: 'update:searchText', value: string): void
   (e: 'update:loading', value: boolean): void
   (e: 'refresh'): void
+  (e: 'new-chat'): void
   (e: 'scroll', event: Event): void
   (e: 'into-room', item: SessionItem): void
   (e: 'swipe-open'): void

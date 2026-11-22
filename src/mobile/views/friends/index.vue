@@ -101,6 +101,7 @@
             :get-user-state="getUserState"
             @refresh="handlePullRefresh"
             @retry="handleRetryMobileFriends"
+            @add-friend="router.push('/mobile/mobileFriends/addFriends')"
             @select="onSelectContact"
             @delete-contact="handleDeleteContact" />
         </van-tab>
