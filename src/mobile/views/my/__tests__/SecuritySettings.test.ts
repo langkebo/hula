@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SecuritySettings from '../SecuritySettings.vue'
+import { MOBILE_SETTINGS_PASSWORD_PATH } from '../settingsRoutes'
 
 const {
   showToastMock,
@@ -197,42 +198,18 @@ describe('SecuritySettings', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/mobile/mobileMy/devices')
   })
 
-  it('validates password mismatch', async () => {
+  it('navigates to the dedicated password page instead of an in-page dialog', async () => {
+    // 修改密码统一走 PasswordSettings（强度校验 + 退出其他设备都在那一页），
+    // 安全页只负责跳转，避免两套交互规则漂移。
     const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.passwordForm = { oldPassword: 'old', newPassword: 'new1', confirmPassword: 'new2' }
-    await vm.handleChangePassword()
-    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
-  })
+    const passwordCell = wrapper
+      .findAll('[data-test="van-cell"]')
+      .find((cell) => cell.text().includes('mobile_security.change_password'))
 
-  it('validates short password', async () => {
-    const wrapper = mountSecuritySettings()
-    await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.passwordForm = { oldPassword: 'old', newPassword: 'short', confirmPassword: 'short' }
-    await vm.handleChangePassword()
-    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
-  })
-
-  it('calls changePassword on valid form', async () => {
-    changePasswordMock.mockResolvedValue(undefined)
-    const wrapper = mountSecuritySettings()
-    await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'Newpass1!', confirmPassword: 'Newpass1!' }
-    await vm.handleChangePassword()
-    expect(changePasswordMock).toHaveBeenCalledWith('oldpass12', 'Newpass1!')
-  })
-
-  it('shows error on password change failure', async () => {
-    changePasswordMock.mockRejectedValue(new Error('fail'))
-    const wrapper = mountSecuritySettings()
-    await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'Newpass1!', confirmPassword: 'Newpass1!' }
-    await vm.handleChangePassword()
-    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
+    expect(passwordCell).toBeDefined()
+    await passwordCell!.trigger('click')
+    expect(routerPushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_PASSWORD_PATH)
   })
 
   it('navigates to the dedicated triple-confirm page for deactivate', async () => {
