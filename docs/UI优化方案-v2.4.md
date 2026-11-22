@@ -1998,15 +1998,28 @@ useGlassEffectStore().mode = 'off'
 
 ### 21.3 仍然存在的问题（按影响排序）
 
-#### P0：`outline: none` 切断焦点可见性（31 处）
+#### ~~P0：`outline: none` 切断焦点可见性~~ —— **已闭环（2026-11-22，`62c0b6d58`）**
 
-键盘用户在当前焦点上**看不到任何指示**。WCAG 2.4.7（Focus Visible）明确要求焦点可见。
-31 处里需要区分两类：
+逐处看过上下文后，31 处的真实分布与最初的判断差别很大：
 
-- 确实删掉了 `outline` 但没有替代焦点样式的 -> **真缺陷**
-- 删掉 `outline` 但用 `box-shadow` / `border-color` 做了替代的 -> 只需确认对比度达标
+| 类别 | 数量 | 判断 |
+| :--- | ---: | :--- |
+| 有 `focus-visible` 替代（ring / 边框变色） | 10 | 正确 |
+| 非交互元素（装饰 svg、cropper 内部） | 13 | 无害 |
+| 全局标准写法 `:focus:not(:focus-visible)` | 1 | 正确 |
+| **可交互但无任何焦点样式** | **2** | **已修** |
 
-**下一步**：逐个分类，真缺陷统一改用 `:focus-visible` + `--tjg-border-contrast` 的 2px 焦点环。
+关键在 `base.scss` 那一行 —— 写法是标准的，只去掉鼠标点击的轮廓：
+
+```scss
+&:focus:not(:focus-visible) { outline: none; }
+```
+
+**教训**：`grep outline: none | wc -l` 得出的 31 是个虚高的数。真正的判据是
+「该元素可交互 **且** 没有任何 `focus-visible` 替代」，两者同时成立才算缺陷。
+
+已修：`RoomMembershipTabs` 的 tab（`role="tab"`）、`InfoPopover` 的复制账号入口
+（`role="button" tabindex="0"`），均补 `focus-visible:ring-2 + ring-primary-500`。
 
 #### P0：纯图标按钮缺 `aria-label`（10 处）
 
@@ -2065,7 +2078,7 @@ AdminSecurity.vue:5 等
 
 | 顺序 | 事项 | 预估影响面 | 风险 |
 | :--- | :--- | :--- | :--- |
-| 1 | 31 处 `outline: none` 分类与修复 | 全端键盘用户 | 低（纯 CSS） |
+| ~~1~~ | ~~31 处 `outline: none` 分类与修复~~ **已完成**（实际只 2 处缺陷） | 全端键盘用户 | 低 |
 | 2 | 10 处纯图标按钮补 `aria-label` | 读屏用户 | 低 |
 | 3 | 抽 `TjDrawer` / `TjDialog` 壳 | 30 个弹层 | 中（要逐个替换） |
 | 4 | 剩余 8 个表格迁移 | 后台一致性 | 中（`n-spin` 需逐处判断） |
