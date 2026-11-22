@@ -13,7 +13,7 @@ let typingPreferenceProvider: () => boolean = () => true
 let onlineStatusPreferenceProvider: () => boolean = () => true
 let readReceiptPreferenceProvider: () => boolean = () => true
 
-export interface PrivacyPreferenceHooks {
+interface PrivacyPreferenceHooks {
   /** 「发送输入中提示」是否开启 */
   isSendTypingNotificationsEnabled: () => boolean
   /** 「允许其他用户看到您的在线状态」是否开启 */

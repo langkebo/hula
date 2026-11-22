@@ -28,7 +28,6 @@ export type {
   SpaceHierarchyRoomEntry,
   SpaceInfo,
   SpaceMemberDetail,
-  SpaceMemberRole,
   SpaceOptions
 } from './spaceTypes'
 

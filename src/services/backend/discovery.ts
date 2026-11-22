@@ -233,7 +233,7 @@ export async function discoverAndSaveMatrixEndpoints(
   }
 }
 
-export interface MatrixHomeserverProbeResult {
+interface MatrixHomeserverProbeResult {
   homeserverUrl: string
   versions: string[]
 }

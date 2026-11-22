@@ -48,14 +48,14 @@ export interface OidcTokenResponse {
 }
 
 /** `auth_metadata` 探测结果（CAP-03）：404/未实现时 `supported=false` */
-export interface OidcAuthMetadataSummary {
+interface OidcAuthMetadataSummary {
   supported: boolean
   issuer?: string
   authorizationEndpoint?: string
 }
 
 /** 回调失败分类（CAP-03）：服务端未启用 OIDC 时不再提供「重试」 */
-export type OidcCallbackFailureReason = 'unsupported' | 'exchange-failed'
+type OidcCallbackFailureReason = 'unsupported' | 'exchange-failed'
 
 const DEFAULT_OIDC_SCOPES = ['openid', 'profile', 'email']
 const OIDC_HOMESERVER_STORAGE_KEY = 'oidc_homeserver_url'

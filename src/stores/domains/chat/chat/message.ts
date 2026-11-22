@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { useRoute } from 'vue-router'
 import { MessageStatusEnum, RoomTypeEnum, StoresEnum } from '@/enums'
-import matrixEventService from '@/services/matrix/MatrixEventService'
+import { matrixEventService } from '@/services/matrix/MatrixEventService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -19,8 +19,6 @@ import { createMessageRoomIndex } from './messageRoomIndex'
 import { createMessageSortedKeys } from './messageSortedKeys'
 import { pruneToTransientMessages } from './messageTransientPrune'
 import { createRecallManager } from './recallManager'
-
-export type { MessageLoadFailure, MessageLoadFailureCategory } from './messageLoadFailure'
 
 type MessageListOptions = {
   isLast: boolean

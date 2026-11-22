@@ -7,19 +7,18 @@
  * surface stays structural rather than copy-pasted.
  */
 
-export type { PasswordAuthProviderDraft } from './useAdminAccountPolicy'
 export { useAdminAccountPolicy } from './useAdminAccountPolicy'
 export type { AppServiceInfo } from './useAdminAppServices'
 export { useAdminAppServices } from './useAdminAppServices'
 export type { AuditEntryView } from './useAdminAudit'
 export { useAdminAudit } from './useAdminAudit'
 export { useAdminBackgroundUpdates } from './useAdminBackgroundUpdates'
-export type { AccountDataCallbackDraft, MediaCallbackDraft } from './useAdminCallbacks'
+
 export { useAdminCallbacks } from './useAdminCallbacks'
 export { useAdminCas } from './useAdminCas'
-export type { CleanupKind, CleanupOutcome } from './useAdminCleanup'
+export type { CleanupKind } from './useAdminCleanup'
 export { useAdminCleanup } from './useAdminCleanup'
-export type { ExternalServiceDraft } from './useAdminExternalServices'
+
 export { useAdminExternalServices } from './useAdminExternalServices'
 export type { FederationBlacklistView, FederationDestination } from './useAdminFederation'
 export { useAdminFederation } from './useAdminFederation'
@@ -28,7 +27,7 @@ export type { AdminFeatureFlag, AdminFeatureFlagInput } from './useAdminMaintena
 export { useAdminMaintenance } from './useAdminMaintenance'
 export type { MediaLibraryItem, UseAdminMedia } from './useAdminMedia'
 export { useAdminMedia } from './useAdminMedia'
-export type { AdminModuleItem, AdminModuleStatus } from './useAdminModules'
+export type { AdminModuleStatus } from './useAdminModules'
 export { useAdminModules } from './useAdminModules'
 export type { ServerNoticeInfo } from './useAdminNotices'
 export { useAdminNotices } from './useAdminNotices'
@@ -43,7 +42,7 @@ export type { RoomInfo, UseAdminRoomsResult } from './useAdminRooms'
 export { useAdminRooms } from './useAdminRooms'
 
 export { useAdminServerLogs } from './useAdminServerLogs'
-export type { SystemNotificationDraft } from './useAdminServerNotifications'
+
 export { useAdminServerNotifications } from './useAdminServerNotifications'
 export type { SpaceInfo } from './useAdminSpaces'
 export { useAdminSpaces } from './useAdminSpaces'

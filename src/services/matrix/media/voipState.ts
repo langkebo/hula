@@ -5,7 +5,7 @@ import type { CallState } from './voipTypes'
  * （fledgling / invite_sent / wait_local_media / create_offer / create_answer /
  * connecting / connected / ringing / ended），这里只映射本服务关心的部分。
  */
-export type SdkCallState = string
+type SdkCallState = string
 
 /**
  * 把 SDK 状态事件映射为服务层 `CallState`，返回 `null` 表示保持当前状态不变。

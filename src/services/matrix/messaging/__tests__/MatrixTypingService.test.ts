@@ -1,7 +1,7 @@
 import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixTypingService } from '../MatrixTypingService'
 import { makeTypingStateEvent } from './fixtures/typing'
 

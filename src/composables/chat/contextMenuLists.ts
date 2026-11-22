@@ -19,7 +19,7 @@ import { createMessageMenus } from './contextMessageMenus'
 export { deleteLocalMessage, isLocalOrFailedMessage } from './contextMessageLocalActions'
 
 /** 菜单列表工厂依赖 */
-export type ContextMenuListDeps = {
+type ContextMenuListDeps = {
   t: ReturnType<typeof useI18n>['t']
   showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
   /** 平台事实（`usePlatform.isDesktop()` 取一次）：桌面专属项在构建期就不输出，移动端不渲染 */

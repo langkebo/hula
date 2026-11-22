@@ -47,7 +47,7 @@ export type SettingsTabTranslator = (key: string) => string
  * - `instant`：改动即时落库，无需离开前保存
  * - `manual`：页面内存在表单暂存，需要点击保存按钮才生效（需配合 useSettingsTabDirty 注册脏状态）
  */
-export type SettingsTabSaveMode = 'instant' | 'manual'
+type SettingsTabSaveMode = 'instant' | 'manual'
 
 const SETTINGS_MANUAL_SAVE_TABS = new Set<SettingsTabType>(['account'])
 

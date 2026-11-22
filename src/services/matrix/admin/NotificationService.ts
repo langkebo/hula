@@ -15,7 +15,7 @@ export interface UserNotificationSettingsResponse {
 }
 
 /** 更新用户通知设置后的响应。 */
-export interface UserNotificationUpdateResponse {
+interface UserNotificationUpdateResponse {
   is_enabled?: boolean
 }
 

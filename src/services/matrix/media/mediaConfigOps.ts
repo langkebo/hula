@@ -114,7 +114,7 @@ interface QuotaErrorShape {
 }
 
 /** 把配额接口的异常分类为可判定的原因（纯函数，便于单测）。 */
-export function classifyMediaQuotaError(error: unknown): MediaQuotaUnavailableReason {
+function classifyMediaQuotaError(error: unknown): MediaQuotaUnavailableReason {
   const shape = (typeof error === 'object' && error !== null ? error : {}) as QuotaErrorShape
   const errorCode =
     typeof shape.errorCode === 'string' ? shape.errorCode : typeof shape.errcode === 'string' ? shape.errcode : null

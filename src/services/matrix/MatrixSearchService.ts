@@ -4,8 +4,8 @@ import type { IContent, MatrixClient, Room } from '@/services/matrix/sdk'
 import type { SearchEventContext } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 import type { SearchMessageHit } from '@/workers/matrixWorkerTypes'
-import matrixClientService from './MatrixClientService'
-import matrixWorkerHost from './MatrixWorkerHost'
+import { matrixClientService } from './MatrixClientService'
+import { matrixWorkerHost } from './MatrixWorkerHost'
 
 const logger = createLogger('MatrixSearchService')
 

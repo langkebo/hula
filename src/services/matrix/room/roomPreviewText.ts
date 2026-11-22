@@ -57,7 +57,7 @@ function translateRoomPreview(key: RoomPreviewKey) {
  * 服务端与历史数据可能出现畸形内容（例如 `body` 不是字符串），因此只用 `unknown`
  * 建模预览涉及的键，其余键同样按未知处理，避免调用方误以为字段可信。
  */
-export interface RoomEventContent {
+interface RoomEventContent {
   msgtype?: unknown
   body?: unknown
   membership?: unknown

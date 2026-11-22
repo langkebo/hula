@@ -10,7 +10,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { createLogger } from '@/utils/Logger'
 
-export interface FriendNavigationDeps {
+interface FriendNavigationDeps {
   setSelectedItem: (id: string) => void
 }
 

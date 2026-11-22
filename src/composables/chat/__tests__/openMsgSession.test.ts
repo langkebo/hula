@@ -34,7 +34,7 @@ vi.mock('@/router', () => ({
   default: { currentRoute: { value: { path: '/friend', params: {} } }, push: routerPushMock }
 }))
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: { getRoom: getRoomMock }
+  matrixClientService: { getRoom: getRoomMock }
 }))
 vi.mock('@/services/matrix/auth/MatrixSessionService', () => ({
   matrixSessionService: {

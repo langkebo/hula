@@ -34,7 +34,7 @@ export interface AdminModuleItem {
 }
 
 /** 模块列表分页结果。 */
-export interface AdminModuleListResult {
+interface AdminModuleListResult {
   modules: AdminModuleItem[]
   nextBatch: string | null
 }

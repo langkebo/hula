@@ -7,12 +7,12 @@ import { useGlobalStrictMode } from './useGlobalStrictMode'
 
 const logger = createLogger('useEncryptionSettings')
 
-export interface RefreshEncryptionSettingsOptions {
+interface RefreshEncryptionSettingsOptions {
   /** 是否加载桌面端专属的设备详情（本机指纹 + 待处理验证请求）；移动端无对应视图，默认关闭 */
   includeDeviceDetails?: boolean
 }
 
-export interface RefreshEncryptionSettingsResult {
+interface RefreshEncryptionSettingsResult {
   encryptionEnabled: boolean
   devicesLoaded: boolean
 }

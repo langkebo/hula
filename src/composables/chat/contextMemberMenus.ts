@@ -15,7 +15,7 @@ import type { ContextMenuHelpers } from './contextMenuHelpers'
 type ContextMenuItem = GroupRoleMenuItem
 
 /** 群成员管理菜单依赖 */
-export type MemberMenuDeps = {
+type MemberMenuDeps = {
   t: ReturnType<typeof useI18n>['t']
   showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
   helpers: ContextMenuHelpers

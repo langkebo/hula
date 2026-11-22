@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
 import type { VerificationRequest } from '@/types/matrix-extensions'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { CryptoHealthMonitor } from '../CryptoHealthMonitor'
 import { cryptoSDKAdapter } from '../CryptoSDKAdapter'
 import { matrixCryptoService } from '../MatrixCryptoService'
@@ -21,7 +21,7 @@ vi.mock('@/common/matrixErrorTranslator', () => ({
 }))
 
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: vi.fn() }
+  matrixClientService: { getClient: vi.fn() }
 }))
 
 vi.mock('../CryptoHealthMonitor', () => ({

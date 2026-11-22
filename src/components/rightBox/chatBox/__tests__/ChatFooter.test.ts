@@ -120,7 +120,7 @@ vi.mock('@/services/matrix/MatrixClientService', () => {
     getClient: vi.fn(),
     getRoom: vi.fn(() => null)
   }
-  return { matrixClientService, default: matrixClientService }
+  return { matrixClientService }
 })
 
 vi.mock('@/stores/domains/chat/chat', () => ({

@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 import { type MxcResolverClient, resolvePlayableUrl } from './mxcUrl'
 
@@ -82,7 +82,7 @@ type VoiceListPage = { messages: VoiceMessageRow[]; next_batch: number | null }
  * 服务端为开放配置包，除 `transport`/`version` 外可能携带后端扩展字段，
  * 因此保留索引签名；这是唯一允许 `unknown` 值的位置。
  */
-export interface RtcTransportConfig {
+interface RtcTransportConfig {
   transport: string
   version?: string
   [key: string]: unknown
@@ -94,7 +94,7 @@ export interface RtcTransportConfig {
  * 标准字段是 `transports` 数组；服务端可能附加其他能力/策略字段，
  * 故保留索引签名。失败时服务返回空对象，`transports` 因此可选。
  */
-export interface RtcTransportsResponse {
+interface RtcTransportsResponse {
   transports?: RtcTransportConfig[]
   [key: string]: unknown
 }
@@ -382,5 +382,3 @@ export function isVoiceMessageResult(value: unknown): value is VoiceMessageResul
   const record = unknownToObject(value)
   return record !== null && typeof record.filename === 'string'
 }
-
-export default matrixVoiceService

@@ -7,7 +7,7 @@
 
 import { MatrixContentField } from '@/common/matrixConstants'
 import type { MatrixEvent, Room } from '@/services/matrix/sdk'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import type { MessageContent, ThreadDisplayMessage, ThreadingManagerCompat } from './threadTypes'
 
 /**

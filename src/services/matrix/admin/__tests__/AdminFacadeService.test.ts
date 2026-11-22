@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { adminService } from '..'
 
 const { loggerSpy } = vi.hoisted(() => ({

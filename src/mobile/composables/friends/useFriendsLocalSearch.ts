@@ -4,7 +4,7 @@ import { OnlineEnum } from '@/enums'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 
-export interface FriendsLocalSearchSource {
+interface FriendsLocalSearchSource {
   specialContacts: Ref<MatrixContact[]>
   normalContacts: Ref<MatrixContact[]>
   blockedContacts: Ref<MatrixContact[]>

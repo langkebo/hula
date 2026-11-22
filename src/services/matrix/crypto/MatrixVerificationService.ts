@@ -8,7 +8,7 @@ import type {
 import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('MatrixVerificationService')
 

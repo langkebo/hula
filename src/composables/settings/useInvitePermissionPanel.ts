@@ -13,7 +13,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('InvitePermissionPanel')
 
-export interface InvitePermissionPanelProps {
+interface InvitePermissionPanelProps {
   visible?: boolean | undefined
   mode?: InvitePolicyMode | undefined
   blocklist?: string[] | undefined

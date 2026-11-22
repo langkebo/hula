@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 
 const mockDirectMessageService = {
   getOrCreateDmRoom: vi.fn(),

@@ -53,7 +53,7 @@ const server = setupMswServer(
   })
 )
 
-import chunkUploadService from '../ChunkUploadService'
+import { chunkUploadService } from '../ChunkUploadService'
 
 const makeFile = () => new File([new Uint8Array(10)], 'big.bin', { type: 'application/octet-stream' })
 

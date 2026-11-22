@@ -7,7 +7,7 @@
  * 早前测试用 `{ messages, isLast, cursor } as never` 绕过类型，
  * 漏字段或拼错键名不会被发现；改用本夹具后由 `vue-tsc` 兜住。
  */
-import type matrixEventService from '@/services/matrix/MatrixEventService'
+import type { matrixEventService } from '@/services/matrix/MatrixEventService'
 
 export type PagedRoomMessagesFixture = Awaited<ReturnType<typeof matrixEventService.getPagedRoomMessages>>
 

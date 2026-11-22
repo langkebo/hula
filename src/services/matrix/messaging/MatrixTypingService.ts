@@ -1,7 +1,7 @@
 import type { MatrixClient, TypingManager } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { isSendTypingNotificationsEnabled } from '../privacyPreferences'
 
 const logger = createLogger('MatrixTypingService')

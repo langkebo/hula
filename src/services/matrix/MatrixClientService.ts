@@ -387,4 +387,3 @@ export const matrixClientService = existing ?? new MatrixClientService()
 if (!existing) {
   g[SINGLETON_KEY] = matrixClientService
 }
-export default matrixClientService

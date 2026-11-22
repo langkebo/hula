@@ -32,19 +32,19 @@ import { BaseMatrixService } from '../BaseMatrixService'
 const logger = createLogger('AdminInvitePolicy')
 
 /** 黑名单写入结果。 */
-export type InviteBlocklistResponse = Awaited<ReturnType<InviteBlocklistManager['setBlocklist']>>
+type InviteBlocklistResponse = Awaited<ReturnType<InviteBlocklistManager['setBlocklist']>>
 
 /** 白名单写入结果。 */
-export type InviteAllowlistResponse = Awaited<ReturnType<InviteBlocklistManager['setAllowlist']>>
+type InviteAllowlistResponse = Awaited<ReturnType<InviteBlocklistManager['setAllowlist']>>
 
 /** 全局邀请名单类别。 */
 export type GlobalInviteListKind = 'allowlist' | 'blocklist'
 
 /** 全局邀请名单整体替换结果。 */
-export type GlobalInviteListWriteResult = Awaited<ReturnType<AdminConfigManager['setInviteAllowlist']>>
+type GlobalInviteListWriteResult = Awaited<ReturnType<AdminConfigManager['setInviteAllowlist']>>
 
 /** 全局邀请名单快照。 */
-export interface GlobalInviteLists {
+interface GlobalInviteLists {
   allowlist: string[]
   blocklist: string[]
 }

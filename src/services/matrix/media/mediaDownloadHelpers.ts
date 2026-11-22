@@ -18,7 +18,7 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 /** i18n 翻译函数签名；`params` 仅承载文案插值标量。 */
-export type MediaTranslate = (key: string, params?: Record<string, string | number>) => string
+type MediaTranslate = (key: string, params?: Record<string, string | number>) => string
 
 /** 后端签名媒体下载参数（`expires` 为 Unix 秒，与 `media_link_signer.rs` 一致） */
 export interface SignedMediaDownloadParams {

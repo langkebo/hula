@@ -14,7 +14,7 @@ import type { MessageEdit, RelationContent, RelationsResponse, ReplyChain, Threa
 const logger = createLogger('RelationQueries')
 
 /** 把 `m.replace` 事件映射成编辑记录，按时间升序。 */
-export function mapEditEvents(events: MatrixEvent[]): MessageEdit[] {
+function mapEditEvents(events: MatrixEvent[]): MessageEdit[] {
   return events
     .map((event) => {
       const content = event.getContent() as RelationContent

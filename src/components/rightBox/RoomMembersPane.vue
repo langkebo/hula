@@ -122,7 +122,7 @@
 import { useI18n } from 'vue-i18n'
 import UserIdentity from '@/components/common/UserIdentity.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'

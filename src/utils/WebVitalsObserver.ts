@@ -5,7 +5,7 @@
 
 import type { Metric } from 'web-vitals'
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 import { performanceReporter } from '@/utils/PerformanceReporter'
 

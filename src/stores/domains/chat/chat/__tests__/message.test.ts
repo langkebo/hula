@@ -143,7 +143,7 @@ vi.mock('@/services/matrix/room/RealtimeService', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: {
+  matrixEventService: {
     getPagedRoomMessages: vi.fn(),
     convertEventToMessage: vi.fn()
   }
@@ -152,7 +152,7 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
 import { type Options, sendNotification } from '@tauri-apps/plugin-notification'
 import { useI18nGlobal } from '@/services/i18n'
 import { makePagedRoomMessages } from '@/services/matrix/__tests__/fixtures/pagedRoomMessages'
-import matrixEventService from '@/services/matrix/MatrixEventService'
+import { matrixEventService } from '@/services/matrix/MatrixEventService'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import {
   DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES,

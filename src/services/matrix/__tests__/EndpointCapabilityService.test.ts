@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import endpointCapabilityService from '../EndpointCapabilityService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { getRuntimeAwareFetch } from '../network/runtimeFetch'
 import type { MatrixClient } from '../sdk'
 
 vi.mock('../MatrixClientService', () => ({
-  default: { getClient: vi.fn() }
+  matrixClientService: { getClient: vi.fn() }
 }))
 
 vi.mock('../network/runtimeFetch', () => ({

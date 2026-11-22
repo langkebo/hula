@@ -19,7 +19,7 @@ import { applyGlobalStrict, applyRoomStrict, readGlobalStrict } from './strictDe
 
 const logger = createLogger('StrictDevicePolicyBootstrap')
 
-export interface StrictDevicePolicyPreferences {
+interface StrictDevicePolicyPreferences {
   /** 确保偏好设置已从存储加载（幂等） */
   ensureLoaded: () => void
   /** 全局「阻止未验证设备」开关 */
@@ -35,7 +35,7 @@ export function registerStrictDevicePolicyPreferences(provider: StrictDevicePoli
   preferences = provider
 }
 
-export interface StrictnessReplayResult {
+interface StrictnessReplayResult {
   /** 全局开关是否已处于期望值（含"本来就一致、无需改写"） */
   globalApplied: boolean
   globalDesired: boolean

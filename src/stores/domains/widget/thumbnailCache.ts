@@ -28,7 +28,7 @@ const METADATA_STORAGE_KEY = 'tjg:thumbnail-cache-metadata'
 /** 自动缓存开关持久化键 */
 const AUTO_CACHE_STORAGE_KEY = 'tjg:media-auto-cache'
 /** 媒体缓存类别，与磁盘子目录同名；用于按类统计与清理 */
-export type MediaCacheKind = 'thumbnails' | 'emojis'
+type MediaCacheKind = 'thumbnails' | 'emojis'
 /** 媒体缓存目录（相对用户数据根目录） */
 const MEDIA_CACHE_SUBDIRS = ['thumbnails', 'emojis'] as const satisfies readonly MediaCacheKind[]
 /** 每个缓存类别对应的下载任务类型（清理时同步废弃状态） */

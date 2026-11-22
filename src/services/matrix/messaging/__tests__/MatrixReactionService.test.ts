@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClient, Room } from '@/services/matrix/sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixReactionService } from '../MatrixReactionService'
 
 vi.mock('@/services/offline/OfflineQueueService', () => ({

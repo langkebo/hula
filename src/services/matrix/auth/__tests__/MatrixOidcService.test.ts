@@ -2,7 +2,7 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixOidcService } from '../MatrixOidcService'
 
 const TEST_BASE_URL = 'https://hs.example.com'

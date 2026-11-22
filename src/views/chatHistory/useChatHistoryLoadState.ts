@@ -5,7 +5,7 @@ import { classifyLoadFailure, type MessageLoadFailureCategory } from '@/stores/d
 
 type LoadFailureIllustration = 'network-error' | 'server-error' | 'generic-error'
 
-export interface ChatHistoryLoadState {
+interface ChatHistoryLoadState {
   initialLoading: ComputedRef<boolean>
   initialLoadFailed: ComputedRef<boolean>
   isEmptyResult: ComputedRef<boolean>

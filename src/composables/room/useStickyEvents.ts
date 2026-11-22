@@ -10,7 +10,7 @@ import { resolveMessageInfo } from './resolveMessageInfo'
 const logger = createLogger('useStickyEvents')
 
 /** 默认粘性事件类型：普通消息 */
-export const DEFAULT_STICKY_EVENT_TYPE = 'm.room.message'
+const DEFAULT_STICKY_EVENT_TYPE = 'm.room.message'
 
 interface UseStickyEventsOptions {
   /** 房间 ID，支持 ref / getter / 字符串 */

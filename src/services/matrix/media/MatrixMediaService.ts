@@ -7,7 +7,7 @@ import { resolveUploadMimeTypeFromFile } from '@/utils/FileType'
 import { formatBytes } from '@/utils/Formatting'
 import { compressImage, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { MatrixMediaConfigMethods } from './MatrixMediaConfigMethods'
 import {
   buildSignedMediaDownloadUrl,

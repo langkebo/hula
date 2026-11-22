@@ -17,7 +17,7 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
 }))
 
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 describe('MatrixEventService', () => {
   beforeEach(() => {

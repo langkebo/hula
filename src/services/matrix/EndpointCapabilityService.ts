@@ -1,5 +1,5 @@
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from './MatrixClientService'
+import { matrixClientService } from './MatrixClientService'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 
 const logger = createLogger('EndpointCapabilityService')

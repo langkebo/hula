@@ -10,7 +10,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('KeyBackupRestore')
 
-export interface KeyBackupRestoreOptions {
+interface KeyBackupRestoreOptions {
   /** 关闭对话框（由宿主组件把 `show` 置 false） */
   close: () => void
   /** 恢复成功后的宿主回调 */

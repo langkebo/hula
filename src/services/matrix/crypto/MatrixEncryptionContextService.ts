@@ -1,6 +1,6 @@
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('MatrixEncryptionContextService')
 

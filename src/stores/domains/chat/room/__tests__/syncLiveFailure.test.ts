@@ -29,13 +29,13 @@ vi.mock('@/services/matrix/room/RealtimeService', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: {
+  matrixClientService: {
     on: vi.fn()
   }
 }))
 
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: {
+  matrixEventService: {
     convertEventToMessage: convertEventToMessageMock
   }
 }))
@@ -122,7 +122,7 @@ describe('room sync 实时帧失败接线', () => {
   })
 
   it('eventDecrypted 转换抛错时不冒泡，并按房间标记实时失败', async () => {
-    const matrixClientService = (await import('@/services/matrix/MatrixClientService')).default
+    const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
     await createSync().setupEventListeners()
     const handler = vi.mocked(matrixClientService.on).mock.calls.find(([event]) => event === 'eventDecrypted')?.[1] as (
       payload: unknown

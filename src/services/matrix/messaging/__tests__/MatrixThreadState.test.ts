@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import type { MatrixClient, MatrixEvent, Room } from '../../sdk'
 import { matrixReceiptService } from '../MatrixReceiptService'
 import { MatrixThreadState } from '../MatrixThreadState'

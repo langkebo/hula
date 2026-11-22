@@ -28,7 +28,7 @@ import { PREFIX_UNSTABLE } from './paths/prefixes'
 export type ProbeOutcome = 'route-present' | 'route-missing' | 'inconclusive'
 
 /** 探测上下文：少数端点需要 room 或当前用户 */
-export interface ProbeContext {
+interface ProbeContext {
   roomId?: string | undefined
   userId?: string | undefined
 }
@@ -67,7 +67,7 @@ interface ProbeSpec {
  * · dehydrated device status：`GET /_matrix/client/unstable/org.matrix.msc3814.v1/dehydrated_device/status`
  * · sticky events：`GET /_matrix/client/unstable/org.matrix.msc4354/rooms/{room_id}/sticky_events`
  */
-export const PROBE_SPECS: Partial<Record<TjgCapability, ProbeSpec>> = {
+const PROBE_SPECS: Partial<Record<TjgCapability, ProbeSpec>> = {
   'mutual-rooms': {
     path: `${PREFIX_UNSTABLE}/uk.half-shot.msc2666/user/mutual_rooms`,
     requires: ['userId'],

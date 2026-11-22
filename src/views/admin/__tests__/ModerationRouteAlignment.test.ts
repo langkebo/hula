@@ -21,7 +21,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 
 // 避免 matrix-js-sdk 重型转换（~6.7s）导致 5s 默认超时
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
+  matrixEventService: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
 }))
 
 // AdminFacadeService 导入 16+ 子服务，触发重型依赖链导致超时

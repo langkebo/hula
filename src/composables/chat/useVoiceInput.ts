@@ -1,7 +1,7 @@
 import { readFile } from '@tauri-apps/plugin-fs'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { getAudioDuration } from '@/services/matrix/media/mediaMetadata'
 
 type VoiceUploadResult = Awaited<ReturnType<typeof matrixVoiceService.uploadVoice>>

@@ -20,7 +20,7 @@ const keys = new Map<string, Uint8Array<ArrayBuffer>>()
 /**
  * SSSS 可用密钥集：键为密钥 ID，值由 SDK 定义（本层只消费键名）。
  */
-export interface SecretStorageKeyMap {
+interface SecretStorageKeyMap {
   [keyId: string]: unknown
 }
 

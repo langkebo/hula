@@ -12,7 +12,7 @@ const logger = createLogger('ExternalUrl')
 const WEB_SCHEME_PATTERN = /^(https?:\/\/|mailto:)/i
 const SETTINGS_SCHEME_PATTERN = /^(x-apple\.systempreferences:|ms-settings:)/i
 
-export const isAllowedExternalUrl = (url: string) => WEB_SCHEME_PATTERN.test(url) || SETTINGS_SCHEME_PATTERN.test(url)
+const isAllowedExternalUrl = (url: string) => WEB_SCHEME_PATTERN.test(url) || SETTINGS_SCHEME_PATTERN.test(url)
 
 /**
  * 打开外部链接。

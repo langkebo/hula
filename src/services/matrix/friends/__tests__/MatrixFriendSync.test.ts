@@ -31,7 +31,7 @@ vi.mock('@/services/matrix/sdk', () => ({
 }))
 
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: vi.fn(), on: vi.fn(), off: vi.fn() }
+  matrixClientService: { getClient: vi.fn(), on: vi.fn(), off: vi.fn() }
 }))
 
 vi.mock('../../extensions/SynapseFriendExtensionService', () => ({
@@ -46,7 +46,7 @@ vi.mock('@/services/i18n', () => ({
 
 import { FriendEvent } from '@/services/matrix/sdk'
 import { synapseFriendExtensionService } from '../../extensions/SynapseFriendExtensionService'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { MatrixFriendSync } from '../MatrixFriendSync'
 
 type Handler = (...args: unknown[]) => void

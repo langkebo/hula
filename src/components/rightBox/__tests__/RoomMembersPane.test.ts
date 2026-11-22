@@ -91,7 +91,7 @@ vi.mock('@/stores/domains/chat/group', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: { getServerDomain: getServerDomainMock }
+  matrixClientService: { getServerDomain: getServerDomainMock }
 }))
 
 vi.mock('@/utils/AvatarUtils', () => ({

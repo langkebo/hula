@@ -8,7 +8,7 @@ import type { ContextMenuItem, MenuContent, ReactionEmoji } from '@/composables/
 import { useViewport } from '@/composables/common/useViewport'
 import { useIsMobile } from '@/composables/usePlatform'
 
-export type ContextMenuControllerProps = {
+type ContextMenuControllerProps = {
   content?: MenuContent
   menu?: ContextMenuItem[] | undefined
   emoji: ReactionEmoji[]

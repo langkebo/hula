@@ -1,6 +1,6 @@
 import { GEOLOCATION_MAX_AGE_MS, GEOLOCATION_TIMEOUT_MS } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import type { EventType, IContent, MatrixEvent } from '../sdk'
 import { ContentHelpers, LocationAssetType } from '../sdk'
 

@@ -7,7 +7,7 @@
 
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('MatrixRendezvousService')
 

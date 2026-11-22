@@ -8,7 +8,7 @@ const { startTypingMock, stopTypingMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: {
+  matrixClientService: {
     getClient: () => ({
       getTypingManager: () => ({ startTyping: startTypingMock, stopTyping: stopTypingMock })
     })

@@ -7,10 +7,8 @@ import type { NotificationTypeEnum, OnlineEnum, RoomTypeEnum, SessionOperateEnum
 
 /** 是否全员展示的会话 0否 1是 */
 export enum IsAllUserEnum {
-  /** 0否 */
-  Not,
   /** 1是 */
-  Yes
+  Yes = 1
 }
 
 /** 会话列表项 */

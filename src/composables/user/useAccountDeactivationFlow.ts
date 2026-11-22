@@ -3,9 +3,9 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AccountDeactivationFlow')
 
-export type AccountDeactivationAuthData = Parameters<typeof matrixAccountService.deactivateAccount>[0]
+type AccountDeactivationAuthData = Parameters<typeof matrixAccountService.deactivateAccount>[0]
 
-export type AccountDeactivationFailureCode = 'password_invalid' | 'failed'
+type AccountDeactivationFailureCode = 'password_invalid' | 'failed'
 
 /** 注销失败原因：供桌面/移动两端映射到同一组 i18n 文案 */
 export class AccountDeactivationError extends Error {

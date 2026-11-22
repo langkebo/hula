@@ -9,7 +9,7 @@ import {
 import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { getEditedContent, getReplyToEventId, getThreadRootId, isEdited } from './relationEventHelpers'
 import { createRelationQueries } from './relationQueries'
 import type {

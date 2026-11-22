@@ -12,7 +12,7 @@ const logger = createLogger('LocalStorageUsage')
  * 口径：`(key.length + value.length) * 2`（JS 字符串按 UTF-16 存储，2 字节/码元）。
  * 这是**近似值**，不含浏览器自身开销，但用于「哪些数据占了多少」排序足够。
  */
-export interface LocalStorageUsage {
+interface LocalStorageUsage {
   /** 全部键值对的近似字节数 */
   totalBytes: number
   /** 顶层前缀（`key.split(':')[0]`）→ 近似字节数，降序 */

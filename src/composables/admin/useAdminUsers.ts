@@ -5,7 +5,6 @@ import { type AdminUserAccountState, useAdminUserAccount } from './useAdminUserA
 import { type AdminUserGovernanceState, useAdminUserGovernance } from './useAdminUserGovernance'
 
 export type { UserDevice, UserInfo } from '@/services/matrix/admin/AdminTypes'
-export type { BatchCreateUserInput, ImpersonationSession } from './useAdminUserGovernance'
 
 export interface UserSession {
   deviceId: string

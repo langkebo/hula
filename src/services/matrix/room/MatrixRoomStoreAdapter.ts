@@ -14,7 +14,7 @@ interface SlidingSyncUnreadCounts {
  * 滑动同步时间线原始事件（SDK 事件对象的 JSON 视图）。
  * 后端可能追加扩展字段，故保留索引签名。
  */
-export interface SlidingSyncRawEvent {
+interface SlidingSyncRawEvent {
   event_id?: string
   type?: string
   sender?: string

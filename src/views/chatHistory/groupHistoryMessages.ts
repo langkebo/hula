@@ -1,7 +1,7 @@
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 
-export interface HistoryMessageGroup {
+interface HistoryMessageGroup {
   messages: MessageType[]
   timestamp: number
 }

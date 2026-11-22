@@ -9,7 +9,7 @@ import {
   makeUserMediaList,
   purgeCacheResultWithoutDeleted
 } from '@/services/matrix/admin/__tests__/fixtures/media'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { AdminMediaService } from '../MediaService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'

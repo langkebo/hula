@@ -17,7 +17,7 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
 
 import { info, warn } from '@tauri-apps/plugin-log'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 
 describe('MatrixReceiptService', () => {
   let mockReceiptManager: {

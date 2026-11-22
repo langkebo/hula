@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { SpaceTreeNode } from '@/components/space/SpaceTree.vue'
 
-export interface SpaceTreeProps {
+interface SpaceTreeProps {
   spaces: SpaceTreeNode[]
   selectedSpaceId?: string
   collapsedIds?: string[]
@@ -10,7 +10,7 @@ export interface SpaceTreeProps {
 }
 
 /** 与组件 defineEmits 声明一致的冒泡函数（三个事件的参数均为单个字符串 ID） */
-export interface SpaceTreeEmit {
+interface SpaceTreeEmit {
   (event: 'select', id: string): void
   (event: 'select-room', id: string): void
   (event: 'toggle', id: string): void
@@ -97,5 +97,3 @@ export const useSpaceTree = (props: SpaceTreeProps, emit: SpaceTreeEmit) => {
     handleRoomKeydown
   }
 }
-
-export type SpaceTreeState = ReturnType<typeof useSpaceTree>

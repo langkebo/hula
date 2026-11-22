@@ -10,7 +10,7 @@ vi.mock('vant/es/popover/style', () => ({}))
 
 // 避免 matrix-js-sdk 重型转换（~6.7s）导致超时
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
+  matrixEventService: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
 }))
 
 // 截断所有 matrix-js-sdk 直接导入路径（MobileChatMain 传递依赖）

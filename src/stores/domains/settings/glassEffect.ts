@@ -15,22 +15,22 @@ import { StoresEnum } from '@/enums'
 import { detectPerformanceTier, type PerformanceTier } from '@/utils/performanceTier'
 
 /** 玻璃开关策略：auto 跟随档位、on 强制开启、off 完全关闭 */
-export type GlassMode = 'auto' | 'on' | 'off'
+type GlassMode = 'auto' | 'on' | 'off'
 
 /** 强度映射到的模糊 token（组件只消费 token，不自行拼 blur(px)） */
-export type GlassBlurToken = '--tjg-glass-blur-soft' | '--tjg-glass-blur-medium' | '--tjg-glass-blur-strong'
+type GlassBlurToken = '--tjg-glass-blur-soft' | '--tjg-glass-blur-medium' | '--tjg-glass-blur-strong'
 
 /** 默认开关策略 */
-export const DEFAULT_GLASS_MODE: GlassMode = 'auto'
+const DEFAULT_GLASS_MODE: GlassMode = 'auto'
 
 /** 默认强度 */
 export const DEFAULT_GLASS_INTENSITY = 0.8
 
 /** 强度低于该值使用 soft 模糊 */
-export const GLASS_INTENSITY_SOFT_MAX = 0.5
+const GLASS_INTENSITY_SOFT_MAX = 0.5
 
 /** 强度低于该值使用 medium 模糊，其余使用 strong */
-export const GLASS_INTENSITY_MEDIUM_MAX = 0.85
+const GLASS_INTENSITY_MEDIUM_MAX = 0.85
 
 /**
  * 把 0-1 的强度映射到模糊 token。

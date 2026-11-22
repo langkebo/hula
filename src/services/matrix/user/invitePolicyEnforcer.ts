@@ -1,5 +1,5 @@
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { matrixRoomMembershipService } from '../room/MembershipService'
 import type { ContactState } from './contactStateResolver'
 import type { InvitePolicy } from './invitePolicy'

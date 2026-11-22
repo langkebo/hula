@@ -10,7 +10,7 @@ import {
 export type CleanupKind = 'all' | 'rooms' | 'tokens'
 
 /** 最近一次清理的结果（按动作区分响应形状）。 */
-export type CleanupOutcome =
+type CleanupOutcome =
   | { kind: 'all'; result: CleanupAllResponse }
   | { kind: 'rooms'; result: CleanupRoomsResponse }
   | { kind: 'tokens'; result: CleanupTokensResponse }

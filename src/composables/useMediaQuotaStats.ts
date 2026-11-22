@@ -13,7 +13,7 @@ const logger = createLogger('MediaQuota')
  * - `unsupported`：服务端没有配额能力，属于能力不存在，应静默隐藏。
  * - `unavailable`：能力存在但本次取不到，应提示「暂不可用」并提供重试。
  */
-export type MediaQuotaState = 'loading' | 'ready' | 'unsupported' | 'unavailable'
+type MediaQuotaState = 'loading' | 'ready' | 'unsupported' | 'unavailable'
 
 /**
  * 媒体配额统一数据源，供桌面侧栏与移动端文件页共用，避免两处状态机各自漂移。

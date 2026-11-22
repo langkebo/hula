@@ -7,14 +7,6 @@ import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import type { SessionDetail, SessionDetailQuery, SessionInfo } from './sessionRoomMapper'
 import { buildSessionFromRoom, getUnreadCount, isSystemContainerRoom } from './sessionRoomMapper'
 
-export type {
-  RoomNotificationSettings,
-  SessionDetail,
-  SessionDetailQuery,
-  SessionInfo,
-  SessionTagContent
-} from './sessionRoomMapper'
-
 const logger = createLogger('MatrixSessionService')
 
 /**

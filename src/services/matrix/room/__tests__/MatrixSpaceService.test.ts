@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { type MatrixClient, Visibility } from '../../sdk'
 import { matrixSpaceService } from '../MatrixSpaceService'
 import { matrixRoomActionFacade, matrixRoomMemberFacade } from '../RoomFacade'

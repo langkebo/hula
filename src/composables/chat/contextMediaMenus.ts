@@ -14,7 +14,7 @@ import { isMac } from '@/utils/PlatformConstants'
 const logger = createLogger('ChatContextMenus')
 
 /** 媒体菜单列表依赖（视频 / 文件 / 图片） */
-export type MediaMenuDeps = {
+type MediaMenuDeps = {
   t: ReturnType<typeof useI18n>['t']
   showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
   /** 平台事实（`usePlatform.isDesktop()` 取一次）：桌面专属项在构建期就不输出，移动端不渲染 */

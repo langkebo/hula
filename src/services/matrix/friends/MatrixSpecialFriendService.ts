@@ -1,7 +1,7 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { ClientEvent } from '../sdk'
 
 const logger = createLogger('MatrixSpecialFriendService')

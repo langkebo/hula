@@ -50,10 +50,7 @@ import type {
 
 export type {
   ConnectionState,
-  ConnectionStateChangeCallback,
-  MatrixClientConfig,
-  SyncErrorLike,
-  SyncStateMappingResult
+  MatrixClientConfig
 } from './matrixConnectionTypes'
 
 const logger = createLogger('MatrixConnection')

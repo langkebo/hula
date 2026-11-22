@@ -6,10 +6,10 @@ import { openSecretChatUnlock } from './useSecretChatGate'
 import { useSecretChatSessions } from './useSecretChatSessions'
 
 /** 移出私密的三种结果：成功 / 用户取消 / 登记表写入失败。 */
-export type SecretChatUnmarkOutcome = 'unmarked' | 'cancelled' | 'failed'
+type SecretChatUnmarkOutcome = 'unmarked' | 'cancelled' | 'failed'
 
 /** 私密会话页面的平台差异注入项（列表与加密状态见 `useSecretChatSessions`）。 */
-export interface SecretChatPageOptions {
+interface SecretChatPageOptions {
   /** 解锁成功后的回跳目标（桌面 `/secretChat`，移动端 `/mobile/secretChat`）。 */
   returnTarget: RouteLocationRaw
   /** 进入私密会话（两端路由名不同；返回 router.push 的 Promise 亦可）。 */

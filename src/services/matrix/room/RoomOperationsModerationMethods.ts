@@ -2,7 +2,7 @@ import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import type { IContent, IPowerLevelsContent, MatrixClient } from '@/services/matrix/sdk'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { RoomOperationsStateMethods } from './RoomOperationsStateMethods'
 
 const logger = createLogger('RoomOperations')

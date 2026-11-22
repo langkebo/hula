@@ -455,7 +455,7 @@ describe('useSessionListState', () => {
   })
 
   it('detailId 缺失时用房间成员兜底解析 counterpart，仍能合并同一联系人的重复 DM（防御纵深）', async () => {
-    const matrixClientService = (await import('@/services/matrix/MatrixClientService')).default
+    const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
     const getRoomSpy = vi.spyOn(matrixClientService, 'getRoom').mockReturnValue({
       getMembers: () => [
         { userId: '@me:matrix.test', membership: 'join' },
@@ -540,7 +540,7 @@ describe('useSessionListState', () => {
   })
 
   it('焚毁标记按「每用户」配置判定，不读房间级 m.burn_after_read state（D17）', async () => {
-    const matrixClientService = (await import('@/services/matrix/MatrixClientService')).default
+    const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
     const getRoomSpy = vi.spyOn(matrixClientService, 'getRoom').mockReturnValue({
       // 旧实现依赖该房间级 state，服务端按用户存时它恒为空
       currentState: { getStateEvents: () => [{ type: 'm.burn_after_read' }] }

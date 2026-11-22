@@ -1,6 +1,6 @@
 import type { ReadReceiptsManager } from '@/types/matrix-js-sdk'
 import { NotificationCountType } from '@/types/matrix-js-sdk'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 /**
  * 单条已读回执的展示模型：谁（userId）读到了哪条事件（eventId）、何时读的（timestamp），

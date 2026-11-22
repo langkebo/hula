@@ -42,7 +42,7 @@ export type CasUserAttribute = Awaited<ReturnType<CasManager['getUserAttributes'
 export type CasSetAttributeRequest = Parameters<CasManager['setUserAttribute']>[1]
 
 /** 写入单个用户属性的响应。 */
-export type CasSetAttributeResponse = Awaited<ReturnType<CasManager['setUserAttribute']>>
+type CasSetAttributeResponse = Awaited<ReturnType<CasManager['setUserAttribute']>>
 
 /** CAS 服务与用户属性管理。 */
 export class AdminCasService extends BaseMatrixService {

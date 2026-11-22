@@ -9,7 +9,7 @@ const STORAGE_KEYS = {
   permissions: 'tjg-integrations-permissions'
 } as const
 
-export interface IntegrationCatalogItem {
+interface IntegrationCatalogItem {
   id: string
   name: string
   description: string
@@ -17,11 +17,11 @@ export interface IntegrationCatalogItem {
   icon?: string | undefined
 }
 
-export interface Integration extends IntegrationCatalogItem {
+interface Integration extends IntegrationCatalogItem {
   enabled: boolean
 }
 
-export interface IntegrationPermissions {
+interface IntegrationPermissions {
   userInfo: boolean
   roomList: boolean
   sendMessage: boolean

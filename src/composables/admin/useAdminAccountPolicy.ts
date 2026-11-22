@@ -13,7 +13,7 @@ import {
 } from '@/services/matrix/admin'
 
 /** 新建密码认证提供方时页面收集的草稿字段。 */
-export interface PasswordAuthProviderDraft {
+interface PasswordAuthProviderDraft {
   providerName: string
   providerType: string
   config: Record<string, unknown>

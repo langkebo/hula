@@ -38,7 +38,6 @@ export interface MobileSettingsSearchEntry {
 }
 
 const DEVICES_PATH = '/mobile/mobileMy/devices'
-const SETTINGS_PATH = '/mobile/mobileMy/settings'
 
 export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
   // ── 账户
@@ -229,6 +228,3 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     keywords: ['homeserver', '服务器', '地址', 'server', '域名']
   }
 ]
-
-/** 兜底：设置页本身（用于「搜不到但想回全部设置」） */
-export const MOBILE_SETTINGS_INDEX_PATH = SETTINGS_PATH

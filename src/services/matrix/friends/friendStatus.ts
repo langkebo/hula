@@ -1,7 +1,7 @@
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import type { FriendStatus } from './friendUtils'
 import { matrixFriendSync } from './MatrixFriendSync'
 

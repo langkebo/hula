@@ -11,7 +11,7 @@ import {
 import type { Room } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { resolveMxcToHttp } from '../media/mxcUrl'
 import { MatrixThreadApi } from './MatrixThreadApi'
 import { MatrixThreadState } from './MatrixThreadState'

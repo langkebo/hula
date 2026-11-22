@@ -2,7 +2,7 @@ import { type Ref, ref } from 'vue'
 import { adminService, type SystemNotificationInfo } from '@/services/matrix/admin'
 
 /** 创建 / 编辑系统通知时页面收集的草稿字段。 */
-export interface SystemNotificationDraft {
+interface SystemNotificationDraft {
   content: string
   type: string
   targetUsers: string[]

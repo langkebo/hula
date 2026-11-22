@@ -1,6 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixMediaService } from '../../media/MatrixMediaService'
 import { matrixEmojiService } from '../MatrixEmojiService'
 

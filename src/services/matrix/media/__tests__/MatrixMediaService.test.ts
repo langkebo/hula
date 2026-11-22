@@ -3,7 +3,7 @@ import type { MediaManager } from 'matrix-js-sdk/media'
 import type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixMediaService } from '../MatrixMediaService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({

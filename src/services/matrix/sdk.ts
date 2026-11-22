@@ -28,11 +28,9 @@ export type {
   MatrixClient,
   MatrixEvent,
   MBeaconEventContent,
-  MSC3575Filter,
   PushRuleAction,
   Room,
   RoomMember,
-  RoomState,
   SlidingSync,
   User
 } from 'matrix-js-sdk'
@@ -65,23 +63,16 @@ export type {
   AdminEventContext,
   AdminEventContextEvent,
   AdminFederationCache,
-  AdminFederationCacheEntry,
   AdminInfoResponse,
   AdminManager,
   AdminModuleInfo,
   AdminModulePage,
   AdminPushManager,
-  AdminRoomEventSearchPage,
   AdminRoomForwardExtremities,
   AdminRoomListings,
   AdminRoomSearchItem,
-  AdminRoomSearchPage,
   AdminServerConfig,
   AdminServerManager,
-  ApplicationServiceInfo,
-  ApplicationServicePage,
-  AuditEvent,
-  AuditEventPage,
   DynamicConfig,
   FederationDestination as SdkFederationDestination,
   GlobalMediaQuarantineChange,
@@ -93,7 +84,6 @@ export type {
   MediaQuarantineChangesResponse,
   MediaUnprotectionResponse,
   PendingFederationList,
-  PendingFederationServer,
   PolicyCheckRequest,
   PolicyCheckResponse,
   PolicyServerStatus,
@@ -107,16 +97,12 @@ export type {
   RoomStatsOverview,
   SamlMapping,
   SamlMappingPage,
-  ServerInfo,
   SpaceInfo,
-  SpaceRoomsResponse,
   SpaceStats,
-  SpaceUsersResponse,
   UserMediaList,
   UserMediaQuarantineResponse,
   UserPusher,
   UserSession,
-  UserSessionsResponse,
   UserStatsListResponse,
   UserStatsResponse,
   WhoisResponse
@@ -131,15 +117,7 @@ export { SDK_CONTRACT_ROUTE_TABLES } from 'matrix-js-sdk/contract'
 export { MatrixEventEvent, UserEvent } from 'matrix-js-sdk/core'
 export type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
 export { CrossSigningKey, CryptoEvent, decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
-export type {
-  ClaimDehydratedDeviceResponse,
-  CreateDehydratedDeviceRequest,
-  CreateDehydratedDeviceResponse,
-  DehydratedDeviceData,
-  DeviceInfo,
-  GetDevicesResponse,
-  UpdateDehydratedDeviceRequest
-} from 'matrix-js-sdk/dehydrated-device'
+export type { DehydratedDeviceData } from 'matrix-js-sdk/dehydrated-device'
 export type { DeviceKeysManager } from 'matrix-js-sdk/device-keys'
 export type {
   CreateDmOptions,
@@ -153,7 +131,6 @@ export type { Friend, FriendManager, FriendRequest } from 'matrix-js-sdk/friend'
 export { FriendEvent } from 'matrix-js-sdk/friend'
 export { VendorPrefix } from 'matrix-js-sdk/http-api'
 export type {
-  BackupVersion as KeyBackupVersion,
   BackupVersionInfo as KeyBackupVersionInfo,
   BatchRecoverResult as KeyBackupBatchRecoverResult,
   ExportResult as KeyBackupExportResult,
@@ -213,10 +190,6 @@ export type InviteBlocklistManager = ReturnType<MatrixClient['getInviteBlocklist
 export type AccountStatusManager = ReturnType<MatrixClient['getAccountStatusManager']>
 export type AccountStatusBatchResponse = Awaited<ReturnType<AccountStatusManager['getAccountStatuses']>>
 export type AccountStatusEntry = NonNullable<AccountStatusBatchResponse['account_statuses']>[string]
-export type AccountStatusFailure = NonNullable<AccountStatusBatchResponse['failures']>[string]
-
-// MSC2666 共同房间：`getRoomManager().getMutualRooms()` 未单独导出响应类型。
-export type MutualRoomsResponse = Awaited<ReturnType<ReturnType<MatrixClient['getRoomManager']>['getMutualRooms']>>
 
 // SAML IdP 元数据：SDK 的 `./saml` 子路径未转发到根入口，从客户端访问器派生。
 export type SamlMetadata = Awaited<ReturnType<ReturnType<MatrixClient['getSamlAuthManager']>['getIdpMetadata']>>

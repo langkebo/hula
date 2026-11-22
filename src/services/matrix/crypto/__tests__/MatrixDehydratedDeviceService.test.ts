@@ -6,7 +6,7 @@ import {
   makeDehydratedDeviceInfo,
   makeDehydratedDevicesResponse
 } from '@/services/matrix/crypto/__tests__/fixtures/dehydratedDevice'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixDehydratedDeviceService } from '../MatrixDehydratedDeviceService'
 
 const mockManager = {

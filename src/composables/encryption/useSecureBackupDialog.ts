@@ -12,7 +12,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('SecureBackupDialog')
 
 /** 备份对话框内的三个视图：状态、创建、恢复 */
-export type SecureBackupTabName = 'status' | 'create' | 'restore'
+type SecureBackupTabName = 'status' | 'create' | 'restore'
 
 interface UseSecureBackupDialogOptions {
   /** 对话框是否可见（由宿主 props 提供） */

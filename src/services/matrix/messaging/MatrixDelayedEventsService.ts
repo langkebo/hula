@@ -240,4 +240,3 @@ function toDelayedMessageInfo(event: RawDelayedEventInfo): DelayedMessageInfo {
 }
 
 export const matrixDelayedEventsService = new MatrixDelayedEventsService()
-export default matrixDelayedEventsService

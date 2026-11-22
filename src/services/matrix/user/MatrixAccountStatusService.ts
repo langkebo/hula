@@ -12,7 +12,7 @@ import type { AccountStatusEntry, AccountStatusManager } from '../sdk'
 
 const logger = createLogger('MatrixAccountStatusService')
 
-export type MatrixAccountStatusMap = Record<string, AccountStatusEntry>
+type MatrixAccountStatusMap = Record<string, AccountStatusEntry>
 
 export class MatrixAccountStatusService extends BaseMatrixService {
   /**

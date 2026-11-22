@@ -2,7 +2,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixAccountService } from '../MatrixAccountService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'

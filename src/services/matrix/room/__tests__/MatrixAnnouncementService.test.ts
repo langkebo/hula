@@ -1,6 +1,6 @@
 import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { makeSendTextMessageResponse } from '../../messaging/__tests__/fixtures/sendEvent'
 
 vi.mock('@tauri-apps/plugin-log', () => ({

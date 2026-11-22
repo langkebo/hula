@@ -43,9 +43,6 @@ export type CreatePasswordAuthProviderRequest = Parameters<AdminConfigManager['c
 /** 限流状态响应。 */
 export type RateLimitStatusResponse = Awaited<ReturnType<AdminServerManager['getRateLimitStatus']>>
 
-/** 限流指标子集。 */
-export type RateLimitMetrics = RateLimitStatusResponse['metrics']
-
 /** 策略检查动作枚举。 */
 export type PolicyCheckAction = PolicyCheckRequest['action']
 

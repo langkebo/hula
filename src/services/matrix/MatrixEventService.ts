@@ -479,4 +479,3 @@ class MatrixEventService extends BaseMatrixService {
 }
 
 export const matrixEventService = new MatrixEventService()
-export default matrixEventService

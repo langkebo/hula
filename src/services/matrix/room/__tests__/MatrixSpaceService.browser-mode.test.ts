@@ -13,7 +13,7 @@
  */
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixSpaceService } from '../MatrixSpaceService'
 
 const asMatrixClient = <T extends object>(client: T) => client as unknown as MatrixClient

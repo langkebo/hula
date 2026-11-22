@@ -1,5 +1,5 @@
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { matrixMessageService } from '../messaging/MatrixMessageService'
 import { matrixRoomQueryService } from './QueryService'
 

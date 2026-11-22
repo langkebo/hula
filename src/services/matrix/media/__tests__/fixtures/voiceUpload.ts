@@ -1,5 +1,5 @@
 import type { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import type matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
+import type { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 
 /**
  * 语音上传域夹具。

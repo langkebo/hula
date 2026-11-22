@@ -2,7 +2,7 @@ import { ConditionKind, PushRuleActionName, PushRuleKind, TweakName } from 'matr
 import type { IContent } from '@/services/matrix/sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { safeDelete } from '../MatrixRequestHelper'
 import { PREFIX_UNSTABLE } from '../paths/prefixes'
 import { RoomOperationsModerationMethods } from './RoomOperationsModerationMethods'

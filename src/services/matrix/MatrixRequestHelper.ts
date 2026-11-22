@@ -18,7 +18,7 @@ import { getMatrixClient } from './matrixClientAccessor'
  * 字段名随端点与后端版本变化（`errcode` / `error` / `retry_after_ms` 等），
  * 无法从 SDK 契约静态派生，故以本具名类型显式承载「真·动态包」语义。
  */
-export interface MatrixJsonObject {
+interface MatrixJsonObject {
   [key: string]: unknown
 }
 

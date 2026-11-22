@@ -4,8 +4,6 @@ import type { MessageMutationsDeps } from './messageMutationsDeps'
 import { createMessageRecallMutations } from './messageRecallMutations'
 import { createMessageSessionReset } from './messageSessionReset'
 
-export type { MessageMutationsDeps }
-
 /**
  * 消息写操作聚合入口。
  *

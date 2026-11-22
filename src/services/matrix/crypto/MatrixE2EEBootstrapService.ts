@@ -1,7 +1,7 @@
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import type { MatrixAuthData, VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import type { CryptoHealthCallbacks, CryptoHealthStatus } from './CryptoHealthMonitor'
 import { CryptoHealthMonitor } from './CryptoHealthMonitor'
 import type {

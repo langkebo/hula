@@ -30,13 +30,13 @@ export type RustCryptoInitClient = RustCryptoCapableClient & {
   initRustCrypto: NonNullable<RustCryptoCapableClient['initRustCrypto']>
 }
 
-export interface PrepareRustCryptoStoreParams {
+interface PrepareRustCryptoStoreParams {
   userId: string
   deviceId: string
   useIndexedDB: boolean
 }
 
-export interface RustCryptoStorePreparation {
+interface RustCryptoStorePreparation {
   /** 系统 keychain 取到的 32 字节密钥；null 表示本次必须 fail-closed（由调用方处理） */
   storageKey: Uint8Array | null
   /** 是否以加密 store 初始化，用于写入调试状态 */
@@ -91,14 +91,14 @@ export async function prepareRustCryptoStore({
   return { storageKey, storeEncrypted, identity }
 }
 
-export interface InitRustCryptoParams {
+interface InitRustCryptoParams {
   userId: string
   useIndexedDB: boolean
   /** 调用方已确认非 null（无密钥在准备阶段就 fail-closed） */
   storageKey: Uint8Array | null
 }
 
-export type RustCryptoInitOutcome = { ok: true; retried: boolean } | { ok: false; error: string; retried: boolean }
+type RustCryptoInitOutcome = { ok: true; retried: boolean } | { ok: false; error: string; retried: boolean }
 
 /**
  * 调用 `initRustCrypto`；失败且 IndexedDB 可用时，清理旧 store 后重试一次。

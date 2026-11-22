@@ -18,9 +18,9 @@ const logger = createLogger('ExtensionHealthSink')
 export type ExtensionHealthStatus = 'healthy' | 'degraded' | 'unknown'
 
 /** 扩展名 → 健康状态 */
-export type ExtensionHealthMap = Record<string, ExtensionHealthStatus>
+type ExtensionHealthMap = Record<string, ExtensionHealthStatus>
 
-export type ExtensionHealthReporter = (statuses: ExtensionHealthMap) => void
+type ExtensionHealthReporter = (statuses: ExtensionHealthMap) => void
 
 let reporter: ExtensionHealthReporter | null = null
 

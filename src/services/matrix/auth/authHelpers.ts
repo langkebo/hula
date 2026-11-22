@@ -47,7 +47,7 @@ export interface PasswordResetResponse {
 /**
  * Matrix 认证请求体：键随登录 / 注册流程（m.login.*）变化，属真·动态包。
  */
-export interface MatrixAuthPayload {
+interface MatrixAuthPayload {
   type?: string | undefined
   session?: string | undefined
   token?: string | undefined

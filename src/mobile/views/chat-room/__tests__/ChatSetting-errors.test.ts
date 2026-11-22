@@ -29,7 +29,7 @@ vi.mock('@/stores/domains/chat/announcement', () => ({
 
 // 避免 matrix-js-sdk 重型转换导致超时
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
+  matrixEventService: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
 }))
 
 vi.mock('matrix-js-sdk', () => ({

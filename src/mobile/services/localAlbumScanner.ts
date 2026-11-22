@@ -5,7 +5,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('LocalAlbumScanner')
 
 /** 扫描出的单个媒体文件（由调用方写入自己的 store） */
-export interface ScannedAlbumFile {
+interface ScannedAlbumFile {
   id: string
   roomId: string
   fileName: string
@@ -15,7 +15,7 @@ export interface ScannedAlbumFile {
   mimeType: string
 }
 
-export interface LocalAlbumScanDeps {
+interface LocalAlbumScanDeps {
   /** 当前用户房间目录（相对 AppData），由 user store 提供 */
   getUserRoomDir: () => Promise<string>
   /** 写入目标 store；扫描器不持有 store，避免移动端实现反向依赖状态层 */

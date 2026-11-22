@@ -17,7 +17,7 @@
  */
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({

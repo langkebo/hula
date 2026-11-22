@@ -2,7 +2,7 @@ import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SlidingSync } from '@/types/matrix-js-sdk'
 import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import matrixSlidingSyncService from '../MatrixSlidingSyncService'
 
 const { loggerSpy } = vi.hoisted(() => ({

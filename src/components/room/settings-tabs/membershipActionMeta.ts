@@ -1,6 +1,6 @@
 /** 成员关系变更动作的展示元数据（成员变更历史与最近成员变更共用）。 */
 
-export type MembershipActionTone = 'positive' | 'negative' | 'warning' | 'neutral' | 'info'
+type MembershipActionTone = 'positive' | 'negative' | 'warning' | 'neutral' | 'info'
 
 const ACTION_LABEL_KEYS: Record<string, string> = {
   join: 'room.settings_drawer.membership_action_join',

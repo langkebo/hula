@@ -1,10 +1,10 @@
 /** 媒体设备（麦克风/相机）启动失败的分类，用于把浏览器错误名转成可读引导 */
-export type MediaErrorKind = 'permission_denied' | 'device_not_found' | 'device_busy' | 'unknown'
+type MediaErrorKind = 'permission_denied' | 'device_not_found' | 'device_busy' | 'unknown'
 
 /** 错误文案面向的设备目标：音频通话只涉及麦克风，视频通话两者都涉及 */
 export type MediaErrorTarget = 'mic' | 'camera' | 'av'
 
-export interface MediaErrorText {
+interface MediaErrorText {
   messageKey: string
   guideKey?: string
 }

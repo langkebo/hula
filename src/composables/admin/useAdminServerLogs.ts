@@ -8,7 +8,7 @@ import {
 } from '@/services/matrix/admin'
 
 /** 单项面板的获取状态，供页面按卡片渲染失败态。 */
-export interface AdminServerPanelErrors {
+interface AdminServerPanelErrors {
   status: boolean
   health: boolean
   version: boolean

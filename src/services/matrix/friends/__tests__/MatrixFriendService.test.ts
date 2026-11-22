@@ -3,7 +3,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { makeFriendClientStub } from './fixtures/friendManager'
 
 vi.mock('@tauri-apps/plugin-log', () => ({

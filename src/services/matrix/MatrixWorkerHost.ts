@@ -355,4 +355,3 @@ export class MatrixWorkerHost {
 }
 
 export const matrixWorkerHost = new MatrixWorkerHost()
-export default matrixWorkerHost

@@ -22,7 +22,7 @@ const mockManager = {
   extendBurnTime: vi.fn()
 }
 
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixBurnAfterReadService } from '../MatrixBurnAfterReadService'
 import { makeBurnSettingsResponse } from './fixtures/burnSettings'
 

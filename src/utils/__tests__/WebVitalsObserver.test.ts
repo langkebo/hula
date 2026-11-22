@@ -18,7 +18,7 @@ vi.mock('web-vitals', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: {
+  matrixClientService: {
     getManagerStatsList: vi.fn().mockReturnValue([])
   }
 }))

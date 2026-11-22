@@ -353,4 +353,3 @@ class ChunkUploadService {
 }
 
 export const chunkUploadService = new ChunkUploadService()
-export default chunkUploadService

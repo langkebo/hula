@@ -2,7 +2,7 @@ import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { registerPrivacyPreferenceHooks } from '@/services/matrix/privacyPreferences'
 import { getLastSentPresence, recordSentPresence, resetSentPresence } from '@/utils/userStatus'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
 import { makePresenceList, makePresenceState } from './fixtures/presence'
 

@@ -35,7 +35,7 @@ interface CreateRoomInSpaceInput {
   suggested?: boolean
 }
 
-export interface CreateRoomInSpaceOutcome {
+interface CreateRoomInSpaceOutcome {
   /** 已创建的房间 ID；房间本身未创建成功时为 null */
   roomId: string | null
   /**

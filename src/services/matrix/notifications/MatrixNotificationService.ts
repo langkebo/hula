@@ -2,7 +2,7 @@ import type { IPusherRequest, IPushRule, MatrixClient, PushRuleAction, PushRuleK
 import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { pullConfigFromAccountData, pushConfigToAccountData } from './configAccountDataSync'
 import { DND_ACCOUNT_DATA_TYPE, normalizeDndWindow, pushDndToAccountData } from './dndAccountDataSync'
 import { DndSettingsStore } from './dndSettingsStore'

@@ -17,7 +17,7 @@ import { createLogger } from '@/utils/Logger'
  * 抽出来的原因：此前「我的」首屏与设置页各写了一份登出逻辑（一个走 useSessionActions、
  * 一个走 useLoginFlow），行为一致但路径分叉，改动容易只改一处。现在只有一个实现。
  */
-export interface MobileLogoutOptions {
+interface MobileLogoutOptions {
   /** 跳过二次确认（服务端已使当前会话失效的被动登出，如修改密码后退出全部设备） */
   skipConfirm?: boolean
   /** 远程 logout 失败时仍完成本地登出（当前令牌已被服务端吊销的场景） */

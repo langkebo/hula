@@ -1,7 +1,7 @@
 import { JoinRule, type Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoomSummary as SynapseRoomSummary } from '../../extensions/SynapseRoomSummaryService'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { MatrixRoomSummaryAggregateService } from '../SummaryService'
 import { makeServerRoomSummary } from './fixtures/roomSummary'
 

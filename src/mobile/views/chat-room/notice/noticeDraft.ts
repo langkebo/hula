@@ -5,7 +5,7 @@
 
 const DRAFT_KEY_PREFIX = 'tjg.mobile.notice.draft'
 
-export interface NoticeDraft {
+interface NoticeDraft {
   content: string
   top: boolean
 }

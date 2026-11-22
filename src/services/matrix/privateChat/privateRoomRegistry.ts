@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('PrivateRoomRegistry')

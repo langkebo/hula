@@ -3,13 +3,13 @@ import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useKeyExport } from './useKeyExport'
 
 /** 备份摘要：version 为空表示服务端未返回版本号 */
-export interface SecurityBackupInfo {
+interface SecurityBackupInfo {
   version: string | null
   count: number
 }
 
 /** 恢复密钥导出结果：失败原因由调用方翻译成本端文案 */
-export type RecoveryKeyExportResult = { ok: true } | { ok: false; reason: 'encryption-disabled' | 'empty' }
+type RecoveryKeyExportResult = { ok: true } | { ok: false; reason: 'encryption-disabled' | 'empty' }
 
 /**
  * 安全设置的共享状态与动作（桌面 Settings → 安全 / 移动 我的 → 安全）。

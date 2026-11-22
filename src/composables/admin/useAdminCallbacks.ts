@@ -8,7 +8,7 @@ import {
 } from '@/services/matrix/admin'
 
 /** 新建媒体回调时页面收集的草稿字段。 */
-export interface MediaCallbackDraft {
+interface MediaCallbackDraft {
   callbackName: string
   callbackType: string
   url: string
@@ -19,7 +19,7 @@ export interface MediaCallbackDraft {
 }
 
 /** 新建账户数据回调时页面收集的草稿字段（`config` 由页面完成 JSON 解析与校验）。 */
-export interface AccountDataCallbackDraft {
+interface AccountDataCallbackDraft {
   callbackName: string
   dataTypes: string
   config: Record<string, unknown>

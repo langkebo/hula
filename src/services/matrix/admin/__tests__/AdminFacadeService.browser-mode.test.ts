@@ -1,6 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { adminService } from '../'
 
 // C-1 反馈回路：验证 verifyServerSidePermission 浏览器模式修复

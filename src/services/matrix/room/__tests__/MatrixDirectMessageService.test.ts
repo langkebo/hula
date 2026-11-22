@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DirectMessageManager, MatrixClient, Room } from '@/services/matrix/sdk'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixDirectMessageService } from '../MatrixDirectMessageService'
 import { makeDirectRoomsOnServer, makeDmPartnerResponse } from './fixtures/directMessage'
 

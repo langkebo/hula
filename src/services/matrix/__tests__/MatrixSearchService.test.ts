@@ -1,8 +1,8 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { matrixSearchService } from '../MatrixSearchService'
-import matrixWorkerHost from '../MatrixWorkerHost'
+import { matrixWorkerHost } from '../MatrixWorkerHost'
 
 vi.spyOn(matrixClientService, 'getClient')
 
@@ -10,13 +10,13 @@ vi.spyOn(matrixClientService, 'getClient')
 // （主项目 node_modules 缺少 @babel/runtime/loglevel，本地 SDK 构建产物无法解析，
 //  参见 ChatSidebar.test.ts 同类说明）。getClient 以 vi.fn 提供给 spyOn/mockReturnValue。
 vi.mock('../MatrixClientService', () => ({
-  default: {
+  matrixClientService: {
     getClient: vi.fn()
   }
 }))
 
 vi.mock('../MatrixWorkerHost', () => ({
-  default: {
+  matrixWorkerHost: {
     isStarted: false,
     querySearchIndex: vi.fn()
   }

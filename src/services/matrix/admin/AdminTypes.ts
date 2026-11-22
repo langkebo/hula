@@ -281,13 +281,6 @@ export interface AdminLoginFailure {
   [key: string]: unknown
 }
 
-/** `GET /_synapse/admin/v1/login_failures` 的响应壳。 */
-export interface AdminLoginFailurePage {
-  failures: AdminLoginFailure[]
-  total?: number
-  next_token?: string
-}
-
 /**
  * 审计 / 安全事件的附加字段。
  *

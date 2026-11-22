@@ -13,7 +13,7 @@ import { PREFIX_V3 } from './paths/prefixes'
  * 具名类型用于替代散落的 Record 泛型，明确语义是「任意 JSON 对象请求体」，
  * 而非可随意扩散的全局动态包。
  */
-export interface MatrixRequestBody {
+interface MatrixRequestBody {
   [key: string]: unknown
 }
 

@@ -24,7 +24,7 @@ const logger = createLogger('CryptoKeySource')
 export const CRYPTO_KEY_SOURCE_STORAGE_KEY = 'tjg-crypto-key-source-v1'
 
 /** storageKey 的实际来源 */
-export type CryptoKeySource = 'secure' | 'local'
+type CryptoKeySource = 'secure' | 'local'
 
 /** 读取来源标记表；解析异常/损坏一律按「无记录」处理（不阻塞启动）。 */
 function readKeySourceMap(): Record<string, CryptoKeySource> {

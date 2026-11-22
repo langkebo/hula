@@ -1,7 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BackupInfo, KeyBackupManager } from '@/types/matrix-extensions'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixKeyBackupService } from '../MatrixKeyBackupService'
 
 describe('MatrixKeyBackupService', () => {

@@ -15,7 +15,7 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => logSpy
 }))
 
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import {
   type SasVerificationView,
   VerificationService,

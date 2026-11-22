@@ -220,7 +220,7 @@ export function normalizePerspective(raw: unknown): RoomEventPerspectiveStats | 
 export { readErrcode } from '@/utils/matrixErrcode'
 
 /** 后端媒体/事件条目的动态字段包（字段名随后端版本变化）。 */
-export interface UrlFieldRecord {
+interface UrlFieldRecord {
   [field: string]: unknown
 }
 

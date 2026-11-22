@@ -24,7 +24,7 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: {
+  matrixClientService: {
     getUserId: getUserIdMock
   }
 }))

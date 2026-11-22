@@ -18,7 +18,7 @@ vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
 // 账号维度：缓存 key 必须随当前账号变化
 const account = vi.hoisted(() => ({ userId: '@me:server' }))
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: { getUserId: () => account.userId }
+  matrixClientService: { getUserId: () => account.userId }
 }))
 
 const mockGetUserDevices = vi.mocked(matrixDeviceService.getUserDevices)

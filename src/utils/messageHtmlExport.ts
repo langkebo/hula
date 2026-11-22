@@ -18,7 +18,7 @@
  * 否则导出的文件会成为 XSS 载体（用户在浏览器里打开后执行脚本）。
  */
 
-export interface MessageHtmlExportInput {
+interface MessageHtmlExportInput {
   /** 发件人展示名（缺失时退化为 MXID） */
   sender: string
   /** 发送时间戳（毫秒） */

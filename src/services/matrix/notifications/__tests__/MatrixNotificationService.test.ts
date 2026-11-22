@@ -1,7 +1,7 @@
 import type { IPusherRequest, MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useI18nGlobal } from '@/services/i18n'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixNotificationService } from '../MatrixNotificationService'
 
 /**
@@ -31,7 +31,7 @@ vi.mock('@tauri-apps/plugin-notification', () => ({
 }))
 
 vi.mock('../../MatrixClientService', () => ({
-  default: {
+  matrixClientService: {
     getClient: vi.fn(() => null as MatrixClient | null),
     waitForClientReady: vi.fn().mockResolvedValue(undefined)
   }

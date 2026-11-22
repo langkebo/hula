@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { defineComponent } from 'vue'
 import { MessageStatusEnum } from '@/enums'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixReadStateService } from '@/services/matrix/messaging/MatrixReadStateService'
 import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'

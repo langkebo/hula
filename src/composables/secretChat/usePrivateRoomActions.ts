@@ -24,7 +24,7 @@ const logger = createLogger('PrivateRoomActions')
 const ENCRYPTION_CONFIRM_ATTEMPTS = 5
 const ENCRYPTION_CONFIRM_INTERVAL_MS = 1000
 
-export interface TogglePrivateRoomOptions {
+interface TogglePrivateRoomOptions {
   /** 用户确认「开启不可逆的房间加密」；返回 false 则放弃设为私密。 */
   confirmEnableEncryption?: () => Promise<boolean>
 }

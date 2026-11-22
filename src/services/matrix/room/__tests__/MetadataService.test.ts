@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { MatrixRoomMetadataService } from '../MetadataService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({

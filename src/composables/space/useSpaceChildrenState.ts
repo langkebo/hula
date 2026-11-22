@@ -5,8 +5,8 @@ import { useSpace, useSpaceMembers, useSpaceRooms, useSpaces } from '@/composabl
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
-export type SpaceManageMode = 'invite' | 'add-room'
-export type SpacePaneSubview = 'overview' | 'members' | 'rooms' | 'hierarchy'
+type SpaceManageMode = 'invite' | 'add-room'
+type SpacePaneSubview = 'overview' | 'members' | 'rooms' | 'hierarchy'
 
 /**
  * SpaceChildrenPane 的状态层：路由派生的空间 ID、空间 / 成员 / 子房间数据源、

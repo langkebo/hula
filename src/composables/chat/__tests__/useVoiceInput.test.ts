@@ -5,7 +5,7 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 }))
 
 vi.mock('@/services/matrix/media/MatrixVoiceService', () => ({
-  default: {
+  matrixVoiceService: {
     uploadVoice: vi.fn(),
     registerEncryptedVoice: vi.fn()
   }
@@ -44,7 +44,7 @@ import {
   makeVoiceUploadResult
 } from '@/services/matrix/media/__tests__/fixtures/voiceUpload'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import matrixVoiceService from '@/services/matrix/media/MatrixVoiceService'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { useVoiceInput } from '../useVoiceInput'
 
 describe('useVoiceInput', () => {

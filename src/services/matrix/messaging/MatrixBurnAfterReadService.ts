@@ -1,6 +1,6 @@
 import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('BurnAfterRead')
 

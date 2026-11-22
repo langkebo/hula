@@ -1,7 +1,7 @@
 import { computed, type Ref, ref } from 'vue'
 import { type AdminModuleItem, adminModuleService } from '@/services/matrix/admin'
 
-export type { AdminModuleItem, AdminModuleStatus } from '@/services/matrix/admin'
+export type { AdminModuleStatus } from '@/services/matrix/admin'
 
 interface UseAdminModulesResult {
   modules: Ref<AdminModuleItem[]>

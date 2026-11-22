@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: mocks.getClient }
+  matrixClientService: { getClient: mocks.getClient }
 }))
 
 vi.mock('../../MatrixHttpClient', () => ({

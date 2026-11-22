@@ -3,7 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { NotificationTypeEnum } from '@/enums'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 
 const TEST_BASE_URL = 'https://matrix.test'
 

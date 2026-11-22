@@ -49,7 +49,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRelationshipService } from '@/services/matrix/user/MatrixRelationshipService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'

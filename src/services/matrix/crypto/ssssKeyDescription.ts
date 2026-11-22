@@ -96,7 +96,7 @@ export async function buildSsssKeyDescription(
 /**
  * 备份导出中的单条房间密钥记录：字段随 SDK 备份格式变化，属真·动态包。
  */
-export interface RoomKeyBackupEntry {
+interface RoomKeyBackupEntry {
   room_id?: string
   sessions?: unknown
   [field: string]: unknown

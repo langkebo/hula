@@ -7,7 +7,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ChatScrollManager')
 
-export interface ScrollToMessageOptions {
+interface ScrollToMessageOptions {
   behavior?: ScrollBehavior
   /** 目标消息在 chatMessageList 中的索引，DOM 未挂载时用于 scrollToIndex 兜底 */
   index?: number

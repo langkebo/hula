@@ -3,7 +3,7 @@ import { NotificationCountType, Preset, Visibility } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import type { RoomInfo, RoomMemberInfo } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { isRoomEncrypted } from '../roomEncryption'
 import { matrixRoomMembershipService } from './MembershipService'
 

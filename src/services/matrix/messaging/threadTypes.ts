@@ -228,7 +228,7 @@ export interface SubscribedThreadsResponse {
 }
 
 /** 旧版线程列表元素（MSC3026）。 */
-export interface ThreadLegacyChunkItem {
+interface ThreadLegacyChunkItem {
   event_id: string
   sender: string
   content: IContent

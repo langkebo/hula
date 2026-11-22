@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ApplicationService')
 
 /** 应用服务命名空间条目（Matrix Application Service API：正则 + 是否独占）。 */
-export interface ApplicationServiceNamespace {
+interface ApplicationServiceNamespace {
   regex: string
   exclusive: boolean
 }

@@ -1,6 +1,6 @@
 import { shallowMount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { makeThreadStatistics, makeThreadSubscription } from '@/services/matrix/messaging/__tests__/fixtures/thread'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import ThreadPanel from '../ThreadPanel.vue'

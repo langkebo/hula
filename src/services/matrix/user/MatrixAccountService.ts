@@ -13,7 +13,7 @@ import { MatrixAccountDataMethods } from './MatrixAccountDataMethods'
 
 export type { MyRoomEntry } from './MatrixAccountDataMethods'
 // 类型原定义随方法片段一起下沉；此处 re-export 保持既有 import 点不变。
-export type { AuthData, DeviceInfo } from './MatrixAccountProfileDeviceMethods'
+export type { DeviceInfo } from './MatrixAccountProfileDeviceMethods'
 
 /** 生成 3PID 验证会话的 client_secret（Web Crypto 不可用时回退随机串）。 */
 function createClientSecret(): string {

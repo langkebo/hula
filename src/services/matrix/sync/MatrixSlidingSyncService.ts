@@ -2,7 +2,7 @@ import type { RoomInfo } from '@/services/types'
 import type { MSC3575RoomData, MSC3575SlidingSyncResponse, SlidingSync, SlidingSyncState } from '@/types/matrix-js-sdk'
 import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 
 const logger = createLogger('SlidingSync')
 

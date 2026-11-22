@@ -4,7 +4,7 @@ import { FriendEvent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { isFriendManagerRegistered } from '../extensions/managerExtensions'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { friendEventBus } from './friendEvents'
 import {
   type FriendManagerCompat,

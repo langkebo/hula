@@ -63,10 +63,7 @@ const FILE_MESSAGE_KINDS: Record<string, RoomFileEntry['kind']> = {
  * 兼容 E2EE 房间的 `content.file = { url, key, iv, … }`（此时 `content.info`
  * 可能缺失，尺寸回落到 `content.file.size`）；非附件消息返回 null。
  */
-export function normalizeRoomFileEvent(
-  raw: unknown,
-  resolveUrl: (mxcUrl: string) => string | null
-): RoomFileEntry | null {
+function normalizeRoomFileEvent(raw: unknown, resolveUrl: (mxcUrl: string) => string | null): RoomFileEntry | null {
   const event = unknownToObject(raw)
   if (!event) return null
   const eventId = readUrlField(event, ['event_id'])

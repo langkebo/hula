@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('SecuritySaml')
 
-export type SecuritySamlSdkGetter = () => Promise<AdminManager>
+type SecuritySamlSdkGetter = () => Promise<AdminManager>
 
 /**
  * `GET /_synapse/admin/v1/saml/config` 的响应。

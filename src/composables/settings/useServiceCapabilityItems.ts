@@ -13,7 +13,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { CapabilityItem, CapabilityState } from '@/types/capability'
 
 /** 诊断面板展示的能力位，顺序即渲染顺序 */
-export const DIAGNOSTIC_CAPABILITIES: TjgCapability[] = [
+const DIAGNOSTIC_CAPABILITIES: TjgCapability[] = [
   'sliding-sync',
   'e2ee',
   'voip',

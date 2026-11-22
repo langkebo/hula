@@ -21,7 +21,7 @@ const { getClientMock, state } = vi.hoisted(() => ({
 }))
 
 vi.mock('../../MatrixClientService', () => ({
-  default: { getClient: (...args: any[]) => getClientMock(...args) }
+  matrixClientService: { getClient: (...args: any[]) => getClientMock(...args) }
 }))
 
 vi.mock('../../room/MembershipService', () => ({

@@ -30,7 +30,7 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: { getClient: () => null }
 }))
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: { convertEventToMessage: vi.fn(), getEventById: vi.fn() }
+  matrixEventService: { convertEventToMessage: vi.fn(), getEventById: vi.fn() }
 }))
 vi.mock('@/services/matrix/auth/MatrixSessionService', () => ({
   matrixSessionService: { getSessionList: getSessionListMock }

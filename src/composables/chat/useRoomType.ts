@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { RoomTypeEnum } from '@/enums'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { isDirectMessageRoom } from '@/services/matrix/room/roomTypeUtils'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 

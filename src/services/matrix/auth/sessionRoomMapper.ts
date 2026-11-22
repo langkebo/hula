@@ -4,12 +4,12 @@ import type { DmRoomInfo, MatrixClient, MatrixEvent, Room } from '@/services/mat
 import { hasOwn } from '@/utils/webCompat'
 import { findDmCounterpart, isDirectMessageRoomFromRoom } from '../room/roomTypeUtils'
 
-export interface RoomNotificationSettings {
+interface RoomNotificationSettings {
   shield?: boolean
   muteNotification?: NotificationTypeEnum
 }
 
-export interface SessionTagContent {
+interface SessionTagContent {
   tags?: { [tagName: string]: unknown }
 }
 
@@ -87,7 +87,7 @@ export function buildSessionFromRoom(room: Room, dmRoomInfo: DmRoomInfo | null, 
 }
 
 /** 会话显示名：优先房间名，其次对端名，最后回退 roomId，保证列表不出现空标题。 */
-export function resolveRoomName(room: Room, fallbackName?: string): string {
+function resolveRoomName(room: Room, fallbackName?: string): string {
   const roomName = room.name?.trim()
   if (roomName) {
     return roomName
@@ -104,14 +104,14 @@ export function getUnreadCount(room: Room): number {
 }
 
 /** 最近活跃时间：取实时时间线最后一个事件的时间戳，无事件时为 0。 */
-export function getLastActiveTime(room: Room): number {
+function getLastActiveTime(room: Room): number {
   const events = typeof room.getLiveTimeline === 'function' ? room.getLiveTimeline().getEvents() : []
   const lastEvent = events[events.length - 1]
   return getEventTimestamp(lastEvent)
 }
 
 /** 消息预览：取最后一条事件正文，非文本内容或结构异常时返回空串。 */
-export function getLastMessagePreview(room: Room): string {
+function getLastMessagePreview(room: Room): string {
   const events = typeof room.getLiveTimeline === 'function' ? room.getLiveTimeline().getEvents() : []
   const lastEvent = events[events.length - 1]
   if (!lastEvent || typeof lastEvent.getContent !== 'function') {
@@ -126,7 +126,7 @@ export function getLastMessagePreview(room: Room): string {
 }
 
 /** 事件时间戳：事件缺失或 SDK 未实现 `getTs` 时返回 0。 */
-export function getEventTimestamp(event: MatrixEvent | undefined): number {
+function getEventTimestamp(event: MatrixEvent | undefined): number {
   if (!event || typeof event.getTs !== 'function') {
     return 0
   }
@@ -134,14 +134,14 @@ export function getEventTimestamp(event: MatrixEvent | undefined): number {
 }
 
 /** 置顶判定：读 `m.tag` 账号数据，存在 `m.favourite` 即视为置顶会话。 */
-export function isTopSession(room: Room): boolean {
+function isTopSession(room: Room): boolean {
   const accountData = room.getAccountData?.('m.tag')
   const content = accountData?.getContent() as SessionTagContent | undefined
   return !!content?.tags && hasOwn(content.tags, 'm.favourite')
 }
 
 /** 房间通知设置：读 `tjg.room.notification_settings` 账号数据，缺失时返回空对象。 */
-export function getRoomNotificationSettings(room: Room): RoomNotificationSettings {
+function getRoomNotificationSettings(room: Room): RoomNotificationSettings {
   const accountData = room.getAccountData?.('tjg.room.notification_settings')
   const content = accountData?.getContent()
   if (!content || typeof content !== 'object') {

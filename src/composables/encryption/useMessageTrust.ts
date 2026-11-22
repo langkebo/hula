@@ -7,7 +7,7 @@ import {
   trustCacheVersion,
   trustTickVersion
 } from '@/services/matrix/crypto/messageTrustCache'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 
 export { clearSenderDeviceCache, senderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'

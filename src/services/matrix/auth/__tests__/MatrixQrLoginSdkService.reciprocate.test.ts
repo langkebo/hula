@@ -9,6 +9,7 @@ import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MATRIX_PATHS } from '../../paths'
+import type { MatrixQrLoginSdkService } from '../MatrixQrLoginSdkService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -51,7 +52,7 @@ function makeMockChannel() {
 }
 
 describe('MatrixQrLoginSdkService.reciprocateLogin qr_token path (FT-091)', () => {
-  let service: import('../MatrixQrLoginSdkService').MatrixQrLoginSdkService
+  let service: MatrixQrLoginSdkService
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -63,7 +64,7 @@ describe('MatrixQrLoginSdkService.reciprocateLogin qr_token path (FT-091)', () =
     })
 
     vi.doMock('../../MatrixClientService', () => ({
-      default: {
+      matrixClientService: {
         getClient: () => makeMockClient()
       }
     }))

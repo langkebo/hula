@@ -14,7 +14,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { registerVoipCapabilityResolver } from '../voipHelpers'
 import { makeVoiceConfigResponse } from './fixtures/voiceConfig'
 

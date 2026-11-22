@@ -1,6 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixEncryptionService } from '../MatrixEncryptionService'
 
 // 使用 vi.hoisted 创建 logger spy，确保在模块加载前可用

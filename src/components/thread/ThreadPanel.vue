@@ -146,7 +146,7 @@
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import matrixClientService from '@/services/matrix/MatrixClientService'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import type { ThreadStatistics } from '@/services/matrix/messaging/threadTypes'
 import { AvatarUtils } from '@/utils/AvatarUtils'

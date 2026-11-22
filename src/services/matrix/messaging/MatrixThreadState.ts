@@ -18,7 +18,7 @@ import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
 import type { MatrixEvent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { matrixReceiptService } from './MatrixReceiptService'
 import type { IContent, MessageContent } from './threadTypes'
 

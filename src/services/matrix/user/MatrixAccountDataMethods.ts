@@ -27,7 +27,7 @@ export interface MyRoomEntry {
 /**
  * `/events` 返回的原始客户端事件条目：字段随事件类型变化，属真·动态包。
  */
-export interface EventStreamChunkItem {
+interface EventStreamChunkItem {
   type?: string
   sender?: string
   event_id?: string
@@ -41,7 +41,7 @@ export interface EventStreamChunkItem {
  * `chunk` 为原始客户端事件 JSON（字段随事件类型变化，保持开放），
  * 失败时本服务返回空对象，故全部字段可选。
  */
-export interface EventStreamResponse {
+interface EventStreamResponse {
   chunk?: EventStreamChunkItem[]
   start?: string
   end?: string

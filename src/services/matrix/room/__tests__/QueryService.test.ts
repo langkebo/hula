@@ -1,6 +1,6 @@
 import type { Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { matrixRoomQueryService } from '../QueryService'
 
 function mockRoom(overrides: Partial<Room> = {}): Room {

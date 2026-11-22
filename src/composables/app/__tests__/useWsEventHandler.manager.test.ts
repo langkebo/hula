@@ -36,7 +36,7 @@ vi.mock('@/services/matrix/friends/MatrixSpecialFriendService', () => ({
 
 // 避免 matrix-js-sdk 重型转换（~6.7s）导致 5s 默认超时
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  default: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
+  matrixEventService: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), convertEventToMessage: vi.fn() }
 }))
 
 // 截断所有 matrix-js-sdk 直接导入路径（user/contacts store 传递依赖）

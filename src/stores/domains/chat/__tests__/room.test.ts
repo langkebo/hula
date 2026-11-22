@@ -113,7 +113,7 @@ vi.mock('@/services/matrix/room/RealtimeService', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: mockMatrixClientService
+  matrixClientService: mockMatrixClientService
 }))
 
 vi.mock('@/stores/domains/chat/matrix', () => ({

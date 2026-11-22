@@ -9,7 +9,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 
 const mockProfileManager = {
   getProfileInfo: vi.fn(),

@@ -1,7 +1,7 @@
 import { warn as logWarn } from '@tauri-apps/plugin-log'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),

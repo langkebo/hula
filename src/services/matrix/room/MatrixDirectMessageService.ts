@@ -8,7 +8,7 @@ import type {
 } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
+import { matrixClientService } from '../MatrixClientService'
 import { loadDmPrivacyPreferences, resolveDmEncryption } from '../user/dmPrivacyPreferences'
 import { DmRoomsCache } from './dmRoomsCache'
 

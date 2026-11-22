@@ -397,4 +397,3 @@ class MatrixMessageService extends BaseMatrixService {
 }
 
 export const matrixMessageService = new MatrixMessageService()
-export default matrixMessageService

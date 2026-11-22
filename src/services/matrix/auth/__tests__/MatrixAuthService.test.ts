@@ -80,7 +80,7 @@ vi.mock('@/services/backend/config', () => ({
 }))
 
 import * as sdk from 'matrix-js-sdk'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { makeClientLoginResult } from './fixtures/session'
 
 describe('MatrixAuthService', () => {

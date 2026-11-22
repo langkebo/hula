@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { makeRoomStub } from '@/services/matrix/__tests__/fixtures/room'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
-import matrixClientService from '../../MatrixClientService'
+import { matrixClientService } from '../../MatrixClientService'
 import { registerVoipCapabilityResolver } from '../voipHelpers'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
