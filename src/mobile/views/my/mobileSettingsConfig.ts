@@ -8,7 +8,9 @@ import {
 export interface MobileSettingsNavItem {
   titleKey: string
   path: string
-  icon: string
+  /** 本地 iconpark sprite 的 symbol id（优先于 icon） */
+  symbol?: string
+  icon?: string
   iconColor: string
   iconBackgroundColor: string
   /**
@@ -28,14 +30,14 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
     // 加密与密钥状态页（477 行）此前**有路由但无人 push**，只能手输 URL 到达
     titleKey: 'setting.encryption.title',
     path: MOBILE_SETTINGS_ENCRYPTION_PATH,
-    icon: 'mdi:lock-check',
+    symbol: 'Security',
     iconColor: 'var(--tjg-color-success-500)',
     iconBackgroundColor: 'var(--tjg-color-success-100)'
   },
   {
     titleKey: 'mobile_setting.voice_video',
     path: '/mobile/mobileMy/voiceVideo',
-    icon: 'mdi:video',
+    symbol: 'video-one',
     iconColor: 'var(--tjg-color-success-500)',
     iconBackgroundColor: 'var(--tjg-color-success-100)',
     requiredCapability: 'voip'
@@ -51,7 +53,7 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
     // 表情包管理实现早已存在（255 行），但既无路由也无入口 ⇒ 等于不存在
     titleKey: 'emoticon.packs.title',
     path: MOBILE_SETTINGS_EMOTICONS_PATH,
-    icon: 'mdi:emoticon-happy-outline',
+    symbol: 'smiling-face',
     iconColor: 'var(--tjg-color-beta-500)',
     iconBackgroundColor: 'var(--tjg-color-beta-100)'
   },

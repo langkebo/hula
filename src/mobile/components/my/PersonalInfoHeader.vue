@@ -55,12 +55,12 @@
           <template v-else>
             <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
             <span v-clickable v-if="isMyPage" @click="emit('open-qr-code')" class="p-[15px] -m-[15px]">
-              <Icon
-                icon="mdi:qrcode"
-                :width="14"
-                :height="14"
-                class="text-[--tjg-text-secondary]"
-                :aria-label="t('mobile_personal_info.qr_code')" />
+              <svg
+                role="img"
+                class="w-14px h-14px text-[--tjg-text-secondary]"
+                :aria-label="t('mobile_personal_info.qr_code')">
+                <use href="#saoma" />
+              </svg>
             </span>
           </template>
         </div>
@@ -70,7 +70,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import type { UserInfoType, UserItem } from '@/services/types'
 

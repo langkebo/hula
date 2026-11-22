@@ -47,7 +47,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/editProfile')">
               <template #icon>
-                <SettingCellIcon icon="mdi:account-edit" color="var(--tjg-color-info-500)" shell="info" />
+                <SettingCellIcon symbol="edit" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
 
@@ -56,7 +56,7 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_PASSWORD_PATH)">
               <template #icon>
-                <SettingCellIcon icon="mdi:lock-reset" color="var(--tjg-color-warning-500)" shell="warning" />
+                <SettingCellIcon symbol="lock" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
             </van-cell>
 
@@ -150,7 +150,7 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_HELP_ABOUT_PATH)">
               <template #icon>
-                <SettingCellIcon icon="mdi:help-circle" color="var(--tjg-color-info-500)" shell="info" />
+                <SettingCellIcon symbol="info" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -170,7 +170,11 @@
               clickable
               @click="handleAdvancedItem(item)">
               <template #icon>
-                <SettingCellIcon :icon="item.icon" :color="item.iconColor" :background="item.iconBackgroundColor" />
+                <SettingCellIcon
+                  :symbol="item.symbol"
+                  :icon="item.icon"
+                  :color="item.iconColor"
+                  :background="item.iconBackgroundColor" />
               </template>
               <template v-if="item.comingSoon" #value>
                 <van-tag type="default" size="medium">{{ t('mobile_integrations.unavailable_badge') }}</van-tag>

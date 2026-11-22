@@ -10,7 +10,7 @@
         is-link
         @click="go(item.path)">
         <template #icon>
-          <SettingCellIcon :icon="item.icon" :color="item.color" :shell="item.shell" />
+          <SettingCellIcon :symbol="item.symbol" :icon="item.icon" :color="item.color" :shell="item.shell" />
         </template>
       </van-cell>
     </van-cell-group>
@@ -30,7 +30,9 @@ const router = useRouter()
 interface MyEntry {
   titleKey: string
   path: string
-  icon: string
+  /** 本地 iconpark sprite 的 symbol id（优先） */
+  symbol?: string
+  icon?: string
   color: string
   shell: 'success' | 'info' | 'warning' | 'danger' | 'beta'
 }
@@ -47,21 +49,21 @@ const entries: MyEntry[] = [
   {
     titleKey: 'mobile_setting.notifications',
     path: '/mobile/mobileMy/notifications',
-    icon: 'mdi:bell',
+    symbol: 'remind',
     color: 'var(--tjg-color-warning-500)',
     shell: 'warning'
   },
   {
     titleKey: 'mobile_setting.security',
     path: MOBILE_SETTINGS_SECURITY_PRIVACY_PATH,
-    icon: 'mdi:shield-lock',
+    symbol: 'Security',
     color: 'var(--tjg-color-info-500)',
     shell: 'info'
   },
   {
     titleKey: 'mobile_setting.title',
     path: '/mobile/mobileMy/settings',
-    icon: 'mdi:cog',
+    symbol: 'settings',
     color: 'var(--tjg-color-info-500)',
     shell: 'info'
   }

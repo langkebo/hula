@@ -33,9 +33,9 @@ const SHELL_CLASS = 'w-40px h-40px rounded-full mr-12px flex items-center justif
 
 const props = defineProps<{
   /** iconify 图标名；与 `symbol` 二选一（`symbol` 优先） */
-  icon?: string
+  icon?: string | undefined
   /** 本地 iconpark sprite 的 symbol id（如 `lock`），不联网 */
-  symbol?: string
+  symbol?: string | undefined
   /** 图标前景色（取 token） */
   color: string
   /** 底色档位；与 `background` 二选一 */

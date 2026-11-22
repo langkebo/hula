@@ -2,7 +2,9 @@
   <div class="m-quick-actions">
     <div v-clickable v-for="item in actions" :key="item.key" class="m-quick-item" @click="handleClick(item)">
       <div class="m-quick-icon">
-        <Icon :icon="item.icon" :width="22" :height="22" />
+        <svg class="w-22px h-22px" aria-hidden="true">
+          <use :href="`#${item.symbol}`" />
+        </svg>
       </div>
       <span>{{ t(item.labelKey) }}</span>
     </div>
@@ -10,7 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -20,7 +21,8 @@ const router = useRouter()
 interface QuickAction {
   key: string
   labelKey: string
-  icon: string
+  /** 本地 iconpark sprite 的 symbol id，不联网 */
+  symbol: string
   /** 必须是真实可达的路由；首屏不允许出现「点击只弹开发中」的空入口 */
   route: string
 }
@@ -32,32 +34,32 @@ const actions: QuickAction[] = [
   {
     key: 'scan',
     labelKey: 'mobile_quick_actions.scan',
-    icon: 'mdi:qrcode-scan',
+    symbol: 'saoma',
     route: '/mobile/mobileMy/scanQRCode'
   },
   {
     key: 'file',
     labelKey: 'mobile_quick_actions.file',
-    icon: 'mdi:file-document-outline',
+    symbol: 'file',
     route: '/mobile/mobileMy/files'
   },
   {
     key: 'album',
     labelKey: 'mobile_photo.title',
-    icon: 'mdi:image-multiple-outline',
+    symbol: 'photo',
     route: '/mobile/mobileMy/myAlbum'
   },
   {
     key: 'qr',
     labelKey: 'mobile_personal_info.qr_code',
-    icon: 'mdi:qrcode',
+    symbol: 'saoma',
     route: '/mobile/mobileMy/myQRCode'
   },
   {
     // 私密房会被普通会话列表整体过滤，没有独立入口就等于进不去
     key: 'secret',
     labelKey: 'home.secret_chat.title',
-    icon: 'mdi:shield-lock-outline',
+    symbol: 'lock',
     route: '/mobile/secretChat'
   }
 ]
