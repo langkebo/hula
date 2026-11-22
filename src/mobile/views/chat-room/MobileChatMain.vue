@@ -58,14 +58,12 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
 import MobileBatchToolbar from '#/components/chat-room/MobileBatchToolbar.vue'
 import PrivateModeConfirmDialog from '#/components/chat-room/PrivateModeConfirmDialog.vue'
 import MobileOutboxBar from '#/components/message/MobileOutboxBar.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
 import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
 import RoomEncryptionBanner from '@/components/encryption/RoomEncryptionBanner.vue'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useRoomEncryptionStatus } from '@/composables/encryption/useRoomEncryptionStatus'
 import { MittEnum, RoomTypeEnum } from '@/enums'
@@ -79,8 +77,6 @@ import { createLogger } from '@/utils/Logger'
 import { extractServerName } from '@/utils/userIdentity'
 
 const logger = createLogger('MobileChatMain')
-const { t } = useI18n()
-const { showFeedback } = useActionFeedback()
 
 defineOptions({
   name: 'mobileChatRoomDefault'
@@ -141,13 +137,9 @@ const openRoomFromRoute = async (raw?: string) => {
   let session = chatStore.getSession(roomId)
   if (!session) {
     // 冷启动深链：会话列表还没拉过（列表页不在路由栈上），先补一次。
-    // 失败不能静默：用户会停在空白聊天页，必须给出「加载失败」的可见反馈。
-    try {
-      await chatStore.getSessionList(true)
-    } catch (error) {
-      logger.error('Failed to load session list for deep link:', roomId, error)
-      showFeedback(t('mobile_chat.session_load_failed'), 'warning')
-    }
+    // 失败反馈统一交给会话列表的错误态（`getSessionList` 不 reject，错误落在 store 的
+    // `loadError` 上；回落消息列表后按同一套分级文案展示），此处不再单独弹 toast。
+    await chatStore.getSessionList(true)
     session = chatStore.getSession(roomId)
   }
   if (!session) {
