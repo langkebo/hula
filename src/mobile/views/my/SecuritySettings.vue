@@ -30,7 +30,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-success-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:devices" :width="20" color="var(--tjg-color-success-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-success-500]" aria-hidden="true">
+                    <use href="#devices" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -193,7 +195,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showLoadingToast, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

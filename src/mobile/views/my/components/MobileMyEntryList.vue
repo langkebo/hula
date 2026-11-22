@@ -42,7 +42,7 @@ const entries: MyEntry[] = [
   {
     titleKey: 'mobile_devices.title',
     path: MOBILE_SETTINGS_DEVICES_PATH,
-    icon: 'mdi:devices',
+    symbol: 'devices',
     color: 'var(--tjg-color-danger-500)',
     shell: 'danger'
   },

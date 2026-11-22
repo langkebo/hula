@@ -72,7 +72,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.bug">
-                  <Icon icon="mdi:bug-outline" :width="20" color="var(--tjg-color-danger-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-danger-500]" aria-hidden="true">
+                    <use href="#bug" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -94,7 +96,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.support">
-                  <Icon icon="mdi:headset" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#headset" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -192,7 +196,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

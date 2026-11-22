@@ -29,13 +29,13 @@
           <van-cell-group inset>
             <van-cell :title="t('mobile_devices.title')" is-link @click="router.push(MOBILE_SETTINGS_DEVICES_PATH)">
               <template #icon>
-                <SettingCellIcon icon="mdi:devices" color="var(--tjg-color-danger-500)" shell="danger" />
+                <SettingCellIcon symbol="devices" color="var(--tjg-color-danger-500)" shell="danger" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_setting.status')" is-link @click="router.push('/mobile/mobileMy/status')">
               <template #icon>
-                <SettingCellIcon :icon="statusIcon" :color="statusColor" shell="success" />
+                <SettingCellIcon :symbol="statusSymbol" :color="statusColor" shell="success" />
               </template>
               <template #value>
                 <span class="text-[length:var(--tjg-font-size-base)]">{{ statusLabel }}</span>
@@ -133,7 +133,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/burnAfterRead')">
               <template #icon>
-                <SettingCellIcon icon="mdi:timer-outline" color="var(--tjg-color-warning-500)" shell="warning" />
+                <SettingCellIcon symbol="timer" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -278,25 +278,25 @@ const statusOptions = [
   {
     id: 'online',
     label: t('mobile_setting.status_online'),
-    icon: 'mdi:circle',
+    symbol: 'circle',
     color: 'var(--tjg-color-success-500)'
   },
   {
     id: 'away',
     label: t('mobile_setting.status_away'),
-    icon: 'mdi:circle',
+    symbol: 'circle',
     color: 'var(--tjg-color-warning-500)'
   },
   {
     id: 'busy',
     label: t('mobile_setting.status_busy'),
-    icon: 'mdi:circle',
+    symbol: 'circle',
     color: 'var(--tjg-color-danger-500)'
   },
   {
     id: 'offline',
     label: t('mobile_setting.status_offline'),
-    icon: 'mdi:circle-outline',
+    symbol: 'circle-outline',
     color: 'var(--tjg-text-quaternary)'
   }
 ]
@@ -306,7 +306,7 @@ const currentStatus = computed(() => {
 })
 
 const statusLabel = computed(() => currentStatus.value.label)
-const statusIcon = computed(() => currentStatus.value.icon)
+const statusSymbol = computed(() => currentStatus.value.symbol)
 const statusColor = computed(() => currentStatus.value.color)
 
 // 登出只有一个实现（见 useMobileLogout）：走 SessionOrchestrator 的显式清理

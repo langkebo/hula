@@ -19,7 +19,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.global">
-                  <Icon icon="mdi:timer-outline" :width="20" color="var(--tjg-color-warning-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#timer" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -37,7 +39,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.duration">
-                  <Icon icon="mdi:clock-outline" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#timer" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -47,7 +51,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.countdown">
-                  <Icon icon="mdi:countdown" :width="20" color="var(--tjg-color-success-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-success-500]" aria-hidden="true">
+                    <use href="#timer" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -120,7 +126,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

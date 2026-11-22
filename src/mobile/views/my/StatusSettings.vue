@@ -30,7 +30,9 @@
                 <div
                   class="w-24px h-24px rounded-full mr-12px flex items-center justify-center"
                   :style="{ backgroundColor: status.color }">
-                  <Icon :icon="status.icon" :width="14" color="var(--tjg-text-inverse)" />
+                  <svg class="w-14px h-14px color-[--tjg-text-inverse]" aria-hidden="true">
+                    <use :href="`#${status.symbol}`" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -92,7 +94,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -174,13 +175,13 @@ function scheduleExpiry(deadline: number) {
 }
 
 const statusOptions = [
-  { id: 'online', label: t('mobile_status.status.online'), icon: 'mdi:circle', color: 'var(--tjg-color-success-500)' },
-  { id: 'away', label: t('mobile_status.status.away'), icon: 'mdi:circle', color: 'var(--tjg-color-warning-500)' },
-  { id: 'busy', label: t('mobile_status.status.busy'), icon: 'mdi:circle', color: 'var(--tjg-color-danger-500)' },
+  { id: 'online', label: t('mobile_status.status.online'), symbol: 'circle', color: 'var(--tjg-color-success-500)' },
+  { id: 'away', label: t('mobile_status.status.away'), symbol: 'circle', color: 'var(--tjg-color-warning-500)' },
+  { id: 'busy', label: t('mobile_status.status.busy'), symbol: 'circle', color: 'var(--tjg-color-danger-500)' },
   {
     id: 'offline',
     label: t('mobile_status.status.offline'),
-    icon: 'mdi:circle-outline',
+    symbol: 'circle-outline',
     color: 'var(--tjg-text-quaternary)'
   }
 ]

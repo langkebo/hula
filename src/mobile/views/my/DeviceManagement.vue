@@ -33,7 +33,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[--tjg-surface-subtle] mr-12px flex items-center justify-center">
-                  <Icon :icon="getDeviceIcon()" :width="20" color="var(--tjg-text-secondary)" />
+                  <svg class="w-20px h-20px color-[--tjg-text-secondary]" aria-hidden="true">
+                    <use :href="`#${getDeviceIcon()}`" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -87,7 +89,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -196,7 +197,7 @@ async function loadDevices() {
  * 因此这里返回中性图标而不是臆测设备类型。
  */
 function getDeviceIcon(): string {
-  return 'mdi:devices'
+  return 'devices'
 }
 
 /** 最后活跃时间：服务端回传 lastSeenTs 才展示，时间戳非法时不伪造 */

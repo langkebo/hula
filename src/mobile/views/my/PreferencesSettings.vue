@@ -61,7 +61,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:link-variant" :width="20" color="var(--tjg-color-primary-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-primary-500]" aria-hidden="true">
+                    <use href="#link" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -92,7 +94,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:format-size" :width="20" color="var(--tjg-color-warning-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#font-size" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -107,7 +111,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:timer-outline" :width="20" color="var(--tjg-color-warning-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#timer" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -215,7 +221,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import {
   useBurnDurationOptions,

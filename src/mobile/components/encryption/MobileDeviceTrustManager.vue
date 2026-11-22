@@ -38,9 +38,9 @@
                     @click="handleDeviceClick(device)">
                     <template #icon>
                       <div class="device-icon-cell">
-                        <Icon
-                          :icon="device.deviceId === currentDeviceId ? 'mdi:cellphone-check' : 'mdi:cellphone'"
-                          :width="20" />
+                        <svg class="w-20px h-20px" aria-hidden="true">
+                          <use :href="device.deviceId === currentDeviceId ? '#cellphone-check' : '#cellphone'" />
+                        </svg>
                       </div>
                     </template>
                     <template #right-icon>
@@ -113,7 +113,9 @@
                     @click="handleUnblockClick(device)">
                     <template #icon>
                       <div class="device-icon-cell">
-                        <Icon icon="mdi:cellphone-remove" :width="20" color="var(--tjg-color-danger-500)" />
+                        <svg class="w-20px h-20px color-[--tjg-color-danger-500]" aria-hidden="true">
+                          <use href="#cellphone-remove" />
+                        </svg>
                       </div>
                     </template>
                     <template #right-icon>
@@ -197,7 +199,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

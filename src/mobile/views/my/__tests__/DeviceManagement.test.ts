@@ -146,20 +146,20 @@ describe('DeviceManagement', () => {
   it('getDeviceIcon returns mobile for mobile UA', async () => {
     const wrapper = mount(DeviceManagement)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '1.2.3.4' } as any)).toBe('mdi:devices')
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '5.6.7.8' } as any)).toBe('mdi:devices')
+    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '1.2.3.4' } as any)).toBe('devices')
+    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '5.6.7.8' } as any)).toBe('devices')
   })
 
   it('getDeviceIcon returns tablet for tablet UA', async () => {
     const wrapper = mount(DeviceManagement)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '9.9.9.9' } as any)).toBe('mdi:devices')
+    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '9.9.9.9' } as any)).toBe('devices')
   })
 
   it('getDeviceIcon returns laptop for desktop UA', async () => {
     const wrapper = mount(DeviceManagement)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '10.0.0.1' } as any)).toBe('mdi:devices')
+    expect((wrapper.vm as any).getDeviceIcon({ lastSeenIp: '10.0.0.1' } as any)).toBe('devices')
   })
 
   it('formatDeviceLabel shows IP and date', async () => {

@@ -118,7 +118,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:format-color-highlight" :width="20" color="var(--tjg-color-primary-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-primary-500]" aria-hidden="true">
+                    <use href="#platte" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -144,7 +146,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:signal" :width="20" color="var(--tjg-color-primary-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-primary-500]" aria-hidden="true">
+                    <use href="#signal" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -173,7 +177,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

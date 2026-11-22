@@ -45,7 +45,7 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
   {
     titleKey: 'mobile_setting.storage',
     path: '/mobile/mobileMy/storage',
-    icon: 'mdi:database',
+    symbol: 'database',
     iconColor: 'var(--tjg-color-info-500)',
     iconBackgroundColor: 'var(--tjg-color-info-100)'
   },
@@ -60,7 +60,7 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
   {
     titleKey: 'mobile_setting.labs',
     path: MOBILE_SETTINGS_LABS_PATH,
-    icon: 'mdi:flask',
+    symbol: 'flask',
     iconColor: 'var(--tjg-color-beta-500)',
     iconBackgroundColor: 'var(--tjg-color-beta-100)',
     comingSoon: true
@@ -68,7 +68,7 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
   {
     titleKey: 'mobile_setting.homeserver',
     path: '/mobile/mobileMy/homeserver',
-    icon: 'mdi:server',
+    symbol: 'server',
     iconColor: 'var(--tjg-color-info-500)',
     iconBackgroundColor: 'var(--tjg-color-info-100)'
   }
