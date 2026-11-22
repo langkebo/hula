@@ -2072,12 +2072,41 @@ AdminSecurity.vue:5              -> 有 {{ t('common.refresh') }}
 **下一步**：优先拆 `AdminRooms`（713 行，且是剩余迁移目标之一）与 `renderMessage` 三件套
 （Video / index / File 合计 1903 行，可抽公共的消息壳与媒体基类）。
 
-#### P2：弹层组件 30 个，缺少统一壳
+#### P2：弹层的真实情况 —— **壳已经有了，缺的是三个能力**（2026-11-22 摸底）
 
-`*Drawer.vue` / `*Modal.vue` / `*Dialog.vue` 合计 30 个，宽度、遮罩、关闭行为、焦点管理各写一套。
+**原判断错了两次**：数量不是 30 而是 **50**（先前只扫了 `src/components`），
+而且项目**已经有统一壳** `BaseRightDrawer`，不需要从零抽。
 
-**下一步**：抽 `TjDrawer` / `TjDialog` 两个壳，把宽度档位、`aria-modal`、焦点移入移出、
-`Esc` 关闭统一掉。这是「一次改动、30 处受益」的杠杆点。
+**容器分布**
+
+| 容器 | 数量 | 自带 `aria-modal` | 自带焦点管理 | 结论 |
+| :--- | ---: | :--- | :--- | :--- |
+| `BaseRightDrawer`（自研壳） | 12 | 是 | **否** | 补能力 |
+| `n-modal` | 18 | 是（Naive UI） | 是（`trapFocus` + `autoFocus`） | 不动 |
+| `n-drawer` | 5 | 是（Naive UI） | 是 | 可收敛到壳 |
+| `van-popup` | 4 | **否** | 部分 | 补 `role`/`aria-modal` |
+| 其他（模板嵌套） | 11 | 视情况 | 视情况 | 逐个看 |
+
+**`BaseRightDrawer` 已有的能力**：`Teleport to="body"`、`role="dialog"`、
+`aria-modal="true"`、`:aria-label="title"`、关闭按钮 `aria-label`、遮罩点击关闭、
+`width` prop（默认 480px）。
+
+**缺的三件事**：
+
+1. **`Esc` 可能不生效** —— `@keydown.esc` 绑在 overlay 的 `div` 上，而该 `div`
+   没有 `tabindex`。焦点在内部输入框时能冒泡上来，焦点落在 body 上时收不到。
+2. **打开后焦点不移入** —— 键盘用户打开弹层，光标仍停在背后页面的触发元素上。
+3. **无焦点陷阱与归还** —— `Tab` 会跑到被遮罩的页面上；关闭后焦点不回到触发元素。
+
+**修正后的下一步**（工作量比原估计小一个量级）：
+
+| 步骤 | 内容 |
+| :--- | :--- |
+| 1 | 给 `BaseRightDrawer` 补 `tabindex="-1"` + 打开时 `focus()` + 焦点陷阱 + 关闭归还 |
+| 2 | 4 个 `van-popup` 补 `role="dialog"` / `aria-modal="true"` |
+| 3 | 5 个 `n-drawer` 视情况收敛到 `BaseRightDrawer`（可选） |
+
+`n-modal` 的 18 个**不需要动** —— Naive UI 已经把这些做完了。
 
 #### P2：i18n 文案与视觉规范未联动
 
@@ -2091,7 +2120,7 @@ AdminSecurity.vue:5              -> 有 {{ t('common.refresh') }}
 | :--- | :--- | :--- | :--- |
 | ~~1~~ | ~~31 处 `outline: none` 分类与修复~~ **已完成**（实际只 2 处缺陷） | 全端键盘用户 | 低 |
 | ~~2~~ | ~~10 处纯图标按钮补 `aria-label`~~ **误报，0 处** | — | — |
-| 3 | 抽 `TjDrawer` / `TjDialog` 壳 | 30 个弹层 | 中（要逐个替换） |
+| 3 | 给 `BaseRightDrawer` 补焦点能力 + 4 个 `van-popup` 补 aria | 12 + 4 | 低-中 |
 | 4 | 剩余 8 个表格迁移 | 后台一致性 | 中（`n-spin` 需逐处判断） |
 | 5 | 拆分 8 个超 400 行文件 | 可维护性 | 中 |
 
