@@ -15,7 +15,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:lock" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#lock" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -43,7 +45,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-check" :width="20" color="var(--tjg-color-primary-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-primary-500]" aria-hidden="true">
+                    <use href="#Security" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -88,7 +92,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:download" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#download" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -97,7 +103,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-check" :width="20" color="var(--tjg-color-primary-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-primary-500]" aria-hidden="true">
+                    <use href="#Security" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -163,7 +171,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-danger-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:alert-circle" :width="20" color="var(--tjg-color-danger-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-danger-500]" aria-hidden="true">
+                    <use href="#caution" />
+                  </svg>
                 </div>
               </template>
             </van-cell>

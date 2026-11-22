@@ -9,7 +9,7 @@
         is-link
         @click="emit('navigate', item)">
         <template #icon>
-          <SettingCellIcon icon="mdi:magnify" color="var(--tjg-color-info-500)" shell="info" />
+          <SettingCellIcon symbol="search" color="var(--tjg-color-info-500)" shell="info" />
         </template>
       </van-cell>
     </van-cell-group>

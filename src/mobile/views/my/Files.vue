@@ -56,7 +56,9 @@
                   <div
                     class="w-40px h-40px rounded-8px flex items-center justify-center"
                     :style="{ backgroundColor: getFileTypeColor(file.type) }">
-                    <Icon :icon="getFileIcon(file.type)" :width="24" color="var(--tjg-text-inverse)" />
+                    <svg class="w-24px h-24px color-[--tjg-text-inverse]" aria-hidden="true">
+                      <use :href="`#${getFileIcon(file.type)}`" />
+                    </svg>
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="text-14px font-medium truncate text-[--tjg-text-primary]">{{ file.name }}</div>
@@ -78,7 +80,9 @@
                   <div
                     class="w-40px h-40px rounded-8px flex items-center justify-center"
                     :style="documentIconShellStyle">
-                    <Icon icon="mdi:file-document" :width="24" color="var(--tjg-color-info-500)" />
+                    <svg class="w-24px h-24px color-[--tjg-color-info-500]" aria-hidden="true">
+                      <use href="#notes" />
+                    </svg>
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="text-14px font-medium truncate text-[--tjg-text-primary]">{{ file.name }}</div>
@@ -97,7 +101,9 @@
                     class="w-full h-full object-cover"
                     :alt="t('mobile_files.image_alt')" />
                   <div v-else class="w-full h-full bg-[--tjg-surface-subtle] flex items-center justify-center">
-                    <Icon icon="mdi:play-circle" :width="32" color="var(--tjg-text-secondary)" />
+                    <svg class="w-32px h-32px color-[--tjg-text-secondary]" aria-hidden="true">
+                      <use href="#play" />
+                    </svg>
                   </div>
                 </div>
               </div>
@@ -116,7 +122,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
@@ -250,13 +255,14 @@ const fileActions = [
 ]
 
 function getFileIcon(type: string): string {
+  // 返回本地 iconpark sprite 的 symbol id，避免运行时联网拉取 iconify 图标
   const icons: Record<string, string> = {
-    document: 'mdi:file-document',
-    image: 'mdi:image',
-    video: 'mdi:video',
-    audio: 'mdi:music'
+    document: 'notes',
+    image: 'photo',
+    video: 'video-one',
+    audio: 'Music'
   }
-  return icons[type] || 'mdi:file'
+  return icons[type] || 'file'
 }
 
 function getFileTypeColor(type: string): string {

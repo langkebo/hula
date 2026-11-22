@@ -16,7 +16,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:bell" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#remind" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -28,7 +30,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-success-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:volume-high" :width="20" color="var(--tjg-color-success-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-success-500]" aria-hidden="true">
+                    <use href="#volume-notice" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>

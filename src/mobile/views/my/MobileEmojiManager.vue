@@ -22,7 +22,9 @@
                       class="w-40px h-40px rounded-full mr-12px flex items-center justify-center overflow-hidden"
                       :style="iconShellStyles.pack">
                       <img v-if="pack.iconUrl" :src="pack.iconUrl" alt="" class="w-full h-full object-cover" />
-                      <Icon v-else icon="mdi:emoticon" :width="20" color="var(--tjg-color-beta-500)" />
+                      <svg v-else class="w-20px h-20px color-[--tjg-color-beta-500]" aria-hidden="true">
+                        <use href="#smiling-face" />
+                      </svg>
                     </div>
                   </template>
                   <template #title>
@@ -43,7 +45,9 @@
           </MobileAsyncState>
 
           <van-button type="primary" block :loading="creating" @click="openCreate">
-            <Icon icon="mdi:plus" :width="16" class="mr-4px" />
+            <svg class="w-16px h-16px mr-4px" aria-hidden="true">
+              <use href="#plus" />
+            </svg>
             {{ t('emoticon.packs.create') }}
           </van-button>
         </div>
@@ -120,7 +124,9 @@
               :max-count="1"
               accept="image/png,image/gif,image/webp">
               <van-button plain type="primary" block>
-                <Icon icon="mdi:upload" :width="16" class="mr-4px" />
+                <svg class="w-16px h-16px mr-4px" aria-hidden="true">
+                  <use href="#Importing" />
+                </svg>
                 {{ t('emoticon.packs.add_emoji') }}
               </van-button>
             </van-uploader>
@@ -132,7 +138,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showConfirmDialog, type UploaderFileListItem } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

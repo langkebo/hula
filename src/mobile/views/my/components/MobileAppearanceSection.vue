@@ -2,7 +2,7 @@
   <van-cell-group inset>
     <van-cell :title="t('mobile_setting.theme')">
       <template #icon>
-        <SettingCellIcon icon="mdi:palette" color="var(--tjg-color-beta-500)" shell="beta" />
+        <SettingCellIcon symbol="platte" color="var(--tjg-color-beta-500)" shell="beta" />
       </template>
       <template #right-icon>
         <van-radio-group v-model="themeValue" direction="horizontal">
@@ -14,7 +14,7 @@
 
     <van-cell :title="t('mobile_setting.language')">
       <template #icon>
-        <SettingCellIcon icon="mdi:translate" color="var(--tjg-color-info-500)" shell="info" />
+        <SettingCellIcon symbol="translate" color="var(--tjg-color-info-500)" shell="info" />
       </template>
       <template #right-icon>
         <van-radio-group v-model="languageValue" direction="horizontal">
@@ -26,7 +26,7 @@
 
     <van-cell :title="t('setting.appearance.bubble_style_label')" :label="t('setting.appearance.bubble_style_desc')">
       <template #icon>
-        <SettingCellIcon icon="mdi:message-text-outline" color="var(--tjg-color-beta-500)" shell="beta" />
+        <SettingCellIcon symbol="message" color="var(--tjg-color-beta-500)" shell="beta" />
       </template>
       <template #right-icon>
         <van-radio-group v-model="bubbleStyleValue" direction="horizontal" @change="handleBubbleStyleChange">

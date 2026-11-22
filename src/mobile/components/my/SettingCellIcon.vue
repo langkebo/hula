@@ -1,6 +1,10 @@
 <template>
   <div :class="SHELL_CLASS" :style="{ backgroundColor: resolvedBackground }">
-    <Icon :icon="icon" :width="20" :color="color" />
+    <!-- 优先用本地 sprite：iconify 的 mdi 图标在未注册离线集合时会运行时联网拉取 -->
+    <svg v-if="symbol" class="w-20px h-20px" :style="{ color }" aria-hidden="true">
+      <use :href="`#${symbol}`" />
+    </svg>
+    <Icon v-else :icon="icon ?? ''" :width="20" :color="color" />
   </div>
 </template>
 
@@ -28,8 +32,10 @@ const SHELL_BACKGROUNDS = {
 const SHELL_CLASS = 'w-40px h-40px rounded-full mr-12px flex items-center justify-center'
 
 const props = defineProps<{
-  /** iconify 图标名 */
-  icon: string
+  /** iconify 图标名；与 `symbol` 二选一（`symbol` 优先） */
+  icon?: string
+  /** 本地 iconpark sprite 的 symbol id（如 `lock`），不联网 */
+  symbol?: string
   /** 图标前景色（取 token） */
   color: string
   /** 底色档位；与 `background` 二选一 */

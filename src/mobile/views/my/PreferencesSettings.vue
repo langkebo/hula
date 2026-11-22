@@ -20,7 +20,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:keyboard-return" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#Enter" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -29,7 +31,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-success-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:check-circle" :width="20" color="var(--tjg-color-success-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-success-500]" aria-hidden="true">
+                    <use href="#check-one" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -46,7 +50,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:history" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#history" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -67,7 +73,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:emoticon" :width="20" color="var(--tjg-color-warning-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#smiling-face" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>

@@ -28,6 +28,11 @@
  *  - zh_literal_rust: Chinese **string literals** in src-tauri/src (all .rs files).
  *    Rust errors/logs must return a code (or English) and let the frontend
  *    translate; the count may only decrease (see the counter's own doc).
+ *  - mdi_in_mobile: `mdi:*` iconify references in src/mobile (non-test).
+ *    `@iconify/vue` without an offline collection fetches icons from
+ *    api.iconify.design at runtime (blank icons when offline). Migrate to the
+ *    local iconpark sprite (`<use href="#id"/>`) in batches; the count may only
+ *    decrease (see the counter's own doc).
  *
  * Usage:
  *   node scripts/check-ratchet.mjs            # verify (CI / pre-merge)
@@ -491,6 +496,25 @@ const counters = {
     files: new Map(),
     strip: extractHandwrittenEmptyStateScope,
     extensions: VUE_EXTENSIONS
+  },
+  /**
+   * 移动端 `mdi:*` 图标引用（非测试）。
+   *
+   * 判据本意：`@iconify/vue` 在未注册离线集合时，`Icon` 会**运行时联网**从
+   * `api.iconify.design` 拉取图标 —— 移动端弱网/离线就是一片空白，CSP 还被迫放行外部域。
+   * 项目已通过 `index.html` 预加载本地 iconpark sprite（`public/icon.js`），
+   * 图标应走 `<svg><use href="#id"/></svg>`，与设置页其余图标同源同风格。
+   *
+   * 收敛策略：按文件分批迁移到 iconpark（设置类高频页优先），先上闸防扩散；
+   * 计数只降不升。sprite 暂无等价图标的条目仍计入存量，补齐图标后再迁移。
+   */
+  mdi_in_mobile: {
+    pattern: /mdi:[a-z0-9-]+/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly,
+    roots: [path.join(srcRoot, 'mobile')]
   }
 }
 
@@ -498,6 +522,9 @@ for (const filePath of walk(srcRoot, STYLE_EXTENSIONS)) {
   const relPath = path.relative(repoRoot, filePath)
   const content = fs.readFileSync(filePath, 'utf8')
   for (const counter of Object.values(counters)) {
+    // 声明了 `roots` 的计数器只扫自己的根（Rust 树 / 移动端子集），不参与 `src` 全量遍历，
+    // 否则会在下方 roots 循环里被重复计一次。
+    if (counter.roots) continue
     if (!counter.includeTests && isTestPath(relPath)) continue
     const extensions = counter.extensions ?? SOURCE_EXTENSIONS
     if (!extensions.has(path.extname(filePath))) continue

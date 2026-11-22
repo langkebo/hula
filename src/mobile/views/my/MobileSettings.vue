@@ -65,7 +65,7 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)">
               <template #icon>
-                <SettingCellIcon icon="mdi:shield-lock" color="var(--tjg-color-danger-500)" shell="danger" />
+                <SettingCellIcon symbol="Security" color="var(--tjg-color-danger-500)" shell="danger" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -82,7 +82,7 @@
               is-link
               @click="router.push('/mobile/mobileFriends/groups')">
               <template #icon>
-                <SettingCellIcon icon="mdi:account-group" color="var(--tjg-color-info-500)" shell="info" />
+                <SettingCellIcon symbol="peoples" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -99,7 +99,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/notifications')">
               <template #icon>
-                <SettingCellIcon icon="mdi:bell" color="var(--tjg-color-warning-500)" shell="warning" />
+                <SettingCellIcon symbol="remind" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -124,7 +124,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/preferences')">
               <template #icon>
-                <SettingCellIcon icon="mdi:tune" color="var(--tjg-color-info-500)" shell="info" />
+                <SettingCellIcon symbol="setting-config" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
 
