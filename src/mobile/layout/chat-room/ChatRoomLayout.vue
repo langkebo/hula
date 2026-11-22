@@ -1,6 +1,9 @@
 <template>
   <MobileLayout :safeAreaTop="true" :safeAreaBottom="true" :bottomSafeAreaClass="computedBottomSafeAreaClass">
     <div class="h-full flex flex-col">
+      <!-- 全局连接状态横幅：聊天主屏、公告等子路由共享 -->
+      <MobileConnectionBanner />
+
       <!-- 页面全部内容 -->
       <div class="relative flex flex-col flex-1 min-h-0">
         <router-view v-slot="{ Component }">

@@ -1,22 +1,27 @@
 <template>
   <MobileLayout :safe-area-top="true" :safe-area-bottom="false">
-    <div class="h-full" :class="showSidebar ? 'flex flex-row' : 'flex flex-col'">
-      <!-- 横屏或展开态：TabBar 作为左侧垂直导航栏 -->
-      <div v-if="showSidebar" class="flex-shrink-0 h-full">
-        <TabBar ref="tabBarElement" vertical />
-      </div>
+    <div class="h-full flex flex-col">
+      <!-- 全局连接状态横幅：断线/重连/同步中，统一在本布局覆盖所有 Tab 子屏 -->
+      <MobileConnectionBanner />
 
-      <div class="flex-1 overflow-hidden min-w-0">
-        <RouterView v-slot="{ Component }">
-          <keep-alive :max="10">
-            <component :is="Component" :key="route.name" />
-          </keep-alive>
-        </RouterView>
-      </div>
+      <div class="flex-1 min-h-0" :class="showSidebar ? 'flex flex-row' : 'flex flex-col'">
+        <!-- 横屏或展开态：TabBar 作为左侧垂直导航栏 -->
+        <div v-if="showSidebar" class="flex-shrink-0 h-full">
+          <TabBar ref="tabBarElement" vertical />
+        </div>
 
-      <!-- 竖屏：TabBar 在底部 -->
-      <div v-if="!showSidebar" class="flex-shrink-0">
-        <TabBar ref="tabBarElement" />
+        <div class="flex-1 overflow-hidden min-w-0">
+          <RouterView v-slot="{ Component }">
+            <keep-alive :max="10">
+              <component :is="Component" :key="route.name" />
+            </keep-alive>
+          </RouterView>
+        </div>
+
+        <!-- 竖屏：TabBar 在底部 -->
+        <div v-if="!showSidebar" class="flex-shrink-0">
+          <TabBar ref="tabBarElement" />
+        </div>
       </div>
     </div>
   </MobileLayout>

@@ -36,9 +36,6 @@ vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock('#/layout/navBar/index.vue', () => ({
   default: { name: 'NavBar', template: '<div><slot name="left" /><slot name="right" /></div>' }
 }))
-vi.mock('@/mobile/components/common/MobileConnectionBanner.vue', () => ({
-  default: { name: 'MobileConnectionBanner', template: '<div />' }
-}))
 vi.mock('@/mobile/components/message/MobileCreateDialogs.vue', () => ({
   default: { name: 'MobileCreateDialogs', template: '<div />' }
 }))

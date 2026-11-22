@@ -43,6 +43,7 @@ const mountLayout = () => {
     global: {
       stubs: {
         MobileLayout: { template: '<div><slot /></div>' },
+        MobileConnectionBanner: { template: '<div />' },
         RouterView: { template: '<div class="stub-router-view" />' },
         'van-loading': { template: '<div />' }
       }
