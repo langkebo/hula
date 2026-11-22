@@ -46,7 +46,6 @@ import type { Messages as mobile_connectionMessages, KeyPaths as mobile_connecti
 import type { Messages as mobile_contactMessages, KeyPaths as mobile_contactKeyPaths } from './i18n/mobile_contact'
 import type { Messages as mobile_deactivateMessages, KeyPaths as mobile_deactivateKeyPaths } from './i18n/mobile_deactivate'
 import type { Messages as mobile_devicesMessages, KeyPaths as mobile_devicesKeyPaths } from './i18n/mobile_devices'
-import type { Messages as mobile_edit_bioMessages, KeyPaths as mobile_edit_bioKeyPaths } from './i18n/mobile_edit_bio'
 import type { Messages as mobile_edit_brithdayMessages, KeyPaths as mobile_edit_brithdayKeyPaths } from './i18n/mobile_edit_brithday'
 import type { Messages as mobile_edit_profileMessages, KeyPaths as mobile_edit_profileKeyPaths } from './i18n/mobile_edit_profile'
 import type { Messages as mobile_encryptionMessages, KeyPaths as mobile_encryptionKeyPaths } from './i18n/mobile_encryption'
@@ -151,7 +150,6 @@ export type I18nKeys = {
   "mobile_contact": mobile_contactMessages
   "mobile_deactivate": mobile_deactivateMessages
   "mobile_devices": mobile_devicesMessages
-  "mobile_edit_bio": mobile_edit_bioMessages
   "mobile_edit_brithday": mobile_edit_brithdayMessages
   "mobile_edit_profile": mobile_edit_profileMessages
   "mobile_encryption": mobile_encryptionMessages
@@ -266,7 +264,6 @@ export type I18nKeyPaths =
   | mobile_contactKeyPaths
   | mobile_deactivateKeyPaths
   | mobile_devicesKeyPaths
-  | mobile_edit_bioKeyPaths
   | mobile_edit_brithdayKeyPaths
   | mobile_edit_profileKeyPaths
   | mobile_encryptionKeyPaths

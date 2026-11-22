@@ -28,7 +28,6 @@ const FriendGroups = () => import('#/views/friends/FriendGroups.vue')
 const MobileMessagePage = () => import('#/views/message/index.vue')
 const MobileSecretChatPage = () => import('#/views/secretChat/SecretChatPage.vue')
 
-const EditBio = () => import('#/views/my/EditBio.vue')
 const EditBirthday = () => import('#/views/my/EditBirthday.vue')
 const EditProfile = () => import('#/views/my/EditProfile.vue')
 const MobileMy = () => import('#/views/my/index.vue')
@@ -253,11 +252,6 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'myMessages',
         name: 'mobileMyMessages',
         component: MyMessages
-      },
-      {
-        path: 'editBio',
-        name: 'mobileEditBio',
-        component: EditBio
       },
       {
         path: 'editBirthday',

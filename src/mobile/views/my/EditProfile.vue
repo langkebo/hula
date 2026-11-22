@@ -99,8 +99,8 @@
                 type="textarea"
                 rows="2"
                 autosize
-                readonly
-                @click="toEditBio"
+                :maxlength="300"
+                show-word-limit
                 class="bg-transparent!" />
 
               <!-- 性别选择器 -->
@@ -239,10 +239,6 @@ const toEditBirthday = () => {
   router.push('/mobile/mobileMy/editBirthday')
 }
 
-const toEditBio = () => {
-  router.push('/mobile/mobileMy/editBio')
-}
-
 const updateCurrentUserCache = (key: 'name' | 'avatar', value: string) => {
   const currentUser = (userStore.userInfo?.uid ?? '') && groupStore.getUserInfo(userStore.userInfo?.uid ?? '')
   if (currentUser) {
@@ -293,15 +289,17 @@ const saveEditInfo = async () => {
       await matrixAccountService.updateAvatar(localUserInfo.value.avatar!)
     }
 
+    let extendedProfileUnsupported = false
     try {
-      // resume 只由 EditBio 写入，这里不再回写，避免两个页面互相覆盖
       await profileService.updateOwnExtendedProfile({
         ...(localUserInfo.value.sex !== undefined ? { sex: localUserInfo.value.sex } : {}),
         region: region.value,
-        birthday: birthday.value
+        birthday: birthday.value,
+        resume: localUserInfo.value.resume ?? ''
       })
     } catch (error) {
       if (error instanceof ExtendedProfileUnsupportedError) {
+        extendedProfileUnsupported = true
         showFeedback(t('mobile_edit_profile.extended_profile_unsupported'), 'warning')
       } else {
         throw error
@@ -317,10 +315,13 @@ const saveEditInfo = async () => {
     currentUserInfo.name = localUserInfo.value.name!
     currentUserInfo.sex = localUserInfo.value.sex!
     currentUserInfo.phone = localUserInfo.value.phone!
+    currentUserInfo.resume = localUserInfo.value.resume ?? ''
     loginHistoriesStore.updateLoginHistory(currentUserInfo as UserInfoType)
     updateCurrentUserCache('name', localUserInfo.value.name)
     if (!localUserInfo.value.modifyNameChance) return
     localUserInfo.value.modifyNameChance -= 1
+    // 扩展资料整体不支持时只保留降级提示，不再误报保存成功
+    if (extendedProfileUnsupported) return
     showFeedback(t('mobile_edit_profile.save_success'), 'success')
   } catch (error) {
     logger.error('Failed to update profile', error)
