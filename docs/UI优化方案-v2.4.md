@@ -2021,20 +2021,31 @@ useGlassEffectStore().mode = 'off'
 已修：`RoomMembershipTabs` 的 tab（`role="tab"`）、`InfoPopover` 的复制账号入口
 （`role="button" tabindex="0"`），均补 `focus-visible:ring-2 + ring-primary-500`。
 
-#### P0：纯图标按钮缺 `aria-label`（10 处）
+#### ~~P0：纯图标按钮缺 `aria-label`~~ —— **误报，实际 0 处（2026-11-22）**
 
-读屏用户听到的是「按钮」，不知道点了会发生什么。已定位：
+初版排查用正则判「有 icon 且无文字」，把 `{{ t(...) }}` 当成了无文字，于是报出
+10 处「纯图标按钮」。逐个人工核对后全部是带文字的正常按钮：
 
 ```
-WidgetManager.vue:5, 21
-WidgetDetailPanel.vue:19, 54
-ThreadIndicator.vue:11
-UserReportDialog.vue:38
-EventReportDialog.vue:32
-AdminSecurity.vue:5 等
+WidgetManager.vue:5, 21          -> 都有 {{ t('common.widget.add') }} / search
+WidgetDetailPanel.vue:19, 54     -> 都有 {{ t('common.widget.edit_config') }}
+ThreadIndicator.vue:11           -> 有 {{ t('common.thread.start') }}
+UserReportDialog.vue:38          -> 有 {{ t('common.cancel') }} 兄弟按钮
+AdminSecurity.vue:5              -> 有 {{ t('common.refresh') }}
 ```
 
-**下一步**：按 `§13.7` 的规范补 `aria-label`，文案走 i18n，不写死中文。
+修正判据（`{{ }}` 也算文字）后重扫：**0 处**。再单独扫 `circle` 按钮这个纯图标
+高发形态，7 个**全部已有** `aria-label`。
+
+**顺带确认两个不用改的地方**：
+
+| 形态 | 数量 | 结论 |
+| :--- | ---: | :--- |
+| `<img>` 缺 `alt` | 0 | 已全覆盖 |
+| `v-clickable` 元素 | 110 | 指令本身已自动写 `role="button"` / `tabindex` / `aria-disabled`，无需逐处补 |
+
+**教训**：这条和上面那条是同一类错误 —— 用单一正则数出来的「缺陷数」不可信，
+必须叠加人工核对或第二判据。
 
 #### P1：8 个页面仍自写表格（78% -> 100% 的最后一公里）
 
@@ -2079,7 +2090,7 @@ AdminSecurity.vue:5 等
 | 顺序 | 事项 | 预估影响面 | 风险 |
 | :--- | :--- | :--- | :--- |
 | ~~1~~ | ~~31 处 `outline: none` 分类与修复~~ **已完成**（实际只 2 处缺陷） | 全端键盘用户 | 低 |
-| 2 | 10 处纯图标按钮补 `aria-label` | 读屏用户 | 低 |
+| ~~2~~ | ~~10 处纯图标按钮补 `aria-label`~~ **误报，0 处** | — | — |
 | 3 | 抽 `TjDrawer` / `TjDialog` 壳 | 30 个弹层 | 中（要逐个替换） |
 | 4 | 剩余 8 个表格迁移 | 后台一致性 | 中（`n-spin` 需逐处判断） |
 | 5 | 拆分 8 个超 400 行文件 | 可维护性 | 中 |
