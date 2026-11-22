@@ -10,20 +10,13 @@ import type { AuthDict, DeviceManager, MatrixClientExtended } from '@/types/matr
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
+import type { DeviceListUpdatesRequest, DeviceListUpdatesResponse, RoomKeyRequestEntry } from './deviceTypes'
 import { loadDeviceVerification } from './deviceVerification'
 import { UserDevicesCache } from './userDevicesCache'
 
-const logger = createLogger('MatrixDeviceService')
+export type { RoomKeyRequestEntry } from './deviceTypes'
 
-/** 房间密钥请求条目（GET /room_keys/request 原始响应元素）。 */
-export interface RoomKeyRequestEntry {
-  request_id: string
-  status?: string
-  room_id?: string
-  sender_key?: string
-  device_id?: string
-  algorithm?: string
-}
+const logger = createLogger('MatrixDeviceService')
 
 /**
  * 设备信息接口
@@ -47,16 +40,6 @@ interface DeviceUpdateResponse {
 }
 
 /**
- * 设备列表变更响应
- */
-interface DeviceListUpdatesResponse {
-  changed: Array<{ user_id: string; device_id: string; device_data: unknown }>
-  left: string[]
-  deleted?: string[]
-  stream_id?: number
-}
-
-/**
  * `/keys/query` 返回的设备密钥条目。
  *
  * SDK 的 `getUserDevices` 只把内容声明为字典，这里按 keys/query 契约补齐本服务读取的字段。
@@ -70,16 +53,6 @@ interface DeviceKeysContent {
   unsigned?: {
     device_display_name?: string
   }
-}
-
-/**
- * 设备列表变更请求
- */
-interface DeviceListUpdatesRequest {
-  users: string[]
-  since?: string | number
-  from?: string | number
-  to?: string | number
 }
 
 /**

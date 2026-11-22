@@ -6,7 +6,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
-import { type MxcResolverClient, resolveMxcToHttp } from './mxcUrl'
+import { type MxcResolverClient, resolvePlayableUrl } from './mxcUrl'
 
 interface MxcHttpClient extends MxcResolverClient {
   getRoom(roomId: string): RoomLike | null
@@ -107,14 +107,6 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
-  private getVoiceClient(): MxcHttpClient {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.matrix_client_not_initialized'))
-    }
-    return client as MxcHttpClient
-  }
-
   /**
    * VoiceManager 访问器。
    *
@@ -130,35 +122,12 @@ class MatrixVoiceService extends BaseMatrixService {
     return fn.call(client)
   }
 
-  private resolveHttpUrl(mxcUrl?: string): string | undefined {
-    if (!mxcUrl) {
-      return undefined
-    }
-
-    const client = this.getVoiceClient()
-    return resolveMxcToHttp(client, mxcUrl) ?? undefined
-  }
-
   /**
    * 将 mxc:// 语音地址解析为可播放的 HTTP 地址。
    * 非 mxc 输入原样返回；解析失败时回退到 fallbackUrl 或原始地址。
    */
   getPlayableUrl(mxcUrl?: string, fallbackUrl?: string): string {
-    const sourceUrl = mxcUrl || fallbackUrl
-    if (!sourceUrl) {
-      return ''
-    }
-
-    if (!sourceUrl.startsWith('mxc://')) {
-      return sourceUrl
-    }
-
-    try {
-      return this.resolveHttpUrl(sourceUrl) ?? fallbackUrl ?? sourceUrl
-    } catch (err) {
-      logger.warn(`[MatrixVoiceService] getPlayableUrl failed: ${err}`)
-      return fallbackUrl ?? sourceUrl
-    }
+    return resolvePlayableUrl(matrixClientService.getClient() as MxcResolverClient | null, mxcUrl, fallbackUrl)
   }
 
   /**
@@ -219,7 +188,7 @@ class MatrixVoiceService extends BaseMatrixService {
         url: mxcUrl,
         filename,
         mxcUrl,
-        httpUrl: this.resolveHttpUrl(mxcUrl)
+        httpUrl: resolvePlayableUrl(client as MxcHttpClient, mxcUrl)
       }
     } catch (err) {
       logger.error(`[MatrixVoiceService] 上传语音失败: ${err}`)

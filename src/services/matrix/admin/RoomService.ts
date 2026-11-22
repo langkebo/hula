@@ -12,25 +12,26 @@ import type {
   AdminRoomSearchResultItem,
   AdminRoomStatsInfo,
   AdminRoomTokenSync,
-  AdminSpaceInfo,
-  AdminSpaceRoom,
-  AdminSpaceStatsInfo,
-  AdminSpaceUser,
   RoomInfo,
   RoomState,
   ShutdownRoomResult
 } from './AdminTypes'
+import { RoomSpaceMethods } from './RoomSpaceMethods'
 
 const logger = createLogger('RoomService')
 
 type RoomDomainSdkGetter = () => Promise<import('matrix-js-sdk/admin').AdminManager>
 type RoomDomainClientGetter = () => MatrixClient
 
-export class AdminRoomService {
-  constructor(
-    private readonly sdkAdmin: RoomDomainSdkGetter,
-    private readonly getClient: RoomDomainClientGetter
-  ) {}
+export class AdminRoomService extends RoomSpaceMethods {
+  protected readonly sdkAdmin: RoomDomainSdkGetter
+  private readonly getClient: RoomDomainClientGetter
+
+  constructor(sdkAdmin: RoomDomainSdkGetter, getClient: RoomDomainClientGetter) {
+    super()
+    this.sdkAdmin = sdkAdmin
+    this.getClient = getClient
+  }
 
   async getRooms(
     limit = LARGE_PAGE_LIMIT,
@@ -454,81 +455,6 @@ export class AdminRoomService {
       }
     } catch (err) {
       logger.error(`[Admin] 获取房间前向极值失败: ${err}`)
-      return null
-    }
-  }
-
-  async adminGetSpaces(
-    limit: number = 50,
-    from?: string
-  ): Promise<{
-    spaces: AdminSpaceInfo[]
-    next_batch?: string | undefined
-  }> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.listSpaces(from, limit)
-      return {
-        spaces: (result?.spaces ?? []).map((s) => unknownToObject<AdminSpaceInfo>(s) ?? {}),
-        next_batch: undefined
-      }
-    } catch (err) {
-      logger.error(`[Admin] 获取空间列表失败: ${err}`)
-      return { spaces: [] }
-    }
-  }
-
-  async adminDeleteSpace(spaceId: string): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deleteSpace(spaceId)
-      logger.info(`[Admin] 删除空间成功: ${spaceId}`)
-    } catch (err) {
-      logger.error(`[Admin] 删除空间失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getSpaceDetails(spaceId: string): Promise<AdminSpaceInfo | null> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.getSpace(spaceId)
-      return unknownToObject<AdminSpaceInfo>(result)
-    } catch (err) {
-      logger.error(`[Admin] 获取空间详情失败: ${err}`)
-      return null
-    }
-  }
-
-  async getSpaceUsers(spaceId: string): Promise<AdminSpaceUser[]> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.getSpaceUsers(spaceId)
-      return (result?.users ?? []).map((u) => unknownToObject<AdminSpaceUser>(u) ?? {})
-    } catch (err) {
-      logger.error(`[Admin] 获取空间用户失败: ${err}`)
-      return []
-    }
-  }
-
-  async getSpaceRooms(spaceId: string): Promise<AdminSpaceRoom[]> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.getSpaceRooms(spaceId)
-      return (result?.rooms ?? []).map((r) => unknownToObject<AdminSpaceRoom>(r) ?? {})
-    } catch (err) {
-      logger.error(`[Admin] 获取空间房间失败: ${err}`)
-      return []
-    }
-  }
-
-  async getSpaceStats(spaceId: string): Promise<AdminSpaceStatsInfo | null> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.getSpaceStats(spaceId)
-      return unknownToObject<AdminSpaceStatsInfo>(result)
-    } catch (err) {
-      logger.error(`[Admin] 获取空间统计失败: ${err}`)
       return null
     }
   }

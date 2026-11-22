@@ -100,3 +100,26 @@ export function resolveMxcToHttp(
     return null
   }
 }
+
+/**
+ * 把 mxc:// 地址解析为可播放的 HTTP(S) 地址。
+ *
+ * 非 mxc 输入原样返回；解析失败或未命中时回退到 fallbackUrl，再回退原始地址。
+ */
+export function resolvePlayableUrl(
+  client: MxcResolverClient | null | undefined,
+  mxcUrl?: string,
+  fallbackUrl?: string
+): string {
+  const sourceUrl = mxcUrl || fallbackUrl
+  if (!sourceUrl) return ''
+
+  if (!sourceUrl.startsWith('mxc://')) return sourceUrl
+
+  try {
+    return resolveMxcToHttp(client, sourceUrl) ?? fallbackUrl ?? sourceUrl
+  } catch (err) {
+    logger.warn(`[MxcUrl] resolvePlayableUrl 失败: ${err}`)
+    return fallbackUrl ?? sourceUrl
+  }
+}

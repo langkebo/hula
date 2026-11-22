@@ -22,6 +22,8 @@ export type {
   IProtocol,
   IPublicRoomsChunkRoom,
   IPusher,
+  IPushRule,
+  IPushRules,
   LoginResponse,
   MatrixClient,
   MatrixEvent,

@@ -7,7 +7,7 @@ import {
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import * as voipDiag from './voipDiagnostics'
-import { getCallById } from './voipHelpers'
+import { buildIncomingCallInfo, getCallById } from './voipHelpers'
 import { resolveCallState } from './voipState'
 import type { CallInfo, CallOptions, VoIPCall, VoIPCallFeed } from './voipTypes'
 
@@ -109,29 +109,7 @@ class MatrixVoIPService extends BaseMatrixService {
 
   private handleIncomingCall(call: VoIPCall): void {
     logger.info(`[VoIP] 收到来电: ${call.callId}`)
-    // SDK MatrixCall 有 getOpponentMember() 方法，提取来电者信息
-    const sdkCall = call as VoIPCall & { getOpponentMember?: () => { userId?: string; name?: string } | undefined }
-    const opponentMember = sdkCall.getOpponentMember?.()
-    const callerUserId = opponentMember?.userId ?? ''
-
-    const callInfo: CallInfo = {
-      callId: call.callId,
-      roomId: call.roomId,
-      isVideo: call.isVideo || false,
-      isGroup: false,
-      state: 'ringing',
-      participants: callerUserId
-        ? [
-            {
-              userId: callerUserId,
-              displayName: opponentMember?.name,
-              isMuted: false,
-              isVideoMuted: false,
-              isSpeaking: false
-            }
-          ]
-        : []
-    }
+    const callInfo = buildIncomingCallInfo(call)
     this.calls.set(call.callId, callInfo)
     // 来电与去电走同一套每通话事件（state/feeds_changed/hangup/error），
     // 否则接听后 feeds 与 connected 状态都不会下发。

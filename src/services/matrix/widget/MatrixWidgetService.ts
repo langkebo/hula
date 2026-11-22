@@ -3,84 +3,23 @@ import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { matrixClientService } from '../MatrixClientService'
 import type { WidgetManager } from '../sdk-compat'
+import { getWidgetsFromRoomState, toWidgetFacade } from './widgetRoomState'
+import type {
+  JitsiConfigResponse,
+  SessionApiData,
+  SetPermissionResponse,
+  Widget,
+  WidgetCapabilitiesResponse,
+  WidgetConfigResponse,
+  WidgetDataObject,
+  WidgetPermissionsResponse,
+  WidgetSessionOptions,
+  WidgetSessionsOutcome
+} from './widgetTypes'
+
+export type * from './widgetTypes'
 
 const logger = createLogger('MatrixWidgetService')
-
-/** SDK widget 数据载荷（后端 `serde_json::Value` ⇒ 任意 JSON 值，可能是 null/数组/标量）。 */
-export type WidgetData = Awaited<ReturnType<WidgetManager['getWidgetConfig']>>['data']
-/**
- * widget 数据对象：后端 `serde_json::Value` 的对象形态，字段随 widget 类型变化，
- * 属真·动态包（如 Jitsi 的 domain/conferenceId/auth），故以具名索引签名承载。
- */
-export type WidgetDataObject = { [key: string]: unknown }
-
-export interface Widget {
-  id: string
-  type: string
-  url: string
-  name?: string | undefined
-  data?: WidgetDataObject | undefined
-}
-
-interface WidgetSessionOptions {
-  deviceId?: string
-  expiresInMs?: number
-}
-
-/** 以下响应类型全部从 SDK `WidgetManager` 方法签名派生，不再手写空索引签名接口。 */
-export type WidgetConfigResponse = Awaited<ReturnType<WidgetManager['getWidgetConfig']>>
-export type JitsiConfigResponse = Awaited<ReturnType<WidgetManager['getJitsiConfig']>>
-export type WidgetPermissionsResponse = Awaited<ReturnType<WidgetManager['getWidgetPermissions']>>
-export type SetPermissionResponse = Awaited<ReturnType<WidgetManager['setWidgetPermissions']>>
-export type SessionApiData = Awaited<ReturnType<WidgetManager['getWidgetSession']>>
-
-/** Widget 会话条目（SDK `getWidgetSessions` 返回的 `sessions` 元素）。 */
-export interface WidgetSessionEntry {
-  session_id: string
-  user_id?: string
-  created_ts?: number | null
-  created_at?: number | string
-  last_active_ts?: number | null
-  last_active?: number | string
-}
-
-/** Widget 会话列表响应（SDK 返回 `{ sessions, total }`；失败时服务层降级为 `[]`）。 */
-export interface WidgetSessionsOutcome {
-  sessions?: WidgetSessionEntry[]
-  total?: number
-}
-/**
- * SDK 侧 widget 的**两种**真实形状（后端有意不统一，见 SDK `docs/api-contract/widget.md`）：
- * - 单条（`POST/GET/PUT /widgets/{id}`）：`WidgetApiResponse` —— 用 `type`，扁平，无 `{widget}` 信封；
- * - 列表（`GET /rooms/{id}/widgets`）：`Widget` 记录 —— 用 `widget_type`，另带 `id`/`is_active`。
- *
- * 写成一个宽松结构，是因为本服务的 facade 只关心 id/type/url/name/data；
- * `type` 缺失时由 `toFacade` 从 `widget_type` 归一化。
- */
-interface SdkWidget {
-  widget_id: string
-  room_id?: string | null
-  type?: string
-  widget_type?: string
-  url: string
-  name: string
-  /**
-   * 后端是 `serde_json::Value` ⇒ **任意 JSON**（可能是 null / 数组 / 标量），不是 `Record`。
-   * 契约里对应 `WidgetJsonValue`；到 facade 时用 `unknownToObject` 归一成对象（非对象 ⇒ null）。
-   */
-  data?: WidgetData
-}
-
-export interface WidgetCapabilitiesResponse {
-  capabilities: string[]
-  widget_id: string
-  room_id: string
-}
-
-export interface SendWidgetMessageRequest {
-  type: string
-  content: WidgetDataObject
-}
 
 class MatrixWidgetService {
   private getManager(): WidgetManager | null {
@@ -91,50 +30,6 @@ class MatrixWidgetService {
     return client.getWidgetManager?.() ?? null
   }
 
-  private toFacade(widget: SdkWidget): Widget {
-    return {
-      id: widget.widget_id,
-      // 单条用 `type`、列表用 `widget_type`：两者都可能是 undefined 的那一半
-      type: widget.type ?? widget.widget_type ?? 'unknown',
-      url: widget.url,
-      name: widget.name,
-      data: unknownToObject<WidgetDataObject>(widget.data) ?? undefined
-    }
-  }
-
-  private getWidgetsFromRoomState(roomId: string): Widget[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const room = client.getRoom(roomId)
-    if (!room) return []
-
-    const widgets: Widget[] = []
-
-    const widgetEvents = room.currentState.getStateEvents('im.vector.modular.widgets') || []
-    const mWidgetEvents = room.currentState.getStateEvents('m.widget') || []
-
-    for (const event of [...widgetEvents, ...mWidgetEvents]) {
-      const content = event.getContent() as {
-        type?: string
-        url?: string
-        name?: string
-        data?: WidgetDataObject
-      }
-      if (content?.type && content.url) {
-        widgets.push({
-          id: event.getStateKey() || '',
-          type: content.type,
-          url: content.url,
-          name: content.name,
-          data: content.data
-        })
-      }
-    }
-
-    return widgets
-  }
-
   /**
    * 列出房间内的 widgets；SDK 失败时回退到房间 state。
    */
@@ -143,17 +38,17 @@ class MatrixWidgetService {
     if (manager) {
       try {
         const response = await manager.getRoomWidgets(roomId)
-        return (response?.widgets ?? []).map((w) => this.toFacade(w))
+        return (response?.widgets ?? []).map((w) => toWidgetFacade(w))
       } catch (err) {
         logger.error(`[MatrixWidgetService] getRoomWidgets failed for ${roomId}: ${err}`)
         if (throwOnError) throw err
-        return this.getWidgetsFromRoomState(roomId)
+        return getWidgetsFromRoomState(roomId)
       }
     }
     if (throwOnError) {
-      return this.getWidgetsFromRoomState(roomId)
+      return getWidgetsFromRoomState(roomId)
     }
-    return this.getWidgetsFromRoomState(roomId)
+    return getWidgetsFromRoomState(roomId)
   }
 
   async getRoomWidgets(roomId: string, throwOnError = true): Promise<Widget[]> {
@@ -181,7 +76,7 @@ class MatrixWidgetService {
       // 后端返回**扁平** WidgetApiResponse（`widget_id` 在顶层）。旧代码读 `response.widget`
       // ⇒ 运行时 `undefined`（SDK 侧同步修正，见 backend-delta-sdk-audit §14）。
       logger.info(`[MatrixWidgetService] Created widget ${response.widget_id} in room ${roomId}`)
-      return this.toFacade(response)
+      return toWidgetFacade(response)
     } catch (err) {
       logger.error(`[MatrixWidgetService] Failed to create widget: ${err}`)
       if (throwOnError) throw err
@@ -237,7 +132,7 @@ class MatrixWidgetService {
     }
     try {
       const response = await manager.getWidget(widgetId)
-      return this.toFacade(response)
+      return toWidgetFacade(response)
     } catch (err) {
       logger.error(`[MatrixWidgetService] getWidget ${widgetId} failed: ${err}`)
       if (throwOnError) throw err
@@ -257,7 +152,7 @@ class MatrixWidgetService {
         ...(updates.name !== undefined ? { name: updates.name } : {}),
         ...(updates.data !== undefined ? { data: updates.data } : {})
       })
-      return this.toFacade(response)
+      return toWidgetFacade(response)
     } catch (err) {
       logger.error(`[MatrixWidgetService] Failed to update widget ${widgetId}: ${err}`)
       if (throwOnError) throw err

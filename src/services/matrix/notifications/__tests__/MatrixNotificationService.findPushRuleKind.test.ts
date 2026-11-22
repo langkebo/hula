@@ -7,12 +7,12 @@ import { describe, expect, it } from 'vitest'
  * 而非 rules[kind]（IPushRules 结构是 { global: { override, content, room, sender, underride } }）
  */
 describe('FT-106: findPushRuleKind 通过 rules.global 访问规则', () => {
-  const sourcePath = resolve(process.cwd(), 'src/services/matrix/notifications/MatrixNotificationService.ts')
+  const sourcePath = resolve(process.cwd(), 'src/services/matrix/notifications/pushRuleUtils.ts')
   const sourceContent = readFileSync(sourcePath, 'utf8')
 
   it('findPushRuleKind 方法体引用 rules.global 而非顶层 rules[kind]', () => {
     // 提取 findPushRuleKind 方法体
-    const methodMatch = sourceContent.match(/private async findPushRuleKind[\s\S]*?\n {2}\}/)
+    const methodMatch = sourceContent.match(/export async function findPushRuleKind[\s\S]*?\n\}/)
     expect(methodMatch).toBeDefined()
     const methodBody = methodMatch![0]
 

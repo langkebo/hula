@@ -17,11 +17,12 @@ import type {
   AdminUserStats,
   AdminUserStatsOverview,
   AdminWhoisInfo,
-  RateLimit,
   ShadowBanStatus,
   UserDevice,
   UserInfo
 } from './AdminTypes'
+import { isAdminPermissionDenied } from './adminPermissionGuard'
+import { UserRateLimitMethods } from './UserRateLimitMethods'
 
 const logger = createLogger('UserService')
 
@@ -35,18 +36,19 @@ interface SynapseUserRoom {
   is_room_admin?: boolean
 }
 
-export class AdminUserService {
-  /** 非管理员用户的正常业务流标记，各方法 catch 中统一识别并降级为 debug */
-  private static readonly PERMISSION_DENIED_MSG = 'ADMIN_PERMISSION_DENIED'
+export class AdminUserService extends UserRateLimitMethods {
+  protected readonly sdkAdmin: UserDomainSdkGetter
+  private readonly getClient: UserDomainClientGetter
 
-  constructor(
-    private readonly sdkAdmin: UserDomainSdkGetter,
-    private readonly getClient: UserDomainClientGetter
-  ) {}
+  constructor(sdkAdmin: UserDomainSdkGetter, getClient: UserDomainClientGetter) {
+    super()
+    this.sdkAdmin = sdkAdmin
+    this.getClient = getClient
+  }
 
   /** 判断错误是否为非管理员权限拒绝（正常业务流，非异常） */
   private isPermissionDenied(err: unknown): boolean {
-    return err instanceof Error && err.message === AdminUserService.PERMISSION_DENIED_MSG
+    return isAdminPermissionDenied(err)
   }
 
   async getUsers(
@@ -260,50 +262,6 @@ export class AdminUserService {
     } catch (err) {
       if (this.isPermissionDenied(err)) return
       logger.error(`[Admin] 删除设备失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getRateLimit(userId: string): Promise<RateLimit | null> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.getRateLimitOverride(userId, false)
-      if (!result) return null
-      return {
-        messagesPerSecond: result.messages_per_second,
-        burstCount: result.burst_count
-      }
-    } catch (err) {
-      if (this.isPermissionDenied(err)) return null
-      logger.error(`[Admin] 获取速率限制失败: ${err}`)
-      return null
-    }
-  }
-
-  /** 覆盖指定用户的速率限制
-   */
-  async overrideUserRateLimit(userId: string): Promise<void> {
-    if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.overrideRateLimit(userId)
-      logger.info(`[Admin] 用户速率限制已覆盖（禁用）: ${userId}`)
-    } catch (err) {
-      if (this.isPermissionDenied(err)) return
-      logger.error(`[Admin] 覆盖速率限制失败: ${err}`)
-      throw err
-    }
-  }
-
-  async deleteRateLimit(userId: string): Promise<void> {
-    if (!isValidMatrixUserId(userId)) throw new Error(`Invalid user ID: ${userId}`)
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deleteRateLimitOverride(userId)
-      logger.info(`[Admin] 速率限制已删除: ${userId}`)
-    } catch (err) {
-      if (this.isPermissionDenied(err)) return
-      logger.error(`[Admin] 删除速率限制失败: ${err}`)
       throw err
     }
   }

@@ -52,8 +52,9 @@
         <ErrorState
           v-else-if="initialLoadFailed"
           class="h-200px"
-          illustration="generic-error"
+          :illustration="loadFailureIllustration"
           :title="t('chatHistory.empty.loadFailed')"
+          :message="loadFailureMessage"
           :retry-text="t('common.retry')"
           @retry="retryLoad" />
 
@@ -133,6 +134,8 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { formatDateLabel, normalizeHistoryDateRange } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
+import { groupHistoryMessages } from './groupHistoryMessages'
+import { useChatHistoryLoadState } from './useChatHistoryLoadState'
 
 const logger = createLogger('ChatHistory')
 
@@ -157,14 +160,18 @@ const userUid = computed(() => userStore.userInfo?.uid ?? '')
 // 响应式数据
 const messages = ref<MessageType[]>([])
 const loading = ref(false)
-const loadError = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
 
-/** 首屏三态判定：仅在列表为空时生效，翻页加载不打断已有消息 */
-const initialLoading = computed(() => loading.value && messages.value.length === 0)
-const initialLoadFailed = computed(() => loadError.value && messages.value.length === 0)
-const isEmptyResult = computed(() => messages.value.length === 0)
+const {
+  initialLoading,
+  initialLoadFailed,
+  isEmptyResult,
+  loadFailureMessage,
+  loadFailureIllustration,
+  markLoadFailed,
+  resetLoadError
+} = useChatHistoryLoadState(messages, loading)
 
 // 搜索和筛选
 const searchKeyword = ref('')
@@ -197,31 +204,8 @@ const getAllVideoUrls = computed(() => {
   return videoUrls
 })
 
-// 按日期分组消息
-const groupedMessages = computed(() => {
-  const groups: Record<string, { messages: MessageType[]; timestamp: number }> = {}
-
-  messages.value.forEach((i) => {
-    // 排除BOT、SYSTEM以及撤回类消息
-    if (
-      i.message.sendTime &&
-      i.message.type !== MsgEnum.BOT &&
-      i.message.type !== MsgEnum.SYSTEM &&
-      i.message.type !== MsgEnum.RECALL
-    ) {
-      const date = new Date(i.message.sendTime).toDateString()
-      if (!groups[date]) {
-        groups[date] = {
-          messages: [],
-          timestamp: i.message.sendTime
-        }
-      }
-      groups[date].messages.push(i)
-    }
-  })
-
-  return groups
-})
+// 按日期分组消息（分组规则见 groupHistoryMessages）
+const groupedMessages = computed(() => groupHistoryMessages(messages.value))
 
 // 防抖搜索
 const handleSearch = useDebounceFn(() => {
@@ -297,7 +281,7 @@ const loadMessages = async (): Promise<boolean> => {
   if (!roomId.value) return false
 
   loading.value = true
-  loadError.value = false
+  resetLoadError()
 
   try {
     const params = {
@@ -321,7 +305,7 @@ const loadMessages = async (): Promise<boolean> => {
 
     if (result.isErr()) {
       logger.error('Failed to load chat history:', result.error)
-      loadError.value = true
+      markLoadFailed(result.error)
       return false
     }
 
@@ -337,7 +321,7 @@ const loadMessages = async (): Promise<boolean> => {
     return true
   } catch (error) {
     logger.error('Failed to load chat history:', error)
-    loadError.value = true
+    markLoadFailed(error)
     return false
   } finally {
     loading.value = false

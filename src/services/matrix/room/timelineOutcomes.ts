@@ -217,24 +217,7 @@ export function normalizePerspective(raw: unknown): RoomEventPerspectiveStats | 
 }
 
 /** 从 SDK 抛出的错误中提取 Matrix errcode（部分错误把 errcode 塞在 message 的 JSON 里）。 */
-export function readErrcode(err: unknown): string | null {
-  if (typeof err !== 'object' || err === null) return null
-  const record = err as { errcode?: unknown; code?: unknown; message?: unknown }
-  if (typeof record.errcode === 'string') return record.errcode
-  if (typeof record.code === 'string') return record.code
-  if (typeof record.message === 'string') {
-    const jsonMatch = record.message.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]) as { errcode?: unknown }
-        if (typeof parsed.errcode === 'string') return parsed.errcode
-      } catch {
-        return null
-      }
-    }
-  }
-  return null
-}
+export { readErrcode } from '@/utils/matrixErrcode'
 
 /** 后端媒体/事件条目的动态字段包（字段名随后端版本变化）。 */
 export interface UrlFieldRecord {

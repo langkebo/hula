@@ -12,7 +12,6 @@
   "links": "Links",
   "audio": "Audio",
   "no_data": "No data",
-  "session_load_failed": "Failed to load the conversation. Returning to the message list.",
   "chat_background": "Chat Background",
   "outbox_pending": "{count} message(s) pending",
   "outbox_failed": "{count} message(s) failed to send",

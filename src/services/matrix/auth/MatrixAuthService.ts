@@ -23,17 +23,11 @@ import {
 import * as captchaApi from './MatrixAuthCaptcha'
 import * as passwordApi from './MatrixAuthPassword'
 import * as samlApi from './MatrixAuthSaml'
+import { parseSsoProviders, type SsoIdentityProvider } from './ssoFlow'
 
 // 类型再导出：保持对外 API 不变（useSessionActions 等仍从此处导入类型）
 export type { MatrixRegisterResult, MatrixRequestedEmailTokenResult } from './authHelpers'
-
-/** 服务端 `m.login.sso` flow 中声明的 IdP（CAP-03） */
-export interface SsoIdentityProvider {
-  id: string
-  name?: string
-  brand?: string
-  icon?: string
-}
+export type { SsoIdentityProvider } from './ssoFlow'
 
 /** 邮箱令牌提交结果（SDK `AccountManager.submitEmailToken` 响应）。 */
 export interface SubmitEmailTokenResponse {
@@ -265,26 +259,7 @@ export class MatrixAuthService {
         return { supported: true, providers: [] }
       }
 
-      return {
-        supported: true,
-        providers: providers.flatMap((provider) => {
-          const id = (provider as { id?: unknown })?.id
-          if (typeof id !== 'string' || id.length === 0) {
-            return []
-          }
-          const name = (provider as { name?: unknown })?.name
-          const brand = (provider as { brand?: unknown })?.brand
-          const icon = (provider as { icon?: unknown })?.icon
-          return [
-            {
-              id,
-              ...(typeof name === 'string' && name.length > 0 ? { name } : {}),
-              ...(typeof brand === 'string' && brand.length > 0 ? { brand } : {}),
-              ...(typeof icon === 'string' && icon.length > 0 ? { icon } : {})
-            }
-          ]
-        })
-      }
+      return { supported: true, providers: parseSsoProviders(providers) }
     } catch {
       return { supported: false, providers: [] }
     }

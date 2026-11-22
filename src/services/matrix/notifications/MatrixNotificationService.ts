@@ -1,11 +1,4 @@
-import {
-  type IPusherRequest,
-  type IPushRule,
-  type IPushRules,
-  type MatrixClient,
-  type PushRuleAction,
-  PushRuleKind
-} from 'matrix-js-sdk'
+import type { IPusherRequest, IPushRule, MatrixClient, PushRuleAction, PushRuleKind } from 'matrix-js-sdk'
 import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -23,6 +16,7 @@ import { type NotificationConfig, NotificationConfigStore } from './notification
 import type { NotificationMessageInput } from './notificationDecision'
 import { shouldNotifyMessage as decideShouldNotifyMessage, renderNotificationDisplay } from './notificationDecisionGate'
 import type { NotificationHistoryEntry } from './notificationHistoryPresentation'
+import { findPushRuleKind, flattenPushRules } from './pushRuleUtils'
 import { isSystemNotificationPermissionGranted } from './systemNotificationPermission'
 
 const logger = createLogger('MatrixNotificationService')
@@ -244,17 +238,6 @@ class MatrixNotificationService extends BaseMatrixService {
     return client
   }
 
-  private flattenRules(rules: IPushRules): IPushRule[] {
-    const allRules: IPushRule[] = []
-    const globalRules = rules.global
-    for (const value of Object.values(globalRules)) {
-      if (Array.isArray(value)) {
-        allRules.push(...value)
-      }
-    }
-    return allRules
-  }
-
   /**
    * 初始化通知服务：拉取并缓存当前账号的全部推送规则。
    */
@@ -262,7 +245,7 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       const client = this.getNotificationClient()
       const rules = await client.getPushManager().getPushRules()
-      this.pushRules = this.flattenRules(rules)
+      this.pushRules = flattenPushRules(rules)
       logger.info('[MatrixNotification] 初始化完成')
     } catch (err) {
       logger.error(`[MatrixNotification] 初始化失败: ${err}`)
@@ -292,37 +275,13 @@ class MatrixNotificationService extends BaseMatrixService {
   async deletePushRule(ruleId: string, kind?: PushRuleKind): Promise<void> {
     const client = this.getNotificationClient()
     try {
-      const resolvedKind = kind ?? (await this.findPushRuleKind(client, ruleId))
+      const resolvedKind = kind ?? (await findPushRuleKind(client, ruleId))
       await client.getPushManager().deletePushRule('global', resolvedKind, ruleId)
       logger.info(`[MatrixNotification] 删除推送规则成功: ${ruleId} (kind: ${resolvedKind})`)
     } catch (err) {
       logger.error(`[MatrixNotification] 删除推送规则失败: ${err}`)
       throw err
     }
-  }
-
-  private async findPushRuleKind(client: MatrixClient, ruleId: string): Promise<PushRuleKind> {
-    try {
-      const rules = await client.getPushManager().getPushRules()
-      const kinds: PushRuleKind[] = [
-        PushRuleKind.Override,
-        PushRuleKind.ContentSpecific,
-        PushRuleKind.RoomSpecific,
-        PushRuleKind.SenderSpecific,
-        PushRuleKind.Underride
-      ]
-      for (const kind of kinds) {
-        // FT-106: IPushRules 结构是 { global: { override, content, room, sender, underride } }
-        // 必须通过 rules.global[kind] 访问，而非 rules[kind]
-        const ruleList = (rules.global?.[kind] ?? undefined) as IPushRule[] | undefined
-        if (ruleList?.some((r) => r.rule_id === ruleId)) {
-          return kind
-        }
-      }
-    } catch (err) {
-      logger.warn('Notification operation failed:', err)
-    }
-    return PushRuleKind.Override
   }
 
   /**

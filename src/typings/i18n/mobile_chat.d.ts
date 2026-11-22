@@ -17,7 +17,6 @@ export type Messages = {
   "links": "链接",
   "audio": "音频",
   "no_data": "无数据",
-  "session_load_failed": "会话加载失败，正在返回消息列表",
   "chat_background": "聊天背景",
   "outbox_pending": "{count} 条消息待发送",
   "outbox_failed": "{count} 条消息发送失败",
@@ -103,7 +102,6 @@ export type KeyPaths =
   | "mobile_chat.links"
   | "mobile_chat.audio"
   | "mobile_chat.no_data"
-  | "mobile_chat.session_load_failed"
   | "mobile_chat.chat_background"
   | "mobile_chat.outbox_pending"
   | "mobile_chat.outbox_failed"

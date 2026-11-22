@@ -101,6 +101,39 @@ export const extractFileName = (path: string): string => {
 }
 
 /**
+ * 按估算字符宽度截断文件名，尽量保留扩展名
+ * @param fileName 原始文件名
+ * @param maxWidth 最大显示宽度（像素）
+ * @returns 截断后的文件名
+ */
+export const truncateFileName = (fileName: string, maxWidth = 160): string => {
+  if (!fileName) return ''
+
+  const averageCharWidth = 9 // 平均字符宽度（基于14px Arial字体）
+  const maxChars = Math.floor(maxWidth / averageCharWidth)
+
+  if (fileName.length <= maxChars) {
+    return fileName
+  }
+
+  const lastDotIndex = fileName.lastIndexOf('.')
+  if (lastDotIndex === -1) {
+    return `${fileName.substring(0, maxChars - 3)}...`
+  }
+
+  const name = fileName.substring(0, lastDotIndex)
+  const extension = fileName.substring(lastDotIndex)
+  // 保留扩展名和省略号的空间
+  const availableChars = maxChars - extension.length - 3
+
+  if (availableChars <= 0) {
+    return `...${extension}`
+  }
+
+  return `${name.substring(0, availableChars)}...${extension}`
+}
+
+/**
  * 根据文件扩展名获取MIME类型
  * @param fileName 文件名
  * @returns MIME类型；未知扩展名返回空字符串，由调用方按场景兜底

@@ -7,7 +7,7 @@
 
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import type { CallStats, TurnServerConfig, VoIPCall } from './voipTypes'
+import type { CallInfo, CallStats, TurnServerConfig, VoIPCall } from './voipTypes'
 
 const logger = createLogger('VoIPHelpers')
 
@@ -26,6 +26,36 @@ export function getCallById(callId: string, client: MatrixClient): VoIPCall | un
   if (!rawHandler || typeof rawHandler !== 'object') return undefined
   const calls = (rawHandler as { calls?: Map<string, VoIPCall> }).calls
   return calls?.get(callId)
+}
+
+/**
+ * 由 SDK 来电对象构造本地通话视图。
+ *
+ * SDK `MatrixCall` 提供 `getOpponentMember()`；未提供时按未知来电者处理。
+ */
+export function buildIncomingCallInfo(call: VoIPCall): CallInfo {
+  const sdkCall = call as VoIPCall & { getOpponentMember?: () => { userId?: string; name?: string } | undefined }
+  const opponentMember = sdkCall.getOpponentMember?.()
+  const callerUserId = opponentMember?.userId ?? ''
+
+  return {
+    callId: call.callId,
+    roomId: call.roomId,
+    isVideo: call.isVideo || false,
+    isGroup: false,
+    state: 'ringing',
+    participants: callerUserId
+      ? [
+          {
+            userId: callerUserId,
+            displayName: opponentMember?.name,
+            isMuted: false,
+            isVideoMuted: false,
+            isSpeaking: false
+          }
+        ]
+      : []
+  }
 }
 
 /** 从 PeerConnection 获取通话统计信息

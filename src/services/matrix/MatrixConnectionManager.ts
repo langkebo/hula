@@ -40,42 +40,23 @@ import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { track } from '@/utils/telemetry'
+import type {
+  ConnectionState,
+  ConnectionStateChangeCallback,
+  MatrixClientConfig,
+  SyncErrorLike,
+  SyncStateMappingResult
+} from './matrixConnectionTypes'
+
+export type {
+  ConnectionState,
+  ConnectionStateChangeCallback,
+  MatrixClientConfig,
+  SyncErrorLike,
+  SyncStateMappingResult
+} from './matrixConnectionTypes'
 
 const logger = createLogger('MatrixConnection')
-
-/** 连接状态类型 */
-export type ConnectionState = 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'CATCHUP' | 'ERROR'
-
-type SyncErrorLike = {
-  errcode?: string
-  name?: string
-}
-
-/** Matrix 客户端配置接口 */
-export interface MatrixClientConfig {
-  homeserverUrl: string
-  identityServerUrl?: string
-  deviceId?: string
-  accessToken?: string
-  userId?: string
-  allowInsecureHttp?: boolean
-  slidingSync?: {
-    roomRangeEnd?: number
-    timelineLimit?: number
-    pollTimeout?: number
-  }
-}
-
-/** 状态变更回调类型 */
-type ConnectionStateChangeCallback = (state: ConnectionState) => void
-
-/** 同步状态映射结果 */
-type SyncStateMappingResult = {
-  /** 映射后的连接状态（null 表示无需变更） */
-  connectionState: ConnectionState | null
-  /** 是否是 PREPARED/SYNCING（用于 markReady） */
-  isReady: boolean
-}
 
 /**
  * 连接生命周期管理器

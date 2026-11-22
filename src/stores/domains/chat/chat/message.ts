@@ -17,6 +17,7 @@ import { createMessageMutations } from './messageMutations'
 import { createMessageReplyMapping } from './messageReplyMapping'
 import { createMessageRoomIndex } from './messageRoomIndex'
 import { createMessageSortedKeys } from './messageSortedKeys'
+import { pruneToTransientMessages } from './messageTransientPrune'
 import { createRecallManager } from './recallManager'
 
 export type { MessageLoadFailure, MessageLoadFailureCategory } from './messageLoadFailure'
@@ -150,20 +151,11 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
   const clearOtherRoomsMessages = (currentRoomId: string) => {
     for (const roomId in messageMap) {
       if (roomId !== currentRoomId) {
-        const roomMessages = messageMap[roomId]
-        const newRoomMessages: Record<string, MessageType> = {}
         const currentKeys = getCurrentSortedMessageKeys(roomId)
-        const newSortedKeys: string[] = []
-        for (const msgId of currentKeys) {
-          const msg = roomMessages[msgId]
-          if (shouldKeepTransientMessage(msg)) {
-            newRoomMessages[msgId] = msg
-            newSortedKeys.push(msgId)
-          }
-        }
-        if (newSortedKeys.length !== currentKeys.length) {
-          messageMap[roomId] = newRoomMessages
-          setSortedMessageKeys(roomId, newSortedKeys)
+        const pruned = pruneToTransientMessages(messageMap[roomId], currentKeys, shouldKeepTransientMessage)
+        if (pruned.keys.length !== currentKeys.length) {
+          messageMap[roomId] = pruned.messages
+          setSortedMessageKeys(roomId, pruned.keys)
           rebuildMessageRoomIndex(roomId)
           rebuildReplyMapping(roomId)
         }
@@ -177,19 +169,10 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
       setSortedMessageKeys(roomId, [])
       return
     }
-    const roomMessages = messageMap[roomId]
-    const newRoomMessages: Record<string, MessageType> = {}
     const currentKeys = getCurrentSortedMessageKeys(roomId)
-    const newSortedKeys: string[] = []
-    for (const msgId of currentKeys) {
-      const msg = roomMessages[msgId]
-      if (shouldKeepTransientMessage(msg)) {
-        newRoomMessages[msgId] = msg
-        newSortedKeys.push(msgId)
-      }
-    }
-    messageMap[roomId] = newRoomMessages
-    setSortedMessageKeys(roomId, newSortedKeys)
+    const pruned = pruneToTransientMessages(messageMap[roomId], currentKeys, shouldKeepTransientMessage)
+    messageMap[roomId] = pruned.messages
+    setSortedMessageKeys(roomId, pruned.keys)
     rebuildMessageRoomIndex(roomId)
     rebuildReplyMapping(roomId)
   }

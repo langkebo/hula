@@ -124,7 +124,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { formatBytes, getFileSuffix } from '@/utils/Formatting'
+import { formatBytes, getFileSuffix, truncateFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
@@ -266,39 +266,6 @@ watch(
   { immediate: true }
 )
 
-// 截断文件名，保留后缀
-const truncateFileName = (fileName?: string): string => {
-  if (!fileName) return fallbackFileName.value
-
-  const maxWidth = 160 // 最大宽度像素
-  const averageCharWidth = 9 // 平均字符宽度（基于14px Arial字体）
-  const maxChars = Math.floor(maxWidth / averageCharWidth)
-
-  if (fileName.length <= maxChars) {
-    return fileName
-  }
-
-  // 获取文件扩展名
-  const lastDotIndex = fileName.lastIndexOf('.')
-  if (lastDotIndex === -1) {
-    // 没有扩展名，直接截断
-    return fileName.substring(0, maxChars - 3) + '...'
-  }
-
-  const name = fileName.substring(0, lastDotIndex)
-  const extension = fileName.substring(lastDotIndex)
-
-  // 计算可用于文件名的字符数（保留扩展名和省略号的空间）
-  const availableChars = maxChars - extension.length - 3 // 3 是省略号的长度
-
-  if (availableChars <= 0) {
-    // 如果扩展名太长，只显示扩展名
-    return '...' + extension
-  }
-
-  return name.substring(0, availableChars) + '...' + extension
-}
-
 // 处理图标加载
 const handleIconLoad = (event: Event) => {
   const target = event.target as HTMLImageElement
@@ -343,6 +310,25 @@ const isWithinChatFilesDir = async (targetPath: string) => {
   return target === roomDir || target.startsWith(`${roomDir}/`)
 }
 
+// 刷新文件下载状态：下载/打开后统一回写本地存在性
+const refreshDownloadedStatus = async () => {
+  const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
+  const currentUserUid = userStore.userInfo?.uid ?? ''
+
+  const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
+  const absolutePath = await join(resourceDirPath, props.body.fileName)
+
+  const [fileMeta] = await getFilesMeta<FilesMeta>([absolutePath || props.body.url])
+
+  await fileDownloadStore.refreshFileDownloadStatus({
+    fileUrl: props.body.url,
+    roomId: currentChatRoomId,
+    userId: currentUserUid,
+    fileName: props.body.fileName,
+    exists: fileMeta.exists
+  })
+}
+
 // 处理文件点击
 const handleFileClick = async () => {
   if (!props.body?.url || !props.body?.fileName || isUploading.value) return
@@ -382,21 +368,7 @@ const handleFileClick = async () => {
       logger.error(`Failed to open file: ${errorMessage}`)
     }
   } finally {
-    const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
-    const currentUserUid = userStore.userInfo?.uid ?? ''
-
-    const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
-    const absolutePath = await join(resourceDirPath, props.body.fileName)
-
-    const [fileMeta] = await getFilesMeta<FilesMeta>([absolutePath || props.body.url])
-
-    await fileDownloadStore.refreshFileDownloadStatus({
-      fileUrl: props.body.url,
-      roomId: currentChatRoomId,
-      userId: currentUserUid,
-      fileName: props.body.fileName,
-      exists: fileMeta.exists
-    })
+    await refreshDownloadedStatus()
   }
 }
 
@@ -454,21 +426,7 @@ const downloadFileOnly = async () => {
     reportFailure(error)
   } finally {
     // 刷新文件状态
-    const currentChatRoomId = globalStore.currentSessionRoomId
-    const currentUserUid = userStore.userInfo?.uid ?? ''
-
-    const resourceDirPath = await userStore.getUserRoomAbsoluteDir()
-    const absolutePath = await join(resourceDirPath, props.body.fileName)
-
-    const [fileMeta] = await getFilesMeta<FilesMeta>([absolutePath || props.body.url])
-
-    await fileDownloadStore.refreshFileDownloadStatus({
-      fileUrl: props.body.url,
-      roomId: currentChatRoomId,
-      userId: currentUserUid,
-      fileName: props.body.fileName,
-      exists: fileMeta.exists
-    })
+    await refreshDownloadedStatus()
   }
 }
 

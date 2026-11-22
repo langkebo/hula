@@ -86,10 +86,14 @@ vi.mock('@/stores/domains/chat/chat', () => ({
   useChatStore: () => chatStore
 }))
 
-vi.mock('@/utils/Formatting', () => ({
-  formatBytes: (size: number) => `${size}B`,
-  getFileSuffix: () => 'other'
-}))
+vi.mock('@/utils/Formatting', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/Formatting')>()
+  return {
+    ...actual,
+    formatBytes: (size: number) => `${size}B`,
+    getFileSuffix: () => 'other'
+  }
+})
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({

@@ -1,6 +1,5 @@
 import type { FeatureFlag, FederationDestination as SdkFederationDestination } from 'matrix-js-sdk/admin'
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
-import type { SamlMapping, SamlMetadata } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import type {
@@ -12,6 +11,7 @@ import type {
   AdminSecurityEventsPage,
   FederationDestination
 } from './AdminTypes'
+import { AdminSamlMethods } from './SecuritySamlMethods'
 
 const logger = createLogger('SecurityService')
 
@@ -58,47 +58,7 @@ export interface AdminFeatureFlagInput {
   targets?: AdminFeatureFlagTarget[]
 }
 
-/**
- * `GET /_synapse/admin/v1/saml/config` 的响应。
- *
- * 服务端字段为 snake_case，同时兼容历史 camelCase 别名（`idpEntityId` 等）。
- * 配置键集合随 homeserver 版本扩展，因此保留索引签名承载未建模字段。
- */
-export interface SamlConfigResponse {
-  enabled?: boolean
-  saml_enabled?: boolean
-  entity_id?: string
-  idp_entity_id?: string
-  idpEntityId?: string
-  idp_url?: string
-  idpUrl?: string
-  sso_url?: string
-  sp_entity_id?: string
-  sp_url?: string
-  spUrl?: string
-  acs_url?: string
-  metadata_url?: string
-  /** 服务端新增的配置键（如签名/加密开关），不做穷举建模。 */
-  [key: string]: unknown
-}
-
-/**
- * SAML IdP 元数据，`getSamlMetadata` 与 `refreshIdpMetadata` 共用。
- *
- * 元数据由 IdP 动态下发（含 XML 与 X.509 证书），字段集合不固定。
- */
-export interface SamlMetadataResponse {
-  entity_id?: string
-  entityId?: string
-  sso_url?: string
-  ssoUrl?: string
-  slo_url?: string
-  nameid_format?: string
-  x509_certificates?: string[]
-  xml?: string
-  /** IdP 元数据中的其它扩展字段。 */
-  [key: string]: unknown
-}
+export type { SamlConfigResponse, SamlMetadataResponse } from './SecuritySamlMethods'
 
 /** `getExperimentalFeatures` 中单个实验性开关的摘要。 */
 export interface ExperimentalFeatureInfo {
@@ -119,8 +79,13 @@ export interface ExperimentalFeaturesResponse {
   [flagKey: string]: ExperimentalFeatureInfo
 }
 
-export class AdminSecurityService {
-  constructor(private readonly sdkAdmin: SecurityDomainSdkGetter) {}
+export class AdminSecurityService extends AdminSamlMethods {
+  protected readonly sdkAdmin: SecurityDomainSdkGetter
+
+  constructor(sdkAdmin: SecurityDomainSdkGetter) {
+    super()
+    this.sdkAdmin = sdkAdmin
+  }
 
   private normalizeFeatureFlag(flag: FeatureFlag): AdminFeatureFlag {
     const targets = Array.isArray(flag.targets)
@@ -205,59 +170,6 @@ export class AdminSecurityService {
     } catch (err) {
       logger.error(`[Admin] 获取审计日志失败: ${err}`)
       return { logs: [] }
-    }
-  }
-
-  async getSamlConfig(): Promise<SamlConfigResponse> {
-    try {
-      const admin = await this.sdkAdmin()
-      return (await admin.getSamlConfig()) ?? {}
-    } catch (err) {
-      logger.error(`[MatrixAdmin] 获取 SAML 配置失败: ${err}`)
-      return {}
-    }
-  }
-
-  async getSamlMetadata(): Promise<SamlMetadataResponse> {
-    try {
-      const admin = await this.sdkAdmin()
-      return (await admin.getSamlMetadata()) ?? {}
-    } catch (err) {
-      logger.error(`[MatrixAdmin] 获取 SAML 元数据失败: ${err}`)
-      return {}
-    }
-  }
-
-  async getSpMetadata(): Promise<Blob | string | null> {
-    try {
-      const admin = await this.sdkAdmin()
-      return (await admin.getSpMetadata()) ?? null
-    } catch (err) {
-      logger.error(`[MatrixAdmin] 获取 SP 元数据失败: ${err}`)
-      return null
-    }
-  }
-
-  async updateSamlConfig(config: Partial<SamlMetadata>): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.updateSamlConfig(config)
-      logger.info('[MatrixAdmin] 更新 SAML 配置成功')
-    } catch (err) {
-      logger.error(`[MatrixAdmin] 更新 SAML 配置失败: ${err}`)
-      throw err
-    }
-  }
-
-  async refreshIdpMetadata(): Promise<SamlMetadataResponse> {
-    try {
-      const admin = await this.sdkAdmin()
-      const metadata = await admin.refreshIdpMetadata()
-      logger.info('[MatrixAdmin] 刷新 SAML IdP 元数据成功')
-      return metadata ?? {}
-    } catch (err) {
-      logger.error(`[MatrixAdmin] 刷新 SAML IdP 元数据失败: ${err}`)
-      throw err
     }
   }
 
@@ -376,69 +288,6 @@ export class AdminSecurityService {
     } catch (err) {
       logger.error(`[Admin] 获取审计事件详情失败: ${err}`)
       return null
-    }
-  }
-
-  async getSamlMappings(
-    limit = DEFAULT_PAGE_LIMIT,
-    from?: string
-  ): Promise<{
-    mappings: SamlMapping[]
-    nextToken?: string | undefined
-  }> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.listSamlMappings({ limit, ...(from !== undefined ? { from } : {}) })
-      return {
-        mappings: result?.mappings ?? [],
-        nextToken: result?.next_token
-      }
-    } catch (err) {
-      logger.error(`[Admin] 获取SAML映射失败: ${err}`)
-      return { mappings: [] }
-    }
-  }
-
-  async getSamlMapping(nameId: string): Promise<SamlMapping | null> {
-    try {
-      const admin = await this.sdkAdmin()
-      return (await admin.getSamlMapping(nameId)) ?? null
-    } catch (err) {
-      logger.error(`[Admin] 获取SAML映射详情失败: ${err}`)
-      return null
-    }
-  }
-
-  async updateSamlMapping(nameId: string, updates: Partial<SamlMapping>): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.updateSamlMapping(nameId, updates)
-      logger.info(`[Admin] 更新SAML映射: ${nameId}`)
-    } catch (err) {
-      logger.error(`[Admin] 更新SAML映射失败: ${err}`)
-      throw err
-    }
-  }
-
-  async deleteSamlMapping(nameId: string): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deleteSamlMapping(nameId)
-      logger.info(`[Admin] 删除SAML映射: ${nameId}`)
-    } catch (err) {
-      logger.error(`[Admin] 删除SAML映射失败: ${err}`)
-      throw err
-    }
-  }
-
-  async samlLogout(userId: string): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.samlLogout(userId)
-      logger.info(`[Admin] SAML登出: ${userId}`)
-    } catch (err) {
-      logger.error(`[Admin] SAML登出失败: ${err}`)
-      throw err
     }
   }
 
