@@ -2072,47 +2072,78 @@ AdminSecurity.vue:5              -> 有 {{ t('common.refresh') }}
 **下一步**：优先拆 `AdminRooms`（713 行，且是剩余迁移目标之一）与 `renderMessage` 三件套
 （Video / index / File 合计 1903 行，可抽公共的消息壳与媒体基类）。
 
-#### P2：弹层的真实情况 —— **壳已经有了，缺的是三个能力**（2026-11-22 摸底）
+#### 弹层：按平台拆开看（2026-11-22 二次摸底）
 
-**原判断错了两次**：数量不是 30 而是 **50**（先前只扫了 `src/components`），
-而且项目**已经有统一壳** `BaseRightDrawer`，不需要从零抽。
+首版摸底把 50 个弹层混成一张表，得出「工作量小」的结论。按移动端评审口径复查后
+**结论需要修正**：桌面和移动端是两套完全不同的规范，混在一起会错估优先级。
 
-**容器分布**
+**先分平台**
+
+| 平台 | 数量 | 容器 |
+| :--- | ---: | :--- |
+| 桌面（Tauri + Naive UI） | 40 | `BaseRightDrawer` 12 / `n-modal` 18 / `n-drawer` 5 / 嵌套 5 |
+| 移动（Vant） | 10 | `van-popup` 3（底部抽屉）/ `van-dialog` 7（居中） |
+
+---
+
+##### 桌面端（40）
 
 | 容器 | 数量 | 自带 `aria-modal` | 自带焦点管理 | 结论 |
 | :--- | ---: | :--- | :--- | :--- |
-| `BaseRightDrawer`（自研壳） | 12 | 是 | **否** | 补能力 |
-| `n-modal` | 18 | 是（Naive UI） | 是（`trapFocus` + `autoFocus`） | 不动 |
-| `n-drawer` | 5 | 是（Naive UI） | 是 | 可收敛到壳 |
-| `van-popup` | 4 | **否** | 部分 | 补 `role`/`aria-modal` |
-| 其他（模板嵌套） | 11 | 视情况 | 视情况 | 逐个看 |
+| `BaseRightDrawer`（自研壳） | 12 | 是 | **否** | 补焦点能力 |
+| `n-modal` | 18 | 是 | 是（`trapFocus` + `autoFocus`） | 不动 |
+| `n-drawer` | 5 | 是 | 是 | 可选收敛 |
 
-**`BaseRightDrawer` 已有的能力**：`Teleport to="body"`、`role="dialog"`、
-`aria-modal="true"`、`:aria-label="title"`、关闭按钮 `aria-label`、遮罩点击关闭、
-`width` prop（默认 480px）。
+`BaseRightDrawer` 已有：`Teleport to="body"`、`role="dialog"`、`aria-modal="true"`、
+`:aria-label="title"`、关闭按钮 `aria-label`、遮罩点击关闭、`width` prop（默认 480px）。
 
-**缺的三件事**：
+**缺三件事**（严重度均 P1，键盘用户可用性）：
 
-1. **`Esc` 可能不生效** —— `@keydown.esc` 绑在 overlay 的 `div` 上，而该 `div`
-   没有 `tabindex`。焦点在内部输入框时能冒泡上来，焦点落在 body 上时收不到。
-2. **打开后焦点不移入** —— 键盘用户打开弹层，光标仍停在背后页面的触发元素上。
-3. **无焦点陷阱与归还** —— `Tab` 会跑到被遮罩的页面上；关闭后焦点不回到触发元素。
+| # | 问题 | 依据 |
+| :--- | :--- | :--- |
+| 1 | `@keydown.esc` 绑在无 `tabindex` 的 overlay `div` 上，焦点落 body 时收不到 | WCAG 2.1.2 无键盘陷阱；Esc 关闭属平台惯例 |
+| 2 | 打开后焦点不移入 | WCAG 2.4.3 焦点顺序 |
+| 3 | 无焦点陷阱、关闭不归还触发元素 | WCAG 2.1.2 / 2.4.3 |
 
-**修正后的下一步**（工作量比原估计小一个量级）：
+---
 
-| 步骤 | 内容 |
-| :--- | :--- |
-| 1 | 给 `BaseRightDrawer` 补 `tabindex="-1"` + 打开时 `focus()` + 焦点陷阱 + 关闭归还 |
-| 2 | 4 个 `van-popup` 补 `role="dialog"` / `aria-modal="true"` |
-| 3 | 5 个 `n-drawer` 视情况收敛到 `BaseRightDrawer`（可选） |
+##### 移动端（10）—— 首版完全漏掉的维度
 
-`n-modal` 的 18 个**不需要动** —— Naive UI 已经把这些做完了。
+**关键概念纠正**：移动端没有 Tab 键，**「焦点陷阱」不是移动端问题**。
+移动端的对应概念是**屏幕阅读器焦点**（TalkBack / VoiceOver）——
+`aria-modal` 的作用是让读屏器只读弹层内容，而不是「防止 Tab 跑到背景」。
 
-#### P2：i18n 文案与视觉规范未联动
+**Vant 实测依据**（`node_modules/vant/es/popup/Popup.mjs`）：
 
-§5.4 规定了「按钮用动词、错误说用户能做什么」，但现有文案没有统一审过一遍。
+- 第 135 行：`role: "dialog"` —— **自带**，首版说「缺 role」不准确
+- 第 24 行：`safeAreaInsetBottom: Boolean` —— **prop 存在，默认 false**
+- 全文件无 `aria-modal` —— 这是真实缺失
 
-**下一步**：抽样 30 条高频文案做一轮改写，形成「好文案 / 坏文案」对照表放进 §5.4。
+| 严重度 | 问题 | 位置 | 依据 | 改法 |
+| :--- | :--- | :--- | :--- | :--- |
+| **P0** | 底部抽屉底部操作区被 Home 指示条遮挡，按钮点不到 | `AreaDrawer` / `MobileListManagementDialog`（3 个底部抽屉里只有 `MobileForwardDialog` 处理了） | iOS HIG 安全区；`env(safe-area-inset-bottom)` | 给 `van-popup` 加 `safe-area-inset-bottom`，或底部容器 `padding-bottom: calc(12px + env(safe-area-inset-bottom))` |
+| **P1** | 触控目标尺寸未核查 | 全部 10 个 | iOS HIG 44×44pt / Material 48×48dp（**以官方当前版本为准**） | 逐个量关闭按钮与图标按钮，不足则扩热区 |
+| **P1** | 软键盘遮挡未处理 | 7 个 `van-dialog` 若含输入框 | 同上 | 用 `van-popup` 的 `:style` 动态高度，或 `<Teleport>` 配合 `keyboard` 事件 |
+| **P2** | 缺 `aria-modal`，读屏可读到背景内容 | 3 个 `van-popup` | Vant 未内建 | 显式加 `aria-modal="true"` |
+
+**严重度排序与首版相反**：首版把 `aria-modal` 当主要问题（P2 级），
+真正阻断可用性的是**安全区**（P0）—— 那是「点不到」，不是「读屏不友好」。
+
+**注意**：`van-dialog` 7 个是居中对话框，Vant 自带 `role="dialog"` 且不含底部安全区问题，
+优先级最低，可暂不动。
+
+---
+
+#### 修正后的工作量与顺序
+
+| 顺序 | 事项 | 平台 | 严重度 | 影响面 |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 2 个底部抽屉补安全区 | 移动 | **P0** | 2 个文件 |
+| 2 | `BaseRightDrawer` 补焦点三件套 | 桌面 | P1 | 1 个文件，12 处受益 |
+| 3 | 移动端触控目标核查 | 移动 | P1 | 10 个逐个量 |
+| 4 | 3 个 `van-popup` 补 `aria-modal` | 移动 | P2 | 3 个文件 |
+
+**桌面 18 个 `n-modal` 不需要动**，Naive UI 已内建 `aria-modal` + `trapFocus` + `autoFocus`。
 
 ### 21.4 下一步执行顺序（建议）
 
