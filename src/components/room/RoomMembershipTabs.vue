@@ -8,7 +8,7 @@
       v-for="tab in tabs"
       :key="tab.value"
       type="button"
-      class="room-membership-tabs__tab inline-flex items-center gap-4px px-10px py-4px rounded-[--tjg-radius-sm] text-[length:var(--tjg-font-size-sm)] transition-colors cursor-pointer border-none outline-none"
+      class="room-membership-tabs__tab inline-flex items-center gap-4px px-10px py-4px rounded-[--tjg-radius-sm] text-[length:var(--tjg-font-size-sm)] transition-colors cursor-pointer border-none outline-none focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-500] focus-visible:ring-offset-1 focus-visible:ring-offset-[--tjg-surface-panel]"
       :class="
         modelValue === tab.value
           ? 'bg-[--tjg-surface-raised] color-[--tjg-color-primary-500] font-[--tjg-font-weight-medium] shadow-[--tjg-shadow-card]'

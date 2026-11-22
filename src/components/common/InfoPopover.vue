@@ -114,7 +114,7 @@
             <template #trigger>
               <span
                 v-clickable
-                class="flex items-center gap-4px cursor-pointer hover:color-[--tjg-text-tertiary] hover:transition-colors outline-none"
+                class="flex items-center gap-4px cursor-pointer hover:color-[--tjg-text-tertiary] hover:transition-colors outline-none rounded-4px focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-500] focus-visible:ring-offset-1"
                 role="button"
                 tabindex="0"
                 :aria-label="t('home.profile_card.tooltip.copy_account')"
