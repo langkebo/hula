@@ -294,9 +294,9 @@ const saveEditInfo = async () => {
     }
 
     try {
+      // resume 只由 EditBio 写入，这里不再回写，避免两个页面互相覆盖
       await profileService.updateOwnExtendedProfile({
         ...(localUserInfo.value.sex !== undefined ? { sex: localUserInfo.value.sex } : {}),
-        resume: userStore.userInfo?.resume ?? localUserInfo.value.resume ?? '',
         region: region.value,
         birthday: birthday.value
       })
@@ -308,8 +308,6 @@ const saveEditInfo = async () => {
       }
     }
 
-    localUserInfo.value.resume = userStore.userInfo?.resume ?? localUserInfo.value.resume ?? ''
-
     const currentUserInfo = userStore.userInfo
     if (!currentUserInfo) {
       showFeedback(t('mobile_edit_profile.save_failed'), 'error')
@@ -319,7 +317,6 @@ const saveEditInfo = async () => {
     currentUserInfo.name = localUserInfo.value.name!
     currentUserInfo.sex = localUserInfo.value.sex!
     currentUserInfo.phone = localUserInfo.value.phone!
-    currentUserInfo.resume = userStore.userInfo?.resume ?? localUserInfo.value.resume ?? ''
     loginHistoriesStore.updateLoginHistory(currentUserInfo as UserInfoType)
     updateCurrentUserCache('name', localUserInfo.value.name)
     if (!localUserInfo.value.modifyNameChance) return
