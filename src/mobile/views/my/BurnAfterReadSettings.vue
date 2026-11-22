@@ -74,7 +74,9 @@
                   <div
                     class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                     :style="iconShellStyles.room">
-                    <Icon icon="mdi:fire" :width="20" color="var(--tjg-color-danger-500)" />
+                    <svg class="w-20px h-20px color-[--tjg-color-danger-500]" aria-hidden="true">
+                      <use href="#fire" />
+                    </svg>
                   </div>
                 </template>
                 <template #right-icon>
@@ -102,7 +104,9 @@
           <div
             v-if="globalEnabled"
             class="flex items-start gap-8px p-12px rounded-8px mt-8px bg-[--tjg-color-warning-100] text-[--tjg-color-warning-500]">
-            <Icon icon="mdi:alert-circle" :width="16" color="currentColor" class="flex-shrink-0 mt-2px" />
+            <svg class="w-16px h-16px flex-shrink-0 mt-2px" aria-hidden="true">
+              <use href="#caution" />
+            </svg>
             <span class="text-12px">{{ t('mobile_burn.warning') }}</span>
           </div>
         </div>

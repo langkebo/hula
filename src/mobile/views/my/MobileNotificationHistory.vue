@@ -33,7 +33,7 @@
               data-testid="notification-row"
               @click="openRoom(notif)">
               <template #icon>
-                <SettingCellIcon icon="mdi:bell-outline" color="var(--tjg-color-warning-500)" shell="warning" />
+                <SettingCellIcon symbol="remind" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
               <template #title>
                 <span class="text-14px">{{ getNotificationContent(notif, t('setting.push.history.no_content')) }}</span>

@@ -81,7 +81,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:bell-cog-outline" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#remind" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -99,7 +101,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:text-box-outline" :width="20" color="var(--tjg-color-primary-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-primary-500]" aria-hidden="true">
+                    <use href="#notes" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>

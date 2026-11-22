@@ -82,7 +82,9 @@
                     @click="handleVerifyClick()">
                     <template #icon>
                       <div class="device-icon-cell">
-                        <Icon icon="mdi:shield-alert" :width="20" color="var(--tjg-color-warning-500)" />
+                        <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                          <use href="#caution" />
+                        </svg>
                       </div>
                     </template>
                     <template #right-icon>
@@ -126,7 +128,9 @@
           <!-- 底部刷新按钮 -->
           <div class="p-16px">
             <van-button type="primary" block :loading="loading" @click="handleRefresh">
-              <Icon icon="mdi:refresh" :width="16" class="mr-4px" />
+              <svg class="w-16px h-16px mr-4px" aria-hidden="true">
+                <use href="#refresh" />
+              </svg>
               {{ t('common.refresh') }}
             </van-button>
           </div>

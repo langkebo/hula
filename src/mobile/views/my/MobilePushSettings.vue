@@ -49,7 +49,7 @@
               data-testid="notification-history-entry"
               @click="router.push(MOBILE_SETTINGS_NOTIFICATION_HISTORY_PATH)">
               <template #icon>
-                <SettingCellIcon icon="mdi:history" color="var(--tjg-color-info-500)" shell="info" />
+                <SettingCellIcon symbol="history" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
           </van-cell-group>

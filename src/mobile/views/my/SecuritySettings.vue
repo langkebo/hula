@@ -65,7 +65,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:backup-restore" :width="20" color="var(--tjg-color-warning-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#Importing" />
+                  </svg>
                 </div>
               </template>
               <template #right-icon>
@@ -83,7 +85,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-lock" :width="20" color="var(--tjg-color-warning-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#Security" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -132,7 +136,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-danger-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:account-cancel" :width="20" color="var(--tjg-color-danger-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-danger-500]" aria-hidden="true">
+                    <use href="#people-delete-one" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -146,7 +152,9 @@
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-danger-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:account-arrow-left-outline" :width="20" color="var(--tjg-color-danger-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-danger-500]" aria-hidden="true">
+                    <use href="#people-safe" />
+                  </svg>
                 </div>
               </template>
             </van-cell>

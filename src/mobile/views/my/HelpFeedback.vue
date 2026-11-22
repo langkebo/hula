@@ -15,7 +15,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.guide">
-                  <Icon icon="mdi:book-open-variant" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#notes" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -25,7 +27,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.faq">
-                  <Icon icon="mdi:frequently-asked-questions" :width="20" color="var(--tjg-color-success-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-success-500]" aria-hidden="true">
+                    <use href="#tips" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -35,7 +39,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.privacy">
-                  <Icon icon="mdi:shield-account" :width="20" color="var(--tjg-color-beta-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-beta-500]" aria-hidden="true">
+                    <use href="#Security" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -48,7 +54,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.terms">
-                  <Icon icon="mdi:file-document-outline" :width="20" color="var(--tjg-color-warning-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#file" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -74,7 +82,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.feature">
-                  <Icon icon="mdi:lightbulb-outline" :width="20" color="var(--tjg-color-info-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#tips" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -98,7 +108,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.about">
-                  <Icon icon="mdi:information-outline" :width="20" color="var(--tjg-text-secondary)" />
+                  <svg class="w-20px h-20px color-[--tjg-text-secondary]" aria-hidden="true">
+                    <use href="#info" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
@@ -108,7 +120,9 @@
                 <div
                   class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
                   :style="iconShellStyles.update">
-                  <Icon icon="mdi:update" :width="20" color="var(--tjg-color-success-500)" />
+                  <svg class="w-20px h-20px color-[--tjg-color-success-500]" aria-hidden="true">
+                    <use href="#refresh" />
+                  </svg>
                 </div>
               </template>
             </van-cell>
