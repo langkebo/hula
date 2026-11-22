@@ -232,7 +232,12 @@ describe('renderMessage/Image', () => {
     mountComponent({ url: 'mxc://server/enc-img', encryptedFile, width: 100, height: 100 })
     await flushPromises()
 
-    expect(downloadEncryptedFileMock).toHaveBeenCalled()
+    expect(downloadEncryptedFileMock).toHaveBeenCalledWith(
+      'mxc://server/enc-img',
+      expect.any(String),
+      expect.objectContaining({ v: 'v2' }),
+      { cache: true }
+    )
   })
 
   it('body 无 url 时不渲染图片容器', async () => {

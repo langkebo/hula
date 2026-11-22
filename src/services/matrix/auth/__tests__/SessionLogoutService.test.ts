@@ -61,6 +61,15 @@ vi.mock('@/services/matrix/user/invitePolicy', () => ({
   clearInvitePolicyCache: vi.fn()
 }))
 
+// 保留 PathUtil 其余导出（其他模块可能经传递依赖引用），仅替换登出清理入口
+vi.mock('@/utils/PathUtil', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/PathUtil')>()
+  return {
+    ...actual,
+    removeUserEncryptedMediaCache: vi.fn().mockResolvedValue(undefined)
+  }
+})
+
 vi.mock('@tauri-apps/api/event', () => ({
   emit: vi.fn().mockResolvedValue(undefined)
 }))
@@ -81,6 +90,7 @@ const { matrixWsBridge } = await import('@/services/matrix/MatrixWsBridge')
 const { matrixWorkerHost } = await import('@/services/matrix/MatrixWorkerHost')
 const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
 const { clearInvitePolicyCache } = await import('@/services/matrix/user/invitePolicy')
+const { removeUserEncryptedMediaCache } = await import('@/utils/PathUtil')
 const { emit } = await import('@tauri-apps/api/event')
 
 const clearMatrixSessionEndpointConfigMock = vi.mocked(clearMatrixSessionEndpointConfig)
@@ -92,6 +102,7 @@ const resetSearchIndexMock = vi.mocked(matrixWorkerHost.resetSearchIndex)
 const matrixWorkerTerminateMock = vi.mocked(matrixWorkerHost.terminate)
 const setPresenceMock = vi.mocked(matrixPresenceService.setPresence)
 const clearInvitePolicyCacheMock = vi.mocked(clearInvitePolicyCache)
+const removeUserEncryptedMediaCacheMock = vi.mocked(removeUserEncryptedMediaCache)
 const emitMock = vi.mocked(emit)
 
 // useWindow is mocked per test so we can control isDesktop dependent branches.
@@ -273,6 +284,16 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     await service.resetLocalSessionState()
 
     expect(clearInvitePolicyCacheMock).toHaveBeenCalledWith('@alice:test')
+  })
+
+  it('removes the decrypted media cache of the current account on logout', async () => {
+    const { host } = createMockHost()
+    const service = new SessionLogoutService(host, new SessionRuntimeState())
+
+    await service.resetLocalSessionState()
+
+    // 解密后的明文落在 userData/{uid}/encrypted-media，换账号前必须整目录回收
+    expect(removeUserEncryptedMediaCacheMock).toHaveBeenCalledWith('@alice:test')
   })
 
   it('locks the secret chat session so a new account cannot inherit the unlocked state', async () => {

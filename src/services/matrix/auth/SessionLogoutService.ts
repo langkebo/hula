@@ -13,6 +13,7 @@ import { clearInvitePolicyCache } from '@/services/matrix/user/invitePolicy'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { lockSecretChatSession, stopSecretChatAutoLock } from '@/stores/domains/settings/secretChatSession'
 import { createLogger } from '@/utils/Logger'
+import { removeUserEncryptedMediaCache } from '@/utils/PathUtil'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import type {
@@ -57,6 +58,10 @@ export class SessionLogoutService {
       // 邀请策略缓存按 userId 隔离，登出必须回收当前账号那一条：
       // 否则同设备换账号后仍可能读到上一个账号的策略（与未读账本同理，主动回收）。
       clearInvitePolicyCache(port.matrix.getUserId())
+
+      // 加密附件解密后的明文按账号落盘（userData/{uid}/encrypted-media），登出必须整目录回收：
+      // 否则同设备换账号后，上一个账号的图片/音视频明文仍留在磁盘上。
+      await removeUserEncryptedMediaCache(port.matrix.getUserId() || '')
 
       // DND 镜像是设备级 key（跨会话存在）。登出必须整体回收：镜像里较新的 updatedAt
       // 会在「本地新者胜」规则下，把下一个账号的服务端勿扰窗口永久挡住。

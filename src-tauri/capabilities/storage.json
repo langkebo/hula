@@ -48,6 +48,17 @@
       ]
     },
     {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    {
       "identifier": "fs:read-dirs",
       "allow": [
         {

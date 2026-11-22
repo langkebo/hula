@@ -233,7 +233,10 @@ const ensureEncryptedImageAvailable = async () => {
       }
     }
 
-    const absolutePath = await fileDownloadStore.downloadEncryptedFile(props.body.url, fileName, encryptedFile)
+    // 解密明文写入按账号隔离的 encrypted-media 缓存目录，复用命中且登出可整目录回收
+    const absolutePath = await fileDownloadStore.downloadEncryptedFile(props.body.url, fileName, encryptedFile, {
+      cache: true
+    })
     if (absolutePath) {
       await applyLocalImagePath(absolutePath)
     }

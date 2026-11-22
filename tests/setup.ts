@@ -107,6 +107,11 @@ vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
 
 // Mock Tauri plugin-fs
 vi.mock('@tauri-apps/plugin-fs', () => ({
+  BaseDirectory: {
+    AppData: 'AppData',
+    AppCache: 'AppCache',
+    Resource: 'Resource'
+  },
   readFile: vi.fn(),
   writeFile: vi.fn(),
   readDir: vi.fn(),

@@ -33,9 +33,18 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 
 vi.mock('@/stores/domains/user/user', () => ({
   useUserStore: () => ({
+    userInfo: { uid: 'user-1' },
     getUserRoomDir: async () => 'chat-files',
     getUserRoomAbsoluteDir: async () => '/abs/chat-files'
   })
+}))
+
+vi.mock('@/stores/domains/chat/matrix', () => ({
+  useMatrixStore: () => ({ userId: 'user-1' })
+}))
+
+vi.mock('@/utils/Md5Util', () => ({
+  md5FromString: async () => 'hash'
 }))
 
 vi.mock('@/utils/HttpClient', () => ({
@@ -45,7 +54,8 @@ vi.mock('@/utils/HttpClient', () => ({
 vi.mock('@/utils/PathUtil', () => ({
   getDownloadBaseDir: () => 'Base',
   getDownloadBaseDirPath: async () => '/abs',
-  getFilesMeta: async () => [{ exists: false }]
+  getFilesMeta: async () => [{ exists: false }],
+  getUserEncryptedMediaDir: async (uid: string) => `userData/${uid}/encrypted-media`
 }))
 
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
@@ -122,6 +132,30 @@ describe('fileDownload store', () => {
     expect(downloadEncryptedBytesMock).toHaveBeenCalledTimes(1)
     expect(writeFileMock).toHaveBeenCalledTimes(1)
     expect(firstPath).toBe(secondPath)
+  })
+
+  it('加密文件缓存模式写入按账号隔离的目录，命中缓存后不再解密', async () => {
+    downloadEncryptedBytesMock.mockResolvedValue(new Uint8Array([1, 2, 3]))
+    const store = useFileDownloadStore()
+    const encryptedFile = { url: 'mxc://server/enc-cache', v: 'v2' }
+
+    const firstPath = await store.downloadEncryptedFile('mxc://server/enc-cache', 'photo.png', encryptedFile, {
+      cache: true
+    })
+
+    expect(writeFileMock).toHaveBeenCalledWith('userData/user-1/encrypted-media/hash.png', expect.anything(), {
+      baseDir: 'Base'
+    })
+    expect(firstPath).toBe('/abs/userData/user-1/encrypted-media/hash.png')
+
+    existsMock.mockResolvedValue(true)
+    const secondPath = await store.downloadEncryptedFile('mxc://server/enc-cache', 'photo.png', encryptedFile, {
+      cache: true
+    })
+
+    expect(downloadEncryptedBytesMock).toHaveBeenCalledTimes(1)
+    expect(writeFileMock).toHaveBeenCalledTimes(1)
+    expect(secondPath).toBe(firstPath)
   })
 
   it('同一 URL 保存为不同文件名时互不干扰', async () => {

@@ -23,7 +23,7 @@ describe('platform storage layout registry', () => {
 
   it('returns the desktop layout when registered without arguments (build-time binding)', () => {
     const layout = getStorageLayout()
-    expect(layout.downloadBaseDir).toBe('Resource')
+    expect(layout.downloadBaseDir).toBe('AppData')
     expect(layout.cacheBaseDir).toBe('AppCache')
     expect(layout.cacheBaseDirName).toBe('AppCache')
     expect(layout.scopedBaseDirs).toHaveLength(3)

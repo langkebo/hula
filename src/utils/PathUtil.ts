@@ -1,5 +1,5 @@
 import { appDataDir, join } from '@tauri-apps/api/path'
-import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs'
+import { BaseDirectory, exists, mkdir, readFile, remove, writeFile } from '@tauri-apps/plugin-fs'
 import { type FileTypeResult, fileTypeFromBuffer } from 'file-type'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { getStorageLayout } from '@/platform/storageLayout'
@@ -16,6 +16,8 @@ const USER_DATA = 'userData'
 const MODELS_DIR = 'models'
 // 用户专属表情包目录名
 const EMOJIS_DIR = 'emojis'
+// 解密媒体缓存目录名（按账号隔离，登出时整目录回收）
+const ENCRYPTED_MEDIA_DIR = 'encrypted-media'
 // AI 生成资源目录名
 const AI_DIR = 'ai'
 
@@ -156,6 +158,49 @@ export const getUserAbsoluteVideosDir = async (userUid: string, roomId: string) 
   const baseDirPath = await appDataDir()
   const absoluteDir = await join(baseDirPath, filePath)
   return absoluteDir
+}
+
+/**
+ * 确保解密媒体缓存目录 userData/{uid}/encrypted-media 存在，并返回相对路径。
+ * 加密附件解密后的明文统一落在这里，按账号隔离，便于登出/换账号时整目录回收。
+ * @param userUid 用户ID
+ */
+export const getUserEncryptedMediaDir = async (userUid: string): Promise<string> => {
+  await ensureUserDataRoot()
+  const mediaDir = await join(USER_DATA, userUid, ENCRYPTED_MEDIA_DIR)
+  const baseDir = BaseDirectory.AppData
+  const hasMediaDir = await exists(mediaDir, { baseDir })
+  if (!hasMediaDir) {
+    await mkdir(mediaDir, {
+      baseDir,
+      recursive: true
+    })
+  }
+  return mediaDir
+}
+
+/**
+ * 删除指定账号的解密媒体缓存目录。
+ * 登出/换账号时必须调用，避免解密明文残留在同设备磁盘上；
+ * 删除失败仅告警，不阻断登出流程。
+ * @param userUid 用户ID
+ */
+export const removeUserEncryptedMediaCache = async (userUid: string): Promise<void> => {
+  if (!userUid) {
+    return
+  }
+  const baseDir = BaseDirectory.AppData
+  try {
+    const mediaDir = await join(USER_DATA, userUid, ENCRYPTED_MEDIA_DIR)
+    const hasMediaDir = await exists(mediaDir, { baseDir })
+    if (!hasMediaDir) {
+      return
+    }
+    await remove(mediaDir, { baseDir, recursive: true })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[removeUserEncryptedMediaCache] 清理解密媒体缓存失败: ${message}`)
+  }
 }
 
 /**

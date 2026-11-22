@@ -7,10 +7,12 @@ import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/Mat
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { parseSignedMediaUrl } from '@/services/matrix/media/mediaDownloadHelpers'
 import type { FilesMeta } from '@/services/types'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
-import { getDownloadBaseDir, getDownloadBaseDirPath, getFilesMeta } from '@/utils/PathUtil'
+import { md5FromString } from '@/utils/Md5Util'
+import { getDownloadBaseDir, getDownloadBaseDirPath, getFilesMeta, getUserEncryptedMediaDir } from '@/utils/PathUtil'
 import { hasOwn } from '@/utils/webCompat'
 
 const logger = createLogger('FileDownloadStore')
@@ -18,7 +20,7 @@ const logger = createLogger('FileDownloadStore')
 interface FileDownloadStatus {
   /** 文件是否已下载 */
   isDownloaded: boolean
-  /** 本地文件相对路径 (相对于 Resource 目录) */
+  /** 本地文件相对路径 (相对于下载根目录 AppData) */
   localPath?: string
   /** 本地文件绝对路径 */
   absolutePath?: string
@@ -34,9 +36,20 @@ interface FileDownloadStatus {
   error?: string
 }
 
+/** 加密附件下载选项 */
+interface EncryptedDownloadOptions {
+  /**
+   * 写入按账号隔离的解密媒体缓存目录（AppData/userData/{uid}/encrypted-media）。
+   * 加密图片/音视频明文统一落在这里，登出或换账号时可整目录回收；
+   * 未开启时沿用房间目录（userData/{uid}/{roomId}）。
+   */
+  cache?: boolean
+}
+
 export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => {
   const { showFeedback } = useActionFeedback()
   const userStore = useUserStore()
+  const matrixStore = useMatrixStore()
 
   // 存储文件下载状态的Map，key为文件URL，value为下载状态
   const downloadStatusMap = shallowRef<Record<string, FileDownloadStatus>>({})
@@ -282,13 +295,51 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
       }
     })
 
+  /**
+   * 构建解密媒体缓存文件路径：userData/{uid}/encrypted-media/{md5(url)}{ext}。
+   * 文件名用 URL 摘要，避免不同房间同名文件互相覆盖。
+   */
+  const buildEncryptedCachePath = async (fileUrl: string, fileName: string): Promise<string | null> => {
+    const uid = userStore.userInfo?.uid || matrixStore.userId
+    if (!uid) {
+      return null
+    }
+    const cacheDir = await getUserEncryptedMediaDir(uid)
+    const extensionIndex = fileName.lastIndexOf('.')
+    const extension = extensionIndex > 0 ? fileName.slice(extensionIndex) : ''
+    const hashedFileName = `${await md5FromString(fileUrl)}${extension}`
+    return await join(cacheDir, hashedFileName)
+  }
+
   const downloadEncryptedFile = (
     fileUrl: string,
     fileName: string,
-    encryptedFile: MatrixEncryptedAttachmentLike
+    encryptedFile: MatrixEncryptedAttachmentLike,
+    options: EncryptedDownloadOptions = {}
   ): Promise<string | null> =>
-    dedupeDownload(fileUrl, fileName, async () => {
+    dedupeDownload(fileUrl, options.cache ? `${fileName}::encrypted-media-cache` : fileName, async () => {
       try {
+        const cachePath = options.cache ? await buildEncryptedCachePath(fileUrl, fileName) : null
+        if (cachePath) {
+          const baseDir = getDownloadBaseDir()
+          if (await exists(cachePath, { baseDir })) {
+            const cachedAbsolutePath = await join(await getDownloadBaseDirPath(), cachePath)
+            finalizeSuccessfulWrite(fileUrl, cachedAbsolutePath, cachePath)
+            return cachedAbsolutePath
+          }
+
+          updateFileStatus(fileUrl, {
+            status: 'downloading',
+            progress: 0
+          })
+
+          const fileData = await matrixMediaService.downloadEncryptedFileBytes(encryptedFile)
+          await writeFile(cachePath, fileData, { baseDir })
+          const absolutePath = await join(await getDownloadBaseDirPath(), cachePath)
+          finalizeSuccessfulWrite(fileUrl, absolutePath, cachePath)
+          return absolutePath
+        }
+
         const isExists = await checkFileExists(fileUrl, fileName)
         if (isExists) {
           const existingStatus = getFileStatus(fileUrl)

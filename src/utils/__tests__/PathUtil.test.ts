@@ -9,6 +9,7 @@ const {
   mkdirMock,
   writeFileMock,
   readFileMock,
+  removeMock,
   appDataDirMock,
   appCacheDirMock,
   resourceDirMock,
@@ -25,6 +26,7 @@ const {
   mkdirMock: vi.fn(async () => undefined),
   writeFileMock: vi.fn(async () => undefined),
   readFileMock: vi.fn(async () => new Uint8Array()),
+  removeMock: vi.fn(async () => undefined),
   appDataDirMock: vi.fn(async () => '/app-data'),
   appCacheDirMock: vi.fn(async () => '/app-cache'),
   resourceDirMock: vi.fn(async () => '/resource'),
@@ -49,7 +51,8 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   exists: existsMock,
   mkdir: mkdirMock,
   writeFile: writeFileMock,
-  readFile: readFileMock
+  readFile: readFileMock,
+  remove: removeMock
 }))
 
 vi.mock('@tauri-apps/api/path', () => ({
@@ -110,8 +113,10 @@ import {
   getUserAbsoluteVideosDir,
   getUserDataRootAbsoluteDir,
   getUserEmojiDir,
+  getUserEncryptedMediaDir,
   getUserVideosDir,
   persistAiImageFile,
+  removeUserEncryptedMediaCache,
   resolveAiImagePath,
   safeExistsPath
 } from '../PathUtil'
@@ -135,10 +140,50 @@ describe('PathUtil', () => {
     headMock.mockResolvedValue(new Response(null, { headers: { 'content-length': '1024' } }))
     downloadBytesMock.mockResolvedValue(new ArrayBuffer(8))
     fileTypeFromBufferMock.mockResolvedValue({ ext: 'png', mime: 'image/png' })
+    removeMock.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  describe('getUserEncryptedMediaDir / removeUserEncryptedMediaCache', () => {
+    it('creates the per-user encrypted-media directory under AppData', async () => {
+      existsMock.mockResolvedValue(false)
+      const dir = await getUserEncryptedMediaDir('user-1')
+      expect(mkdirMock).toHaveBeenCalledWith('userData/user-1/encrypted-media', {
+        baseDir: 'AppData',
+        recursive: true
+      })
+      expect(dir).toBe('userData/user-1/encrypted-media')
+    })
+
+    it('skips removal when the cache directory does not exist', async () => {
+      existsMock.mockResolvedValue(false)
+      await removeUserEncryptedMediaCache('user-1')
+      expect(removeMock).not.toHaveBeenCalled()
+    })
+
+    it('removes the per-user cache directory recursively', async () => {
+      existsMock.mockResolvedValue(true)
+      await removeUserEncryptedMediaCache('user-1')
+      expect(removeMock).toHaveBeenCalledWith('userData/user-1/encrypted-media', {
+        baseDir: 'AppData',
+        recursive: true
+      })
+    })
+
+    it('does nothing when the user id is empty', async () => {
+      await removeUserEncryptedMediaCache('')
+      expect(existsMock).not.toHaveBeenCalled()
+      expect(removeMock).not.toHaveBeenCalled()
+    })
+
+    it('swallows removal errors so logout is not blocked', async () => {
+      existsMock.mockResolvedValue(true)
+      removeMock.mockRejectedValueOnce(new Error('forbidden path'))
+      await expect(removeUserEncryptedMediaCache('user-1')).resolves.toBeUndefined()
+    })
   })
 
   describe('getImageCache', () => {
