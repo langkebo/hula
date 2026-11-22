@@ -10,7 +10,7 @@
       <p class="session-name text-(16px [--tjg-text-primary])">
         {{ userStore.userInfo?.name ? userStore.userInfo.name : t('mobile_home.noname') }}
       </p>
-      <p class="text-(10px [--tjg-text-primary])">
+      <p class="text-[length:var(--tjg-font-size-2xs)] text-[--tjg-text-primary]">
         {{ t('mobile_home.china') }}
       </p>
     </div>

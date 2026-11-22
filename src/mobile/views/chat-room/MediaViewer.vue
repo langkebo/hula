@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex justify-between items-center p-16px">
-      <div v-clickable @click="() => router.back()">
+      <div v-clickable class="min-w-[44px] min-h-[44px] flex items-center justify-center" @click="() => router.back()">
         <svg class="iconpark-icon w-24px h-24px" aria-hidden="true"><use href="#fanhui"></use></svg>
       </div>
       <van-dropdown-menu>

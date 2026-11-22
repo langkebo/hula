@@ -52,9 +52,15 @@
         @click="emits('togglePrivateMode')">
         <span class="private-toggle-btn-mobile__letter">S</span>
       </button>
-      <svg @click="handleMoreClick" class="w-24px h-24px iconpark-icon p-5px" aria-hidden="true">
-        <use href="#more"></use>
-      </svg>
+      <button
+        type="button"
+        class="min-w-[44px] min-h-[44px] flex items-center justify-center"
+        :aria-label="t('chat.header.more_options')"
+        @click="handleMoreClick">
+        <svg class="w-24px h-24px iconpark-icon" aria-hidden="true">
+          <use href="#more"></use>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -142,10 +148,15 @@ const handleMoreClick = () => {
   @apply min-w-0 flex-1;
 }
 
+/* 右侧操作区：两个 44px 热区并排，间距必须 >= 16px，否则可点区重叠导致误触私密模式 */
+.header-bar__actions {
+  gap: 16px;
+}
+
 /* <360dp 窄屏：收紧右侧操作区，避免次要按钮挤压房间名 */
 @media (max-width: 359.98px) {
   .header-bar__actions {
-    gap: 4px;
+    gap: 16px;
     padding-inline-end: 8px;
   }
 
@@ -160,6 +171,7 @@ const handleMoreClick = () => {
 }
 
 .private-toggle-btn-mobile {
+  position: relative;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -170,6 +182,17 @@ const handleMoreClick = () => {
   color: var(--tjg-text-tertiary);
   border: 1px solid var(--tjg-border-default);
   cursor: pointer;
+
+  /* 视觉保持 28/24px，热区扩到 44px（居中 44px 覆盖层，窄屏 24px 同样成立） */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
 
   &--active {
     background: var(--tjg-color-danger-500);

@@ -25,9 +25,11 @@
                   aria-hidden="true">
                   <use href="#saoma"></use>
                 </svg>
-                <svg @click="handleBack" class="dark:color-gray-200/90 w-32px h-32px iconpark-icon" aria-hidden="true">
-                  <use href="#right"></use>
-                </svg>
+                <div class="min-w-[44px] min-h-[44px] flex items-center justify-center" @click="handleBack">
+                  <svg class="dark:color-gray-200/90 w-32px h-32px iconpark-icon" aria-hidden="true">
+                    <use href="#right"></use>
+                  </svg>
+                </div>
               </div>
             </div>
             <div class="bg-[--tjg-surface-panel] rounded-lg p-15px flex gap-20px items-center">
@@ -44,7 +46,7 @@
                 </div>
               </div>
 
-              <div v-clickable @click="toMyInfo" class="flex items-center justify-end">
+              <div v-clickable @click="toMyInfo" class="flex items-center justify-end min-w-[44px] min-h-[44px]">
                 <svg @click="handleBack" class="w-24px text-gray h-24px iconpark-icon" aria-hidden="true">
                   <use href="#right"></use>
                 </svg>

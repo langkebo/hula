@@ -101,6 +101,7 @@ onUnmounted(() => {
   }
 
   &__action {
+    position: relative;
     flex: none;
     min-height: 28px;
     padding: 0 10px;
@@ -110,6 +111,13 @@ onUnmounted(() => {
     font-size: var(--tjg-font-size-sm);
     color: var(--tjg-color-primary-500);
     cursor: pointer;
+
+    /* 视觉保持 28px 行高，上下各扩 8px 把热区补到 44px */
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -8px 0;
+    }
 
     &:active {
       background: var(--tjg-surface-list-hover);

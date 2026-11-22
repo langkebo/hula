@@ -105,7 +105,10 @@
                       @click="handleRemoveEmoji(emoji.id)" />
                   </template>
                 </van-swipe-cell>
-                <div class="text-center text-10px text-[--tjg-text-secondary] mt-4px truncate">{{ emoji.name }}</div>
+                <div
+                  class="text-center text-[length:var(--tjg-font-size-2xs)] text-[--tjg-text-secondary] mt-4px truncate">
+                  {{ emoji.name }}
+                </div>
               </div>
             </div>
           </div>

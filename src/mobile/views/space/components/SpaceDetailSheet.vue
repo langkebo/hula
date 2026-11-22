@@ -161,7 +161,7 @@ function handleAvatarClick() {
     }
 
     .breadcrumb-sep {
-      font-size: 10px;
+      font-size: var(--tjg-font-size-2xs);
       color: var(--van-text-color-3);
     }
   }
