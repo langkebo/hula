@@ -529,11 +529,28 @@ fn get_config_path_buf(
 
         base_path.join("configuration")
     } else {
-        app_handle
+        // 优先用 Tauri 的 resource_dir（经 LaunchServices 启动时指向 .app/Contents/Resources）。
+        // 但直接运行 .app 内二进制（无 NSBundle 上下文）时，resource_dir() 会返回
+        // Err(unknown path)，导致 "Failed to load configuration"。此时回退到可执行文件
+        // 所在目录的上级 /Resources，即 .../Contents/Resources，保证生产包在任何启动方式
+        // 下都能找到 configuration。
+        let resource_dir = app_handle
             .path()
             .resource_dir()
-            .map_err(|e| config::ConfigError::NotFound(format!("resource not find: {}", e)))?
-            .join("configuration")
+            .map_err(|e| e.to_string())
+            .or_else(|err| {
+                std::env::current_exe()
+                    .ok()
+                    .and_then(|exe| {
+                        exe.parent()
+                            .and_then(|p| p.parent())
+                            .map(|p| p.join("Resources"))
+                    })
+                    .filter(|p| p.exists())
+                    .ok_or(err)
+            })
+            .map_err(|e| config::ConfigError::NotFound(format!("resource not find: {}", e)))?;
+        resource_dir.join("configuration")
     };
 
     let base_path = dir.join("base.yaml");
