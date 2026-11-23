@@ -1045,11 +1045,9 @@
       "rooms_enabled": "Rooms Enabled"
     },
     "durations": {
-      "30_seconds": "30 seconds",
       "1_minute": "1 minute",
       "5_minutes": "5 minutes",
-      "1_hour": "1 hour",
-      "24_hours": "24 hours"
+      "30_minutes": "30 minutes"
     },
     "formats": {
       "seconds": "{count} seconds",

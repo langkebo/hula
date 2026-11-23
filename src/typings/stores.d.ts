@@ -57,7 +57,7 @@ declare namespace STO {
       /** 新私聊默认是否开启阅后即焚 */
       burnDefaultEnabled: boolean
       /** 阅后即焚默认时长 */
-      burnDefaultDuration: 30 | 60 | 300 | 3600 | 86400
+      burnDefaultDuration: 60 | 300 | 1800
       /** 是否显示阅后即焚倒计时 */
       burnShowCountdown: boolean
       /** 参与线程时是否自动订阅 */

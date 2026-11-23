@@ -219,9 +219,9 @@ describe('PreferencesSettings', () => {
   })
 
   it('loads burnDefaultDuration from settingStore getter', () => {
-    settingStoreMock.burnDefaultDuration = 3600
+    settingStoreMock.burnDefaultDuration = 1800
     const wrapper = mount(PreferencesSettings)
-    expect((wrapper.vm as any).burnDefaultDuration).toBe(3600)
+    expect((wrapper.vm as any).burnDefaultDuration).toBe(1800)
   })
 
   it('loads sendTypingNotifications from settingStore getter', () => {

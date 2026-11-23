@@ -75,11 +75,9 @@ export function useSendKeyOptions() {
 export function useBurnDurationOptions() {
   const { t } = useI18n()
   return computed(() => [
-    { label: t('setting.burn_after_read.durations.30_seconds'), value: 30 },
     { label: t('setting.burn_after_read.durations.1_minute'), value: 60 },
     { label: t('setting.burn_after_read.durations.5_minutes'), value: 300 },
-    { label: t('setting.burn_after_read.durations.1_hour'), value: 3600 },
-    { label: t('setting.burn_after_read.durations.24_hours'), value: 86400 }
+    { label: t('setting.burn_after_read.durations.30_minutes'), value: 1800 }
   ])
 }
 

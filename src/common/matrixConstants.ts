@@ -57,11 +57,11 @@ export const MatrixFormat = {
   HTML: 'org.matrix.custom.html'
 } as const
 
+// 与 SDK burn-after-read 的 [1s, 30min] 校验区间及产品口径保持一致：仅 1 / 5 / 30 分钟
 export const MatrixBurnDuration = {
-  SEC_30: 30,
+  SEC_60: 60,
   SEC_300: 300,
-  SEC_3600: 3600,
-  SEC_86400: 86400,
+  SEC_1800: 1800,
   DEFAULT_MS: 60000
 } as const
 

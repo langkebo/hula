@@ -74,11 +74,10 @@ describe('matrixConstants', () => {
   })
 
   describe('MatrixBurnDuration', () => {
-    it('定义阅后即焚时长常量', () => {
-      expect(MatrixBurnDuration.SEC_30).toBe(30)
+    it('定义阅后即焚时长常量（SDK 上限 30 分钟）', () => {
+      expect(MatrixBurnDuration.SEC_60).toBe(60)
       expect(MatrixBurnDuration.SEC_300).toBe(300)
-      expect(MatrixBurnDuration.SEC_3600).toBe(3600)
-      expect(MatrixBurnDuration.SEC_86400).toBe(86400)
+      expect(MatrixBurnDuration.SEC_1800).toBe(1800)
     })
 
     it('定义默认时长（毫秒）', () => {

@@ -42,9 +42,10 @@
 
 <script setup lang="ts">
 import { NSelect, NSwitch } from 'naive-ui'
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useBurnDurationOptions } from '@/composables/settings/settingsOptions'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import PendingBurnMessages from './PendingBurnMessages.vue'
 
@@ -58,18 +59,15 @@ const durationSeconds = ref(60)
 const pendingCount = ref(0)
 const toggling = ref(false)
 
-const durationOptions = computed(() => [
-  { label: t('setting.burn_after_read.durations.30_seconds'), value: 30 },
-  { label: t('setting.burn_after_read.durations.1_minute'), value: 60 },
-  { label: t('setting.burn_after_read.durations.5_minutes'), value: 300 },
-  { label: t('setting.burn_after_read.durations.1_hour'), value: 3600 },
-  { label: t('setting.burn_after_read.durations.24_hours'), value: 86400 }
-])
+const durationOptions = useBurnDurationOptions()
+const ALLOWED_DURATION_SECONDS = [60, 300, 1800]
 
 async function loadState() {
   await burn.refreshBurnSettings(props.roomId)
   enabled.value = burn.isRoomBurnEnabled(props.roomId)
-  durationSeconds.value = Math.max(1, Math.round(burn.getRoomBurnDuration(props.roomId) / 1000)) || 60
+  // 旧房间可能存着 SDK 已不再接受的时长（30s / 1h / 24h），回落到 1 分钟档
+  const storedSeconds = Math.max(1, Math.round(burn.getRoomBurnDuration(props.roomId) / 1000)) || 60
+  durationSeconds.value = ALLOWED_DURATION_SECONDS.includes(storedSeconds) ? storedSeconds : 60
   const pending = await burn.getPendingBurns(props.roomId)
   pendingCount.value = pending.length
 }

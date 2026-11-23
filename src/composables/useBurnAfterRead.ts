@@ -5,6 +5,7 @@ import {
   matrixBurnAfterReadService
 } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { normalizeBurnDefaultDuration } from '@/stores/domains/settings/settings-helpers'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 // Fix 1: 模块级单例缓存，确保所有 useBurnAfterRead() 调用者共享同一份状态。
@@ -63,7 +64,7 @@ export function useBurnAfterRead() {
       const settings = await matrixBurnAfterReadService.getBurnSettings(targetRoomId)
       if (settings) {
         burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: settings.enabled }
-        // Fix 2: burnAfterMs 是毫秒，转为秒存储
+        // Fix 2: burnAfterMs 是毫秒，转为秒存储；服务端返回的是房间真实 TTL，原样保留
         const durationSeconds = Math.round(settings.burnAfterMs / 1000)
         burnDurationCache.value = {
           ...burnDurationCache.value,
@@ -161,8 +162,11 @@ export function useBurnAfterRead() {
       if (result !== null && result !== undefined) {
         burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: true }
         // Fix 3: 同步更新时长缓存，优先使用传入的 burnAfterMs，否则用服务返回值
-        const durationMs = burnAfterMs ?? result.burnAfterMs
-        const durationSeconds = Math.round(durationMs / 1000)
+        // 用户可选时长收敛到 1/5/30 分钟；服务端返回的房间 TTL 原样保留
+        const durationSeconds =
+          burnAfterMs === undefined
+            ? Math.round(result.burnAfterMs / 1000)
+            : normalizeBurnDefaultDuration(Math.round(burnAfterMs / 1000))
         burnDurationCache.value = {
           ...burnDurationCache.value,
           [targetRoomId]: durationSeconds

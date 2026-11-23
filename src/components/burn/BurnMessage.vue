@@ -30,7 +30,6 @@ import { useI18n } from 'vue-i18n'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
-import { markEventBurned } from '@/utils/burnedMessages'
 import BurnIndicator from './BurnIndicator.vue'
 
 const { t } = useI18n()
@@ -139,22 +138,12 @@ function startCountdown() {
   }, 1000)
 }
 
-async function completeBurn() {
+function completeBurn() {
+  // 本地倒计时只做展示收尾；删除由 SDK 的 MessageBurned 事件驱动
+  // （burnMessage 先本地删缓存再无条件 emit，不再依赖 /redact 成功）。
   internalIsBurning.value = false
   internalIsBurned.value = true
   internalRemainingSeconds.value = 0
-  // 记入跨会话黑名单：否则重进会话/重新 sync 后这条消息会复活（服务端不 redact）。
-  if (props.eventId) {
-    markEventBurned(props.eventId)
-  }
-  // 到期即从消息列表移除（接收端自动删除）。
-  //
-  // 为什么不用 SDK 的 MessageBurned 事件：它要 /redact 成功才 emit，而
-  // can_redact_event 只对「作者本人（v11+）」或「power >= 50」放行，
-  // 接收方是普通成员 ⇒ 403 ⇒ 事件永不触发 ⇒ deleteMsg 永不执行。
-  // 本地倒计时是接收端唯一可靠的到期信号，删除必须挂在这里。
-  chatStore.deleteMsg(props.msgId)
-  // Fix 5: 移除 markMessageRead 调用（已在消息可见时调用）
   // 持久化 burned 状态到 store，防止组件重建后重复触发
   chatStore.updateMsg({
     msgId: props.msgId,

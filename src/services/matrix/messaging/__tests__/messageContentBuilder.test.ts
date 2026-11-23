@@ -528,8 +528,8 @@ describe('buildMatrixContent', () => {
       expect(ReexportedMatrixBurnDuration).toBe(MatrixBurnDuration)
     })
 
-    it('should have SEC_30 with value 30', () => {
-      expect(ReexportedMatrixBurnDuration.SEC_30).toBe(30)
+    it('should have SEC_60 with value 60', () => {
+      expect(ReexportedMatrixBurnDuration.SEC_60).toBe(60)
     })
 
     it('should have SEC_300 with value 300', () => {

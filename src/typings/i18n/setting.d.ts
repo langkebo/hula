@@ -1127,11 +1127,9 @@ export type Messages = {
       "rooms_enabled": "开启房间数"
     },
     "durations": {
-      "30_seconds": "30秒",
       "1_minute": "1分钟",
       "5_minutes": "5分钟",
-      "1_hour": "1小时",
-      "24_hours": "24小时"
+      "30_minutes": "30分钟"
     },
     "formats": {
       "seconds": "{count}秒",
@@ -2213,11 +2211,9 @@ export type KeyPaths =
   | "setting.burn_after_read.stats.total_burned"
   | "setting.burn_after_read.stats.total_pending"
   | "setting.burn_after_read.stats.rooms_enabled"
-  | "setting.burn_after_read.durations.30_seconds"
   | "setting.burn_after_read.durations.1_minute"
   | "setting.burn_after_read.durations.5_minutes"
-  | "setting.burn_after_read.durations.1_hour"
-  | "setting.burn_after_read.durations.24_hours"
+  | "setting.burn_after_read.durations.30_minutes"
   | "setting.burn_after_read.formats.seconds"
   | "setting.burn_after_read.formats.minutes"
   | "setting.burn_after_read.formats.hours"

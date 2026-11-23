@@ -133,8 +133,11 @@ export const normalizeRecallTime = (value?: number): 120 | 300 | 600 => {
   return 120
 }
 
-export const normalizeBurnDefaultDuration = (value?: number): 30 | 60 | 300 | 3600 | 86400 => {
-  if (value === 30 || value === 300 || value === 3600 || value === 86400) return value
+// SDK burn-after-read 只接受 [1s, 30min]，产品口径收敛为 1 / 5 / 30 分钟三档。
+// 旧配置里的 30s 抬到 1 分钟，超过 30 分钟的收敛到 30 分钟。
+export const normalizeBurnDefaultDuration = (value?: number): 60 | 300 | 1800 => {
+  if (value === 300 || value === 1800) return value
+  if (typeof value === 'number' && value > 1800) return 1800
   return 60
 }
 

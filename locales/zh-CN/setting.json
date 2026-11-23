@@ -1045,11 +1045,9 @@
       "rooms_enabled": "开启房间数"
     },
     "durations": {
-      "30_seconds": "30秒",
       "1_minute": "1分钟",
       "5_minutes": "5分钟",
-      "1_hour": "1小时",
-      "24_hours": "24小时"
+      "30_minutes": "30分钟"
     },
     "formats": {
       "seconds": "{count}秒",
