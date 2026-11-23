@@ -52,7 +52,7 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
  * 全局 @font-face 移除后继续使用会让全站退化为 generic sans-serif，并丢失 500 字重。
  */
 export const DEFAULT_PAGE_FONT_FAMILY =
-  "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Roboto, sans-serif"
+  "'PingFang SC', -apple-system, BlinkMacSystemFont, 'Hiragino Sans GB', 'Microsoft YaHei', Roboto, sans-serif"
 
 /** 旧版本已持久化的非法字体名 → 当前有效值 */
 const LEGACY_PAGE_FONT_FAMILIES: Record<string, string> = {

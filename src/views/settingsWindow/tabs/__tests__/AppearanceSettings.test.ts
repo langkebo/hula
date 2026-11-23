@@ -126,7 +126,7 @@ describe('AppearanceSettings', () => {
     vi.clearAllMocks()
     ;(window as any).$message = { success: messageSuccessMock }
     localStorage.clear()
-    document.documentElement.style.removeProperty('--font-family')
+    document.documentElement.style.removeProperty('--tjg-font-family')
     document.documentElement.style.removeProperty('--tjg-font-scale')
     document.documentElement.removeAttribute('data-bubble-style')
 
@@ -241,7 +241,7 @@ describe('AppearanceSettings', () => {
     vm.handleFontChange('Source Han Sans')
 
     expect(mockStore.pageFontFamily).toBe('Source Han Sans')
-    expect(document.documentElement.style.getPropertyValue('--font-family')).toBe('Source Han Sans')
+    expect(document.documentElement.style.getPropertyValue('--tjg-font-family')).toBe('Source Han Sans')
     expect(messageSuccessMock).toHaveBeenCalledWith('字体已更新')
   })
 

@@ -121,10 +121,13 @@
   --tjg-layout-center-shrink: 64px;
 
   /* 字体 */
+  /* 苹方必须排在 -apple-system 之前：iOS 模拟器的 WebKit 把 -apple-system(SF Pro)
+     当作无中文字形且 cascade 断裂的字体，会把中文渲染成 ?（notdef），吞掉后面的苹方。
+     真机上苹方同样优先，视觉一致；英文改用苹方拉丁字形。 */
   --tjg-font-family:
+    'PingFang SC',
     -apple-system,
     BlinkMacSystemFont,
-    'PingFang SC',
     'Hiragino Sans GB',
     'Microsoft YaHei',
     Roboto,

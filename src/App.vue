@@ -60,6 +60,7 @@ import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useIsMobile } from '@/composables/usePlatform'
 import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
+import { getPlatformBoot } from '@/platform/platformBoot'
 import { applyMediaUploadPreferences } from '@/services/matrix/media/mediaUploadPreferences'
 import { createContactStateResolver } from '@/services/matrix/user/contactStateResolver'
 import { loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
@@ -86,6 +87,9 @@ const SplashScreen = defineAsyncComponent(() => import('@/components/common/Spla
 
 // 平台在运行期恒定：探测一次后复用
 const isMobilePlatform = useIsMobile()
+
+// 平台启动收尾（已进入组件上下文）：移动端在此启动图标角标监听
+getPlatformBoot().afterAppSetup?.()
 
 const DesktopSecretChatUnlockDialog = defineAsyncComponent(
   () => import('@/components/secretChat/SecretChatUnlockDialog.vue')
@@ -380,7 +384,7 @@ function setupThemeWatchers() {
   watch(
     () => settingStore.pageFontFamily,
     (val) => {
-      document.documentElement.style.setProperty('--font-family', val)
+      document.documentElement.style.setProperty('--tjg-font-family', val)
     },
     { immediate: true }
   )

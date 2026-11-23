@@ -130,7 +130,7 @@ const bubbleStyle = ref(loadBubbleStyle() === 'rounded')
 
 function handleFontChange(value: string) {
   settingStore.setPageFont(value)
-  document.documentElement.style.setProperty('--font-family', value)
+  document.documentElement.style.setProperty('--tjg-font-family', value)
   showFeedback(t('setting.appearance.feedback.font_changed'), 'success')
 }
 

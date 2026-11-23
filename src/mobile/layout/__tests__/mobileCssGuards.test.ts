@@ -13,6 +13,31 @@ describe('mobile font payload', () => {
     expect(tokens).not.toMatch(/'PingFang'\s*,/)
   })
 
+  // iOS 模拟器 WebKit 把 -apple-system(SF Pro) 当作无中文字形且 cascade 断裂的字体，
+  // 会把中文吞成 ?（notdef）。苹方必须排在它之前，否则模拟器正文中文全是问号方块。
+  // 只看字体栈片段本身（注释里也会出现这两个词，全文 indexOf 会误判）。
+  it('puts PingFang SC before -apple-system in both font stacks', () => {
+    const extract = (path: string, pattern: RegExp) => {
+      const matched = read(path).match(pattern)
+      expect(matched, `${path} 未匹配到字体栈定义`).not.toBeNull()
+      return matched?.[1] ?? ''
+    }
+    const stacks: Array<[string, string]> = [
+      ['design-tokens.css', extract('src/styles/css/design-tokens.css', /--tjg-font-family:\s*([^;]+);/)],
+      [
+        'settings-helpers.ts',
+        extract('src/stores/domains/settings/settings-helpers.ts', /DEFAULT_PAGE_FONT_FAMILY\s*=\s*"([^"]+)"/)
+      ]
+    ]
+    for (const [name, stack] of stacks) {
+      const pingfang = stack.indexOf("'PingFang SC'")
+      const apple = stack.indexOf('-apple-system')
+      expect(pingfang, `${name} 缺少 'PingFang SC'`).toBeGreaterThan(-1)
+      expect(apple, `${name} 缺少 -apple-system`).toBeGreaterThan(-1)
+      expect(pingfang, `${name} 中 'PingFang SC' 必须排在 -apple-system 之前`).toBeLessThan(apple)
+    }
+  })
+
   it('removes the unreferenced PingFang webfont', () => {
     expect(pathExists('src/assets/fonts/PingFang-Medium.woff2')).toBe(false)
     expect(pathExists('src/styles/scss/global/fonts.scss')).toBe(false)
@@ -30,6 +55,25 @@ describe('mobile font payload', () => {
     const helpers = read('src/stores/domains/settings/settings-helpers.ts')
     expect(helpers).toContain('PingFang: DEFAULT_PAGE_FONT_FAMILY')
     expect(helpers).not.toMatch(/fonts:\s*'PingFang'/)
+  })
+
+  // 写入端与消费端必须认同一个变量：正文只消费 --tjg-font-family（base.scss）。
+  // 历史上两处写入端误写 --font-family（无人消费的别名），导致换字体静默失效。
+  const FONT_VAR = '--tjg-font-family'
+
+  it('applies the chosen font to the variable the body actually consumes', () => {
+    const app = read('src/App.vue')
+    const appearance = read('src/views/settingsWindow/tabs/AppearanceSettings.vue')
+    const base = read('src/styles/scss/global/base.scss')
+
+    // 消费端：body 必须读 --tjg-font-family
+    expect(base).toMatch(/font-family:\s*var\(--tjg-font-family\)/)
+    // 写入端：两处都必须写同一个变量
+    expect(app).toContain(`setProperty('${FONT_VAR}'`)
+    expect(appearance).toContain(`setProperty('${FONT_VAR}'`)
+    // 反向：写入端不得再写无人消费的旧别名
+    expect(app).not.toContain("setProperty('--font-family'")
+    expect(appearance).not.toContain("setProperty('--font-family'")
   })
 })
 
