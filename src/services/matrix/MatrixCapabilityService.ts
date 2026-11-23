@@ -132,6 +132,15 @@ export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]
 
 const THREAD_UNSTABLE_FEATURES = ['org.matrix.msc3983', 'org.matrix.msc3983.thread', 'org.matrix.msc3026']
 
+/**
+ * MSC4388 rendezvous 探测结果。
+ * 只有 `available && createAvailable` 时才应展示「用 QR 登录另一台设备」入口。
+ */
+export interface Msc4388ProbeResult {
+  available: boolean
+  createAvailable: boolean
+}
+
 export class CapabilityUnavailableError extends Error {
   capability: string
   code = 'CAPABILITY_UNAVAILABLE'
@@ -302,6 +311,33 @@ class MatrixCapabilityService {
         return null
       }
     })
+  }
+
+  /**
+   * MSC4388 QR rendezvous 探测。
+   *
+   * MSC4388 不在 `/versions` 与 `/capabilities` 任何宣告面上，只能靠 SDK 探测
+   * （`probeQrRendezvousMsc4388` 内部 GET rendezvous 端点：200 ⇒ available，
+   * 404 ⇒ 不支持）。其余错误（403 / 5xx / 网络）按 SDK 契约原样抛出，
+   * 部署或权限问题不应被读成「不支持」。
+   */
+  async probeQrRendezvousMsc4388(): Promise<Msc4388ProbeResult | null> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      logger.error('[CapabilityService] Client not initialized, skipping MSC4388 probe')
+      return null
+    }
+
+    try {
+      const result = await client.getServerCapabilitiesManager().probeQrRendezvousMsc4388()
+      logger.info(
+        `[CapabilityService] MSC4388 probe: available=${result.available} createAvailable=${result.createAvailable}`
+      )
+      return result
+    } catch (err) {
+      logger.error(`[CapabilityService] MSC4388 probe failed: ${err}`)
+      throw err
+    }
   }
 
   /**

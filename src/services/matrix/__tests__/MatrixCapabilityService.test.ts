@@ -492,3 +492,45 @@ describe('CAP-08 真实后端快照驱动的能力真值表', () => {
     expect(matrixCapabilityService.getCapabilityStatus('admin-api')).toBe('supported')
   })
 })
+
+describe('MatrixCapabilityService MSC4388 探测', () => {
+  const probe = vi.fn()
+
+  beforeEach(() => {
+    probe.mockReset()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+      getServerCapabilitiesManager: () => ({ probeQrRendezvousMsc4388: probe })
+    } as unknown as NonNullable<ReturnType<typeof matrixClientService.getClient>>)
+  })
+
+  it('后端未开 experimental.msc4388_mode 时透传 available=false', async () => {
+    probe.mockResolvedValue({ available: false, createAvailable: false })
+
+    await expect(matrixCapabilityService.probeQrRendezvousMsc4388()).resolves.toEqual({
+      available: false,
+      createAvailable: false
+    })
+  })
+
+  it('探测可用时返回 available/createAvailable', async () => {
+    probe.mockResolvedValue({ available: true, createAvailable: true })
+
+    await expect(matrixCapabilityService.probeQrRendezvousMsc4388()).resolves.toEqual({
+      available: true,
+      createAvailable: true
+    })
+  })
+
+  it('client 未就绪时返回 null', async () => {
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+
+    await expect(matrixCapabilityService.probeQrRendezvousMsc4388()).resolves.toBeNull()
+  })
+
+  it('非 404 错误原样抛出，不读成「不支持」', async () => {
+    const err = new Error('M_FORBIDDEN: insufficient permission')
+    probe.mockRejectedValue(err)
+
+    await expect(matrixCapabilityService.probeQrRendezvousMsc4388()).rejects.toBe(err)
+  })
+})
