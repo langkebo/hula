@@ -25,6 +25,15 @@
       {{ qrCodeLabel }}
     </div>
     <div class="w-1px h-14px bg-[--login-divider-color]"></div>
+    <div
+      v-clickable
+      class="color-[--tjg-color-primary-500] cursor-pointer"
+      :title="registerTitle"
+      data-test="login-register-entry"
+      @click="emit('open-register')">
+      {{ registerLabel }}
+    </div>
+    <div class="w-1px h-14px bg-[--login-divider-color]"></div>
     <div>
       <n-popover
         trigger="click"
@@ -39,13 +48,6 @@
           </div>
         </template>
         <n-flex vertical :size="2">
-          <div
-            v-clickable
-            class="register text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-[var(--tjg-radius-md)] p-8px"
-            data-test="login-register-entry"
-            @click="emit('open-register')">
-            {{ t('login.register') }}
-          </div>
           <div
             v-clickable
             class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-[var(--tjg-radius-md)] p-8px"
@@ -104,10 +106,13 @@ const moreText = computed(() => t('login.option.more'))
 const removeAccountText = computed(() => t('login.button.remove_account'))
 const cancelLoginText = computed(() => t('login.button.cancel_login'))
 const qrCodeLabel = computed(() => formatBottomText(qrCodeText.value, MAX_BOTTOM_TEXT_LEN))
+const registerText = computed(() => t('login.register'))
+const registerLabel = computed(() => formatBottomText(registerText.value, MAX_BOTTOM_TEXT_LEN))
 const moreLabel = computed(() => formatBottomText(moreText.value, MAX_BOTTOM_TEXT_LEN))
 const removeAccountLabel = computed(() => formatBottomText(removeAccountText.value, MAX_BOTTOM_TEXT_LEN))
 const cancelLoginLabel = computed(() => formatBottomText(cancelLoginText.value, MAX_BOTTOM_TEXT_LEN))
 const qrCodeTitle = computed(() => (qrCodeLabel.value !== qrCodeText.value ? qrCodeText.value : undefined))
+const registerTitle = computed(() => (registerLabel.value !== registerText.value ? registerText.value : undefined))
 const moreTitle = computed(() => (moreLabel.value !== moreText.value ? moreText.value : undefined))
 const removeAccountTitle = computed(() =>
   removeAccountLabel.value !== removeAccountText.value ? removeAccountText.value : undefined

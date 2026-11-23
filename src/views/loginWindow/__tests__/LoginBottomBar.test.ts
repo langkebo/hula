@@ -58,3 +58,29 @@ describe('LoginBottomBar guest entry', () => {
     expect(wrapper.emitted('guest-login')).toHaveLength(1)
   })
 })
+
+describe('LoginBottomBar register entry', () => {
+  it('renders exactly one register entry in manual mode', () => {
+    const wrapper = mountComponent({ mode: 'manual' })
+
+    // 注册入口必须直接可见（曾长期藏在"更多"下拉里，用户反映"没有注册按钮"）
+    const entries = wrapper.findAll('[data-test="login-register-entry"]')
+    expect(entries).toHaveLength(1)
+    // 文字经 formatBottomText 截断（mock 下为 login.r...），真实中文"注册账号"不截；只校验非空
+    expect(entries[0].text()).toContain('login')
+  })
+
+  it('emits open-register when the entry is clicked', async () => {
+    const wrapper = mountComponent({ mode: 'manual' })
+
+    await wrapper.find('[data-test="login-register-entry"]').trigger('click')
+
+    expect(wrapper.emitted('open-register')).toHaveLength(1)
+  })
+
+  it('does not render the register entry in auto mode', () => {
+    const wrapper = mountComponent({ mode: 'auto' })
+
+    expect(wrapper.find('[data-test="login-register-entry"]').exists()).toBe(false)
+  })
+})
