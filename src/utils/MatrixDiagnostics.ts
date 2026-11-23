@@ -110,17 +110,21 @@ export class MatrixDiagnostics {
       results = []
       for (const endpoint of endpoints) {
         try {
-          await HttpClient.get<Record<string, unknown>>(`${this.homeserverUrl}${endpoint}`, { allowDynamicHost: true })
-          results.push({
-            endpoint,
-            status: 200,
-            available: true
-          })
+          // Sliding Sync 是 POST 端点：用 GET 探测会得到 405（Method Not Allowed），
+          // 被误判为"未找到"。与 worker 侧探测保持一致——POST 空 body，非 404 即视为存在
+          // （401 需认证、400 body 不完整都说明端点已路由，只有 404 才是真不存在）。
+          await HttpClient.post<Record<string, unknown>>(
+            `${this.homeserverUrl}${endpoint}`,
+            {},
+            { allowDynamicHost: true }
+          )
+          results.push({ endpoint, status: 200, available: true })
         } catch (error) {
+          const httpStatus = (error as { httpStatus?: unknown }).httpStatus
           results.push({
             endpoint,
-            status: 'error',
-            available: false,
+            status: typeof httpStatus === 'number' ? httpStatus : 'error',
+            available: typeof httpStatus === 'number' && httpStatus !== 404,
             error: String(error)
           })
         }
