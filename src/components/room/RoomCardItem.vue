@@ -348,6 +348,17 @@ const handleAction = (action: 'message' | 'info' | 'settings' | 'pin') => {
   }
 }
 
+/* 4 个操作按钮：必须清掉 WebKit 原生 <button> 默认外观。
+   默认按钮背景是 #c0c0c0 浅灰，而图标色 --tjg-text-secondary 暗色为 #a8a8a8，
+   两者对比仅 ~1.3:1（WCAG 1.4.11 要求非文本 ≥3:1），图标在暗色主题下几乎不可见。 */
+.room-card-item__action {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
 .room-card-item__name {
   font-size: var(--tjg-font-size-base);
   font-weight: var(--tjg-font-weight-medium);
