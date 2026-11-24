@@ -10,6 +10,18 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 const logger = createLogger('UnreadCountManager')
 
 /**
+ * 汇总会话列表的总未读数（排除免打扰会话，负数按 0 计）。
+ * 桌面端角标、移动端角标触发均以此为准，避免两处口径漂移。
+ */
+export const sumUnreadCounts = (sessionList: SessionItem[]): number =>
+  sumBy(sessionList, (session) => {
+    if (session.muteNotification === NotificationTypeEnum.NOT_DISTURB) {
+      return 0
+    }
+    return Math.max(0, session.unreadCount || 0)
+  })
+
+/**
  * 统一的未读计数管理器
  */
 export class UnreadCountManager {
@@ -59,12 +71,7 @@ export class UnreadCountManager {
     feedUnreadCount?: number
   ) {
     // 计算总未读数（排除免打扰的会话）
-    const totalUnread = sumBy(sessionList, (session) => {
-      if (session.muteNotification === NotificationTypeEnum.NOT_DISTURB) {
-        return 0
-      }
-      return Math.max(0, session.unreadCount || 0)
-    })
+    const totalUnread = sumUnreadCounts(sessionList)
 
     // 更新全局未读计数
     unReadMark.newMsgUnreadCount = totalUnread

@@ -39,6 +39,12 @@ export interface MobilePresence {
  */
 export interface PlatformBoot {
   afterPlatformInitialize: () => void
+  /**
+   * 应用根组件 setup 阶段调用。
+   * 此时已进入组件上下文且 pinia / i18n 已安装，可安全创建依赖 useI18n 的 store
+   * （移动端图标角标监听需要在此启动，早于组件上下文的调用会抛 MUST_BE_CALL_SETUP_TOP）。
+   */
+  afterAppSetup?: () => void
 }
 
 /**

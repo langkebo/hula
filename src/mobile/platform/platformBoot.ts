@@ -1,6 +1,8 @@
 import type { PlatformBoot } from '@/platform/contracts'
+import { pinia } from '@/stores'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
+import { startMobileBadgeSync } from './mobileBadgeSync'
 
 const initDebugConsole = (): void => {
   if (process.env.NODE_ENV !== 'development') return
@@ -26,5 +28,8 @@ export const mobilePlatformBoot: PlatformBoot = {
     } else {
       void notifyFrontendReady()
     }
+  },
+  afterAppSetup: () => {
+    startMobileBadgeSync(pinia)
   }
 }

@@ -5,7 +5,7 @@ import { matrixEventService } from '@/services/matrix/MatrixEventService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { useSessionStore } from './session'
+import { type SessionItem, useSessionStore } from './session'
 import type { CustomForwardTask, MessageBody, MessageType, RecalledMessage } from './types'
 
 export type { MessageBody, MessageType }
@@ -370,11 +370,14 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     sessionList: sessionListRef,
     sessionOptions: sessionOptionsRef,
     syncLoading: syncLoadingRef,
-    getSessionList: sessionStore.getSessionList,
-    updateSession: sessionStore.updateSession,
-    updateSessionLastActiveTime: sessionStore.updateSessionLastActiveTime,
+    // 会话动作必须「调用时解析」：chat ↔ session ↔ global 存在初始化环，
+    // 建店时 pinia 还是半成品 store，直接取值会永久拿到 undefined（会话列表恒空）。
+    getSessionList: (refresh?: boolean) => sessionStore.getSessionList(refresh),
+    updateSession: (roomId: string, data: Partial<SessionItem>) => sessionStore.updateSession(roomId, data),
+    updateSessionLastActiveTime: (roomId: string, session?: SessionItem) =>
+      sessionStore.updateSessionLastActiveTime(roomId, session),
     markSessionRead,
-    getSession: sessionStore.getSession,
+    getSession: (roomId: string) => sessionStore.getSession(roomId),
     isGroup,
     currentSessionInfo,
     getMessage,
@@ -393,7 +396,7 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     getGroupSessions,
     removeSession,
     changeRoom,
-    addSession: sessionStore.addSession,
+    addSession: (session: SessionItem) => sessionStore.addSession(session),
     setAllSessionMsgList,
     chatMessageListByRoomId,
     getLastMessageByRoomId,

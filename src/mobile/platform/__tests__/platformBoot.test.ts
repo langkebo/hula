@@ -1,9 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { initMock, hasTauriRuntimeMock, invokeSilentlyMock } = vi.hoisted(() => ({
+const { initMock, hasTauriRuntimeMock, invokeSilentlyMock, badgeSyncMock, piniaMock } = vi.hoisted(() => ({
   initMock: vi.fn(),
   hasTauriRuntimeMock: vi.fn(() => true),
-  invokeSilentlyMock: vi.fn(async () => null)
+  invokeSilentlyMock: vi.fn(async () => null),
+  badgeSyncMock: vi.fn(),
+  piniaMock: { __pinia: true }
+}))
+
+vi.mock('@/mobile/platform/mobileBadgeSync', () => ({
+  startMobileBadgeSync: badgeSyncMock
+}))
+
+vi.mock('@/stores', () => ({
+  pinia: piniaMock
 }))
 
 vi.mock('eruda', () => ({
@@ -108,5 +118,19 @@ describe('mobile platform boot', () => {
 
     await Promise.resolve()
     expect(initMock).not.toHaveBeenCalled()
+  })
+
+  it('does not start the badge sync before the app setup context exists', () => {
+    vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete')
+
+    mobilePlatformBoot.afterPlatformInitialize()
+
+    expect(badgeSyncMock).not.toHaveBeenCalled()
+  })
+
+  it('starts the mobile badge sync with the shared pinia instance during app setup', () => {
+    mobilePlatformBoot.afterAppSetup?.()
+
+    expect(badgeSyncMock).toHaveBeenCalledWith(piniaMock)
   })
 })
