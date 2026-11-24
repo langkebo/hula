@@ -6,7 +6,7 @@
           v-if="!isMac()"
           @click="handleCancel"
           class="w-12px h-12px ml-a cursor-pointer select-none text-[--tjg-text-primary]"
-          aria-hidden="true">
+          v-clickable="t('common.close')">
           <use href="#close"></use>
         </svg>
         <div class="flex flex-col gap-10px p-10px select-none">

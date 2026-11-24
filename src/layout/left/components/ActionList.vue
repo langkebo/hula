@@ -42,7 +42,7 @@
           </template>
           <n-flex align="center" justify="space-between">
             <p class="select-none">{{ item.tip }}</p>
-            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer" aria-hidden="true">
+            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer" v-clickable="t('common.close')">
               <use href="#close"></use>
             </svg>
           </n-flex>
@@ -135,7 +135,7 @@
           </template>
           <n-flex align="center" justify="space-between">
             <p class="select-none">{{ item.tip }}</p>
-            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer" aria-hidden="true">
+            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer" v-clickable="t('common.close')">
               <use href="#close"></use>
             </svg>
           </n-flex>
@@ -242,7 +242,7 @@
           </template>
           <n-flex align="center" justify="space-between">
             <p class="select-none">{{ item.tip }}</p>
-            <svg @click="tipShow = false" class="size-12px cursor-pointer" aria-hidden="true">
+            <svg @click="tipShow = false" class="size-12px cursor-pointer" v-clickable="t('common.close')">
               <use href="#close"></use>
             </svg>
           </n-flex>

@@ -20,7 +20,7 @@
           v-if="isWindows()"
           class="size-14px cursor-pointer pt-6px select-none absolute right-6px z-10"
           @click="modalVisible = false"
-          aria-hidden="true">
+          v-clickable="t('common.close')">
           <use href="#close"></use>
         </svg>
         <span class="h-1px w-full bg-[--tjg-border-default]"></span>

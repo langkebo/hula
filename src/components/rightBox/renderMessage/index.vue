@@ -223,7 +223,10 @@
                       <span>{{ t('message_container.copy_translation') }}</span>
                     </n-tooltip>
                   </n-flex>
-                  <svg class="size-10px cursor-pointer" @click="messageBody.translatedText = null" aria-hidden="true">
+                  <svg
+                    class="size-10px cursor-pointer"
+                    @click="messageBody.translatedText = null"
+                    v-clickable="t('common.close')">
                     <use href="#close"></use>
                   </svg>
                 </n-flex>

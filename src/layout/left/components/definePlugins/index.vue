@@ -18,8 +18,8 @@
         <svg
           v-if="isWindows()"
           @click="isShow = false"
-          class="z-10 color-[--tjg-text-primary] w-12px h-12px absolute top-6px right-6px cursor-pointer select-none"
-          aria-hidden="true">
+          v-clickable="t('common.close')"
+          class="z-10 color-[--tjg-text-primary] w-12px h-12px absolute top-6px right-6px cursor-pointer select-none">
           <use href="#close"></use>
         </svg>
       </div>

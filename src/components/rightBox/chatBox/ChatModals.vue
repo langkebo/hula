@@ -7,8 +7,8 @@
       <svg
         v-if="isWindows()"
         @click="modalShow = false"
-        class="w-12px h-12px ml-a cursor-pointer select-none"
-        aria-hidden="true">
+        v-clickable="t('common.close')"
+        class="w-12px h-12px ml-a cursor-pointer select-none">
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-30px p-[22px_10px_10px_22px] select-none">

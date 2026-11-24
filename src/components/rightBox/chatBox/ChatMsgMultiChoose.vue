@@ -32,8 +32,8 @@
       <svg
         v-if="isWindows()"
         @click="showModal = false"
-        class="size-12px ml-a cursor-pointer select-none"
-        aria-hidden="true">
+        v-clickable="t('common.close')"
+        class="size-12px ml-a cursor-pointer select-none">
         <use href="#close"></use>
       </svg>
       <div class="pt-8px flex flex-col select-none">
@@ -133,8 +133,8 @@
       <svg
         v-if="isWindows()"
         @click="showDeleteConfirm = false"
-        class="w-12px h-12px ml-a cursor-pointer select-none"
-        aria-hidden="true">
+        v-clickable="t('common.close')"
+        class="w-12px h-12px ml-a cursor-pointer select-none">
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-30px p-[22px_10px_10px_22px] select-none">

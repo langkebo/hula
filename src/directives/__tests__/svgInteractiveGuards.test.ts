@@ -36,6 +36,27 @@ interface SvgClickSite {
   tag: string
 }
 
+/** 抓所有"带 @click 的 <svg …>…</svg>"整块（含内部 `<use>`，用于识别关闭图标）。 */
+function findCloseIconSites(): SvgClickSite[] {
+  const sites: SvgClickSite[] = []
+  for (const file of collectVueFiles(SRC_DIR)) {
+    const source = fs.readFileSync(file, 'utf-8')
+    const blockPattern = /<svg\b[^>]*>[\s\S]*?<\/svg>/gs
+    let match: RegExpExecArray | null = blockPattern.exec(source)
+    while (match !== null) {
+      if (/@click/.test(match[0]) && /href="#close"/.test(match[0])) {
+        sites.push({
+          file: path.relative(SRC_DIR, file),
+          line: source.slice(0, match.index).split('\n').length,
+          tag: match[0]
+        })
+      }
+      match = blockPattern.exec(source)
+    }
+  }
+  return sites
+}
+
 /** 抓所有"带 @click 的 <svg …>"开标签（属性可跨行）。 */
 function findSvgClickSites(): SvgClickSite[] {
   const sites: SvgClickSite[] = []
@@ -81,6 +102,19 @@ describe('svg 可交互守卫', () => {
     const violations = sites
       .filter((site) => /\b(tabindex|v-clickable)\b/.test(site.tag))
       .filter((site) => /outline-none/.test(site.tag))
+      .map((site) => `${site.file}:${site.line}`)
+
+    expect(violations).toEqual([])
+  })
+
+  it('把 <use href="#close"> 当关闭按钮用时，不得再挂 aria-hidden', () => {
+    // 关闭图标是最典型的"看得见但 Tab 不到"：`aria-hidden` 让它对读屏消失，
+    // 而 @click 又让它承担了交互 —— 两种写法互斥。
+    // 例外：X 图标被拿来当"删除某条记录"（handler 里带 delete-account），
+    // 那不是关闭语义，标签应跟随删除流程，故按 handler 排除而不是按文件排除。
+    const violations = findCloseIconSites()
+      .filter((site) => !/delete-account/.test(site.tag))
+      .filter((site) => /aria-hidden/.test(site.tag))
       .map((site) => `${site.file}:${site.line}`)
 
     expect(violations).toEqual([])
