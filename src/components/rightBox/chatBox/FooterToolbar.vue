@@ -46,7 +46,7 @@
       </n-popover>
 
       <div class="flex-center gap-2px mr-12px">
-        <svg @click="$emit('handleScreenshot')" role="button" :aria-label="t('chat.footer.screenshot')">
+        <svg @click="$emit('handleScreenshot')" role="button" v-clickable :aria-label="t('chat.footer.screenshot')">
           <use href="#screenshot"></use>
         </svg>
         <n-popover class="liquid-glass-popover" trigger="hover" :show-arrow="false" placement="top">
@@ -86,7 +86,7 @@
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
           <div class="flex-center gap-2px mr-12px">
-            <svg @click="$emit('handleFileOpen')" role="button" :aria-label="t('chat.footer.send_file')">
+            <svg @click="$emit('handleFileOpen')" role="button" v-clickable :aria-label="t('chat.footer.send_file')">
               <use href="#file2"></use>
             </svg>
             <svg class="w-14px h-14px" aria-hidden="true">
@@ -100,6 +100,7 @@
         <template #trigger>
           <svg
             @click="$emit('handleImageOpen')"
+            v-clickable
             class="mr-18px"
             role="button"
             :aria-label="t('chat.footer.send_image')">
@@ -112,6 +113,7 @@
         <template #trigger>
           <svg
             @click="$emit('handleVoiceRecord')"
+            v-clickable
             class="mr-18px"
             role="button"
             :aria-label="t('chat.footer.voice_message')">
@@ -124,6 +126,7 @@
         <template #trigger>
           <svg
             @click="$emit('showLinkPreviewModal')"
+            v-clickable
             class="mr-18px"
             role="button"
             :aria-label="t('chat.footer.link_preview')">
@@ -136,6 +139,7 @@
         <template #trigger>
           <svg
             @click="$emit('showLocationModal')"
+            v-clickable
             class="mr-18px"
             role="button"
             :aria-label="t('chat.footer.location')">
@@ -173,7 +177,8 @@
     <n-popover trigger="hover" :show-arrow="false" placement="bottom">
       <template #trigger>
         <svg
-          class="w-22px h-22px cursor-pointer outline-none"
+          class="w-22px h-22px cursor-pointer"
+          v-clickable
           @click="$emit('openChatHistory')"
           role="button"
           :aria-label="t('chat.footer.chat_history')">

@@ -18,6 +18,7 @@
         class="w-20px h-20px cursor-pointer"
         viewBox="0 0 24 24"
         fill="currentColor"
+        v-clickable
         role="button"
         :aria-label="t('common.close')"
         @click="handleClose">

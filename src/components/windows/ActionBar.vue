@@ -166,6 +166,7 @@
         <svg
           @click="tipsRef.show = false"
           class="size-12px ml-a cursor-pointer select-none"
+          v-clickable
           role="button"
           :title="t('components.actionBar.close')"
           :aria-label="t('components.actionBar.close')">
