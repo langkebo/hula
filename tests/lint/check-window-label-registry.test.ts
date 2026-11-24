@@ -158,11 +158,21 @@ describe('check-window-label-registry: 真实仓库自洽', () => {
     expect(matrix.filter((l) => nonMatrix.includes(l))).toEqual([])
   })
 
-  it('已登记的 5 个"跳过运行时"窗口与 App.vue 的判据一致（名单被真正使用）', () => {
+  it('已登记的 8 个"跳过运行时"窗口与 App.vue 的判据一致（名单被真正使用）', () => {
     const appVue = readFileSync(join(repoRoot, 'src/App.vue'), 'utf8')
     const { nonMatrix } = parseRegistries(readFileSync(join(repoRoot, WINDOW_LABELS_FILE), 'utf8'))
 
     expect(appVue).toContain('isNonMatrixWindow')
-    expect(nonMatrix).toEqual(['capture', 'tray', 'notify', 'update', 'checkupdate'])
+    // 登录类窗口（login/register/forgetPassword）只建立会话、不消费会话，见 windowLabels.ts 说明
+    expect(nonMatrix).toEqual([
+      'capture',
+      'tray',
+      'notify',
+      'update',
+      'checkupdate',
+      'login',
+      'register',
+      'forgetPassword'
+    ])
   })
 })
