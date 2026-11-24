@@ -44,6 +44,7 @@ import {
   createSettingsDirtyRegistry,
   provideSettingsDirtyRegistry
 } from '@/composables/settings/useSettingsDirtyRegistry'
+import { useSettingsNativeCloseGuard } from '@/composables/settings/useSettingsNativeCloseGuard'
 import { useSettingsShell } from '@/composables/settings/useSettingsShell'
 import { usePlatform } from '@/composables/usePlatform'
 import { SETTINGS_TABS } from '@/stores/domains/settings/settingsSchema'
@@ -261,6 +262,24 @@ onBeforeRouteLeave(async () => {
     dirtyRegistry.clearDirtyTabs()
   }
   return canLeave
+})
+
+// A-1: 原生关窗守卫。`handleBeforeUnload` 只能拦浏览器导航，拦不住 Tauri 的
+// `WindowEvent::CloseRequested`（窗口红灯 / Cmd+W），必须在独立窗口上另挂原生监听。
+useSettingsNativeCloseGuard({
+  enabled: () => props.standalone,
+  hasDirty: () => hasDirtyTabs.value,
+  confirm: () =>
+    dirtyRegistry.confirmIfNeeded({
+      scope: 'close',
+      tabId: activeTab.value,
+      currentTabLabel: getSettingsTabLabel(activeTab.value, t)
+    }),
+  onConfirmed: () => dirtyRegistry.clearDirtyTabs(),
+  resolveWindow: () => {
+    if (!props.standalone || !hasTauriRuntime()) return null
+    return WebviewWindow.getCurrent()
+  }
 })
 
 onMounted(() => {
