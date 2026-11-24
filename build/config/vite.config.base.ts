@@ -134,6 +134,8 @@ export const baseConfig: UserConfig = {
     // 依赖 @tauri-apps/api/webview 初始依赖扫描抓不到，运行时"迟到发现"会触发 Vite
     // 重新预构建 + 整页 reload，在 reload 竞态里出现 "Importing a module script failed."
     // （2026-08-09 调试日志复现）。预打包所有子路径后不再有运行时发现，消除该竞态。
+    // 'qrcode' 必须 include：它是 CJS 包，且只在二维码弹窗/页面里以动态 import 引入，
+    // 静态扫描发现不了，运行时首次打开会触发重新预构建 + 整页 reload。
     include: [
       'vue',
       'vue-router',
@@ -144,6 +146,7 @@ export const baseConfig: UserConfig = {
       'es-toolkit',
       'dompurify',
       'mitt',
+      'qrcode',
       'events',
       'loglevel',
       'content-type',
