@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
   cancelVerification: vi.fn(),
   setStrictMode: vi.fn(),
   loggerError: vi.fn(),
-  devicesRef: null as unknown as { value: Array<{ deviceId: string; isVerified: boolean }> }
+  devicesRef: null as unknown as {
+    value: Array<{ deviceId: string; isVerified: boolean; crossSigningVerified: boolean }>
+  }
 }))
 
 vi.mock('../useEncryptionOverview', async () => {
@@ -82,9 +84,10 @@ describe('useEncryptionSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.devicesRef.value = [
-      { deviceId: 'CURRENT', isVerified: true },
-      { deviceId: 'OTHER', isVerified: false },
-      { deviceId: 'THIRD', isVerified: true }
+      { deviceId: 'CURRENT', isVerified: true, crossSigningVerified: true },
+      { deviceId: 'OTHER', isVerified: false, crossSigningVerified: false },
+      // 本机手动标记（isVerified=true）不等于身份已验证，不计入「已验证设备」
+      { deviceId: 'THIRD', isVerified: true, crossSigningVerified: false }
     ]
     mocks.loadOverview.mockResolvedValue(true)
     mocks.loadDevices.mockResolvedValue(true)
@@ -143,11 +146,11 @@ describe('useEncryptionSettings', () => {
     expect(mocks.loadDevices).toHaveBeenCalledTimes(1)
   })
 
-  it('设备统计与设备列表同源', () => {
+  it('设备统计与设备列表同源，且只统计交叉签名已验证', () => {
     const { verifiedDevicesCount, unverifiedDevicesCount } = useEncryptionSettings()
 
-    expect(verifiedDevicesCount.value).toBe(2)
-    expect(unverifiedDevicesCount.value).toBe(1)
+    expect(verifiedDevicesCount.value).toBe(1)
+    expect(unverifiedDevicesCount.value).toBe(2)
   })
 
   it('取消待处理验证后从列表移除对应事务', async () => {

@@ -8,13 +8,10 @@
 import type { IDeviceUpdateRequest, MatrixClient } from 'matrix-js-sdk'
 import type { AuthDict, DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
-import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
-import type { DeviceListUpdatesRequest, DeviceListUpdatesResponse, RoomKeyRequestEntry } from './deviceTypes'
+import type { DeviceListUpdatesRequest, DeviceListUpdatesResponse } from './deviceTypes'
 import { loadDeviceVerification } from './deviceVerification'
 import { UserDevicesCache } from './userDevicesCache'
-
-export type { RoomKeyRequestEntry } from './deviceTypes'
 
 const logger = createLogger('MatrixDeviceService')
 
@@ -27,7 +24,10 @@ export interface Device {
   last_seen_ts?: number | undefined
   last_seen_ip?: string | undefined
   last_seen_user_agent?: string | undefined
+  /** `isVerified()`：交叉签名已验证 **或** 本机手动标记（仅用于展示） */
   verified?: boolean
+  /** 交叉签名已验证（安全决策唯一依据，如消息锁是否算已验证） */
+  crossSigningVerified?: boolean
 }
 
 /**
@@ -152,6 +152,7 @@ class MatrixDeviceService extends BaseMatrixService {
                 ? unsigned.device_display_name
                 : undefined
           const deviceId = String(content.device_id ?? '')
+          const flags = verification.get(deviceId)
           return {
             device_id: deviceId,
             display_name: displayName,
@@ -159,7 +160,8 @@ class MatrixDeviceService extends BaseMatrixService {
             last_seen_ip: typeof content.last_seen_ip === 'string' ? content.last_seen_ip : undefined,
             last_seen_user_agent:
               typeof content.last_seen_user_agent === 'string' ? content.last_seen_user_agent : undefined,
-            verified: verification.get(deviceId) ?? false
+            verified: flags?.verified ?? false,
+            crossSigningVerified: flags?.crossSigningVerified ?? false
           }
         })
         .filter((device) => device.device_id)
@@ -303,73 +305,6 @@ class MatrixDeviceService extends BaseMatrixService {
   isCurrentDevice(deviceId: string): boolean {
     const currentDeviceId = this.getCurrentDeviceId()
     return currentDeviceId === deviceId
-  }
-
-  /**
-   * 获取当前账号收到的房间密钥请求列表。
-   * SDK 返回的是 Matrix 规范的包裹结构 `{ requests: [...] }`，此处按真实结构解包；
-   * 失败时记录 error 并返回空数组。
-   */
-  async getRoomKeyRequests(): Promise<RoomKeyRequestEntry[]> {
-    const client = this.getClient()
-    try {
-      // 注意：SDK 的 listRoomKeyRequests() 类型声明为 RoomKeyRequestResponse[]，但运行时实际返回
-      // 的是 GET /room_keys/request 的原始响应体 { requests: [...] }（Matrix 规范的包裹结构）。
-      // 必须按真实结构解包，否则会把包裹对象当成数组返回，违反本函数声明的 Array 契约。
-      const response = await client.getE2EEManager().listRoomKeyRequests()
-      const requests = unknownToObject<{ requests?: RoomKeyRequestEntry[] }>(response)?.requests
-      logger.info('[DeviceService] 获取密钥请求列表成功')
-      return requests ?? []
-    } catch (err) {
-      logger.error(`[DeviceService] 获取密钥请求列表失败: ${err}`)
-      return []
-    }
-  }
-
-  /**
-   * 兑现（fulfill）指定的房间密钥请求：把请求指向的 room key 回传给请求方。
-   *
-   * SDK 已提供 `DeviceKeysManager.fulfillRoomKeyRequest(requestId)`（`POST /room_keys/request/{id}/fulfill`），
-   * 本方法只做服务层收口（S1：能力在 SDK，缺的是接入）。
-   * 注意：该方法挂在 `getDeviceKeysManager()` 上，`E2EEManager` 只镜像了 list/delete。
-   *
-   * @param requestId `getRoomKeyRequests()` 返回项里的 `request_id`
-   * @param opts 可选的 `session_key` / `sender_key` 覆盖值；省略时由后端按请求记录匹配
-   * @returns 成功 true；失败记录 error 并返回 false（与 {@link deleteRoomKeyRequest} 一致，不抛出）
-   */
-  async fulfillRoomKeyRequest(
-    requestId: string,
-    opts?: { session_key?: string; sender_key?: string }
-  ): Promise<boolean> {
-    if (!requestId.trim()) {
-      logger.error('[DeviceService] 兑现密钥请求失败: requestId 为空')
-      return false
-    }
-    const client = this.getClient()
-    try {
-      await client.getDeviceKeysManager().fulfillRoomKeyRequest(requestId, opts)
-      logger.info(`[DeviceService] 兑现密钥请求成功: ${requestId}`)
-      return true
-    } catch (err) {
-      logger.error(`[DeviceService] 兑现密钥请求失败: ${requestId}, ${err}`)
-      return false
-    }
-  }
-
-  /**
-   * 删除指定的房间密钥请求。
-   * 成功返回 true，失败记录 error 并返回 false。
-   */
-  async deleteRoomKeyRequest(requestId: string): Promise<boolean> {
-    const client = this.getClient()
-    try {
-      await client.getE2EEManager().deleteRoomKeyRequest(requestId)
-      logger.info(`[DeviceService] 删除密钥请求成功: ${requestId}`)
-      return true
-    } catch (err) {
-      logger.error(`[DeviceService] 删除密钥请求失败: ${err}`)
-      return false
-    }
   }
 }
 

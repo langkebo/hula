@@ -640,13 +640,6 @@ export type Messages = {
     "device_key_desc": "查看此设备的加密密钥指纹",
     "device_trust_label": "设备信任",
     "device_trust_desc": "管理已验证的设备与待处理的验证请求",
-    "room_key_requests_section": "密钥请求",
-    "room_key_requests_desc": "其他设备请求历史消息的加密密钥时，可在此兑现。",
-    "room_key_requests_empty": "没有待处理的密钥请求",
-    "room_key_requests_refresh": "刷新",
-    "room_key_requests_fulfill": "兑现",
-    "room_key_requests_fulfilled": "密钥请求已兑现",
-    "room_key_requests_failed": "兑现密钥请求失败",
     "view": "查看",
     "strict_section": "严格模式",
     "strict_label": "不向未验证设备发送密钥",
@@ -692,6 +685,8 @@ export type Messages = {
       "confirm_match": "确认匹配",
       "success_title": "设备验证成功！",
       "success_desc": "此设备已被标记为已验证。",
+      "awaiting_title": "等待对方确认",
+      "awaiting_desc": "你已确认 emoji 一致，等待对方在其设备上确认后，此设备才会被标记为已验证。",
       "rejected_title": "验证失败",
       "rejected_desc": "指纹不匹配，此设备可能不是您的设备。",
       "rejected_hint": "建议您检查设备或联系支持。",
@@ -1763,13 +1758,6 @@ export type KeyPaths =
   | "setting.encryption.device_key_desc"
   | "setting.encryption.device_trust_label"
   | "setting.encryption.device_trust_desc"
-  | "setting.encryption.room_key_requests_section"
-  | "setting.encryption.room_key_requests_desc"
-  | "setting.encryption.room_key_requests_empty"
-  | "setting.encryption.room_key_requests_refresh"
-  | "setting.encryption.room_key_requests_fulfill"
-  | "setting.encryption.room_key_requests_fulfilled"
-  | "setting.encryption.room_key_requests_failed"
   | "setting.encryption.view"
   | "setting.encryption.strict_section"
   | "setting.encryption.strict_label"
@@ -1814,6 +1802,8 @@ export type KeyPaths =
   | "setting.encryption.device_verify_dialog.confirm_match"
   | "setting.encryption.device_verify_dialog.success_title"
   | "setting.encryption.device_verify_dialog.success_desc"
+  | "setting.encryption.device_verify_dialog.awaiting_title"
+  | "setting.encryption.device_verify_dialog.awaiting_desc"
   | "setting.encryption.device_verify_dialog.rejected_title"
   | "setting.encryption.device_verify_dialog.rejected_desc"
   | "setting.encryption.device_verify_dialog.rejected_hint"

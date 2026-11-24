@@ -6,7 +6,16 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useDeviceVerifyFlow')
 
-type VerificationStep = 'intro' | 'pending' | 'showKey' | 'success' | 'rejected' | 'cancelled' | 'failed'
+type VerificationStep =
+  | 'intro'
+  | 'pending'
+  | 'showKey'
+  | 'success'
+  /** 本端已确认，但对端尚未确认（设备还未进入已验证状态）。不是失败，也不是成功。 */
+  | 'awaiting'
+  | 'rejected'
+  | 'cancelled'
+  | 'failed'
 
 interface PendingRequest {
   transactionId: string
@@ -43,7 +52,8 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
 
   const isIdle = computed(() => step.value === 'intro')
   const isVerifying = computed(() => ['pending', 'showKey'].includes(step.value))
-  const isFinished = computed(() => ['success', 'rejected', 'cancelled', 'failed'].includes(step.value))
+  // `awaiting` 也算终态：流程已交回给用户，只是结果还没判定为成功。
+  const isFinished = computed(() => ['success', 'awaiting', 'rejected', 'cancelled', 'failed'].includes(step.value))
 
   const refreshPendingRequests = async (): Promise<void> => {
     try {
@@ -121,6 +131,17 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     try {
       await matrixVerificationService.acceptVerification(transactionId)
       currentTransactionId.value = transactionId
+      // 补齐对端身份：接受入站请求时 options 里没有 userId/deviceId，若沿用空值，
+      // 后续「等待设备已验证」无法定位目标，验证成功也会被判成 awaiting。
+      let resolved = pendingRequests.value.find((req) => req.transactionId === transactionId)
+      if (!resolved) {
+        const pending = (await matrixVerificationService.getPendingVerifications().catch(() => [])) ?? []
+        resolved = pending.find((req) => req.transactionId === transactionId)
+      }
+      if (resolved) {
+        targetUserId.value = resolved.userId
+        targetDeviceId.value = resolved.deviceId
+      }
     } catch (err) {
       logger.error('acceptVerification failed', err)
       showFeedback(t('verification.errors.accept_failed'), 'error')
@@ -134,23 +155,40 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     return loadSas(transactionId)
   }
 
+  /**
+   * 用户对 SAS 作出判定。
+   *
+   * @param match `true` = emoji 与对端一致
+   * @returns `true` **仅当设备确实已进入已验证状态**（或用户明确判定不匹配）；
+   *          对端尚未确认时返回 `false` 且 `step` 为 `awaiting`——调用方不得据此宣称验证成功。
+   */
   const confirmSas = async (match: boolean): Promise<boolean> => {
-    if (!currentTransactionId.value) {
+    const transactionId = currentTransactionId.value
+    if (!transactionId) {
       return false
     }
     if (loading.value) return false
     loading.value = true
     try {
-      if (match) {
-        // SDK confirmSas 仅表示"已确认匹配",无 match 参数
-        await matrixVerificationService.confirmSas(currentTransactionId.value)
-        step.value = 'success'
-      } else {
+      if (!match) {
         // 不匹配：发送 m.mismatched_sas，让对端明确知道是 SAS 不一致而非普通取消
-        await matrixVerificationService.mismatchSas(currentTransactionId.value)
+        await matrixVerificationService.mismatchSas(transactionId)
         step.value = 'rejected'
+        return true
       }
-      return true
+
+      // SDK confirmSas 仅表示"本端已确认 emoji 一致",无 match 参数；
+      // 协议可能尚未收尾，更不代表设备已被信任。
+      await matrixVerificationService.confirmSas(transactionId)
+
+      // 以 crypto store 的真实状态为准：对端点「不匹配」或压根没确认时，这里必须是 false。
+      const verified = await matrixVerificationService.waitForDeviceVerified(targetUserId.value, targetDeviceId.value, {
+        shouldAbort: () => currentTransactionId.value !== transactionId
+      })
+      if (currentTransactionId.value !== transactionId) return false
+
+      step.value = verified ? 'success' : 'awaiting'
+      return verified
     } catch (err) {
       logger.error('confirmSas failed', err)
       showFeedback(t('verification.errors.confirm_failed'), 'error')

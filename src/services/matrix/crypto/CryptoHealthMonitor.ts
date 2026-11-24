@@ -110,7 +110,8 @@ export class CryptoHealthMonitor {
       if (!userId) return false
       const devices = await matrixCryptoService.getDevices(userId)
       if (!Array.isArray(devices)) return false
-      return devices.some((d) => !d.isVerified)
+      // 健康巡检关心的是「有没有设备只靠本机标记就被放行」⇒ 用交叉签名判据。
+      return devices.some((d) => d.crossSigningVerified !== true)
     } catch (err) {
       // R-01: 未验证设备检查失败不应静默，记录日志便于排查鉴权/网络问题
       logger.error('checkUnverifiedDevices 失败:', err)
@@ -181,10 +182,13 @@ export class CryptoHealthMonitor {
           if (content && content.msgtype === 'm.bad.encrypted') {
             const wireContent = event.getWireContent()
             const sessionId = typeof wireContent.session_id === 'string' ? wireContent.session_id : undefined
+            // 标准 m.room_key_request 的 body 需要 sender_key 才能定位到具体设备会话；
+            // 缺失时仍可发送，但对端可能无法匹配。
+            const senderKey = typeof wireContent.sender_key === 'string' ? wireContent.sender_key : undefined
             const roomId = (room as { roomId?: string }).roomId
             if (sessionId && roomId) {
               try {
-                await matrixCryptoService.createRoomKeyRequest(roomId, sessionId, 'm.megolm.v1.aes-sha2', {})
+                await matrixCryptoService.createRoomKeyRequest(roomId, sessionId, 'm.megolm.v1.aes-sha2', senderKey)
                 this.callbacks.onKeyRequestTriggered?.(roomId, sessionId)
               } catch {
                 // silently continue to next

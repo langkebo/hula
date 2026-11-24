@@ -63,11 +63,23 @@ describe('useMessageTrust', () => {
   })
 
   it('returns the i18n key for verified messages', async () => {
-    mockGetUserDevices.mockResolvedValue([{ verified: true }] as never)
+    mockGetUserDevices.mockResolvedValue([{ verified: true, crossSigningVerified: true }] as never)
     const result = useMessageTrust(true, { senderId: '@alice:server' })
     await refreshTrustLevel('@alice:server')
     await nextTick()
     expect(result.trustDescriptionKey.value).toBe('chat.encryption.verified_title')
+  })
+
+  /**
+   * 安全决策收紧的回归：`verified` 含「本机手动标记」，不能据此给绿锁。
+   * 只有交叉签名背书才能让一条加密消息被判定为 verified。
+   */
+  it('本机标记但无交叉签名的设备不给绿锁', async () => {
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true, crossSigningVerified: false }] as never)
+    const result = useMessageTrust(true, { senderId: '@alice:server' })
+    await refreshTrustLevel('@alice:server')
+    await nextTick()
+    expect(result.trustLevel.value).toBe('unverified')
   })
 
   it('never returns a hardcoded human-readable string', () => {
@@ -158,7 +170,7 @@ describe('useMessageTrust', () => {
   })
 
   it('with senderId and verified device → verified after refresh', async () => {
-    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true, crossSigningVerified: true }])
     const result = useMessageTrust(true, { senderId: '@alice:server' })
     // 初始：cache miss → unverified
     expect(result.trustLevel.value).toBe('unverified')
@@ -180,8 +192,8 @@ describe('useMessageTrust', () => {
 
   it('任一台设备未验证时不得给出已验证（防止"任一台即可"的假安全）', async () => {
     mockGetUserDevices.mockResolvedValue([
-      { device_id: 'D1', verified: true },
-      { device_id: 'D2', verified: false }
+      { device_id: 'D1', verified: true, crossSigningVerified: true },
+      { device_id: 'D2', verified: false, crossSigningVerified: false }
     ])
     await expect(refreshTrustLevel('@mixed:server')).resolves.toBe('unverified')
     expect(senderDeviceCache.get(senderCacheKey('@mixed:server'))).toBe('unverified')
@@ -189,14 +201,14 @@ describe('useMessageTrust', () => {
 
   it('全部设备已验证 → verified', async () => {
     mockGetUserDevices.mockResolvedValue([
-      { device_id: 'D1', verified: true },
-      { device_id: 'D2', verified: true }
+      { device_id: 'D1', verified: true, crossSigningVerified: true },
+      { device_id: 'D2', verified: true, crossSigningVerified: true }
     ])
     await expect(refreshTrustLevel('@all:server')).resolves.toBe('verified')
   })
 
   it('合并同一发送者的并发刷新（只发起一次设备查询）', async () => {
-    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true, crossSigningVerified: true }])
 
     const [first, second] = await Promise.all([refreshTrustLevel('@alice:server'), refreshTrustLevel('@alice:server')])
 
@@ -243,7 +255,7 @@ describe('useMessageTrust', () => {
   // ---- P0-3：缓存必须带账号维度，且登出可清空 ----
 
   it('换账号后不复用上一账号的绿锁判定', async () => {
-    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true, crossSigningVerified: true }])
 
     account.userId = '@account-a:server'
     await expect(refreshTrustLevel('@friend:server')).resolves.toBe('verified')
@@ -262,7 +274,7 @@ describe('useMessageTrust', () => {
   })
 
   it('clearSenderDeviceCache 清空全部账号维度的缓存（登出调用）', async () => {
-    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true, crossSigningVerified: true }])
     account.userId = '@account-a:server'
     await refreshTrustLevel('@friend:server')
     expect(senderDeviceCache.size).toBeGreaterThan(0)

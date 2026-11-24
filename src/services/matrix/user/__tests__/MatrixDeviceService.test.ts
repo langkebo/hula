@@ -103,14 +103,6 @@ describe('MatrixDeviceService', () => {
     getDeviceListUpdates: ReturnType<typeof vi.fn>
   }
   let mockHttp: { authedRequest: ReturnType<typeof vi.fn> }
-  let mockE2eeManager: {
-    listRoomKeyRequests: ReturnType<typeof vi.fn>
-    deleteRoomKeyRequest: ReturnType<typeof vi.fn>
-  }
-  let mockKeysManager: {
-    getUserDevices: ReturnType<typeof vi.fn>
-    fulfillRoomKeyRequest: ReturnType<typeof vi.fn>
-  }
 
   const authedRequestImpl = vi
     .fn()
@@ -149,17 +141,6 @@ describe('MatrixDeviceService', () => {
       getDeviceListUpdates: vi.fn()
     }
 
-    mockE2eeManager = {
-      listRoomKeyRequests: vi.fn(),
-      deleteRoomKeyRequest: vi.fn()
-    }
-
-    // S1：fulfillRoomKeyRequest 在 DeviceKeysManager 上，E2EEManager 只镜像 list/delete。
-    mockKeysManager = {
-      getUserDevices: vi.fn().mockResolvedValue({}),
-      fulfillRoomKeyRequest: vi.fn()
-    }
-
     mockHttp = { authedRequest: authedRequestImpl }
 
     mockClient = {
@@ -170,12 +151,10 @@ describe('MatrixDeviceService', () => {
       getDeviceManager: vi.fn(
         () => mockDeviceManager as unknown as MatrixClientExtended['getDeviceManager'] extends () => infer T ? T : never
       ),
-      getE2EEManager: vi.fn(
-        () => mockE2eeManager as unknown as MatrixClientExtended['getE2EEManager'] extends () => infer T ? T : never
-      ),
+      getE2EEManager: vi.fn(),
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE'),
       // 只 stub 用到的单个方法，避免构造完整 DeviceKeysManager
-      getDeviceKeysManager: vi.fn(() => mockKeysManager as never)
+      getDeviceKeysManager: vi.fn()
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
@@ -250,80 +229,6 @@ describe('MatrixDeviceService', () => {
     })
   })
 
-  describe('getRoomKeyRequests', () => {
-    it('从 SDK 响应体解包 requests 数组（不返回包裹对象）', async () => {
-      mockE2eeManager.listRoomKeyRequests.mockResolvedValue({
-        requests: [
-          { request_id: 'r1', requesting_user_id: '@a:matrix.test' },
-          { request_id: 'r2', requesting_user_id: '@b:matrix.test' }
-        ]
-      })
-
-      const result = await matrixDeviceService.getRoomKeyRequests()
-
-      // 必须返回数组本身，而非 { requests: [...] } 包裹对象
-      expect(Array.isArray(result)).toBe(true)
-      expect(result).toHaveLength(2)
-      expect(result[0]).toEqual({ request_id: 'r1', requesting_user_id: '@a:matrix.test' })
-      expect(mockE2eeManager.listRoomKeyRequests).toHaveBeenCalled()
-    })
-
-    it('响应体无 requests 时回退为空数组', async () => {
-      mockE2eeManager.listRoomKeyRequests.mockResolvedValue({})
-
-      const result = await matrixDeviceService.getRoomKeyRequests()
-
-      expect(result).toEqual([])
-    })
-
-    it('SDK 调用失败时回退为空数组', async () => {
-      mockE2eeManager.listRoomKeyRequests.mockRejectedValue(new Error('boom'))
-
-      const result = await matrixDeviceService.getRoomKeyRequests()
-
-      expect(result).toEqual([])
-    })
-  })
-
-  describe('fulfillRoomKeyRequest', () => {
-    it('调用 SDK 兑现密钥请求并返回 true', async () => {
-      mockKeysManager.fulfillRoomKeyRequest.mockResolvedValue(undefined)
-
-      const ok = await matrixDeviceService.fulfillRoomKeyRequest('req-1')
-
-      expect(ok).toBe(true)
-      expect(mockKeysManager.fulfillRoomKeyRequest).toHaveBeenCalledWith('req-1', undefined)
-    })
-
-    it('透传 session_key / sender_key 覆盖值', async () => {
-      mockKeysManager.fulfillRoomKeyRequest.mockResolvedValue(undefined)
-
-      const ok = await matrixDeviceService.fulfillRoomKeyRequest('req-2', {
-        session_key: 'SESSION',
-        sender_key: 'SENDER'
-      })
-
-      expect(ok).toBe(true)
-      expect(mockKeysManager.fulfillRoomKeyRequest).toHaveBeenCalledWith('req-2', {
-        session_key: 'SESSION',
-        sender_key: 'SENDER'
-      })
-    })
-
-    it('SDK 调用失败时返回 false 且不抛出', async () => {
-      mockKeysManager.fulfillRoomKeyRequest.mockRejectedValue(new Error('404 M_NOT_FOUND'))
-
-      await expect(matrixDeviceService.fulfillRoomKeyRequest('missing')).resolves.toBe(false)
-    })
-
-    it('requestId 为空时直接返回 false，不调用 SDK', async () => {
-      const ok = await matrixDeviceService.fulfillRoomKeyRequest('   ')
-
-      expect(ok).toBe(false)
-      expect(mockKeysManager.fulfillRoomKeyRequest).not.toHaveBeenCalled()
-    })
-  })
-
   describe('getUserDevices', () => {
     /** 装配 getDeviceKeysManager().getUserDevices 的返回值。 */
     const stubDeviceKeysManager = (value: unknown) => {
@@ -339,11 +244,12 @@ describe('MatrixDeviceService', () => {
      * （由 cross-signing 信任链在客户端推导），因此验证状态只能来自
      * `CryptoApi.getDeviceVerificationStatus`。未列入 statuses 的设备视为查询失败。
      */
-    const stubVerification = (statuses: Record<string, boolean>) => {
+    const stubVerification = (statuses: Record<string, boolean>, crossSigning: Record<string, boolean> = {}) => {
       const getDeviceVerificationStatus = vi.fn(async (_userId: string, deviceId: string) => {
         const value = statuses[deviceId]
         if (value === undefined) throw new Error('device not found in crypto store')
-        return { isVerified: () => value }
+        // 交叉签名与 isVerified 分开：两者语义不同，测试必须能分别控制
+        return { isVerified: () => value, crossSigningVerified: crossSigning[deviceId] === true }
       })
       ;(mockClient as any).getCrypto = vi.fn(() => ({ getDeviceVerificationStatus }))
       return getDeviceVerificationStatus
@@ -380,14 +286,16 @@ describe('MatrixDeviceService', () => {
           last_seen_ts: 1000000,
           last_seen_ip: '192.168.1.1',
           last_seen_user_agent: 'Mozilla/5.0',
-          verified: true
+          verified: true,
+          crossSigningVerified: false
         },
         {
           device_id: 'DEV2',
           display_name: 'iPhone',
           last_seen_ts: 2000000,
           last_seen_ip: '10.0.0.1',
-          verified: false
+          verified: false,
+          crossSigningVerified: false
         }
       ])
     })
@@ -428,7 +336,8 @@ describe('MatrixDeviceService', () => {
         {
           device_id: 'DEV1',
           display_name: 'MacBook',
-          verified: false
+          verified: false,
+          crossSigningVerified: false
         }
       ])
     })
@@ -448,7 +357,9 @@ describe('MatrixDeviceService', () => {
 
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
 
-      expect(devices).toEqual([{ device_id: 'DEV1', display_name: 'MacBook', verified: false }])
+      expect(devices).toEqual([
+        { device_id: 'DEV1', display_name: 'MacBook', verified: false, crossSigningVerified: false }
+      ])
     })
 
     it('应该过滤掉缺少 device_id 的条目', async () => {

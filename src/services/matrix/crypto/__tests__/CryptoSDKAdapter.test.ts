@@ -162,7 +162,8 @@ describe('CryptoSDKAdapter', () => {
           deviceId: 'D1',
           userId: '@user:server',
           displayName: 'Phone',
-          isVerified: true
+          isVerified: true,
+          crossSigningVerified: false
         }
       ])
     })
@@ -241,7 +242,6 @@ describe('CryptoSDKAdapter', () => {
       expect(result).toEqual({
         verified: true,
         crossSigningVerified: true,
-        devicesCrossSigningVerified: true,
         tofu: false
       })
     })
@@ -255,7 +255,6 @@ describe('CryptoSDKAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
         tofu: false
       })
     })
@@ -521,14 +520,32 @@ describe('CryptoSDKAdapter', () => {
       await expect(cryptoSDKAdapter.setupKeyBackupWithOptions()).rejects.toThrow('CryptoApi 不可用')
     })
 
-    it('should handle bootstrapSecretStorage failure gracefully', async () => {
+    /**
+     * P0-②：SSSS 注册失败时不得「优雅降级」返回密钥。
+     * 若连 `default_key` 都没确认落到服务端，这把恢复密钥就是废钥匙 —— 必须抛错。
+     */
+    it('throws when bootstrapSecretStorage fails and the key is not on the server', async () => {
       const mockCrypto = createMockCrypto()
       mockCrypto.bootstrapSecretStorage = vi.fn().mockRejectedValue(new Error('Server error'))
       mockClient.getCrypto = vi.fn(() => mockCrypto)
 
-      // SSSS 失败时仍返回密钥（降级处理，用户可稍后重试）
+      await expect(cryptoSDKAdapter.setupKeyBackupWithOptions()).rejects.toThrow(/未能确认落到服务端/)
+      // 密钥没就绪就不该建备份版本，更不能把密钥交给用户
+      expect(mockCrypto.resetKeyBackup).not.toHaveBeenCalled()
+    })
+
+    it('continues when bootstrapSecretStorage fails but the key is already on the server', async () => {
+      const mockCrypto = createMockCrypto()
+      // sliding sync 下 sync echo 超时很常见：REST 已上传时仍应继续
+      mockCrypto.bootstrapSecretStorage = vi.fn().mockRejectedValue(new Error('sync echo timeout'))
+      mockClient.getCrypto = vi.fn(() => mockCrypto)
+      ;(mockClient as unknown as { getAccountDataFromServer: unknown }).getAccountDataFromServer = vi
+        .fn()
+        .mockResolvedValue({ key: 'keyid' })
+
       const result = await cryptoSDKAdapter.setupKeyBackupWithOptions()
       expect(result).toBe(mockEncodedKey)
+      expect(mockCrypto.resetKeyBackup).toHaveBeenCalled()
     })
 
     it('should fallback to resetKeyBackup when bootstrapSecretStorage is not available', async () => {

@@ -10,7 +10,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('DeviceVerify')
 
 /** 设备验证对话框步骤状态机 */
-type DeviceVerifyStep = 'intro' | 'pendingList' | 'showKey' | 'success' | 'rejected'
+type DeviceVerifyStep = 'intro' | 'pendingList' | 'showKey' | 'success' | 'awaiting' | 'rejected'
 
 /** 供 UI 选择的目标设备（跨用户验证时由 keys/query 拉取） */
 export interface DeviceOption {
@@ -95,6 +95,7 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
       case 'showKey':
         return 2
       case 'success':
+      case 'awaiting':
       case 'rejected':
         return 3
       default:
@@ -347,11 +348,26 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     loading.value = true
 
     try {
-      if (!transactionId.value) {
+      const txId = transactionId.value
+      if (!txId) {
         throw new Error('No active verification transaction to confirm.')
       }
 
-      await encryption.confirmSas(transactionId.value)
+      // confirmSas 仅发送本端 MAC；协议可能尚未收尾，更不代表设备已被信任。
+      await encryption.confirmSas(txId)
+
+      // 以 crypto store 的真实状态为准：对端点「不匹配」或未确认时必须是 false，
+      // 否则会在对端还没确认时就宣告「验证成功」。
+      const verified = await encryption.waitForDeviceVerified(targetUserId.value, targetDeviceId.value, {
+        shouldAbort: () => transactionId.value !== txId
+      })
+      if (transactionId.value !== txId) return
+
+      if (!verified) {
+        // 本端已确认，但对端尚未确认：不是失败，也不能算成功
+        step.value = 'awaiting'
+        return
+      }
 
       step.value = 'success'
       emit('success')

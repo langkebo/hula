@@ -38,8 +38,11 @@ export type Messages = {
   "verified": "已验证",
   "unverified": "未验证",
   "cross_signed": "交叉签名已验证",
-  "trust_success": "设备信任成功",
+  "trust_success": "已在本机标记为可信（未验证身份）",
   "trust_failed": "设备信任失败",
+  "trust_local_only": "仅在本机标记可信",
+  "trust_confirm_title": "仅在本机标记可信",
+  "trust_confirm_message": "此操作只改变本机对设备的判断，不会验证对方身份，也不会让它获得交叉签名。若要真正验证身份，请改用「验证设备」并核对 emoji。",
   "untrust_confirm": "确定要取消信任此设备？该设备的签名将不再被认可。",
   "untrust_success": "设备取消信任成功",
   "untrust_failed": "设备取消信任失败",
@@ -123,6 +126,9 @@ export type KeyPaths =
   | "mobile_devices.cross_signed"
   | "mobile_devices.trust_success"
   | "mobile_devices.trust_failed"
+  | "mobile_devices.trust_local_only"
+  | "mobile_devices.trust_confirm_title"
+  | "mobile_devices.trust_confirm_message"
   | "mobile_devices.untrust_confirm"
   | "mobile_devices.untrust_success"
   | "mobile_devices.untrust_failed"

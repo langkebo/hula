@@ -56,10 +56,10 @@
           @reject="handleReject"
           @confirm="handleConfirm" />
 
-        <!-- Step: Success / Rejected -->
+        <!-- Step: Success / Awaiting / Rejected -->
         <DeviceVerifyResultStep
-          v-else-if="step === 'success' || step === 'rejected'"
-          :status="step === 'success' ? 'success' : 'rejected'"
+          v-else-if="step === 'success' || step === 'awaiting' || step === 'rejected'"
+          :status="step === 'success' ? 'success' : step === 'awaiting' ? 'awaiting' : 'rejected'"
           @close="handleClose" />
       </div>
     </n-spin>

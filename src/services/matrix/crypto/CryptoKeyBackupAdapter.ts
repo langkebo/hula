@@ -6,7 +6,7 @@
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { GeneratedSecretStorageKey, MatrixAuthData } from '@/types/matrix-extensions'
+import type { CryptoApi, GeneratedSecretStorageKey, MatrixAuthData } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { safeRandomUUID } from '@/utils/webCompat'
 import { matrixClientService } from '../MatrixClientService'
@@ -60,7 +60,10 @@ async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: Generat
   const clientWithRaw = client as MatrixClient & {
     setAccountDataRaw?: (eventType: string, content: unknown) => Promise<unknown>
   }
-  const uploadFn = clientWithRaw.setAccountDataRaw?.bind(client) ?? client.setAccountData.bind(client)
+  const uploadFn = clientWithRaw.setAccountDataRaw?.bind(client) ?? client.setAccountData?.bind(client)
+  if (!uploadFn) {
+    throw new Error('无法上传 SSSS 密钥：客户端不支持写入 account_data')
+  }
 
   await uploadFn(`m.secret_storage.key.${keyId}`, keyInfo)
   logger.info(`[SSSS] 已通过 REST 上传密钥描述: m.secret_storage.key.${keyId}`)
@@ -80,6 +83,78 @@ type KeyBackupSetupInput =
       authData?: MatrixAuthData
       generatedKey?: GeneratedSecretStorageKey | null
     }
+
+/**
+ * 带超时的 Promise 竞争。
+ *
+ * 与 `Promise.race([p, new Promise(...setTimeout...)])` 的区别：竞争结束后会清掉定时器。
+ * 否则每次调用都会留下一个悬挂的 timer（在 vitest 里表现为「进程不退出」）。
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer)
+  })
+}
+
+/**
+ * 确保 sync 正在运行（`bootstrapSecretStorage` 依赖 AccountData 回声）。
+ *
+ * `startClient()` 是幂等的，但这里只在 STOPPED/ERROR 时调用，避免打断正在进行的同步。
+ */
+async function ensureSyncRunning(client: MatrixClient): Promise<void> {
+  const syncState = client.getSyncState?.()
+  if (syncState !== 'STOPPED' && syncState !== null && syncState !== 'ERROR') return
+
+  client.startClient?.()
+  const deadline = Date.now() + 5_000
+  while (Date.now() < deadline) {
+    const state = client.getSyncState?.()
+    if (state === 'SYNCING' || state === 'PREPARED') return
+    await new Promise((resolve) => setTimeout(resolve, 200))
+  }
+}
+
+/**
+ * 调用 `bootstrapSecretStorage` 完成 SDK 内部状态注册。
+ *
+ * 超时/失败**不等于**成功：必须再验证 `m.secret_storage.default_key` 确实落在服务端，
+ * 否则抛错。历史实现把这段放在 fire-and-forget 里，导致「密钥没上传也报成功」。
+ */
+async function bootstrapSecretStorageVerified(
+  crypto: CryptoApi,
+  client: MatrixClient,
+  generatedKey: GeneratedSecretStorageKey,
+  log: (msg: string) => void
+): Promise<void> {
+  try {
+    await withTimeout(
+      crypto.bootstrapSecretStorage({
+        createSecretStorageKey: async () => {
+          log('分支 3B: createSecretStorageKey 被 SDK 调用')
+          return generatedKey
+        },
+        setupNewSecretStorage: true,
+        setupNewKeyBackup: false
+      }),
+      45_000,
+      'bootstrapSecretStorage(SSSS) 超时 (45s)'
+    )
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    // 注意：可选链只保护「调用」，返回值仍可能是 undefined，不能直接接 .catch
+    const pending = client.getAccountDataFromServer?.('m.secret_storage.default_key')
+    const defaultKey = pending ? await pending.catch(() => null) : null
+    if (!defaultKey?.key) {
+      // 密钥没确认落到服务端 → 后续即便是「成功」也是假的，必须向上抛
+      throw new Error(`SSSS 密钥未能确认落到服务端: ${msg}`)
+    }
+    log(`分支 3B: bootstrapSecretStorage 未正常结束（${msg}），但 default_key 已在服务端 (${defaultKey.key})`)
+  }
+}
 
 export class CryptoKeyBackupAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
@@ -117,12 +192,14 @@ export class CryptoKeyBackupAdapter {
   async setupKeyBackup(passphrase: string): Promise<KeyBackupSetupResult> {
     try {
       // 客户端派生：passphrase 经 PBKDF2 派生 recovery key，仅上传公钥 + 密文
-      await this.setupKeyBackupWithOptions(passphrase ? { password: passphrase } : undefined)
+      const recoveryKey = await this.setupKeyBackupWithOptions(passphrase ? { password: passphrase } : undefined)
       logger.info('密钥备份设置成功(客户端派生)')
-      return { success: true }
+      return { success: true, recoveryKey }
     } catch (err) {
       logger.error('密钥备份设置失败(客户端派生)', err)
-      return { success: false }
+      // 带上原因：UI 需要区分「用户取消 UIA」与「SSSS/备份版本没建起来」，
+      // 后者若笼统报「失败」，用户会以为只是网络抖动而反复重试。
+      return { success: false, error: err instanceof Error ? err.message : String(err) }
     }
   }
 
@@ -204,113 +281,38 @@ export class CryptoKeyBackupAdapter {
       // （pollTimeout 15-30s），传统 /sync 的 long-poll 周期可能需要 30s+ 才
       // 回送 AccountData 事件。45s 超时仍可能不够。
       //
-      // 修复策略（两阶段）：
+      // 修复策略（三阶段，全部 await —— 顺序即依赖关系）：
       //   阶段 A：直接通过 REST API 上传 SSSS 密钥到 account_data（绕过 SDK 的
       //   setDefaultKeyId 内部 sync echo 等待），确保密钥立即持久化到服务端。
       //   阶段 B：调用 bootstrapSecretStorage 完成 SDK 内部状态注册（它会检测到
-      //   密钥已存在而跳过重复上传，但仍需等待 sync echo）。若阶段 B 超时，
-      //   密钥已在服务端，可安全继续 resetKeyBackup。
-      log('分支 3: SSSS 上传改为非阻塞（后台执行），立即返回密钥')
+      //   密钥已存在而跳过重复上传，但仍需等待 sync echo）；超时则二次验证
+      //   default_key 是否真的在服务端，验证不到即抛错。
+      //   阶段 C：resetKeyBackup 建立备份版本——**必须成功**，否则恢复密钥毫无意义。
+      log('分支 3: 顺序执行 SSSS 上传 → bootstrapSecretStorage → resetKeyBackup（全部 await）')
       const t3 = Date.now()
 
-      void (async () => {
-        const client = matrixClientService.getClient()
-        if (!client) {
-          log('分支 3 中止: client 不可用')
-          return
-        }
+      const client = matrixClientService.getClient()
+      if (!client) {
+        throw new Error('无法设置密钥备份：客户端不可用')
+      }
 
-        // ── 阶段 A：直接 REST 上传 SSSS 密钥（不依赖 sync echo） ──
-        try {
-          await uploadSsssKeyDirectly(client, generatedKey)
-          log(`分支 3A 完成: SSSS 密钥已通过 REST 直接上传 (${Date.now() - t3}ms)`)
-        } catch (uploadErr) {
-          log(
-            `分支 3A 失败: REST 直接上传 SSSS 密钥失败 (${Date.now() - t3}ms): ${uploadErr instanceof Error ? uploadErr.message : String(uploadErr)}`
-          )
-          // REST 上传失败，继续尝试 bootstrap 流程（兜底）
-        }
+      // ── 阶段 A：直接 REST 上传 SSSS 密钥（不依赖 sync echo）──
+      // 不再「失败后兜底继续」：密钥没落到服务端就不能把恢复密钥交给用户。
+      await uploadSsssKeyDirectly(client, generatedKey)
+      log(`分支 3A 完成: SSSS 密钥已通过 REST 直接上传 (${Date.now() - t3}ms)`)
 
-        // ── 阶段 B：bootstrapSecretStorage 完成 SDK 内部状态注册 ──
-        // 确保 sync 循环正在运行
-        const syncState = client.getSyncState?.()
-        if (syncState === 'STOPPED' || syncState === null || syncState === 'ERROR') {
-          log(`分支 3 前置: sync 未运行 (state=${syncState})，调用 startClient() 启动 sync`)
-          try {
-            client.startClient?.()
-            await new Promise<void>((resolve) => {
-              const deadline = Date.now() + 5000
-              const check = () => {
-                const state = client.getSyncState?.()
-                if (state === 'SYNCING' || state === 'PREPARED' || Date.now() > deadline) {
-                  resolve()
-                } else {
-                  setTimeout(check, 200)
-                }
-              }
-              check()
-            })
-            log(`分支 3 前置: sync 已启动 (state=${client.getSyncState?.()})`)
-          } catch (e) {
-            log(`分支 3 前置: startClient 失败: ${e instanceof Error ? e.message : String(e)}`)
-          }
-        }
+      // ── 阶段 B：bootstrapSecretStorage 完成 SDK 内部状态注册 ──
+      // 超时后仍会二次验证 default_key 是否在服务端；验证不到就抛错。
+      await ensureSyncRunning(client)
+      await bootstrapSecretStorageVerified(crypto, client, generatedKey, log)
+      log(`分支 3B 完成 (${Date.now() - t3}ms)`)
 
-        try {
-          await Promise.race([
-            crypto.bootstrapSecretStorage({
-              createSecretStorageKey: async () => {
-                log('分支 3a 回调: createSecretStorageKey 被 SDK 调用')
-                return generatedKey as GeneratedSecretStorageKey
-              },
-              setupNewSecretStorage: true,
-              setupNewKeyBackup: false
-            }),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('bootstrapSecretStorage(SSSS) 后台超时 (45s)')), 45000)
-            )
-          ])
-          log(`分支 3a 完成: bootstrapSecretStorage(SSSS) 后台成功 (${Date.now() - t3}ms)`)
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          // 超时后验证密钥是否已上传到服务端（阶段 A 已通过 REST 上传，此处为二次验证）
-          if (msg.includes('超时')) {
-            try {
-              const defaultKey = await client.getAccountDataFromServer?.('m.secret_storage.default_key')
-              if (defaultKey?.key) {
-                log(
-                  `分支 3a 验证: SSSS 密钥已上传至服务端 (defaultKeyId=${defaultKey.key})，sync echo 超时但密钥已就绪 (${Date.now() - t3}ms)`
-                )
-              } else {
-                log(`分支 3a 结果: bootstrapSecretStorage 后台超时且密钥未验证到: ${msg}`)
-              }
-            } catch (verifyErr) {
-              log(
-                `分支 3a 验证: getAccountDataFromServer 失败: ${verifyErr instanceof Error ? verifyErr.message : String(verifyErr)}`
-              )
-            }
-          } else {
-            log(`分支 3a 结果: bootstrapSecretStorage(SSSS) 后台失败 (${Date.now() - t3}ms): ${msg}`)
-          }
-        }
+      // ── 阶段 C：resetKeyBackup —— 备份版本必须真的建起来才允许报成功 ──
+      // 历史缺陷（P0-②）：这里原本是 fire-and-forget，UI 拿到恢复密钥就提示成功，
+      // 而服务端可能压根没有备份版本。用户以为有备份，真丢设备时就是永久丢失。
+      await withTimeout(crypto.resetKeyBackup(), 45_000, 'resetKeyBackup 超时 (45s)')
+      log(`分支 3C 完成: 备份版本已建立 (${Date.now() - t3}ms)`)
 
-        // ── 阶段 C：resetKeyBackup ──
-        log('分支 3b: 后台调用 resetKeyBackup')
-        try {
-          await Promise.race([
-            crypto.resetKeyBackup(),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('resetKeyBackup 后台超时 (45s)')), 45000)
-            )
-          ])
-          log(`分支 3b 完成: resetKeyBackup 后台成功 (${Date.now() - t3}ms)`)
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          log(`分支 3b 结果: resetKeyBackup 后台失败 (${Date.now() - t3}ms): ${msg}`)
-        }
-      })()
-
-      log(`分支 3: SSSS 后台上传已启动，立即返回密钥 (${Date.now() - t3}ms)`)
       if (!generatedKey.encodedPrivateKey) {
         throw new Error('无法展示恢复密钥：SDK 未返回 encodedPrivateKey')
       }

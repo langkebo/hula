@@ -432,8 +432,7 @@ describe('useEncryption', () => {
       mockMatrixCryptoGetDeviceVerificationStatus.mockResolvedValueOnce(
         makeDeviceVerificationResult({
           verified: true,
-          crossSigningVerified: true,
-          devicesCrossSigningVerified: true
+          crossSigningVerified: true
         })
       )
       const { getDeviceTrustLevel } = useEncryption()

@@ -15,6 +15,8 @@
   "result": {
     "success_title": "验证成功",
     "success_desc": "设备已验证，现在可以安全通信",
+    "awaiting_title": "等待对方确认",
+    "awaiting_desc": "你已确认一致，等待对方在其设备上确认。对方确认后此设备才会被标记为已验证。",
     "failed_desc": "验证过程中出现错误"
   },
   "actions": {

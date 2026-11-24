@@ -6,12 +6,66 @@
  */
 
 import type { IContent } from '@/services/matrix/sdk'
-import type { VerificationRequest } from '@/types/matrix-extensions'
+import type { CryptoApi, VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
-import type { CryptoAdapterAccessors, DeviceInfo, DeviceVerificationResult } from './cryptoAdapterTypes'
+import type {
+  CryptoAdapterAccessors,
+  DeviceInfo,
+  DeviceVerificationFlags,
+  DeviceVerificationResult
+} from './cryptoAdapterTypes'
 
 const logger = createLogger('CryptoDeviceAdapter')
+
+/**
+ * 批量读取设备验证状态——**唯一实现**（`CryptoDeviceAdapter` 与 `MatrixDeviceService` 共用）。
+ *
+ * 逐设备调用 `CryptoApi.getDeviceVerificationStatus`（本机 crypto store）。
+ * 单台设备查询失败不影响其他设备：该台按「未验证」处理，并在批次结束时**只输出一条
+ * 汇总 warn**。历史实现逐设备打一条 WARN，同一时刻 62 台设备失败就刷出 62 条
+ * `null pointer passed to rust`，把真实错误淹没。
+ *
+ * @param crypto 提供验证状态查询的 CryptoApi（或其最小投影）
+ * @param userId 目标用户 MXID
+ * @param deviceIds 要查询的设备 ID 列表
+ * @param label 发起查询的链路名（填入日志，便于区分调用来源）
+ * @returns `deviceId → { verified, crossSigningVerified }`（查询失败两项均为 `false`）
+ */
+export async function loadDeviceVerificationByDeviceIds(
+  crypto: Pick<CryptoApi, 'getDeviceVerificationStatus'>,
+  userId: string,
+  deviceIds: readonly string[],
+  label: string
+): Promise<Map<string, DeviceVerificationFlags>> {
+  const result = new Map<string, DeviceVerificationFlags>()
+  let failed = 0
+  let firstError: unknown
+
+  await Promise.all(
+    deviceIds.map(async (deviceId) => {
+      if (!deviceId) return
+      try {
+        const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
+        result.set(deviceId, {
+          verified: status?.isVerified() ?? false,
+          crossSigningVerified: status?.crossSigningVerified ?? false
+        })
+      } catch (err) {
+        failed += 1
+        firstError ??= err
+        result.set(deviceId, { verified: false, crossSigningVerified: false })
+      }
+    })
+  )
+
+  if (failed > 0) {
+    logger.warn(
+      `设备验证状态查询失败 ${failed}/${deviceIds.length} 台，按未验证处理（userId=${userId}，来源=${label}）；首个错误: ${firstError}`
+    )
+  }
+  return result
+}
 
 export class CryptoDeviceAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
@@ -31,7 +85,7 @@ export class CryptoDeviceAdapter {
     const sdkDeviceKeysManager = this.accessors.getSDKDeviceKeysManager()
     if (sdkDeviceKeysManager) {
       const deviceMap = (await sdkDeviceKeysManager.getUserDevices(userId)) ?? {}
-      const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId)
+      const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId, Object.keys(deviceMap))
       return Object.entries(deviceMap).map(([deviceId, content]) => {
         const keys: IContent = content ?? {}
         const unsigned = unknownToObject(keys.unsigned) ?? {}
@@ -44,7 +98,8 @@ export class CryptoDeviceAdapter {
               : typeof unsigned.device_display_name === 'string'
                 ? unsigned.device_display_name
                 : undefined,
-          isVerified: verifiedByDeviceId.get(deviceId) ?? false
+          isVerified: verifiedByDeviceId.get(deviceId)?.verified ?? false,
+          crossSigningVerified: verifiedByDeviceId.get(deviceId)?.crossSigningVerified ?? false
         }
       })
     }
@@ -64,7 +119,7 @@ export class CryptoDeviceAdapter {
       const keys: IContent | null = deviceMap[deviceId] ?? null
       if (keys) {
         const unsigned = unknownToObject(keys.unsigned) ?? {}
-        const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId)
+        const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId, [deviceId])
         return {
           deviceId,
           userId,
@@ -74,7 +129,8 @@ export class CryptoDeviceAdapter {
               : typeof unsigned.device_display_name === 'string'
                 ? unsigned.device_display_name
                 : undefined,
-          isVerified: verifiedByDeviceId.get(deviceId) ?? false
+          isVerified: verifiedByDeviceId.get(deviceId)?.verified ?? false,
+          crossSigningVerified: verifiedByDeviceId.get(deviceId)?.crossSigningVerified ?? false
         }
       }
     }
@@ -90,36 +146,15 @@ export class CryptoDeviceAdapter {
    *
    * 权威来源是 `CryptoApi.getDeviceVerificationStatus`（本机 crypto store），
    * 不是后端 HTTP：`GET /device_trust` 已随后端模块一并删除，调用必然 404。
-   * 查询失败时按「未验证」处理，并显式记录，避免把「查询失败」伪装成「确实未验证」。
+   * 实际批量查询与失败汇总见 {@link loadDeviceVerificationByDeviceIds}。
    */
-  private async loadVerificationByDeviceId(userId: string): Promise<Map<string, boolean>> {
+  private async loadVerificationByDeviceId(
+    userId: string,
+    deviceIds: readonly string[]
+  ): Promise<Map<string, DeviceVerificationFlags>> {
     const crypto = this.accessors.getCrypto()
-    const result = new Map<string, boolean>()
-    if (!crypto) return result
-
-    const sdkDeviceKeysManager = this.accessors.getSDKDeviceKeysManager()
-    if (!sdkDeviceKeysManager) return result
-
-    let deviceIds: string[]
-    try {
-      deviceIds = Object.keys((await sdkDeviceKeysManager.getUserDevices(userId)) ?? {})
-    } catch (err) {
-      logger.warn(`设备列表获取失败，按未验证处理: ${err}`)
-      return result
-    }
-
-    await Promise.all(
-      deviceIds.map(async (deviceId) => {
-        try {
-          const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
-          result.set(deviceId, status?.isVerified() ?? false)
-        } catch (err) {
-          logger.warn(`设备 ${deviceId} 验证状态获取失败，按未验证处理: ${err}`)
-          result.set(deviceId, false)
-        }
-      })
-    )
-    return result
+    if (!crypto) return new Map()
+    return loadDeviceVerificationByDeviceIds(crypto, userId, deviceIds, 'CryptoDeviceAdapter')
   }
 
   /** 验证设备
@@ -151,12 +186,11 @@ export class CryptoDeviceAdapter {
     if (crypto) {
       const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
       if (!status) {
-        return { verified: false, crossSigningVerified: false, devicesCrossSigningVerified: false, tofu: false }
+        return { verified: false, crossSigningVerified: false, tofu: false }
       }
       return {
         verified: status.isVerified(),
         crossSigningVerified: status.crossSigningVerified,
-        devicesCrossSigningVerified: status.crossSigningVerified,
         tofu: status.tofu ?? false
       }
     }
@@ -191,8 +225,14 @@ export class CryptoDeviceAdapter {
    * 单个成员的设备列表拉取失败不阻断整体（记录日志后跳过），
    * 因为"某个成员查不到设备"与"整个房间查不到"是不同程度的失败。
    *
+   * ## 判定用 `crossSigningVerified`，不用 `isVerified`
+   *
+   * `isVerified()` = 交叉签名已验证 **或** 本机手动标记。本机标记没有任何密码学凭据
+   * （`setDeviceVerified` 只是往本地 crypto store 写一个布尔），把它当作放行依据等于
+   * 把 TOFU 当验证。安全决策只认交叉签名信任链。
+   *
    * @param roomId 房间 ID
-   * @returns 未验证设备列表（可能为空，但空一定意味着"都已验证"）
+   * @returns 未通过交叉签名验证的设备列表（可能为空，但空一定意味着"都已通过"）
    * @throws 房间不在本地 store
    */
   async getUnverifiedDevicesInRoom(roomId: string): Promise<DeviceInfo[]> {
@@ -212,7 +252,7 @@ export class CryptoDeviceAdapter {
         continue
       }
       for (const device of devices) {
-        if (device.isVerified === true) continue
+        if (device.crossSigningVerified === true) continue
         result.push(device)
       }
     }

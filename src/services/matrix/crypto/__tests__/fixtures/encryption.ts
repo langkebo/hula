@@ -66,7 +66,6 @@ export function makeDeviceVerificationResult(
   return {
     verified: false,
     crossSigningVerified: false,
-    devicesCrossSigningVerified: false,
     tofu: false,
     ...overrides
   }

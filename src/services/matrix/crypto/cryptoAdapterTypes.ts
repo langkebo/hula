@@ -15,13 +15,33 @@ export interface DeviceInfo {
   displayName?: string | undefined
   lastSeenTs?: number
   lastSeenIp?: string
+  /**
+   * `DeviceVerificationStatus.isVerified()` = 交叉签名已验证 **或** 本机显式标记。
+   * 仅可用于展示；**安全决策**（是否共享房间密钥）请用 {@link crossSigningVerified}。
+   */
   isVerified?: boolean
+  /** 交叉签名已验证：有 master→self_signing→device 的信任链背书，可跨设备验证。 */
+  crossSigningVerified?: boolean
+}
+
+/**
+ * 单台设备的验证状态（批量查询结果）。
+ *
+ * 两者必须分开：`isVerified()` 把「本机手动标记」也算作已验证，而本机标记没有任何
+ * 密码学凭据 —— 用它做「要不要把房间密钥发给这台设备」的决策，等于把 TOFU 当成验证。
+ */
+export interface DeviceVerificationFlags {
+  /** 展示用：交叉签名已验证 或 本机显式标记 */
+  verified: boolean
+  /** 安全决策用：仅交叉签名已验证 */
+  crossSigningVerified: boolean
 }
 
 export interface DeviceVerificationResult {
+  /** 展示用：`isVerified()`（交叉签名 或 本机标记） */
   verified: boolean
+  /** 安全决策用：仅交叉签名已验证 */
   crossSigningVerified: boolean
-  devicesCrossSigningVerified: boolean
   /** Trust On First Use：设备已被客户端见过（已知）但尚未显式验证 */
   tofu: boolean
 }
@@ -68,6 +88,8 @@ export type StoreCrossSigningKeysResult = 'stored' | 'already-stored' | 'needs-s
 export interface KeyBackupSetupResult {
   success: boolean
   recoveryKey?: string
+  /** 失败原因（仅在 `success === false` 时有值），供 UI 展示可操作提示 */
+  error?: string
 }
 
 export interface KeyBackupRestoreResult {

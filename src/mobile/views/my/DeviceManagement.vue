@@ -43,8 +43,18 @@
                   <van-tag v-if="device.deviceId === currentDeviceId" type="primary" size="medium">
                     {{ t('mobile_devices.current') }}
                   </van-tag>
-                  <van-tag v-if="device.isVerified && !isCurrentDevice(device.deviceId)" type="success" size="medium">
+                  <!-- 「已验证」只认交叉签名验证；本机手动标记单独显示，避免把未做身份验证的设备说成已验证 -->
+                  <van-tag
+                    v-if="device.crossSigningVerified && !isCurrentDevice(device.deviceId)"
+                    type="success"
+                    size="medium">
                     {{ t('mobile_devices.verified') }}
+                  </van-tag>
+                  <van-tag
+                    v-else-if="device.isVerified && !isCurrentDevice(device.deviceId)"
+                    type="default"
+                    size="medium">
+                    {{ t('encryption.device_trust.local_only') }}
                   </van-tag>
                 </div>
               </template>

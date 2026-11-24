@@ -94,6 +94,17 @@ interface UseEncryptionResult {
     transactionId: string,
     options?: { shouldAbort?: () => boolean }
   ) => Promise<import('@/services/matrix/crypto/MatrixVerificationService').SasVerificationView>
+  /**
+   * 等待设备真正进入已验证状态（crypto store 的 `isVerified()`）。
+   *
+   * `confirmSas` 只发送本端 MAC，**不代表**设备已可信：对端可能点「不匹配」或压根
+   * 没确认。因此「验证成功」必须以本方法返回 `true` 为准。
+   */
+  waitForDeviceVerified: (
+    userId: string,
+    deviceId: string,
+    options?: { timeoutMs?: number; intervalMs?: number; shouldAbort?: () => boolean }
+  ) => Promise<boolean>
 
   exportRoomKeys: () => Promise<string>
   importRoomKeys: (keysJson: string) => Promise<{ imported: number; total: number }>
@@ -373,6 +384,11 @@ export function useEncryption(): UseEncryptionResult {
     getSasView: (transactionId: string) => matrixVerificationService.getSasView(transactionId),
     waitForSasView: (transactionId: string, options?: { shouldAbort?: () => boolean }) =>
       matrixVerificationService.waitForSasView(transactionId, options),
+    waitForDeviceVerified: (
+      userId: string,
+      deviceId: string,
+      options?: { timeoutMs?: number; intervalMs?: number; shouldAbort?: () => boolean }
+    ) => matrixVerificationService.waitForDeviceVerified(userId, deviceId, options),
     exportRoomKeys,
     importRoomKeys,
     getUnverifiedDevicesInRoom,

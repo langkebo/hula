@@ -24,7 +24,11 @@ vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn().mockReturnValue({
       getSyncState: vi.fn().mockReturnValue('SYNCING'),
-      startClient: vi.fn()
+      startClient: vi.fn(),
+      // 阶段 A 走 REST 直传：缺了它 uploadSsssKeyDirectly 会抛
+      setAccountData: vi.fn().mockResolvedValue(undefined),
+      // 阶段 B 超时后的二次验证
+      getAccountDataFromServer: vi.fn().mockResolvedValue({ key: 'test-key-id' })
     })
   }
 }))
@@ -119,13 +123,34 @@ describe('CryptoKeyBackupAdapter', () => {
 
       expect(crypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith('my-passphrase')
       expect(crypto.resetKeyBackup).toHaveBeenCalled()
-      expect(result).toEqual({ success: true })
+      expect(result.success).toBe(true)
+      expect(result.recoveryKey).toBe(fakeGeneratedKey.encodedPrivateKey)
     })
 
     it('returns failure when CryptoApi is unavailable', async () => {
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto: null }))
       const result = await adapter.setupKeyBackup('pass')
-      expect(result).toEqual({ success: false })
+      expect(result.success).toBe(false)
+      // 失败必须带原因：否则 UI 无法区分「用户取消」与「备份没建起来」
+      expect(result.error).toContain('CryptoApi')
+    })
+
+    /**
+     * P0-② 回归：resetKeyBackup 是「备份版本真的存在」的唯一判据。
+     * 它失败时绝不能返回成功——否则用户拿到一把没有备份可解密的恢复密钥。
+     */
+    it('resetKeyBackup 失败时必须报失败，不得返回恢复密钥', async () => {
+      const crypto = {
+        createRecoveryKeyFromPassphrase: vi.fn().mockResolvedValue(fakeGeneratedKey),
+        resetKeyBackup: vi.fn().mockRejectedValue(new Error('server rejected backup version'))
+      } as unknown as CryptoApi
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
+
+      const result = await adapter.setupKeyBackup('my-passphrase')
+
+      expect(result.success).toBe(false)
+      expect(result.recoveryKey).toBeUndefined()
+      expect(result.error).toContain('server rejected backup version')
     })
   })
 
@@ -203,25 +228,38 @@ describe('CryptoKeyBackupAdapter', () => {
       expect(crypto.createRecoveryKeyFromPassphrase).toHaveBeenCalledWith(undefined)
     })
 
-    it('branch 3: uses provided generatedKey with SSSS background upload', async () => {
-      const crypto = {
-        bootstrapSecretStorage: vi.fn().mockResolvedValue(undefined),
-        resetKeyBackup: vi.fn().mockResolvedValue(undefined)
-      } as unknown as CryptoApi
+    it('branch 3: 三阶段全部完成后才返回密钥（不再 fire-and-forget）', async () => {
+      const bootstrapSecretStorage = vi.fn().mockResolvedValue(undefined)
+      const resetKeyBackup = vi.fn().mockResolvedValue(undefined)
+      const crypto = { bootstrapSecretStorage, resetKeyBackup } as unknown as CryptoApi
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
 
       const result = await adapter.setupKeyBackupWithOptions({ generatedKey: fakeGeneratedKey })
 
-      // Branch 3 returns immediately with the encoded key (SSSS runs in background)
+      // P0-②：返回时 SSSS 注册与备份版本创建必须**已经完成**；
+      // 顺序也不能反（resetKeyBackup 依赖 4S 已就绪）。
+      expect(bootstrapSecretStorage).toHaveBeenCalled()
+      expect(resetKeyBackup).toHaveBeenCalled()
+      expect(resetKeyBackup.mock.invocationCallOrder[0]).toBeGreaterThan(
+        bootstrapSecretStorage.mock.invocationCallOrder[0]
+      )
       expect(result).toBe(fakeGeneratedKey.encodedPrivateKey)
-      // 后台任务包含密钥描述计算，全量跑（CPU 争抢）时固定 50ms 会假失败。
-      // 改为等待条件成立：超时仍然失败，断言强度不变。
-      await vi.waitFor(
-        () => {
-          expect(crypto.bootstrapSecretStorage).toHaveBeenCalled()
-          expect(crypto.resetKeyBackup).toHaveBeenCalled()
-        },
-        { timeout: 2000, interval: 10 }
+    })
+
+    /**
+     * P0-② 回归（分支 3）：`resetKeyBackup` 是「备份版本真的存在」的唯一判据。
+     * 旧实现把它放在 fire-and-forget 里，失败也会返回恢复密钥 —— 用户拿到的是一把
+     * 没有备份可解密的废钥匙。这里必须拒绝并抛出。
+     */
+    it('branch 3: resetKeyBackup 失败时必须拒绝，不得返回恢复密钥', async () => {
+      const crypto = {
+        bootstrapSecretStorage: vi.fn().mockResolvedValue(undefined),
+        resetKeyBackup: vi.fn().mockRejectedValue(new Error('backup version rejected'))
+      } as unknown as CryptoApi
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.setupKeyBackupWithOptions({ generatedKey: fakeGeneratedKey })).rejects.toThrow(
+        'backup version rejected'
       )
     })
 

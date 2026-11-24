@@ -54,15 +54,18 @@
                   {{ getTrustLabel(device) }}
                 </n-tag>
                 <n-space size="small">
-                  <n-button
-                    v-if="!device.isVerified"
-                    size="small"
-                    type="primary"
-                    ghost
-                    :loading="actionLoading === `trust-${device.deviceId}`"
-                    @click="handleTrustDevice(device)">
-                    {{ t('encryption.device_trust.trust') }}
-                  </n-button>
+                  <n-popconfirm v-if="!device.isVerified" @positive-click="handleTrustDevice(device)">
+                    <template #trigger>
+                      <n-button
+                        size="small"
+                        type="primary"
+                        ghost
+                        :loading="actionLoading === `trust-${device.deviceId}`">
+                        {{ t('encryption.device_trust.trust') }}
+                      </n-button>
+                    </template>
+                    {{ t('encryption.device_trust.trust_local_only_confirm') }}
+                  </n-popconfirm>
                   <n-popconfirm v-if="device.isVerified" @positive-click="handleUntrustDevice(device)">
                     <template #trigger>
                       <n-button size="small" :loading="actionLoading === `untrust-${device.deviceId}`">
@@ -71,8 +74,9 @@
                     </template>
                     {{ t('encryption.device_trust.untrust_confirm') }}
                   </n-popconfirm>
+                  <!-- 本地信任只是本机标记，不能替代身份验证：即便已本地标记，仍要能发起 SAS 验证 -->
                   <n-button
-                    v-if="!device.isVerified"
+                    v-if="!device.isCrossSigningVerified"
                     size="small"
                     type="primary"
                     ghost
@@ -108,6 +112,20 @@
 
         <!-- Unverified Devices in Room Tab -->
         <n-tab-pane name="unverified" :tab="t('encryption.device_trust.unverified_tab')">
+          <!--
+            没有交叉签名时，**所有**设备都会落进未验证清单（crossSigningVerified 恒 false）。
+            不解释原因的话，用户只会看到满屏红标，以为这些设备真有问题。
+          -->
+          <n-alert v-if="crossSigningEstablished === false" type="warning" :show-icon="true" class="mb-3">
+            <template #header>
+              {{ t('encryption.device_trust.no_cross_signing_title') }}
+            </template>
+            <p class="mb-2">{{ t('encryption.device_trust.no_cross_signing_desc') }}</p>
+            <n-button size="tiny" type="primary" @click="emit('setup-cross-signing')">
+              {{ t('encryption.device_trust.no_cross_signing_action') }}
+            </n-button>
+          </n-alert>
+
           <div class="room-selector-section">
             <div class="selector-label">{{ t('encryption.device_trust.select_room') }}</div>
             <n-select
@@ -217,7 +235,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NFlex, NModal, NPopconfirm, NSelect, NSpace, NSpin, NTabPane, NTabs, NTag } from 'naive-ui'
+import { NAlert, NButton, NFlex, NModal, NPopconfirm, NSelect, NSpace, NSpin, NTabPane, NTabs, NTag } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
 import { useDeviceTrustActions } from '@/composables/encryption/useDeviceTrustActions'
@@ -225,6 +243,11 @@ import { useDeviceTrustActions } from '@/composables/encryption/useDeviceTrustAc
 const { t } = useI18n()
 
 const visible = defineModel<boolean>('show', { default: false })
+
+const emit = defineEmits<{
+  /** 交叉签名未建立：父组件应引导用户完成「安全检查」 */
+  'setup-cross-signing': []
+}>()
 
 const {
   loading,
@@ -234,6 +257,7 @@ const {
   activeTab,
   actionLoading,
   selectedRoomId,
+  crossSigningEstablished,
   devicesLoadError,
   unverifiedLoadError,
   showVerifyDialog,

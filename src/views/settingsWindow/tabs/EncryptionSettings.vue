@@ -153,7 +153,6 @@
         </n-button>
       </div>
     </div>
-    <RoomKeyRequestsSection />
     <n-divider />
 
     <!-- R-1：严格模式（默认关闭，保留与 Element 等客户端的互操作） -->
@@ -201,7 +200,7 @@
       @complete="handleOnboardingComplete"
       @skip="handleOnboardingSkip" />
 
-    <DeviceTrustManager v-model:show="showDeviceTrustManager" />
+    <DeviceTrustManager v-model:show="showDeviceTrustManager" @setup-cross-signing="handleSetupCrossSigning" />
 
     <E2EEBootstrapWizard
       v-model:show="showE2EEBootstrapWizard"
@@ -245,7 +244,6 @@ import CrossSigningSection from './sections/CrossSigningSection.vue'
 import DehydratedDeviceSection from './sections/DehydratedDeviceSection.vue'
 import EncryptionInfoSection from './sections/EncryptionInfoSection.vue'
 import KeyBackupSection from './sections/KeyBackupSection.vue'
-import RoomKeyRequestsSection from './sections/RoomKeyRequestsSection.vue'
 
 const logger = createLogger('EncryptionSettings')
 
@@ -273,6 +271,16 @@ const showSecurityKeyDialog = ref(false)
 const showSecureBackupDialog = ref(false)
 const showOnboardingDialog = ref(false)
 const showDeviceTrustManager = ref(false)
+
+/**
+ * 从未验证设备列表跳去「安全检查」。
+ *
+ * 先关设备管理器：它是模态框，不关的话用户看不到后面的交叉签名弹窗。
+ */
+function handleSetupCrossSigning() {
+  showDeviceTrustManager.value = false
+  showCrossSigningDialog.value = true
+}
 const showE2EEBootstrapWizard = ref(false)
 const loadError = ref(false)
 const selectedVerificationTransaction = ref<VerificationTransaction | null>(null)

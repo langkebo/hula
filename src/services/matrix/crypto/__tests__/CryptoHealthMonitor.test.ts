@@ -116,28 +116,34 @@ describe('CryptoHealthMonitor', () => {
   })
 
   it('triggers onKeyRequestTriggered for undecryptable messages', async () => {
+    const sendToDevice = vi.fn().mockResolvedValue(undefined)
     vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUserId: () => '@test:example.com',
+      getDeviceId: () => 'TESTDEV',
       getRooms: () => [
         {
           roomId: '!room1:example.com',
           timeline: [
             {
               getContent: () => ({ msgtype: 'm.bad.encrypted' }),
-              getWireContent: () => ({ session_id: 'sess123' })
+              getWireContent: () => ({ session_id: 'sess123', sender_key: 'SENDERKEY' })
             }
           ]
         }
       ],
-      getDeviceKeysManager: vi.fn(() => ({
-        createRoomKeyRequest: vi.fn().mockResolvedValue(undefined)
-      }))
+      getDeviceKeysManager: vi.fn(() => ({ sendToDevice }))
     } as never)
 
     const onKeyRequestTriggered = vi.fn()
     monitor.registerCallbacks({ onKeyRequestTriggered })
     await monitor.performCheck()
     expect(onKeyRequestTriggered).toHaveBeenCalledWith('!room1:example.com', 'sess123')
+    // 走标准 to-device 通道，而不是自建 HTTP 端点
+    expect(sendToDevice).toHaveBeenCalledWith(
+      'm.room_key_request',
+      expect.any(String),
+      expect.objectContaining({ '@test:example.com': expect.anything() })
+    )
   })
 
   it('start is idempotent (calling twice does not create duplicate timers)', async () => {

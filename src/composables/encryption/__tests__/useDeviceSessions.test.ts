@@ -8,7 +8,7 @@ const {
   deleteDeviceMock,
   deleteDevicesMock,
   updateDeviceMock,
-  isDeviceVerifiedMock,
+  getDeviceVerificationStatusMock,
   startSasVerificationMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
@@ -17,7 +17,7 @@ const {
   deleteDeviceMock: vi.fn(),
   deleteDevicesMock: vi.fn(),
   updateDeviceMock: vi.fn(),
-  isDeviceVerifiedMock: vi.fn(),
+  getDeviceVerificationStatusMock: vi.fn(),
   startSasVerificationMock: vi.fn()
 }))
 
@@ -27,9 +27,17 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   }
 }))
 
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  matrixCryptoService: {
+    getDeviceVerificationStatus: (...args: unknown[]) => getDeviceVerificationStatusMock(...args)
+  },
+  default: {
+    getDeviceVerificationStatus: (...args: unknown[]) => getDeviceVerificationStatusMock(...args)
+  }
+}))
+
 vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
   matrixVerificationService: {
-    isDeviceVerified: (...args: unknown[]) => isDeviceVerifiedMock(...args),
     startSasVerification: (...args: unknown[]) => startSasVerificationMock(...args)
   }
 }))
@@ -53,7 +61,11 @@ describe('useDeviceSessions', () => {
       { device_id: 'CURRENT', display_name: 'This device', last_seen_ts: 1000, last_seen_ip: '10.0.0.1' },
       { deviceId: 'OTHER', displayName: 'Laptop', lastSeenTs: 2000, lastSeenIp: '10.0.0.2' }
     ])
-    isDeviceVerifiedMock.mockImplementation(async (_userId: string, deviceId: string) => deviceId === 'CURRENT')
+    getDeviceVerificationStatusMock.mockImplementation(async (_userId: string, deviceId: string) => ({
+      verified: deviceId === 'CURRENT',
+      crossSigningVerified: deviceId === 'CURRENT',
+      tofu: false
+    }))
   })
 
   it('把会话行归一化为统一字段并补全验证状态', async () => {
@@ -68,14 +80,16 @@ describe('useDeviceSessions', () => {
         displayName: 'This device',
         lastSeenTs: 1000,
         lastSeenIp: '10.0.0.1',
-        isVerified: true
+        isVerified: true,
+        crossSigningVerified: true
       },
       {
         deviceId: 'OTHER',
         displayName: 'Laptop',
         lastSeenTs: 2000,
         lastSeenIp: '10.0.0.2',
-        isVerified: false
+        isVerified: false,
+        crossSigningVerified: false
       }
     ])
     expect(otherDevices.value.map((device) => device.deviceId)).toEqual(['OTHER'])
@@ -92,11 +106,12 @@ describe('useDeviceSessions', () => {
   })
 
   it('单设备验证状态读取失败时按未验证处理', async () => {
-    isDeviceVerifiedMock.mockRejectedValue(new Error('crypto unavailable'))
+    getDeviceVerificationStatusMock.mockRejectedValue(new Error('crypto unavailable'))
     const { devices, loadDevices } = useDeviceSessions()
 
     await expect(loadDevices()).resolves.toBe(true)
     expect(devices.value.every((device) => device.isVerified === false)).toBe(true)
+    expect(devices.value.every((device) => device.crossSigningVerified === false)).toBe(true)
   })
 
   it('无会话用户时不查验证状态，发起验证会拒绝', async () => {
@@ -105,7 +120,7 @@ describe('useDeviceSessions', () => {
 
     await expect(loadDevices()).resolves.toBe(true)
     expect(devices.value.every((device) => device.isVerified === false)).toBe(true)
-    expect(isDeviceVerifiedMock).not.toHaveBeenCalled()
+    expect(getDeviceVerificationStatusMock).not.toHaveBeenCalled()
     await expect(startVerification('OTHER')).rejects.toThrow()
   })
 

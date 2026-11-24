@@ -14,10 +14,14 @@
  * ⇒ `verified` **恒为 false** ⇒ 「已验证（绿锁）」不可达。
  *
  * 权威来源与 `CryptoDeviceAdapter` 一致：`CryptoApi.getDeviceVerificationStatus`。
+ * 本文件不再自己逐设备查询，而是委托唯一实现
+ * {@link loadDeviceVerificationByDeviceIds}（批量查询 + 单条失败汇总日志）。
  * 查询失败按「未验证」处理并记录日志，**不**把失败伪装成「确实已验证」。
  */
 import { createLogger } from '@/utils/Logger'
+import { loadDeviceVerificationByDeviceIds } from '../crypto/CryptoDeviceAdapter'
 import { cryptoSDKAdapter } from '../crypto/CryptoSDKAdapter'
+import type { DeviceVerificationFlags } from '../crypto/cryptoAdapterTypes'
 
 const logger = createLogger('MatrixDeviceService')
 
@@ -26,13 +30,12 @@ const logger = createLogger('MatrixDeviceService')
  *
  * @param userId 目标用户 MXID
  * @param devices `/keys/query` 返回的原始设备内容
- * @returns `deviceId → 是否已验证`（无法判定/查询失败时为 `false`）
+ * @returns `deviceId → { verified, crossSigningVerified }`（无法判定/查询失败时两项均为 `false`）
  */
 export const loadDeviceVerification = async (
   userId: string,
   devices: ReadonlyArray<{ device_id?: unknown }>
-): Promise<Map<string, boolean>> => {
-  const result = new Map<string, boolean>()
+): Promise<Map<string, DeviceVerificationFlags>> => {
   // ⚠️ 取 crypto 本身必须防御：客户端未初始化 / crypto 未启用时这里会抛错，
   // 而"验证状态查不到"绝不能连带把**设备列表**也变成空数组
   // （那会让"无设备"与"查询失败"再也分不开）。
@@ -41,22 +44,10 @@ export const loadDeviceVerification = async (
     crypto = cryptoSDKAdapter.getCrypto()
   } catch (err) {
     logger.warn(`[DeviceService] crypto 不可用，设备验证状态按未验证处理: ${err}`)
-    return result
+    return new Map()
   }
-  if (!crypto) return result
+  if (!crypto) return new Map()
 
-  await Promise.all(
-    devices.map(async (device) => {
-      const deviceId = String(device.device_id ?? '')
-      if (!deviceId) return
-      try {
-        const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
-        result.set(deviceId, status?.isVerified() ?? false)
-      } catch (err) {
-        logger.warn(`[DeviceService] 设备 ${deviceId} 验证状态获取失败，按未验证处理: ${err}`)
-        result.set(deviceId, false)
-      }
-    })
-  )
-  return result
+  const deviceIds = devices.map((device) => String(device.device_id ?? '')).filter(Boolean)
+  return loadDeviceVerificationByDeviceIds(crypto, userId, deviceIds, 'MatrixDeviceService')
 }

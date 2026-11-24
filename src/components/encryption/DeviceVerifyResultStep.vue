@@ -11,6 +11,21 @@
         {{ t('setting.encryption.device_verify_dialog.success_desc') }}
       </p>
     </template>
+    <template v-else-if="status === 'awaiting'">
+      <!--
+        本端已确认，但对端尚未确认：设备**还没有**进入已验证状态。
+        这里必须与「成功」明确区分——否则就是对端还没点确认时的假安全信号。
+      -->
+      <div class="mb-16px text-[var(--tjg-color-warning-500)]">
+        <Icon icon="mdi:clock-outline" :width="64" />
+      </div>
+      <h3 class="text-[var(--text-lg)] font-medium color-[var(--tjg-text-primary)] mb-8px">
+        {{ t('setting.encryption.device_verify_dialog.awaiting_title') }}
+      </h3>
+      <p class="text-[var(--text-sm)] color-[var(--tjg-text-secondary)] mb-24px">
+        {{ t('setting.encryption.device_verify_dialog.awaiting_desc') }}
+      </p>
+    </template>
     <template v-else>
       <div class="mb-16px text-[var(--tjg-color-danger-500)]">
         <Icon icon="mdi:alert-circle" :width="64" />
@@ -39,7 +54,7 @@ import { useI18n } from 'vue-i18n'
 defineOptions({ name: 'DeviceVerifyResultStep' })
 
 defineProps<{
-  status: 'success' | 'rejected'
+  status: 'success' | 'awaiting' | 'rejected'
 }>()
 
 const emit = defineEmits<(e: 'close') => void>()

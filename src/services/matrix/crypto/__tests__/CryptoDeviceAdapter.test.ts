@@ -1,13 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
 import type { CryptoApi, MatrixClientExtended } from '@/types/matrix-extensions'
-import { CryptoDeviceAdapter } from '../CryptoDeviceAdapter'
+import { CryptoDeviceAdapter, loadDeviceVerificationByDeviceIds } from '../CryptoDeviceAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
+
+const { loggerWarn } = vi.hoisted(() => ({ loggerWarn: vi.fn() }))
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     error: vi.fn(),
-    warn: vi.fn(),
+    warn: loggerWarn,
     info: vi.fn(),
     debug: vi.fn()
   })
@@ -43,14 +45,73 @@ function makeDeviceKeysManager(deviceKeys: Record<string, unknown>) {
  * 设备验证状态的权威来源是本机 crypto store（`CryptoApi.getDeviceVerificationStatus`），
  * 不是后端 HTTP：`GET /device_trust` 已随后端模块一并删除，调用必然 404。
  */
-function makeVerificationCrypto(verifiedDeviceIds: string[], opts: { throw?: boolean } = {}): CryptoApi {
+function makeVerificationCrypto(
+  verifiedDeviceIds: string[],
+  opts: { throw?: boolean; crossSigningDeviceIds?: string[] } = {}
+): CryptoApi {
   return {
     getDeviceVerificationStatus: vi.fn(async (_userId: string, deviceId: string) => {
       if (opts.throw) throw new Error('crypto store unavailable')
-      return { isVerified: () => verifiedDeviceIds.includes(deviceId), crossSigningVerified: false, tofu: false }
+      return {
+        isVerified: () => verifiedDeviceIds.includes(deviceId),
+        crossSigningVerified: (opts.crossSigningDeviceIds ?? []).includes(deviceId),
+        tofu: false
+      }
     })
   } as unknown as CryptoApi
 }
+
+describe('loadDeviceVerificationByDeviceIds（唯一实现）', () => {
+  it('多台设备查询失败时只输出一条汇总 warn，并按未验证处理', async () => {
+    // 回归守卫：旧实现逐设备 warn，一台机器掉 crypto 时会刷出与设备数等量的
+    // `null pointer passed to rust`（实测 62 条），把真实错误淹没。
+    const crypto = {
+      getDeviceVerificationStatus: vi.fn(async () => {
+        throw new Error('null pointer passed to rust')
+      })
+    } as unknown as CryptoApi
+    loggerWarn.mockClear()
+
+    const result = await loadDeviceVerificationByDeviceIds(crypto, '@alice:matrix.org', ['D1', 'D2', 'D3'], 'Test')
+
+    expect(result.get('D1')).toEqual({ verified: false, crossSigningVerified: false })
+    expect(result.get('D2')).toEqual({ verified: false, crossSigningVerified: false })
+    expect(result.get('D3')).toEqual({ verified: false, crossSigningVerified: false })
+    expect(loggerWarn).toHaveBeenCalledTimes(1)
+    const message = String(loggerWarn.mock.calls[0]?.[0])
+    expect(message).toContain('3/3')
+    expect(message).toContain('null pointer passed to rust')
+  })
+
+  it('部分设备失败时仍返回其余设备的真实状态', async () => {
+    const crypto = {
+      getDeviceVerificationStatus: vi.fn(async (_userId: string, deviceId: string) => {
+        if (deviceId === 'BAD') throw new Error('boom')
+        return { isVerified: () => deviceId === 'OK' }
+      })
+    } as unknown as CryptoApi
+    loggerWarn.mockClear()
+
+    const result = await loadDeviceVerificationByDeviceIds(crypto, '@alice:matrix.org', ['OK', 'BAD'], 'Test')
+
+    expect(result.get('OK')).toEqual({ verified: true, crossSigningVerified: false })
+    expect(result.get('BAD')).toEqual({ verified: false, crossSigningVerified: false })
+    expect(loggerWarn).toHaveBeenCalledTimes(1)
+    expect(String(loggerWarn.mock.calls[0]?.[0])).toContain('1/2')
+  })
+
+  it('全部成功时不输出 warn', async () => {
+    const crypto = {
+      getDeviceVerificationStatus: vi.fn(async () => ({ isVerified: () => true }))
+    } as unknown as CryptoApi
+    loggerWarn.mockClear()
+
+    const result = await loadDeviceVerificationByDeviceIds(crypto, '@alice:matrix.org', ['D1'], 'Test')
+
+    expect(result.get('D1')).toEqual({ verified: true, crossSigningVerified: false })
+    expect(loggerWarn).not.toHaveBeenCalled()
+  })
+})
 
 describe('CryptoDeviceAdapter', () => {
   describe('getDevices', () => {
@@ -71,13 +132,15 @@ describe('CryptoDeviceAdapter', () => {
           deviceId: 'DEV1',
           userId: '@alice:matrix.org',
           displayName: 'Alice Phone',
-          isVerified: true
+          isVerified: true,
+          crossSigningVerified: false
         },
         {
           deviceId: 'DEV2',
           userId: '@alice:matrix.org',
           displayName: undefined,
-          isVerified: false
+          isVerified: false,
+          crossSigningVerified: false
         }
       ])
     })
@@ -105,7 +168,13 @@ describe('CryptoDeviceAdapter', () => {
       const result = await adapter.getDevices('@alice:matrix.org')
 
       expect(result).toEqual([
-        { deviceId: 'DEV1', userId: '@alice:matrix.org', displayName: undefined, isVerified: false }
+        {
+          deviceId: 'DEV1',
+          userId: '@alice:matrix.org',
+          displayName: undefined,
+          isVerified: false,
+          crossSigningVerified: false
+        }
       ])
     })
 
@@ -134,7 +203,8 @@ describe('CryptoDeviceAdapter', () => {
         deviceId: 'DEV1',
         userId: '@alice:matrix.org',
         displayName: 'Alice Phone',
-        isVerified: true
+        isVerified: true,
+        crossSigningVerified: false
       })
     })
 
@@ -207,7 +277,6 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toEqual({
         verified: true,
         crossSigningVerified: true,
-        devicesCrossSigningVerified: true,
         tofu: false
       })
     })
@@ -238,7 +307,6 @@ describe('CryptoDeviceAdapter', () => {
       expect(result).toEqual({
         verified: false,
         crossSigningVerified: false,
-        devicesCrossSigningVerified: false,
         tofu: false
       })
     })
@@ -300,7 +368,8 @@ describe('CryptoDeviceAdapter', () => {
             : { DEV3: { device_id: 'DEV3' } }
         )
       }
-      const crypto = makeVerificationCrypto(['DEV1', 'DEV3'])
+      // DEV1/DEV3 通过交叉签名；DEV2 未通过
+      const crypto = makeVerificationCrypto(['DEV1', 'DEV3'], { crossSigningDeviceIds: ['DEV1', 'DEV3'] })
       const adapter = new CryptoDeviceAdapter(
         createMockAccessors({
           crypto,
@@ -316,11 +385,34 @@ describe('CryptoDeviceAdapter', () => {
       expect(result[0].isVerified).toBe(false)
     })
 
+    /**
+     * 安全决策收紧的核心回归：`isVerified` 含「本机手动标记」，不能作为放行依据。
+     * 一台只被本机标记过、没有交叉签名背书的设备，仍必须出现在未验证清单里。
+     */
+    it('本机手动标记（无交叉签名）的设备仍算未验证', async () => {
+      const sdkDeviceKeysManager = makeDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      // isVerified=true 但 crossSigningVerified=false —— 正是「点了一下信任」的状态
+      const crypto = makeVerificationCrypto(['DEV1'])
+      const adapter = new CryptoDeviceAdapter(
+        createMockAccessors({
+          crypto,
+          sdkDeviceKeysManager,
+          matrixClient: makeRoomClient(['@alice:matrix.org'])
+        })
+      )
+
+      const result = await adapter.getUnverifiedDevicesInRoom('!room:matrix.org')
+
+      expect(result.map((d) => d.deviceId)).toEqual(['DEV1'])
+      expect(result[0].isVerified).toBe(true)
+      expect(result[0].crossSigningVerified).toBe(false)
+    })
+
     it('房间内设备全部已验证时返回空数组（空 = 确实没有，而非查不到）', async () => {
       const sdkDeviceKeysManager = makeDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
       const adapter = new CryptoDeviceAdapter(
         createMockAccessors({
-          crypto: makeVerificationCrypto(['DEV1']),
+          crypto: makeVerificationCrypto(['DEV1'], { crossSigningDeviceIds: ['DEV1'] }),
           sdkDeviceKeysManager,
           matrixClient: makeRoomClient(['@alice:matrix.org'])
         })

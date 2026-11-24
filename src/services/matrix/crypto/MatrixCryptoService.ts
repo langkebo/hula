@@ -1,27 +1,11 @@
+import type { IContent } from '@/services/matrix/sdk'
 import type { GeneratedSecretStorageKey, VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { cryptoSDKAdapter } from './CryptoSDKAdapter'
-import type { RoomEncryptionState } from './cryptoAdapterTypes'
+import type { DeviceInfo, DeviceVerificationResult, RoomEncryptionState } from './cryptoAdapterTypes'
 
 const logger = createLogger('MatrixCryptoService')
-
-interface DeviceInfo {
-  deviceId: string
-  userId: string
-  displayName?: string | undefined
-  lastSeenTs?: number | undefined
-  lastSeenIp?: string | undefined
-  isVerified?: boolean | undefined
-}
-
-interface VerificationStatus {
-  verified: boolean
-  crossSigningVerified: boolean
-  devicesCrossSigningVerified: boolean
-  /** Trust On First Use：设备已被客户端见过（已知）但尚未显式验证 */
-  tofu: boolean
-}
 
 export type EncryptionAlgorithm = 'm.megolm.v1.aes-sha2' | 'm.olm.v1.curve25519-aes-sha2'
 
@@ -114,7 +98,7 @@ class MatrixCryptoService extends BaseMatrixService {
    * 读设备验证状态。
    * 唯一事实源是本地 crypto store —— `/keys/query` 响应里没有信任字段。
    */
-  async getDeviceVerificationStatus(userId: string, deviceId: string): Promise<VerificationStatus> {
+  async getDeviceVerificationStatus(userId: string, deviceId: string): Promise<DeviceVerificationResult> {
     try {
       return await cryptoSDKAdapter.getDeviceVerificationStatus(userId, deviceId)
     } catch (err) {
@@ -251,21 +235,61 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
-  async createRoomKeyRequest(
-    roomId: string,
-    sessionId: string,
-    algorithm: string,
-    _devices: Record<string, string[]>
-  ): Promise<void> {
+  /**
+   * 向本账号的其它设备请求房间密钥（标准 Matrix `m.room_key_request`，to-device）。
+   *
+   * ## 为什么必须走 to-device
+   *
+   * 持有该 Megolm session 的是**另一台设备**，只有它能把密钥转发过来。标准链路是：
+   * 请求方发 `m.room_key_request`（to-device）→ 持有方的 rust-crypto 收到后自动回
+   * `m.forwarded_room_key` → 本地解密自愈。
+   *
+   * 历史缺陷（P0-①）：这里曾调用 `DeviceKeysManager.createRoomKeyRequest`，即自建的
+   * `POST /room_keys/request` 端点。那不是 Matrix 协议的一部分，其它设备（包括同账号的
+   * Element/FluffyChat）根本不会感知，因此永远没有设备回传密钥——请求写进私有表后
+   * 就悬空；而设置页的「兑现」只把状态改成 fulfilled，并不搬运任何密钥。
+   *
+   * @param roomId 房间 ID
+   * @param sessionId 无法解密的 Megolm session
+   * @param algorithm 加密算法（`m.megolm.v1.aes-sha2`）
+   * @param senderKey 该消息发送设备的 curve25519 身份密钥（取自事件 wire content）
+   */
+  async createRoomKeyRequest(roomId: string, sessionId: string, algorithm: string, senderKey?: string): Promise<void> {
     try {
+      const client = this.getClient()
+      const userId = client.getUserId()
+      const deviceId = client.getDeviceId()
+      if (!userId || !deviceId) {
+        throw new Error('无法发起房间密钥请求：缺少当前用户或设备 ID')
+      }
+
       const manager = cryptoSDKAdapter.requireSDKDeviceKeysManager()
-      await manager.createRoomKeyRequest({
-        room_id: roomId,
-        session_id: sessionId,
-        algorithm,
-        request_id: `req_${Date.now()}`
+      // 同一 session 复用同一 request_id：接收方按 request_id 去重，重复巡检不会刷屏。
+      const requestId = `mkr_${sessionId}`
+
+      // `IContent.body` 在 SDK 里固定为消息正文（string），而 `m.room_key_request` 的
+      // `body` 是协议载荷对象（spec 定义），两者语义不同。这里用 `Object.assign` 组合出
+      // `IContent & { body: 载荷对象 }`：wire 上是对象，类型上仍可赋给 `IContent`，
+      // 无需 `as unknown as` 这类双重断言。
+      const base: IContent = {
+        action: 'request',
+        requesting_device_id: deviceId,
+        request_id: requestId
+      }
+      const content = Object.assign(base, {
+        body: {
+          algorithm,
+          room_id: roomId,
+          session_id: sessionId,
+          ...(senderKey ? { sender_key: senderKey } : {})
+        }
       })
-      logger.info(`[MatrixCrypto] 创建房间密钥请求成功: ${roomId}`)
+
+      await manager.sendToDevice('m.room_key_request', `${requestId}_${Date.now()}`, {
+        // '*' = 本账号的所有设备；持有该 session 的那台会响应
+        [userId]: { '*': content }
+      })
+      logger.info(`[MatrixCrypto] 已发送标准 m.room_key_request (to-device): ${roomId}/${sessionId}`)
     } catch (err) {
       logger.error(`[MatrixCrypto] 创建房间密钥请求失败: ${err}`)
       throw err

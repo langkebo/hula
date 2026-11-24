@@ -140,14 +140,6 @@ describe('User service URL construction contract (real SDK + msw)', () => {
     expect(calls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/delete_devices`)
   })
 
-  it('getRoomKeyRequests hits /_matrix/client/v3/room_keys/request (no duplication)', async () => {
-    await matrixDeviceService.getRoomKeyRequests()
-
-    const calls = seenUrls.filter((u) => u.includes('/room_keys/request'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/room_keys/request`)
-  })
-
   // --- MatrixPresenceService ---
 
   it('unsubscribeFromPresence hits /_matrix/client/v3/presence/list (no duplication)', async () => {

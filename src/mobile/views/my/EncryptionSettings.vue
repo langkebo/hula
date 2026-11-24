@@ -197,7 +197,10 @@
       <MobileKeyBackupDialog v-model="showKeyBackupSetup" mode="setup" @complete="onKeyBackupComplete" />
       <MobileKeyBackupDialog v-model="showKeyBackupRestore" mode="restore" @complete="onKeyBackupComplete" />
       <MobileDehydratedDeviceDialog v-model:show="showDehydratedDevice" @complete="loadOverview()" />
-      <MobileDeviceTrustManager v-model:show="showDeviceTrustManager" @complete="loadDevices()" />
+      <MobileDeviceTrustManager
+        v-model:show="showDeviceTrustManager"
+        @complete="loadDevices()"
+        @setup-cross-signing="handleSetupCrossSigning" />
     </template>
   </AutoFixHeightPage>
 </template>
@@ -254,6 +257,17 @@ const showKeyBackupRestore = ref(false)
 const showDehydratedDevice = ref(false)
 // Device trust manager
 const showDeviceTrustManager = ref(false)
+
+/**
+ * 从未验证设备列表跳去「设置安全密钥」。
+ *
+ * 移动端当前没有交叉签名设置界面（`MobileSecurityKeySetup` 只做 4S），
+ * 因此这里只能引导到可以真正完成的下一步，而不是给一个点了没用的按钮。
+ */
+function handleSetupCrossSigning() {
+  showDeviceTrustManager.value = false
+  router.push(MOBILE_SETTINGS_SECURITY_KEY_PATH)
+}
 // 已启用备份时的管理操作面板
 const showBackupSheet = ref(false)
 const { deleteBackupVersion } = useKeyBackupFlow()

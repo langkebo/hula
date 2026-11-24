@@ -104,6 +104,7 @@ const {
   capabilityState,
   isDehydratedSupportedMock,
   getDevicesMock,
+  getDeviceVerificationStatusMock,
   deleteKeyBackupVersionMock,
   dialogWarningMock
 } = vi.hoisted(() => ({
@@ -162,6 +163,7 @@ const {
   },
   isDehydratedSupportedMock: vi.fn(() => true),
   getDevicesMock: vi.fn(),
+  getDeviceVerificationStatusMock: vi.fn(),
   deleteKeyBackupVersionMock: vi.fn(async () => undefined),
   dialogWarningMock: vi.fn()
 }))
@@ -201,10 +203,14 @@ vi.mock('@/composables/encryption/useEncryption', () => ({
 vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
   matrixDeviceService: {
     getCurrentDeviceId: () => 'DEVICE123',
-    getDevices: () => getDevicesMock(),
-    // 加密页内嵌的 RoomKeyRequestsSection 挂载即拉取；不提供会让 onMounted 抛出未处理拒绝
-    getRoomKeyRequests: async () => [],
-    fulfillRoomKeyRequest: async () => true
+    getDevices: () => getDevicesMock()
+  }
+}))
+
+// useDeviceSessions 逐设备读本地 crypto store 的验证状态（crossSigningVerified 才是「已验证」）
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  matrixCryptoService: {
+    getDeviceVerificationStatus: (...args: [string, string]) => getDeviceVerificationStatusMock(...args)
   }
 }))
 
@@ -528,6 +534,11 @@ describe('EncryptionSettings', () => {
       { device_id: 'DEVICE123', display_name: 'Desktop', last_seen_ts: 1 },
       { device_id: 'OTHER_DEVICE', display_name: 'Phone', last_seen_ts: 2 }
     ])
+    getDeviceVerificationStatusMock.mockResolvedValue({
+      verified: true,
+      crossSigningVerified: true,
+      tofu: false
+    })
     deleteKeyBackupVersionMock.mockResolvedValue(undefined)
   })
 

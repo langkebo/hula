@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   startSasVerification: vi.fn(),
   acceptVerification: vi.fn(),
   confirmSas: vi.fn(),
+  waitForDeviceVerified: vi.fn(),
   cancelVerification: vi.fn(),
   getPendingVerifications: vi.fn(),
   showFeedback: vi.fn()
@@ -98,6 +99,7 @@ vi.mock('@/composables/encryption', () => ({
     startSasVerification: mocks.startSasVerification,
     acceptVerification: mocks.acceptVerification,
     confirmSas: mocks.confirmSas,
+    waitForDeviceVerified: mocks.waitForDeviceVerified,
     cancelVerification: mocks.cancelVerification,
     getPendingVerifications: mocks.getPendingVerifications
   })
@@ -133,6 +135,7 @@ describe('DeviceVerifyDialog（SAS 比对）', () => {
     mocks.startSasVerification.mockResolvedValue('txn-123')
     mocks.acceptVerification.mockResolvedValue(undefined)
     mocks.confirmSas.mockResolvedValue(undefined)
+    mocks.waitForDeviceVerified.mockResolvedValue(true)
     mocks.cancelVerification.mockResolvedValue(undefined)
     mocks.getPendingVerifications.mockResolvedValue([])
   })
@@ -183,7 +186,7 @@ describe('DeviceVerifyDialog（SAS 比对）', () => {
     expect(wrapper.emitted('success')).toBeFalsy()
   })
 
-  it('勾选后确认才真正调用 confirmSas 并发成功事件', async () => {
+  it('勾选后确认才真正调用 confirmSas；设备确实已验证时才发成功事件', async () => {
     const wrapper = mountComponent({ deviceId: 'OTHER_DEVICE' })
     await flushPromises()
     await vmOf(wrapper).startVerification()
@@ -196,8 +199,27 @@ describe('DeviceVerifyDialog（SAS 比对）', () => {
     await vmOf(wrapper).handleConfirm()
 
     expect(mocks.confirmSas).toHaveBeenCalledWith('txn-123')
+    // 成功判据必须是 crypto store 的真实状态，而不是「confirm 没抛错」
+    expect(mocks.waitForDeviceVerified).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE', expect.anything())
     expect(vmOf(wrapper).step).toBe('success')
     expect(wrapper.emitted('success')).toHaveLength(1)
+  })
+
+  /**
+   * P0-③ 回归：本端 confirm 只发送自己的 MAC。对端尚未确认（或点了「不匹配」）时
+   * 设备仍未 verified —— 必须停在「等待对方确认」，且**不得**发 success 事件。
+   */
+  it('对端未确认（设备仍未 verified）时只显示等待态，绝不发成功事件', async () => {
+    mocks.waitForDeviceVerified.mockResolvedValue(false)
+    const wrapper = mountComponent({ deviceId: 'OTHER_DEVICE' })
+    await flushPromises()
+    await vmOf(wrapper).startVerification()
+    await wrapper.find('[data-testid="sas-confirm-checkbox"]').setValue(true)
+
+    await vmOf(wrapper).handleConfirm()
+
+    expect(vmOf(wrapper).step).toBe('awaiting')
+    expect(wrapper.emitted('success')).toBeUndefined()
   })
 
   it('拿不到 SAS 时进入失败态，绝不降级为指纹比对', async () => {

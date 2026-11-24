@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import EncryptionSettings from '../EncryptionSettings.vue'
 import { MOBILE_SETTINGS_SECURITY_KEY_PATH } from '../settingsRoutes'
@@ -21,6 +21,7 @@ const {
   deleteDeviceMock,
   getBackupVersionsMock,
   isDeviceVerifiedMock,
+  getDeviceVerificationStatusMock,
   startSasVerificationMock,
   showToastMock,
   showConfirmDialogMock,
@@ -32,6 +33,7 @@ const {
   deleteDeviceMock: vi.fn(),
   getBackupVersionsMock: vi.fn(),
   isDeviceVerifiedMock: vi.fn(),
+  getDeviceVerificationStatusMock: vi.fn(),
   startSasVerificationMock: vi.fn(),
   showToastMock: vi.fn(),
   showConfirmDialogMock: vi.fn(),
@@ -186,6 +188,13 @@ vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
   }
 }))
 
+// useDeviceSessions 逐设备读本地 crypto store 的验证状态（crossSigningVerified 才是「已验证」）
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  matrixCryptoService: {
+    getDeviceVerificationStatus: (...args: [string, string]) => getDeviceVerificationStatusMock(...args)
+  }
+}))
+
 // 加密总览状态改为由 encryption store 提供（useEncryptionOverview 读取它）：
 // 这里用契约等价的 store 替身，保留真实 store 的失败降级语义。
 vi.mock('@/stores/domains/settings/encryption', async () => {
@@ -264,12 +273,24 @@ describe('Mobile EncryptionSettings', () => {
     deleteDeviceMock.mockResolvedValue(undefined)
     getBackupVersionsMock.mockResolvedValue([{ version: '1', algorithm: 'm.megolm.backup.v1', auth_data: {} }])
     isDeviceVerifiedMock.mockImplementation(async (_userId: string, deviceId: string) => deviceId === 'CURRENT_DEVICE')
+    getDeviceVerificationStatusMock.mockImplementation(async (_userId: string, deviceId: string) => ({
+      verified: deviceId === 'CURRENT_DEVICE',
+      crossSigningVerified: deviceId === 'CURRENT_DEVICE',
+      tofu: false
+    }))
     startSasVerificationMock.mockResolvedValue('txn-123')
     showConfirmDialogMock.mockResolvedValue(undefined)
   })
 
-  const mountComponent = () =>
-    mount(EncryptionSettings, {
+  /**
+   * 挂载被测组件，并在用例结束时**卸载**。
+   *
+   * 不卸载时上一个用例的组件实例仍在，其未完成的异步链会写进单例（`matrixDeviceService`
+   * 缓存、encryption store），使后续用例拿到的设备 `isVerified` 是上一次的残留值 ——
+   * 表现就是「单独跑绿、整文件跑红」。
+   */
+  const mountComponent = () => {
+    const wrapper = mount(EncryptionSettings, {
       global: {
         stubs: {
           'van-cell-group': {
@@ -305,6 +326,9 @@ describe('Mobile EncryptionSettings', () => {
         }
       }
     })
+    onTestFinished(() => wrapper.unmount())
+    return wrapper
+  }
 
   it('挂载时加载加密状态、备份状态和设备列表', async () => {
     const wrapper = mountComponent()
@@ -425,6 +449,7 @@ describe('Mobile EncryptionSettings', () => {
 
   it('在校验设备、验证设备和删除设备失败时提示兜底消息', async () => {
     isDeviceVerifiedMock.mockRejectedValue(new Error('verify status failed'))
+    getDeviceVerificationStatusMock.mockRejectedValue(new Error('verify status failed'))
     startSasVerificationMock.mockRejectedValue(new Error('verify failed'))
     deleteDeviceMock.mockRejectedValue(new Error('delete failed'))
 

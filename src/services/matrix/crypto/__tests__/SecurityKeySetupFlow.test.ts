@@ -171,6 +171,9 @@ describe('SecurityKeySetupFlow', () => {
         getCrypto: vi.fn(() => createMockCrypto()),
         setAccountDataRaw: vi.fn().mockResolvedValue({})
       } as unknown as MatrixClient
+      // 设置流程现在会 **await** REST 直传，必须让 getClient() 指向这台 mock；
+      // 否则 `客户端不可用` 会如实抛出（旧实现把这段吞在 fire-and-forget 里）。
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient)
 
       vi.spyOn(matrixClientService, 'waitForClientReady').mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 200))

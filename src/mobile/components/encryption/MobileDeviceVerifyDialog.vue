@@ -40,6 +40,12 @@
         <span>{{ $t('verification.result.success_desc') }}</span>
       </div>
 
+      <!-- awaiting: 本端已确认，但对端尚未确认（设备还未进入已验证状态） -->
+      <div v-else-if="step === 'awaiting'" class="flex flex-col items-center gap-3 py-8">
+        <van-icon name="clock-o" size="48" :color="warningColor" />
+        <span>{{ $t('verification.result.awaiting_desc') }}</span>
+      </div>
+
       <!-- failed / rejected / cancelled -->
       <div
         v-else-if="step === 'failed' || step === 'rejected' || step === 'cancelled'"
@@ -93,6 +99,7 @@ const visible = computed({
 
 const successColor = 'var(--tjg-color-success-500)'
 const dangerColor = 'var(--tjg-color-danger-500)'
+const warningColor = 'var(--tjg-color-warning-500)'
 
 const {
   step,
@@ -114,6 +121,8 @@ const dialogTitle = computed(() => {
       return t('verification.steps.show_key')
     case 'success':
       return t('verification.result.success_title')
+    case 'awaiting':
+      return t('verification.result.awaiting_title')
     default:
       return t('verification.title')
   }
@@ -133,7 +142,8 @@ async function mismatch() {
 }
 
 function handleClose() {
-  if (step.value !== 'success' && step.value !== 'cancelled') {
+  // `awaiting`：本端已 confirm，撤回确认只会让对端困惑；事务会自然过期，故不主动取消。
+  if (step.value !== 'success' && step.value !== 'awaiting' && step.value !== 'cancelled') {
     cancelVerification('user_cancelled')
   }
 }

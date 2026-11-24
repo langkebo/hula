@@ -84,8 +84,7 @@ vi.mock('@/composables/encryption/useDeviceTrust', async () => {
     trustDevice: vi.fn(),
     untrustDevice: vi.fn(),
     blockDevice: vi.fn(),
-    unblockDevice: vi.fn(),
-    loadUnverifiedDevicesInRoom: vi.fn()
+    unblockDevice: vi.fn()
   }
   return { useDeviceTrust: () => state }
 })
@@ -116,7 +115,6 @@ interface DeviceTrustState {
   blockedDevices: { value: Array<Record<string, unknown>> }
   error: { value: string | null }
   loadDevices: ReturnType<typeof vi.fn>
-  loadUnverifiedDevicesInRoom: ReturnType<typeof vi.fn>
 }
 
 const trustState = () => useDeviceTrust() as unknown as DeviceTrustState

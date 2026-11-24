@@ -43,8 +43,12 @@ async function fetchTrustLevel(key: string, senderId: string): Promise<MessageTr
   try {
     const devices = await matrixDeviceService.getUserDevices(senderId)
     // 设备列表为空 ⇒ 无法证认任何设备 ⇒ 未验证（绝不能因为"没有反对证据"就给绿锁）
+    //
+    // 判据用 `crossSigningVerified` 而非 `verified`：后者含「本机手动标记」，
+    // 而本机标记没有任何密码学凭据。绿锁是对**消息来源身份**的担保，只能由
+    // 交叉签名信任链背书 —— 否则在任意客户端点一次「信任」就能让对话变绿。
     const level: MessageTrustLevel =
-      devices.length > 0 && devices.every((d) => d.verified === true) ? 'verified' : 'unverified'
+      devices.length > 0 && devices.every((d) => d.crossSigningVerified === true) ? 'verified' : 'unverified'
     senderDeviceCache.set(key, level)
     bumpTrustCacheVersion()
     return level

@@ -32,8 +32,13 @@ export function useEncryptionSettings() {
   const deviceFingerprint = ref('')
   const pendingVerifications = ref<VerificationTransaction[]>([])
 
-  const verifiedDevicesCount = computed(() => sessions.devices.value.filter((device) => device.isVerified).length)
-  const unverifiedDevicesCount = computed(() => sessions.devices.value.filter((device) => !device.isVerified).length)
+  // 「已验证设备」只认交叉签名验证：isVerified 还包含「本机手动标记」，不能计入已验证
+  const verifiedDevicesCount = computed(
+    () => sessions.devices.value.filter((device) => device.crossSigningVerified).length
+  )
+  const unverifiedDevicesCount = computed(
+    () => sessions.devices.value.filter((device) => !device.crossSigningVerified).length
+  )
 
   function formatFingerprint(key: string): string {
     return key.match(/.{1,4}/g)?.join(' ') || key

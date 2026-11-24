@@ -345,6 +345,13 @@ export type Messages = {
     "unverified": "未验证",
     "blocked": "已屏蔽",
     "cross_signed": "交叉签名已验证",
+    "local_only": "仅本机可信（未验证身份）",
+    "no_cross_signing_title": "还没完成安全检查",
+    "no_cross_signing_desc": "未完成安全检查时，所有设备都会显示为「未验证」——即使你在别的设备上验证过它们。完成检查后，受信任的设备之间才能互相认可。",
+    "no_cross_signing_action": "完成安全检查",
+    "no_cross_signing_mobile_desc": "未完成安全检查时，所有设备都会显示为「未验证」。请先设置安全密钥（恢复密钥），再到桌面端完成安全检查。",
+    "no_cross_signing_mobile_action": "设置安全密钥",
+    "trust_local_only_confirm": "此操作只在本机标记可信，不做任何身份验证，也不会让它获得交叉签名。若要真正验证，请点「验证」。",
     "no_devices": "暂无设备",
     "no_unverified_devices": "所有设备已验证",
     "no_blocked_devices": "暂无已屏蔽设备",
@@ -736,6 +743,13 @@ export type KeyPaths =
   | "encryption.device_trust.unverified"
   | "encryption.device_trust.blocked"
   | "encryption.device_trust.cross_signed"
+  | "encryption.device_trust.local_only"
+  | "encryption.device_trust.no_cross_signing_title"
+  | "encryption.device_trust.no_cross_signing_desc"
+  | "encryption.device_trust.no_cross_signing_action"
+  | "encryption.device_trust.no_cross_signing_mobile_desc"
+  | "encryption.device_trust.no_cross_signing_mobile_action"
+  | "encryption.device_trust.trust_local_only_confirm"
   | "encryption.device_trust.no_devices"
   | "encryption.device_trust.no_unverified_devices"
   | "encryption.device_trust.no_blocked_devices"

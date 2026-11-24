@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import { type Device, matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
@@ -12,7 +13,10 @@ export interface DeviceSessionInfo {
   displayName?: string | undefined
   lastSeenTs?: number | undefined
   lastSeenIp?: string | undefined
+  /** SDK `isVerified()`：交叉签名已验证**或**本机手动标记（仅用于展示） */
   isVerified: boolean
+  /** 交叉签名已验证：身份层面的强证据，展示「已验证」必须用它 */
+  crossSigningVerified: boolean
 }
 
 /** `GET /devices` 行有两种形状：REST 原始（snake_case）与测试/适配层（camelCase） */
@@ -35,7 +39,8 @@ function normalizeDevice(raw: DeviceSessionRecord): DeviceSessionInfo | null {
     displayName: raw.display_name ?? raw.displayName,
     lastSeenTs: raw.last_seen_ts ?? raw.lastSeenTs,
     lastSeenIp: raw.last_seen_ip ?? raw.lastSeenIp,
-    isVerified: false
+    isVerified: false,
+    crossSigningVerified: false
   }
 }
 
@@ -58,12 +63,22 @@ export function useDeviceSessions() {
     return deviceId === currentDeviceId.value
   }
 
-  async function resolveVerified(currentUserId: string, deviceId: string): Promise<boolean> {
-    if (!currentUserId) return false
+  /**
+   * 读本地 crypto store 的设备验证状态。
+   *
+   * 必须同时取 `crossSigningVerified`：`isVerified()` 会把「本机手动标记」也算作已验证，
+   * 直接拿它渲染「已验证」会让一个从未做过身份验证的设备被显示成可信。
+   */
+  async function resolveFlags(
+    currentUserId: string,
+    deviceId: string
+  ): Promise<{ isVerified: boolean; crossSigningVerified: boolean }> {
+    if (!currentUserId) return { isVerified: false, crossSigningVerified: false }
     try {
-      return await matrixVerificationService.isDeviceVerified(currentUserId, deviceId)
+      const status = await matrixCryptoService.getDeviceVerificationStatus(currentUserId, deviceId)
+      return { isVerified: status.verified, crossSigningVerified: status.crossSigningVerified }
     } catch {
-      return false
+      return { isVerified: false, crossSigningVerified: false }
     }
   }
 
@@ -84,7 +99,9 @@ export function useDeviceSessions() {
 
       await Promise.all(
         rows.map(async (row) => {
-          row.isVerified = await resolveVerified(userId.value, row.deviceId)
+          const flags = await resolveFlags(userId.value, row.deviceId)
+          row.isVerified = flags.isVerified
+          row.crossSigningVerified = flags.crossSigningVerified
         })
       )
 

@@ -11,6 +11,7 @@ const svc = vi.hoisted(() => ({
   getSasView: vi.fn(),
   waitForSasView: vi.fn(),
   confirmSas: vi.fn(),
+  waitForDeviceVerified: vi.fn(),
   mismatchSas: vi.fn(),
   cancelVerification: vi.fn(),
   getPendingVerifications: vi.fn(),
@@ -36,8 +37,10 @@ describe('useDeviceVerifyFlow SAS 生命周期', () => {
     vi.clearAllMocks()
     svc.acceptVerification.mockResolvedValue(undefined)
     svc.confirmSas.mockResolvedValue(undefined)
+    svc.waitForDeviceVerified.mockResolvedValue(true)
     svc.mismatchSas.mockResolvedValue(undefined)
     svc.cancelVerification.mockResolvedValue(undefined)
+    svc.getPendingVerifications.mockResolvedValue([])
   })
 
   it('接受验证请求后载入可展示的 SAS（emoji + decimal）', async () => {
@@ -81,14 +84,36 @@ describe('useDeviceVerifyFlow SAS 生命周期', () => {
     expect(flow.step.value).toBe('rejected')
   })
 
-  it('用户确认匹配时调用 confirmSas 并进入成功态', async () => {
+  it('用户确认匹配且设备确实已验证时进入成功态', async () => {
     svc.waitForSasView.mockResolvedValue({ emoji: [['🐶', 'Dog']], decimal: null })
+    svc.waitForDeviceVerified.mockResolvedValue(true)
 
-    const flow = useDeviceVerifyFlow()
+    const flow = useDeviceVerifyFlow({ userId: '@alice:example.org', deviceId: 'DEV_A' })
     await flow.acceptVerification('txn-1')
-    await flow.confirmSas(true)
+    const ok = await flow.confirmSas(true)
 
     expect(svc.confirmSas).toHaveBeenCalledWith('txn-1')
+    // 判据必须是 crypto store 的真实状态，而不是「confirm 没抛错」
+    expect(svc.waitForDeviceVerified).toHaveBeenCalledWith('@alice:example.org', 'DEV_A', expect.anything())
+    expect(ok).toBe(true)
     expect(flow.step.value).toBe('success')
+  })
+
+  /**
+   * P0-③ 回归：本端 confirm 只发送自己的 MAC，协议可能还没收尾。
+   * 对端尚未确认（或点了「不匹配」）时设备仍未 verified —— 此时必须显示「等待对方确认」，
+   * 绝不能给出「验证成功」这个假安全信号。
+   */
+  it('确认后设备仍未 verified 时进入等待态，不得宣称成功', async () => {
+    svc.waitForSasView.mockResolvedValue({ emoji: [['🐶', 'Dog']], decimal: null })
+    svc.waitForDeviceVerified.mockResolvedValue(false)
+
+    const flow = useDeviceVerifyFlow({ userId: '@alice:example.org', deviceId: 'DEV_A' })
+    await flow.acceptVerification('txn-1')
+    const ok = await flow.confirmSas(true)
+
+    expect(ok).toBe(false)
+    expect(flow.step.value).toBe('awaiting')
+    expect(flow.isFinished.value).toBe(true)
   })
 })

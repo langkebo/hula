@@ -29,7 +29,7 @@ describe('MatrixCryptoService', () => {
     }) as unknown as MatrixClient
 
   const mockDeviceKeysManager = (methodOverrides: Record<string, unknown> = {}) => ({
-    createRoomKeyRequest: vi.fn(() => Promise.resolve()),
+    sendToDevice: vi.fn(() => Promise.resolve()),
     ...methodOverrides
   })
 
@@ -163,30 +163,58 @@ describe('MatrixCryptoService', () => {
   })
 
   describe('createRoomKeyRequest', () => {
-    it('should create room key request', async () => {
+    /**
+     * P0-① 回归：必须是标准 `m.room_key_request`（to-device 广播），而不是自建的
+     * `POST /room_keys/request`。只有标准消息才会被其它设备的 rust-crypto 响应。
+     */
+    it('发送标准 m.room_key_request（to-device，广播给本账号所有设备）', async () => {
+      const manager = mockDeviceKeysManager()
       vi.mocked(matrixClientService.getClient).mockReturnValue(
         createClient({
+          getUserId: vi.fn(() => '@me:server'),
           getDeviceId: vi.fn(() => 'DEV1'),
-          getDeviceKeysManager: vi.fn(() => mockDeviceKeysManager())
+          getDeviceKeysManager: vi.fn(() => manager)
         })
       )
+
       await expect(
-        matrixCryptoService.createRoomKeyRequest('!room:server', 'session1', 'm.megolm.v1.aes-sha2', {})
+        matrixCryptoService.createRoomKeyRequest('!room:server', 'session1', 'm.megolm.v1.aes-sha2', 'SENDERKEY')
       ).resolves.toBeUndefined()
+
+      expect(manager.sendToDevice).toHaveBeenCalledTimes(1)
+      const call = manager.sendToDevice.mock.calls[0] as unknown as [string, string, unknown]
+      expect(call[0]).toBe('m.room_key_request')
+      // 广播给本账号所有设备（'*'），同一 session 复用同一 request_id 以便去重
+      expect(call[2]).toEqual({
+        '@me:server': {
+          '*': {
+            action: 'request',
+            requesting_device_id: 'DEV1',
+            request_id: 'mkr_session1',
+            body: {
+              algorithm: 'm.megolm.v1.aes-sha2',
+              room_id: '!room:server',
+              session_id: 'session1',
+              sender_key: 'SENDERKEY'
+            }
+          }
+        }
+      })
     })
 
     it('should throw on error', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(
         createClient({
+          getUserId: vi.fn(() => '@me:server'),
           getDeviceId: vi.fn(() => 'DEV1'),
           getDeviceKeysManager: vi.fn(() =>
             mockDeviceKeysManager({
-              createRoomKeyRequest: vi.fn(() => Promise.reject(new Error('fail')))
+              sendToDevice: vi.fn(() => Promise.reject(new Error('fail')))
             })
           )
         })
       )
-      await expect(matrixCryptoService.createRoomKeyRequest('!room:server', 's1', 'algo', {})).rejects.toThrow('fail')
+      await expect(matrixCryptoService.createRoomKeyRequest('!room:server', 's1', 'algo')).rejects.toThrow('fail')
     })
   })
 })

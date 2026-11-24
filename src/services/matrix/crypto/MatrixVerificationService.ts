@@ -495,6 +495,43 @@ export class VerificationService extends BaseMatrixService {
     }
     return this.isDeviceVerified(userId, deviceId)
   }
+
+  /**
+   * 等待设备真正进入「已验证」状态。
+   *
+   * `confirmSas()` 只发送本端的 MAC，`Verifier.verify()` 也只等待双方 MAC 交换；
+   * 二者都**不代表设备已可信**——对端可能看到不同的 emoji 并点「不匹配」，
+   * 也可能根本没确认。唯一可信的判据是 crypto store 里该设备的 `isVerified()`。
+   *
+   * 因此「验证成功」必须以本方法返回 `true` 为准，而不是「confirm 调用没抛错」。
+   *
+   * @param userId 目标用户
+   * @param deviceId 目标设备
+   * @param options.timeoutMs 最长等待（默认 60s，需覆盖对端人工点击确认的时间）
+   * @param options.intervalMs 轮询间隔（默认 1s）
+   * @param options.shouldAbort 返回 true 时立即放弃（用户关闭对话框/切换事务）
+   * @returns `true` = 设备确实已验证；`false` = 超时、中止或查询失败
+   */
+  async waitForDeviceVerified(
+    userId: string,
+    deviceId: string,
+    options: { timeoutMs?: number; intervalMs?: number; shouldAbort?: () => boolean } = {}
+  ): Promise<boolean> {
+    if (!userId || !deviceId) return false
+
+    const timeoutMs = options.timeoutMs ?? 60_000
+    const intervalMs = options.intervalMs ?? 1_000
+    const deadline = Date.now() + timeoutMs
+
+    while (Date.now() < deadline) {
+      if (options.shouldAbort?.()) return false
+      if (await this.isDeviceVerified(userId, deviceId)) return true
+      await new Promise((resolve) => setTimeout(resolve, intervalMs))
+    }
+
+    // 超时瞬间可能刚好完成验证，再确认一次，避免把「刚成功」误报为「未验证」
+    return this.isDeviceVerified(userId, deviceId)
+  }
 }
 
 export const matrixVerificationService = new VerificationService()
