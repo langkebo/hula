@@ -424,11 +424,12 @@
        1. primary-500 / brand 不能当文字（白底 3.60），文字一律 primary-600（5.26）。
        2. 语义色 *-500 只做填充，*-700 才做文字（700 档已存在，不新增）。
        3. 不新增 --tjg-focus-ring：base.scss:11–15 已有全局 :focus-visible。
-       4. 控件边界不能用 --tjg-border-default（白底仅 1.28:1，只能做装饰线）。
-          待接入控件时再加专用令牌：白底用 #8b9491（3.11:1）、暗色用 #6b7572（3.68:1）。
-          上次一次性加了 10 个令牌（border-control + 8 个度量 + chat-bg-image），
-          全部零引用，被 check-token-usage 判为新增零引用而红 —— 已删除，
-          等真正有消费方时再逐个加。 */
+       4. 不新增 --tjg-focus-ring：base.scss:11–15 已有全局 :focus-visible。 */
+
+  /* 表单控件边界：白底 3.11:1，满足 WCAG 1.4.11。
+     既有 --tjg-border-default #e3e3e3 白底仅 1.28:1，只能做装饰线，不可承担控件边界。
+     消费方：NaiveProvider.vue 的 Input border/borderHover（2026-11 接入）。 */
+  --tjg-border-control: #8b9491;
 }
 
 /* 暗色主题 */
@@ -500,6 +501,8 @@ html[data-theme='dark'] {
   --tjg-border-muted: #262626;
   --tjg-border-strong: #434343;
   --tjg-border-contrast: rgba(255, 255, 255, 0.06);
+  /* 表单控件边界（暗色）：暗面板上 3.68:1。消费方同浅色（NaiveProvider Input）。 */
+  --tjg-border-control: #6b7572;
   --tjg-border-inverse-muted: rgba(255, 255, 255, 0.6);
   --tjg-border-layout-divider: #000000;
 

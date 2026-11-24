@@ -145,10 +145,17 @@ const createThemeOverrides = (theme: ThemeName): GlobalThemeOverrides => {
     },
     Input: {
       borderRadius: '10px',
-      borderHover: '0',
+      // 控件边界必须与"装饰分隔线"分开：--tjg-border-default 白底只有 1.28:1，
+      // 只能做装饰线；承担 input 边界的是 --tjg-border-control（浅 3.11 / 深 3.68），
+      // 满足 WCAG 1.4.11 的 3:1。hover 沿用同一色，避免原 `borderHover: '0'`
+      // 造成的"鼠标移上去边框消失"。
+      border: '1px solid var(--tjg-border-control)',
+      borderHover: '1px solid var(--tjg-border-control)',
       borderDisabled: '0',
-      borderFocus: '0',
-      boxShadowFocus: '0'
+      // 聚焦态改用品牌深档（primary-600，白底 5.26:1）而不是直接压掉边框，
+      // 键盘与鼠标用户都能看到焦点落在哪个控件上。
+      borderFocus: '1px solid var(--tjg-color-primary-600)',
+      boxShadowFocus: '0 0 0 2px color-mix(in srgb, var(--tjg-color-primary-500) 24%, transparent)'
     },
     Checkbox: {
       colorChecked: c.primary500,
