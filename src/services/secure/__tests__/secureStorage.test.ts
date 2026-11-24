@@ -195,6 +195,26 @@ describe('secureStorage 后端上报', () => {
 
       expect(invokeMock).toHaveBeenCalledTimes(1)
     })
+
+    it('降级告警进程内去重：缓存过期重探测时同一后端只 warn 一次', async () => {
+      stubTauriRuntime()
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+      invokeMock.mockResolvedValue({
+        available: true,
+        backend: ENCRYPTED_FILE_FALLBACK_BACKEND,
+        nativeAvailable: false,
+        degraded: true
+      })
+
+      await getSecureStorageBackendInfo()
+      // 越过 60s TTL，触发第二次真实探测
+      nowSpy.mockReturnValue(1_000_000 + 61_000)
+      await getSecureStorageBackendInfo()
+
+      expect(invokeMock).toHaveBeenCalledTimes(2)
+      expect(warnMessages().filter((message) => message.includes('降级'))).toHaveLength(1)
+      nowSpy.mockRestore()
+    })
   })
 
   describe('读写咽喉的可用性判据与后端一致性', () => {

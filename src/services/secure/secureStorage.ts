@@ -46,6 +46,12 @@ let backendInfoPromise: Promise<SecureStorageBackendInfo> | null = null
 let availabilityCheckedAt = 0
 /** keychain 可用性缓存有效期：60s。超时后重新检测，应对 macOS keychain 首次授权弹窗场景。 */
 const AVAILABILITY_CACHE_TTL_MS = 60_000
+/**
+ * 进程内已告警过的降级后端。
+ * 可用性每 60s 重探测一次，若不去重，同一降级会每轮刷一条 warn（开发态未签名构建尤其明显）。
+ * 只在后端标识变化时再报一次；登出/测试走 {@link resetSecureStorageBackendCache} 同步清零。
+ */
+let warnedDegradedBackend: string | null = null
 
 /**
  * 把 IPC 响应映射为后端事实。
@@ -87,9 +93,13 @@ async function resolveSecureStorageBackend(): Promise<SecureStorageBackendInfo> 
     if (info.degraded) {
       // 一次性、显式地把降级摆到日志顶层：secret 实际只受本机 master-key 加密保护，
       // 与「已存入操作系统密钥库」不是同一安全等级。
-      logger.warn(
-        `[SecureStorage] 降级：系统密钥库不可用，secret 仅由本机 master-key 加密的文件保护（backend=${info.backend ?? 'unknown'}）`
-      )
+      const degradedBackend = info.backend ?? 'unknown'
+      if (warnedDegradedBackend !== degradedBackend) {
+        logger.warn(
+          `[SecureStorage] 降级：系统密钥库不可用，secret 仅由本机 master-key 加密的文件保护（backend=${degradedBackend}）`
+        )
+        warnedDegradedBackend = degradedBackend
+      }
     } else {
       logger.info(`[SecureStorage] 生效后端：${describeSecureStorageBackend(info)}`)
     }
@@ -123,10 +133,11 @@ async function isSecureStorageAvailable(): Promise<boolean> {
   return (await getSecureStorageBackendInfo()).available
 }
 
-/** 清空可用性缓存（登出/测试用：下一次调用会重新探测） */
+/** 清空可用性缓存（登出/测试用：下一次调用会重新探测，降级告警也重新计一次） */
 export function resetSecureStorageBackendCache(): void {
   backendInfoPromise = null
   availabilityCheckedAt = 0
+  warnedDegradedBackend = null
 }
 
 export async function getSecureSecret(key: string): Promise<string | null> {
