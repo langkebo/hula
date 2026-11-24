@@ -216,7 +216,7 @@
                         <svg
                           class="pl-6px size-10px cursor-pointer hover:color-[--tjg-text-tertiary] hover:transition-colors"
                           @click="handleCopyTranslation(messageBody.translatedText.text)"
-                          aria-hidden="true">
+                          v-clickable="t('message_container.copy_translation')">
                           <use href="#copy"></use>
                         </svg>
                       </template>

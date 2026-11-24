@@ -166,7 +166,7 @@
             v-if="item.type === 'icon'"
             :class="{ active: activeIndex === item.id }"
             @click="handleTabChange(item.id)"
-            aria-hidden="true">
+            v-clickable="item.name">
             <use :href="item.icon"></use>
           </svg>
 
@@ -175,6 +175,7 @@
             v-else
             :class="{ active: activeIndex === item.id }"
             @click="selectSeries(item.id - 1)"
+            v-clickable="item.name"
             class="series-icon">
             <img :title="item.name" :src="item.cover" :alt="item.name" class="w-full h-full object-contain" />
           </div>
