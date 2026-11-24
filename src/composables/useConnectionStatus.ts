@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { isLoginWindow } from '@/utils/windowLabels'
 
 export type ConnectionState = 'online' | 'offline' | 'connecting' | 'reconnecting' | 'syncing' | 'error' | 'idle'
 
@@ -8,6 +9,11 @@ export function useConnectionStatus() {
   const retryCount = ref(0)
 
   const state = computed<ConnectionState>(() => {
+    // 登录类窗口（login/register/forgetPassword）不拥有 client，用户在里面的目的是
+    // 建立会话而不是消费会话。任何连接提示对它们都是误报 —— 横幅会写成"连接失败"，
+    // 而真实情况是"这个窗口本来就不连"。
+    if (isLoginWindow()) return 'idle'
+
     const cs = matrixStore.connectionState
     switch (cs) {
       case 'CONNECTED':
@@ -29,9 +35,14 @@ export function useConnectionStatus() {
       case 'DISCONNECTED':
         // 未初始化/未登录时，不应显示为"网络已断开"
         if (!matrixStore.isInitialized) {
-          // 已登录（有持久化会话）却无 client：整页重载/进程重建后恢复失败。
-          // 必须显式提示断线，否则用户只看到旧缓存且无任何线索（D12）。
-          return matrixStore.isLoggedIn ? 'error' : 'idle'
+          // D12：整页重载 / 进程重建后，主窗口有持久化会话却没有 client，必须显式提示断线，
+          // 否则用户只看到旧缓存且无任何线索。
+          //
+          // 但"该不该有 client"必须由**窗口自己声明**（`shouldOwnClient`），不能用
+          // 持久化的 `isLoggedIn` 反推：登录窗口会恢复上次登录的 userId，
+          // 于是 isLoggedIn 为 true 而 client 本来就不该存在，反推会得出
+          // "登录页连接失败"这种与事实相反的结论。
+          return matrixStore.shouldOwnClient && matrixStore.isLoggedIn ? 'error' : 'idle'
         }
         return 'offline'
       default:
@@ -40,6 +51,10 @@ export function useConnectionStatus() {
   })
 
   const retry = async () => {
+    // 登录窗口里点"重试"会用残留凭证去恢复一个完整会话 —— 用户以为自己在登录页，
+    // 背后却建起了已登录的 client。这里直接拒绝。
+    if (isLoginWindow()) return
+
     retryCount.value++
     try {
       if (!matrixStore.isInitialized) {

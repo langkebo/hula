@@ -64,3 +64,29 @@ export function isNonMatrixWindow(): boolean {
     return false
   }
 }
+
+/**
+ * 登录类窗口的 label（登录 / 注册 / 找回密码）。
+ *
+ * 这些窗口**不拥有 Matrix client**：用户在里面的目的是建立会话，而不是消费会话。
+ * 因此任何"连接状态"提示对它们都是误报 —— 尤其 `useConnectionStatus` 的
+ * `DISCONNECTED + isLoggedIn → error` 分支：`isLoggedIn` 来自**持久化的 userId**，
+ * 在登录窗口里它只是上一次登录的残留，用它会得出"登录页连接失败"这种自相矛盾的结论。
+ *
+ * 注意：这些窗口仍在 `MATRIX_WINDOW_LABELS` 里（它们确实会跑 App.vue 的运行时初始化），
+ * 本常量只用于"该不该显示连接提示 / 该不该恢复会话"这类判断，不要据此移除初始化。
+ */
+export const LOGIN_WINDOW_LABELS = new Set(['login', 'register', 'forgetPassword'])
+
+/**
+ * 当前窗口是否属于登录类窗口。
+ * 非 Tauri 运行时（浏览器/测试）返回 false，保持默认行为。
+ */
+export function isLoginWindow(): boolean {
+  if (!hasTauriRuntime()) return false
+  try {
+    return LOGIN_WINDOW_LABELS.has(WebviewWindow.getCurrent().label)
+  } catch {
+    return false
+  }
+}

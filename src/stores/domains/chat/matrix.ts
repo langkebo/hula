@@ -82,6 +82,24 @@ export const useMatrixStore = defineStore(
     const homeserverUrl = ref<string | null>(null)
     const lastError = ref<string | null>(null)
     const isInitialized = ref(false)
+
+    /**
+     * 本窗口是否声明「我要拥有一个 Matrix client」。
+     *
+     * 为什么不复用 `isLoggedIn`：`userId` 是**持久化**的（见文件末尾 `persist.pick`），
+     * 登录窗口会从 localStorage 恢复上一次登录的 userId，于是 `isLoggedIn === true`
+     * 但该窗口里根本没有、也不该有 client —— 若据此推断"会话恢复失败"，
+     * 登录页就会显示"连接失败，请重试"，与事实完全相反（且服务端是通的）。
+     *
+     * 本标记**不持久化**、默认 false，由窗口层在确认要跑客户端运行时显式声明
+     * （App.vue 的 `initMatrixRuntimeAfterFirstPaint`）。登录类窗口不声明。
+     */
+    const shouldOwnClient = ref(false)
+
+    /** 由窗口层在确认本窗口应当运行 Matrix 客户端后调用；登录类窗口不要调。 */
+    function claimClientOwnership(): void {
+      shouldOwnClient.value = true
+    }
     const syncState = ref<string | null>(null)
     /** 当前会话是否为访客账号（升级为正式账号后置 false） */
     const isGuest = ref(false)
@@ -400,6 +418,8 @@ export const useMatrixStore = defineStore(
       homeserverUrl,
       lastError,
       isInitialized,
+      shouldOwnClient,
+      claimClientOwnership,
       syncState,
       isGuest,
       isLoggedIn,
