@@ -418,29 +418,17 @@
   /* 消息激活色 */
   --msg-active-color: var(--tjg-brand);
 
-  /* ==================== 2026-11 可达性补丁（新增，不复用同义名） ====================
+  /* ==================== 2026-11 可达性条规（不含新令牌） ====================
      本文件已有 505 处 --tjg- 引用；新增前先 grep，重复语义比缺 token 更贵。
      规矩：
        1. primary-500 / brand 不能当文字（白底 3.60），文字一律 primary-600（5.26）。
-       2. 控件边界只用 --tjg-border-control，且只配白底。
-       3. 语义色 *-500 只做填充，*-700 才做文字（700 档已存在，不新增）。
-       4. 不新增 --tjg-focus-ring：base.scss:11–15 已有全局 :focus-visible。 */
-
-  /* 表单控件边界：白底 3.11:1，满足 WCAG 1.4.11（既有 border-default #e3e3e3 仅 1.28，
-     只能做装饰线，不可承担控件边界）。仅用于 input/textarea/select/segmented/checkbox。 */
-  --tjg-border-control: #8b9491;
-
-  /* 度量：只补实测缺失的档位，不与既有 --tjg-space-* / --tjg-radius-* 重名 */
-  --tjg-control-h-sm: 28px; /* segmented / 搜索框 / 图标按钮 */
-  --tjg-control-h-md: 32px; /* 按钮 / 输入框 */
-  --tjg-control-h-lg: 40px;
-  --tjg-row-list: 64px; /* 列表行高：40 avatar + 12×2 padding 闭环 */
-  --tjg-row-toolbar: 44px; /* 输入区工具栏行高 */
-  --tjg-list-pad: var(--tjg-space-3); /* 列表项与头部统一 12px 内边距 */
-  --tjg-row-inset: -8px; /* hover/选中底向外扩，视觉留白仍按 list-pad */
-  --tjg-composer-h: 36px; /* 聊天输入框高度 */
-  /* 聊天区背景：删除历史遗留渐变（与白 header 无边界、暗色不可适配） */
-  --tjg-chat-bg-image: none;
+       2. 语义色 *-500 只做填充，*-700 才做文字（700 档已存在，不新增）。
+       3. 不新增 --tjg-focus-ring：base.scss:11–15 已有全局 :focus-visible。
+       4. 控件边界不能用 --tjg-border-default（白底仅 1.28:1，只能做装饰线）。
+          待接入控件时再加专用令牌：白底用 #8b9491（3.11:1）、暗色用 #6b7572（3.68:1）。
+          上次一次性加了 10 个令牌（border-control + 8 个度量 + chat-bg-image），
+          全部零引用，被 check-token-usage 判为新增零引用而红 —— 已删除，
+          等真正有消费方时再逐个加。 */
 }
 
 /* 暗色主题 */
@@ -512,8 +500,6 @@ html[data-theme='dark'] {
   --tjg-border-muted: #262626;
   --tjg-border-strong: #434343;
   --tjg-border-contrast: rgba(255, 255, 255, 0.06);
-  /* 表单控件边界（暗色）：3.68:1 on 暗面板，仅用于 input/select/checkbox */
-  --tjg-border-control: #6b7572;
   --tjg-border-inverse-muted: rgba(255, 255, 255, 0.6);
   --tjg-border-layout-divider: #000000;
 
