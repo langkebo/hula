@@ -96,6 +96,24 @@ describe('InvitePolicyEnforcer', () => {
     expect(state.handlers.some((h) => h.event === 'Room.member')).toBe(true)
   })
 
+  it('returns false when the client is not ready so the caller can retry', () => {
+    getClientMock.mockReturnValueOnce(null)
+    const e = enforcer()
+    expect(e.start()).toBe(false)
+    expect(state.handlers).toHaveLength(0)
+
+    // 失败的实例没有被锁定：客户端就绪后再次 start 能正常订阅
+    expect(e.start()).toBe(true)
+    expect(state.handlers.some((h) => h.event === 'Room.member')).toBe(true)
+  })
+
+  it('reports true on repeated start without subscribing twice', () => {
+    const e = enforcer()
+    expect(e.start()).toBe(true)
+    expect(e.start()).toBe(true)
+    expect(state.handlers.filter((h) => h.event === 'Room.member')).toHaveLength(1)
+  })
+
   it('declines an invite that matches the policy', async () => {
     const e = enforcer({ policy: policy({ mode: 'blocklist', blocklist: ['@spam:evil.org'] }) })
     e.start()

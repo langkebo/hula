@@ -108,6 +108,8 @@ const tauriRuntimeAvailable = hasTauriRuntime()
 const showMemoryMonitor = ref(true)
 const appWindow = tauriRuntimeAvailable ? WebviewWindow.getCurrent() : null
 const isHomeDesktopWindow = computed(() => isDesktop() && appWindow?.label === 'home')
+// 非 Matrix 窗口（截图/托盘/通知/更新）跳过 Matrix 运行时初始化
+const skipMatrixInit = isNonMatrixWindow()
 
 // ========== Bootstrap ==========
 const {
@@ -264,6 +266,18 @@ const invitePolicyEnforcement = useInvitePolicyEnforcement({
       })
   }
 })
+
+// 冷启动/重连窗口里客户端可能还没就绪，start() 此时失败且不再缓存半启动实例；
+// 连接状态每次推进都重试一次，start() 幂等，成功后再触发是空操作。
+watch(
+  () => matrixStore.connectionState,
+  (state) => {
+    if (skipMatrixInit || state === 'DISCONNECTED' || state === 'CONNECTING' || state === 'ERROR') {
+      return
+    }
+    invitePolicyEnforcement.start()
+  }
+)
 
 // ========== WS event handler（含 Presence 单一管线） ==========
 const wsEventHandler = useWsEventHandler()
@@ -484,9 +498,6 @@ onMounted(async () => {
     logger.error('Bootstrap failed, skipping init-dependent steps:', err)
     return
   }
-  // 非 Matrix 窗口（截图/托盘/通知/更新）跳过 Matrix 运行时初始化：
-  // 离线消息队列、WebSocket 事件处理、在线状态轮询均无意义且会重复注册监听。
-  const skipMatrixInit = isNonMatrixWindow()
   initPlatformStyles()
   syncMacTrayMenuLabels(t)
   installSecurityListeners()
@@ -500,6 +511,8 @@ onMounted(async () => {
   applyBubbleStyle(loadBubbleStyle())
   // 媒体上传偏好（压缩/质量/分块）同步到服务层，设置页修改后也会即时重放
   applyMediaUploadPreferences()
+  // 非 Matrix 窗口（截图/托盘/通知/更新）跳过 Matrix 运行时初始化：
+  // 离线消息队列、WebSocket 事件处理、在线状态轮询均无意义且会重复注册监听。
   if (!skipMatrixInit) {
     // P-03：Matrix 运行时初始化延后到首帧之后；本机密钥库未加密提示同属非首屏必需
     runAfterFirstPaint(async () => {

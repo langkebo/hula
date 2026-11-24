@@ -81,16 +81,22 @@ export class InvitePolicyEnforcer {
 
   constructor(private readonly options: InvitePolicyEnforcerOptions) {}
 
-  /** 订阅 `Room.member` 事件；重复调用是幂等的，客户端未初始化时只记警告。 */
-  start(): void {
+  /**
+   * 订阅 `Room.member` 事件。
+   *
+   * 返回是否真正启动：客户端未初始化时返回 false，调用方据此丢弃实例并在
+   * 连接建立后重试——把这个"半启动"实例缓存下来会让整场会话都不再重试。
+   * 已启动时重复调用返回 true 且不重复订阅。
+   */
+  start(): boolean {
     if (this.handler) {
-      return
+      return true
     }
 
     const client = matrixClientService.getClient()
     if (!client) {
       logger.warn('无法启动邀请策略强制：客户端未初始化')
-      return
+      return false
     }
 
     this.client = client as EventTarget
@@ -99,6 +105,7 @@ export class InvitePolicyEnforcer {
     }
     this.client.on(ROOM_MEMBER_EVENT, this.handler)
     logger.info('邀请策略强制已启动')
+    return true
   }
 
   /** 退订事件并清空监听引用；未启动时调用是安全的空操作。 */

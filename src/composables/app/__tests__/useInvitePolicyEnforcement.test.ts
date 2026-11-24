@@ -23,7 +23,7 @@ interface Harness {
 
 function harness() {
   const enforcer: Harness = {
-    start: vi.fn(),
+    start: vi.fn(() => true),
     stop: vi.fn(),
     undo: vi.fn(async () => true),
     canUndo: vi.fn(() => true)
@@ -81,6 +81,25 @@ describe('useInvitePolicyEnforcement', () => {
     api.start()
     api.start()
     expect(enforcer.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not cache a failed start so a later attempt can retry', () => {
+    // 客户端未就绪时 start() 返回 false：旧实现会把半启动实例缓存下来，
+    // 整场会话都不再重试，邀请策略永久失效。
+    const { deps, enforcer } = harness()
+    enforcer.start.mockReturnValueOnce(false)
+    const api = useInvitePolicyEnforcement(deps)
+    api.start()
+    expect(deps.createEnforcer).toHaveBeenCalledTimes(1)
+    expect(enforcer.start).toHaveBeenCalledTimes(1)
+
+    api.start()
+    expect(deps.createEnforcer).toHaveBeenCalledTimes(2)
+    expect(enforcer.start).toHaveBeenCalledTimes(2)
+
+    // 成功后才缓存，之后再次调用保持幂等
+    api.start()
+    expect(deps.createEnforcer).toHaveBeenCalledTimes(2)
   })
 
   it('stops the enforcer on stop', () => {

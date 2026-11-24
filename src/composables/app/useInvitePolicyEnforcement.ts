@@ -52,12 +52,16 @@ export function useInvitePolicyEnforcement(deps: InvitePolicyEnforcementDeps) {
     if (enforcer) {
       return
     }
-    enforcer = deps.createEnforcer({
+    const created = deps.createEnforcer({
       getCurrentUserId: deps.getCurrentUserId,
       getPolicy: deps.getPolicy,
       onDeclined: deps.onDeclined ?? (() => {})
     })
-    enforcer.start()
+    // 客户端未就绪时 start() 失败：不能缓存半启动实例，否则整场会话都不会再重试
+    if (!created.start()) {
+      return
+    }
+    enforcer = created
   }
 
   function stop(): void {
