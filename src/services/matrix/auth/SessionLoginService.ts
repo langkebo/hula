@@ -9,6 +9,7 @@ import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { toLocalpart } from '@/utils/userIdentity'
+import { isAuthRejectionError } from './authErrors'
 import type {
   MatrixGuestLoginOptions,
   MatrixGuestUpgradeOptions,
@@ -110,7 +111,12 @@ export class SessionLoginService {
         accessToken
       }
     } catch (err) {
-      logger.error(`密码登录失败: ${err}`)
+      // 401/403 是预期的业务结果（密码错误 / 无权限），降级为 warn，避免正常失败刷 ERROR。
+      if (isAuthRejectionError(err)) {
+        logger.warn(`密码登录被拒绝（凭据无效或无权访问）: ${err}`)
+      } else {
+        logger.error(`密码登录失败: ${err}`)
+      }
       // 清理已启动的 client：若 matrix.login() 成功但 bootstrapPostLoginState 失败，
       // client 仍在运行 sync，资源泄漏 + 重试时可能产生重复登录/设备。
       // stopClient 是幂等的，可安全调用。

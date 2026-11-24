@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { formatMatrixErrorDetail, getMatrixErrorHint, normalizeSdkMatrixError } from '../authErrors'
+import {
+  formatMatrixErrorDetail,
+  getMatrixErrorHint,
+  isAuthRejectionError,
+  normalizeSdkMatrixError
+} from '../authErrors'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -9,6 +14,32 @@ vi.mock('@/utils/Logger', () => ({
     debug: vi.fn()
   })
 }))
+
+describe('isAuthRejectionError', () => {
+  it('识别 401/403 HTTP 状态', () => {
+    expect(isAuthRejectionError(Object.assign(new Error('x'), { httpStatus: 403 }))).toBe(true)
+    expect(isAuthRejectionError(Object.assign(new Error('x'), { httpStatus: 401 }))).toBe(true)
+  })
+
+  it('识别 M_FORBIDDEN 与令牌类 errcode', () => {
+    expect(isAuthRejectionError({ errcode: 'M_FORBIDDEN' })).toBe(true)
+    expect(isAuthRejectionError({ errcode: 'M_UNKNOWN_TOKEN' })).toBe(true)
+    expect(isAuthRejectionError({ errcode: 'M_MISSING_TOKEN' })).toBe(true)
+  })
+
+  it('识别原始响应文本与已格式化消息', () => {
+    expect(isAuthRejectionError('{"errcode":"M_FORBIDDEN","error":"Invalid credentials"}')).toBe(true)
+    expect(isAuthRejectionError(new Error('SDK 密码登录失败 (status=403, errcode=M_FORBIDDEN)'))).toBe(true)
+    expect(isAuthRejectionError(new Error('登录失败 [M_FORBIDDEN] (403)'))).toBe(true)
+  })
+
+  it('非认证类错误不误判', () => {
+    expect(isAuthRejectionError(null)).toBe(false)
+    expect(isAuthRejectionError('network timeout')).toBe(false)
+    expect(isAuthRejectionError(Object.assign(new Error('x'), { httpStatus: 500 }))).toBe(false)
+    expect(isAuthRejectionError({ errcode: 'M_LIMIT_EXCEEDED' })).toBe(false)
+  })
+})
 
 describe('getMatrixErrorHint', () => {
   it('returns Chinese hint for known errcodes', () => {

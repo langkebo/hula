@@ -83,6 +83,35 @@ export function formatMatrixErrorDetail(text: string): string {
 }
 
 /**
+ * 判断错误是否为「认证被拒绝」——服务端以 401/403（通常是 `M_FORBIDDEN`）明确拒绝凭证。
+ *
+ * 这是**预期的业务结果**（例如密码错误 / 无权限），不是程序缺陷：登录链路应据此把
+ * 日志从 `error` 降为 `warn`，避免正常失败被刷成 ERROR；诊断信息保持完整。
+ *
+ * 兼容三种形态：带 `errcode`/`httpStatus` 的 SDK 错误、原始响应文本（JSON 字符串）、
+ * 以及已格式化的错误消息（如 `... (403): ...`）。
+ */
+export function isAuthRejectionError(error: unknown): boolean {
+  if (error == null) return false
+
+  if (typeof error === 'object') {
+    const candidate = error as { errcode?: unknown; httpStatus?: unknown }
+    if (candidate.httpStatus === 401 || candidate.httpStatus === 403) return true
+    if (
+      candidate.errcode === 'M_FORBIDDEN' ||
+      candidate.errcode === 'M_UNKNOWN_TOKEN' ||
+      candidate.errcode === 'M_MISSING_TOKEN'
+    ) {
+      return true
+    }
+  }
+
+  const text = typeof error === 'string' ? error : error instanceof Error ? error.message : ''
+  if (!text) return false
+  return /\bM_FORBIDDEN\b|\bM_UNKNOWN_TOKEN\b|\bM_MISSING_TOKEN\b|\bstatus=40[13]\b|\((?:401|403)\)/.test(text)
+}
+
+/**
  * 将 SDK/HTTP 抛出的任意错误归一化为带 failureLabel 前缀的 Error。
  * 提取 Matrix 错误的 errcode/error/httpStatus 字段并翻译为可读描述。
  */

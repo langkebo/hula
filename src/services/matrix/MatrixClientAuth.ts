@@ -21,6 +21,7 @@ import { clearCryptoStorageKeyCache, deleteCryptoStorageKey } from '@/services/s
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
+import { isAuthRejectionError } from './auth/authErrors'
 import { generateDeviceId, getPersistedDeviceId, persistDeviceId } from './deviceIdPersistence'
 import { loginByHttpFallback, tokenLoginByHttpFallback } from './MatrixClientAuthHttp'
 import type { MatrixClientLifecycle } from './MatrixClientLifecycle'
@@ -150,7 +151,12 @@ export class MatrixClientAuth {
     } catch (err) {
       connectionManager.updateConnectionState('ERROR')
       const errorMessage = err instanceof Error ? err.message : '登录失败'
-      logger.error(`登录失败: ${errorMessage}`)
+      // 401/403 是预期的业务结果（密码错误 / 无权限），降级为 warn，避免正常失败刷 ERROR。
+      if (isAuthRejectionError(err)) {
+        logger.warn(`登录被拒绝（凭据无效或无权访问）: ${errorMessage}`)
+      } else {
+        logger.error(`登录失败: ${errorMessage}`)
+      }
       return {
         success: false,
         error: errorMessage

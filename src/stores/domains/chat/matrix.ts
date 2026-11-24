@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
 import { TauriCommand } from '@/enums/tauri'
+import { isAuthRejectionError } from '@/services/matrix/auth/authErrors'
 import { clearSenderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import {
@@ -227,13 +228,22 @@ export const useMatrixStore = defineStore(
         } else {
           connectionState.value = 'ERROR'
           lastError.value = result.error ?? '登录失败'
-          logger.error('登录失败:', result.error)
+          // 401/403 是预期的业务结果（密码错误 / 无权限），降级为 warn，避免正常失败刷 ERROR。
+          if (isAuthRejectionError(result.error)) {
+            logger.warn('登录被拒绝（凭据无效或无权访问）:', result.error)
+          } else {
+            logger.error('登录失败:', result.error)
+          }
           return { success: false }
         }
       } catch (error) {
         connectionState.value = 'ERROR'
         lastError.value = error instanceof Error ? error.message : '登录失败'
-        logger.error('登录异常:', error)
+        if (isAuthRejectionError(error)) {
+          logger.warn('登录被拒绝（凭据无效或无权访问）:', error)
+        } else {
+          logger.error('登录异常:', error)
+        }
         return { success: false }
       }
     }
