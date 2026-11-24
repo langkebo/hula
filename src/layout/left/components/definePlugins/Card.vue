@@ -118,7 +118,7 @@
                   <svg
                     @click.stop="isCurrently = index"
                     class="absolute color-[--tjg-text-secondary] right-0 top-0 size-18px rotate-90"
-                    aria-hidden="true">
+                    v-clickable="plugin.title ? `${t('home.action.more')} ${plugin.title}` : t('home.action.more')">
                     <use href="#more"></use>
                   </svg>
                 </template>

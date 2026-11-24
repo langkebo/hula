@@ -67,7 +67,7 @@
                           <svg
                             class="size-12px hover:color-[--tjg-text-tertiary] hover:transition-colors cursor-pointer"
                             @click="handleCopy(item.account)"
-                            aria-hidden="true">
+                            v-clickable="t('home.profile_card.tooltip.copy_account')">
                             <use href="#copy"></use>
                           </svg>
                         </div>

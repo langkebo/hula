@@ -22,8 +22,8 @@
           <svg
             @click="handleVoiceClick"
             :class="isVoicePanelActive ? 'text-[--tjg-color-primary-500]' : ''"
-            class="w-25px h-25px mt-2px outline-none"
-            aria-hidden="true">
+            class="w-25px h-25px mt-2px"
+            v-clickable="t('editor.voice')">
             <use href="#voice"></use>
           </svg>
         </div>

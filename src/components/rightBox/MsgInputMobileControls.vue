@@ -4,8 +4,8 @@
     <div class="w-full flex-center h-full">
       <svg
         @click="$emit('handleEmojiClick')"
-        class="w-25px h-25px mt-2px outline-none iconpark-icon"
-        aria-hidden="true">
+        class="w-25px h-25px mt-2px iconpark-icon"
+        v-clickable="t('chat.footer.emoji')">
         <use :href="mobilePanelState === MobilePanelStateEnum.EMOJI ? '#face' : '#smiling-face'"></use>
       </svg>
     </div>
@@ -24,8 +24,8 @@
       <svg
         @click="$emit('handleMoreClick')"
         :class="mobilePanelState === MobilePanelStateEnum.MORE ? 'rotate-45' : 'rotate-0'"
-        class="w-25px h-25px mt-2px outline-none iconpark-icon transition-transform duration-300 ease"
-        aria-hidden="true">
+        class="w-25px h-25px mt-2px iconpark-icon transition-transform duration-300 ease"
+        v-clickable="t('home.action.more')">
         <use href="#add-one"></use>
       </svg>
     </div>

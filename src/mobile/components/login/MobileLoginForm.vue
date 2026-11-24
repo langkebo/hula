@@ -85,7 +85,10 @@
                 :alt="t('mobile_contact.avatar.user')"
                 class="size-28px bg-[--tjg-text-disabled] rounded-50% object-cover" />
               <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
-              <svg @click.stop="emit('delete-account', item)" class="w-12px h-12px" aria-hidden="true">
+              <svg
+                @click.stop="emit('delete-account', item)"
+                class="w-12px h-12px"
+                v-clickable="t('login.button.remove_account')">
                 <use href="#close"></use>
               </svg>
             </div>

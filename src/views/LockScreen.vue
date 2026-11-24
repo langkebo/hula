@@ -63,7 +63,7 @@
                   <svg
                     @click.stop="unlock"
                     class="size-16px text-[--tjg-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out hover:bg-[--tjg-color-primary-600]"
-                    aria-hidden="true">
+                    v-clickable="t('message.lock_screen.enter_system_tooltip')">
                     <use href="#arrow-right"></use>
                   </svg>
                 </template>

@@ -119,4 +119,32 @@ describe('svg 可交互守卫', () => {
 
     expect(violations).toEqual([])
   })
+
+  it('aria-hidden 的 <svg> 挂 @click 时必须登记为「装饰性子元素」', () => {
+    // 剩下的这几种是「子元素顺手做点事、真正交互在父元素上」，不是缺陷。
+    // 每条都必须能说清"为什么它不是独立交互元素"；不允许为了变绿往里加。
+    const violations = sites
+      .filter((site) => /aria-hidden/.test(site.tag))
+      .filter((site) => {
+        const handler = (site.tag.match(/@click(?:\.stop|\.prevent)?="([^"]*)"/)?.[1] ?? '').trim()
+        return !DECORATIVE_CLICK_HANDLERS.includes(handler)
+      })
+      .map((site) => `${site.file}:${site.line}`)
+
+    expect(violations).toEqual([])
+  })
 })
+
+/**
+ * 已登记的「装饰性子元素」——`@click` 只是顺带行为，真正交互由父元素承担。
+ * 新增条目必须有"父元素已经可交互"的实证，否则应该给 svg 自己补 `v-clickable`。
+ */
+const DECORATIVE_CLICK_HANDLERS = [
+  // MsgInputToolbar：父级是 <n-button :aria-label="setting.preferences.send_key_label">，箭头只是图标
+  'arrowLocal = true',
+  'arrowLocal = false',
+  // ActionList：父 <div role="button" tabindex="0" :aria-label :title @click @keydown.*>
+  // 子 svg 的点击只是"顺手把别处的提示条关掉"
+  'tipShow = false',
+  'handleTipShow(item)'
+]

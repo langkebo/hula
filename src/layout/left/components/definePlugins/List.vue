@@ -110,7 +110,10 @@
             trigger="click"
             placement="bottom">
             <template #trigger>
-              <svg @click.stop="isCurrently = index" class="size-22px rotate-90" aria-hidden="true">
+              <svg
+                @click.stop="isCurrently = index"
+                class="size-22px rotate-90"
+                v-clickable="plugin.title ? `${t('home.action.more')} ${plugin.title}` : t('home.action.more')">
                 <use href="#more"></use>
               </svg>
             </template>

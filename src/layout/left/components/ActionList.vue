@@ -302,7 +302,7 @@
               ]"
               class="size-22px relative"
               @click="settingShow = !settingShow"
-              aria-hidden="true">
+              v-clickable="t('home.action.more')">
               <use :href="settingShow ? '#hamburger-button-action' : '#hamburger-button'"></use>
             </svg>
           </template>

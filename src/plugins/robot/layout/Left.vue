@@ -85,7 +85,7 @@
                 <svg
                   @click.stop="deleteChat(item)"
                   class="chat-item-delete color-[--tjg-text-primary] size-20px absolute right-4px top-4px"
-                  aria-hidden="true">
+                  v-clickable="t('menu.remove_from_list')">
                   <use href="#squareClose"></use>
                 </svg>
               </div>

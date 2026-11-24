@@ -29,10 +29,14 @@ describe('mobile css guards', () => {
     expect(offenders).toEqual([])
   })
 
-  it('装饰性 svg 必须声明 aria-hidden / role / aria-label', () => {
+  it('每个 svg 都必须声明自己的身份：装饰性用 aria-hidden，交互式用 role/aria-label/v-clickable', () => {
+    // v-clickable 也算合法声明：它在 mounted 时补 role="button" + tabindex + Enter/Space，
+    // 是比手写 role 更绑定的写法（手写 role 忘了 tabindex 依旧进不了 Tab 序列）。
     const offenders = files.filter((file) => {
       const source = readFileSync(file, 'utf8')
-      return [...source.matchAll(/<svg\b([^>]*)>/g)].some((match) => !/aria-hidden|role=|aria-label/.test(match[1]))
+      return [...source.matchAll(/<svg\b([^>]*)>/g)].some(
+        (match) => !/aria-hidden|role=|aria-label|v-clickable/.test(match[1])
+      )
     })
     expect(offenders).toEqual([])
   })

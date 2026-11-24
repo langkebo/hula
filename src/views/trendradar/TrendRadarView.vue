@@ -5,7 +5,7 @@
     <!-- 顶部导航 -->
     <div class="trendradar-view__header">
       <div class="trendradar-view__header-left">
-        <svg class="trendradar-view__back" @click="handleBack" aria-hidden="true">
+        <svg class="trendradar-view__back" @click="handleBack" v-clickable="t('common.back')">
           <use href="#left-arrow"></use>
         </svg>
         <h2 class="trendradar-view__title">{{ t('trendradar.title') }}</h2>
@@ -14,7 +14,7 @@
         <n-tag :type="isConnected ? 'success' : 'error'" size="small">
           {{ isConnected ? t('trendradar.connected') : t('trendradar.disconnected') }}
         </n-tag>
-        <svg class="trendradar-view__refresh" @click="handleRefresh" aria-hidden="true">
+        <svg class="trendradar-view__refresh" @click="handleRefresh" v-clickable="t('common.refresh')">
           <use href="#refresh"></use>
         </svg>
       </div>
