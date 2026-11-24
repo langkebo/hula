@@ -1,6 +1,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { trackSettingsWrite } from '@/composables/settings/settingsPendingWrites'
 import { SexEnum } from '@/enums'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
@@ -56,7 +57,11 @@ export function useAccountProfileForm() {
 
     displayNameSaving.value = true
     try {
-      await matrixAccountService.updateDisplayName(formData.displayName)
+      // blur 自动保存没有"未保存"概念，写请求必须登记给关窗守卫，
+      // 否则"改完昵称直接 Cmd+W"会在写请求发出前就放行关窗，丢失最后一次输入。
+      const write = matrixAccountService.updateDisplayName(formData.displayName)
+      trackSettingsWrite(write)
+      await write
       showFeedback(t('setting.account.nickname_updated'), 'success')
     } catch {
       showFeedback(t('setting.account.nickname_update_failed'), 'error')
@@ -97,9 +102,12 @@ export function useAccountProfileForm() {
     }
     if (value === previousValue) return
     try {
-      await profileService.updateOwnExtendedProfile({
+      // 同上：登记在飞写请求，供关窗 / 切换 tab 时 flush。
+      const write = profileService.updateOwnExtendedProfile({
         [field]: value
       })
+      trackSettingsWrite(write)
+      await write
       patchCurrentUserExtendedProfile()
       syncExtendedProfileSnapshot()
       showFeedback(t('setting.account.extended_profile_updated'), 'success')

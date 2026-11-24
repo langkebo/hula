@@ -202,4 +202,106 @@ describe('useSettingsNativeCloseGuard', () => {
 
     expect(off).toHaveBeenCalledTimes(1)
   })
+
+  describe('自动保存表单的在飞写请求（hasPending / flushPending）', () => {
+    it('无脏值但有 pending → 仍 preventDefault，flush 后无脏值直接 destroy（不弹确认框）', async () => {
+      const order: string[] = []
+      const { win, fire } = createHarness()
+      win.destroy = vi.fn(async () => {
+        order.push('destroy')
+      })
+      const confirm = vi.fn(async () => {
+        order.push('confirm')
+        return true
+      })
+
+      const scope = effectScope()
+      scope.run(() =>
+        useSettingsNativeCloseGuard({
+          enabled: true,
+          hasDirty: () => false,
+          hasPending: () => true,
+          flushPending: async () => {
+            order.push('flush')
+          },
+          confirm,
+          resolveWindow: () => win
+        })
+      )
+      await flush()
+
+      fire({ preventDefault: () => order.push('preventDefault') })
+      await flush()
+
+      // flush 必须发生，且自动保存成功后不应再烦用户
+      expect(order).toEqual(['preventDefault', 'flush', 'destroy'])
+      expect(confirm).not.toHaveBeenCalled()
+      scope.stop()
+    })
+
+    it('无脏值且无 pending → 快路径不 preventDefault（守卫不能给所有关窗加成本）', async () => {
+      const { win, fire } = createHarness()
+      const flushPending = vi.fn(async () => undefined)
+
+      const scope = effectScope()
+      scope.run(() =>
+        useSettingsNativeCloseGuard({
+          enabled: true,
+          hasDirty: () => false,
+          hasPending: () => false,
+          flushPending,
+          confirm: vi.fn(async () => true),
+          resolveWindow: () => win
+        })
+      )
+      await flush()
+
+      const preventDefault = vi.fn()
+      fire({ preventDefault })
+      await flush()
+
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(flushPending).not.toHaveBeenCalled()
+      expect(win.destroy).not.toHaveBeenCalled()
+      scope.stop()
+    })
+
+    it('flushPending 必须先于 hasDirty 重判：flush 期间才变脏时走 confirm 分支', async () => {
+      // 锁住时序不变量。若把 flushPending 挪到 hasDirty() 之后，
+      // 这里的 hasDirty() 会先读到 false → 直接 destroy，order 里不会出现 'confirm'。
+      const order: string[] = []
+      let dirty = false
+      const { win, fire } = createHarness()
+      win.destroy = vi.fn(async () => {
+        order.push('destroy')
+      })
+
+      const scope = effectScope()
+      scope.run(() =>
+        useSettingsNativeCloseGuard({
+          enabled: true,
+          hasDirty: () => dirty,
+          hasPending: () => true,
+          flushPending: async () => {
+            order.push('flush')
+            // 模拟"非自动保存字段在 flush 期间被标记为脏"
+            dirty = true
+          },
+          confirm: async () => {
+            order.push('confirm')
+            return true
+          },
+          onConfirmed: () => order.push('onConfirmed'),
+          resolveWindow: () => win
+        })
+      )
+      await flush()
+
+      fire({ preventDefault: () => order.push('preventDefault') })
+      await flush()
+
+      expect(order).toEqual(['preventDefault', 'flush', 'confirm', 'onConfirmed', 'destroy'])
+      scope.stop()
+    })
+  })
 })

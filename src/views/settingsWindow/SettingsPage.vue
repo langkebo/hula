@@ -39,6 +39,7 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { locateSettingsAnchor } from '@/composables/settings/settingsAnchorNavigation'
+import { flushSettingsWrites, hasPendingSettingsWrites } from '@/composables/settings/settingsPendingWrites'
 import { findSettingsSearchResults, type SettingsSearchResult } from '@/composables/settings/settingsSearchIndex'
 import {
   createSettingsDirtyRegistry,
@@ -158,8 +159,24 @@ provideSettingsDirtyRegistry(dirtyRegistry)
 
 const hasDirtyTabs = computed(() => dirtyRegistry.hasDirtyTabs.value)
 
+/**
+ * 把自动保存表单的在飞写请求刷完。
+ *
+ * 为什么必须先 `activeElement.blur()`：账号资料等字段是 `@blur` 提交，用户在输入框里
+ * 直接 Cmd+W / 点别的 tab 时 blur 尚未派发，写请求还没发出 —— 只 flush 现有请求会漏掉
+ * 这一次输入。blur 会同步派发事件并登记新请求，`nextTick()` 后它们才进集合。
+ */
+async function flushFormWrites(): Promise<void> {
+  const active = document.activeElement
+  if (active instanceof HTMLElement) active.blur()
+  await nextTick()
+  await flushSettingsWrites()
+}
+
 async function handleTabChange(tabId: SettingsTabType) {
   if (tabId === activeTab.value) return
+
+  await flushFormWrites()
 
   const canLeave = await dirtyRegistry.confirmIfNeeded({
     scope: 'switch',
@@ -173,6 +190,8 @@ async function handleTabChange(tabId: SettingsTabType) {
 }
 
 async function handleClose() {
+  await flushFormWrites()
+
   const canClose = await dirtyRegistry.confirmIfNeeded({
     scope: 'close',
     tabId: activeTab.value,
@@ -269,6 +288,9 @@ onBeforeRouteLeave(async () => {
 useSettingsNativeCloseGuard({
   enabled: () => props.standalone,
   hasDirty: () => hasDirtyTabs.value,
+  // 自动保存表单不产生脏状态，靠"在飞写请求"判断是否有东西要保
+  hasPending: () => hasPendingSettingsWrites(),
+  flushPending: flushFormWrites,
   confirm: () =>
     dirtyRegistry.confirmIfNeeded({
       scope: 'close',
