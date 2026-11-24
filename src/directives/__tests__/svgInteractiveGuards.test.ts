@@ -1,150 +1,38 @@
-import fs from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * 守卫：`<svg>` 不能再被当成"可点但不可聚焦"的元素。
+ * 把 `scripts/check-svg-aria.mjs`（`pnpm check` 里跑的那份）也接到 vitest 里。
  *
- * 背景（见 docs/TJG-桌面端界面评审报告-2026-11-24.md 附录 D）：
- * 全仓曾有 46 处把 `@click` 挂在 `<svg>` 上，其中
- *  - 37 处带 `aria-hidden="true"`：ARIA 规范禁止 aria-hidden 元素承载可聚焦内容，
- *    这种写法连补 tabindex 都无效；
- *  - 9 处已有 `role="button"` + `aria-label`，只缺 `tabindex`：有名字、没焦点。
+ * 为什么不再在这里重写一遍规则：规则写两处必然漂 —— 谁先改谁生效，
+ * 另一处变成"看起来在守、其实早已过期"的死断言。
+ * （曾经真实发生过：脚本只认 aria-hidden/role/aria-label，不认 v-clickable，
+ *  改完 28 处后 `pnpm check` 红、而本目录的测试全绿。）
  *
- * 本守卫只覆盖第二类（已修完那批），锁住"role=button 的 svg 必须键盘可达"。
- * 第一类要等拆 `aria-hidden` 时再逐批收紧，现在设为 37 会把 lint 打红后被 --no-verify 绕过。
+ * 本文件只做两件事：
+ *  1. 跑脚本，要求零违规；
+ *  2. 断言分母非空，避免 walker 坏掉时输出 "OK — 0 个 svg" 的假绿。
+ *
+ * 规则清单与白名单理由见脚本头部注释。
  */
+const REPO_ROOT = path.resolve(__dirname, '../../..')
+const SCRIPT = path.join(REPO_ROOT, 'scripts/check-svg-aria.mjs')
 
-const SRC_DIR = path.resolve(__dirname, '../../')
-
-function collectVueFiles(dir: string, out: string[] = []): string[] {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      if (entry.name === '__tests__' || entry.name === 'node_modules') continue
-      collectVueFiles(full, out)
-    } else if (entry.name.endsWith('.vue')) {
-      out.push(full)
-    }
-  }
-  return out
+function runGuard(): string {
+  return execFileSync(process.execPath, [SCRIPT], { encoding: 'utf-8', cwd: REPO_ROOT })
 }
 
-interface SvgClickSite {
-  file: string
-  line: number
-  tag: string
-}
-
-/** 抓所有"带 @click 的 <svg …>…</svg>"整块（含内部 `<use>`，用于识别关闭图标）。 */
-function findCloseIconSites(): SvgClickSite[] {
-  const sites: SvgClickSite[] = []
-  for (const file of collectVueFiles(SRC_DIR)) {
-    const source = fs.readFileSync(file, 'utf-8')
-    const blockPattern = /<svg\b[^>]*>[\s\S]*?<\/svg>/gs
-    let match: RegExpExecArray | null = blockPattern.exec(source)
-    while (match !== null) {
-      if (/@click/.test(match[0]) && /href="#close"/.test(match[0])) {
-        sites.push({
-          file: path.relative(SRC_DIR, file),
-          line: source.slice(0, match.index).split('\n').length,
-          tag: match[0]
-        })
-      }
-      match = blockPattern.exec(source)
-    }
-  }
-  return sites
-}
-
-/** 抓所有"带 @click 的 <svg …>"开标签（属性可跨行）。 */
-function findSvgClickSites(): SvgClickSite[] {
-  const sites: SvgClickSite[] = []
-  for (const file of collectVueFiles(SRC_DIR)) {
-    const source = fs.readFileSync(file, 'utf-8')
-    // [^>]* 跨行匹配：ActionList.vue / definePlugins/index.vue 的属性都是多行的，
-    // 单行 grep 会漏，这正是当初把 46 处误报成 9 处的原因。
-    const tagPattern = /<svg\b[^>]*>/gs
-    let match: RegExpExecArray | null = tagPattern.exec(source)
-    while (match !== null) {
-      if (/@click/.test(match[0])) {
-        sites.push({
-          file: path.relative(SRC_DIR, file),
-          line: source.slice(0, match.index).split('\n').length,
-          tag: match[0]
-        })
-      }
-      match = tagPattern.exec(source)
-    }
-  }
-  return sites
-}
-
-describe('svg 可交互守卫', () => {
-  const sites = findSvgClickSites()
-
-  it('能抓到 <svg> 上的 @click（守卫自身不能空转）', () => {
-    // 分母断言：若哪天重构导致正则失配，这里先红，避免"0 违规"的假绿。
-    expect(sites.length).toBeGreaterThan(0)
+describe('check-svg-aria', () => {
+  it('零违规', () => {
+    // 违规时脚本以退出码 1 结束，execFileSync 会抛出，并把 stderr 里的
+    // [规则种类] + file:line 清单带进错误信息
+    expect(() => runGuard()).not.toThrow()
   })
 
-  it('声明 role="button" 的 <svg> 必须键盘可达（tabindex 或 v-clickable）', () => {
-    const violations = sites
-      .filter((site) => /role\s*=\s*"button"/.test(site.tag))
-      .filter((site) => !/\btabindex\b/.test(site.tag) && !/\bv-clickable\b/.test(site.tag))
-      .map((site) => `${site.file}:${site.line}`)
-
-    expect(violations).toEqual([])
-  })
-
-  it('键盘可达的 <svg> 不能再用 outline-none 压制焦点环', () => {
-    // 补了 tabindex 却留着 outline-none，等于"能聚焦但看不见" —— 比不可聚焦更难排查。
-    const violations = sites
-      .filter((site) => /\b(tabindex|v-clickable)\b/.test(site.tag))
-      .filter((site) => /outline-none/.test(site.tag))
-      .map((site) => `${site.file}:${site.line}`)
-
-    expect(violations).toEqual([])
-  })
-
-  it('把 <use href="#close"> 当关闭按钮用时，不得再挂 aria-hidden', () => {
-    // 关闭图标是最典型的"看得见但 Tab 不到"：`aria-hidden` 让它对读屏消失，
-    // 而 @click 又让它承担了交互 —— 两种写法互斥。
-    // 例外：X 图标被拿来当"删除某条记录"（handler 里带 delete-account），
-    // 那不是关闭语义，标签应跟随删除流程，故按 handler 排除而不是按文件排除。
-    const violations = findCloseIconSites()
-      .filter((site) => !/delete-account/.test(site.tag))
-      .filter((site) => /aria-hidden/.test(site.tag))
-      .map((site) => `${site.file}:${site.line}`)
-
-    expect(violations).toEqual([])
-  })
-
-  it('aria-hidden 的 <svg> 挂 @click 时必须登记为「装饰性子元素」', () => {
-    // 剩下的这几种是「子元素顺手做点事、真正交互在父元素上」，不是缺陷。
-    // 每条都必须能说清"为什么它不是独立交互元素"；不允许为了变绿往里加。
-    const violations = sites
-      .filter((site) => /aria-hidden/.test(site.tag))
-      .filter((site) => {
-        const handler = (site.tag.match(/@click(?:\.stop|\.prevent)?="([^"]*)"/)?.[1] ?? '').trim()
-        return !DECORATIVE_CLICK_HANDLERS.includes(handler)
-      })
-      .map((site) => `${site.file}:${site.line}`)
-
-    expect(violations).toEqual([])
+  it('分母非空（防止 walker 失配导致"0 个 svg"的假绿）', () => {
+    const stdout = runGuard()
+    const total = Number(stdout.match(/OK — (\d+) 个 svg/)?.[1] ?? 0)
+    expect(total).toBeGreaterThan(500)
   })
 })
-
-/**
- * 已登记的「装饰性子元素」——`@click` 只是顺带行为，真正交互由父元素承担。
- * 新增条目必须有"父元素已经可交互"的实证，否则应该给 svg 自己补 `v-clickable`。
- */
-const DECORATIVE_CLICK_HANDLERS = [
-  // MsgInputToolbar：父级是 <n-button :aria-label="setting.preferences.send_key_label">，箭头只是图标
-  'arrowLocal = true',
-  'arrowLocal = false',
-  // ActionList：父 <div role="button" tabindex="0" :aria-label :title @click @keydown.*>
-  // 子 svg 的点击只是"顺手把别处的提示条关掉"
-  'tipShow = false',
-  'handleTipShow(item)'
-]

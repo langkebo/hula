@@ -19,7 +19,7 @@
             :disabled="emojiShowLocal || recentEmojis.length < 4"
             placement="top">
             <template #trigger>
-              <svg class="mr-18px" role="button" :aria-label="t('chat.footer.emoji')">
+              <svg class="mr-18px" v-clickable="t('chat.footer.emoji')">
                 <use href="#smiling-face"></use>
               </svg>
             </template>
