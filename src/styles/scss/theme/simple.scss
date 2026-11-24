@@ -4,7 +4,7 @@
     // 侧边栏样式（浅色：项目主题色实底，参考 HuLa 桌面导航栏）
     // 可达性补丁（与 design-tokens.css :root 同步，本块特异性更高，只改那边不生效）
     --left-bg-color: var(--tjg-color-primary-600);
-    --left-active-bg-color: #ffffff;
+    --left-active-bg-color: var(--tjg-text-inverse);
     --left-text-color: color-mix(in srgb, var(--tjg-text-inverse) 92%, transparent);
     --left-icon-color: color-mix(in srgb, var(--tjg-text-inverse) 88%, transparent);
     --left-active-hover: var(--tjg-text-inverse);
