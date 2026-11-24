@@ -23,6 +23,7 @@ vi.mock('matrix-js-sdk', () => ({
 }))
 
 const workerHostMock = vi.hoisted(() => ({
+  isStarted: true,
   upsertSearchRooms: vi.fn(async () => undefined),
   upsertSearchEvents: vi.fn(async () => undefined),
   redactSearchEvent: vi.fn(async () => undefined)
@@ -412,6 +413,30 @@ describe('MatrixEventRouter', () => {
           expect.objectContaining({ eventId: '$event2', body: 'hello' })
         ])
       } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('worker 未启动时保留批次，启动后在下个窗口补写', () => {
+      vi.useFakeTimers()
+      try {
+        // 旧实现把批次交给未启动的 worker 后直接丢弃，这段搜索索引永久丢失
+        workerHostMock.isStarted = false
+        router.setup(client as never, syncManager as never)
+        client.handlers.get('Room.timeline')?.(makeMatrixEvent() as never, makeRoom() as never)
+
+        vi.advanceTimersByTime(50)
+        expect(workerHostMock.upsertSearchEvents).not.toHaveBeenCalled()
+
+        workerHostMock.isStarted = true
+        vi.advanceTimersByTime(50)
+
+        expect(workerHostMock.upsertSearchEvents).toHaveBeenCalledTimes(1)
+        expect(workerHostMock.upsertSearchEvents).toHaveBeenCalledWith([
+          expect.objectContaining({ eventId: '$event1', body: 'hello' })
+        ])
+      } finally {
+        workerHostMock.isStarted = true
         vi.useRealTimers()
       }
     })

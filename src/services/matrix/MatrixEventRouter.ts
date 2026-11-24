@@ -50,6 +50,8 @@ const logger = createLogger('MatrixEventRouter')
 const SEARCH_EVENT_BATCH_WINDOW_MS = 50
 /** 单批事件上限：超出按最旧丢弃，形成背压保护（索引可重建，丢批优于内存持续膨胀）。 */
 const SEARCH_EVENT_BATCH_MAX = 200
+/** 落批失败（worker 未启动/写入报错）的最大重试次数；超过后丢批并告警一次。 */
+const SEARCH_FLUSH_MAX_RETRIES = 3
 
 /**
  * 事件路由器
@@ -64,6 +66,8 @@ export class MatrixEventRouter {
   private searchFlushTimer: ReturnType<typeof setTimeout> | null = null
   /** 因单批上限被丢弃的事件数，仅在下次落批时汇总告警一次。 */
   private droppedSearchEvents = 0
+  /** 连续落批失败次数；成功一次即清零。 */
+  private searchFlushRetries = 0
   private readonly roomListeners: Map<string, { room: Room; handlers: Map<string, (...args: unknown[]) => void> }> =
     new Map()
   private observedClient: MatrixClient | null = null
@@ -281,7 +285,8 @@ export class MatrixEventRouter {
     client.off(RoomEvent.Receipt, this.receiptListener)
 
     this.syncManager_offLifecycleEvent(syncManager, this.syncLifecycleListener)
-    this.flushSearchEvents()
+    // 收尾路径：写一次成功则保留索引，失败不再回队重试（router 正在脱离当前 client）
+    this.flushSearchEvents(true)
     this.detachRoomListeners()
     this.observedClient = null
   }
@@ -298,22 +303,62 @@ export class MatrixEventRouter {
     this.searchFlushTimer = setTimeout(() => this.flushSearchEvents(), SEARCH_EVENT_BATCH_WINDOW_MS)
   }
 
-  /** 落批：一次跨线程写入整批事件，失败仅记录一次告警避免刷屏。 */
-  private flushSearchEvents(): void {
+  /**
+   * 落批：一次跨线程写入整批事件。
+   *
+   * `discardOnFailure` 用于 detach 等收尾路径（此时不再保留数据）；
+   * 正常路径下 worker 未启动或写入失败都把批次放回缓冲，下个窗口重试——
+   * 旧实现直接丢弃，worker 启动稍晚就会永久丢掉这段时间的搜索索引。
+   */
+  private flushSearchEvents(discardOnFailure = false): void {
     if (this.searchFlushTimer) {
       clearTimeout(this.searchFlushTimer)
       this.searchFlushTimer = null
     }
     if (this.pendingSearchEvents.length === 0) return
+    if (!discardOnFailure && !matrixWorkerHost.isStarted) {
+      this.requeueSearchEvents()
+      return
+    }
+
     const batch = this.pendingSearchEvents
     this.pendingSearchEvents = []
     if (this.droppedSearchEvents > 0) {
       logger.warn(`搜索索引背压丢弃 ${this.droppedSearchEvents} 条事件（单批上限 ${SEARCH_EVENT_BATCH_MAX}）`)
       this.droppedSearchEvents = 0
     }
-    void matrixWorkerHost.upsertSearchEvents(batch).catch((err) => {
-      logger.warn('搜索索引批量写入失败:', err)
-    })
+    void matrixWorkerHost
+      .upsertSearchEvents(batch)
+      .then(() => {
+        this.searchFlushRetries = 0
+      })
+      .catch((err) => {
+        if (discardOnFailure) {
+          logger.warn('搜索索引批量写入失败（收尾丢弃）:', err)
+          return
+        }
+        logger.warn('搜索索引批量写入失败，稍后重试:', err)
+        this.requeueSearchEvents(batch)
+      })
+  }
+
+  /** 把批次放回缓冲并在下个窗口重试；连续失败超过上限则丢批并告警一次。 */
+  private requeueSearchEvents(batch?: SearchEventDoc[]): void {
+    if (batch) {
+      this.pendingSearchEvents = batch.concat(this.pendingSearchEvents)
+    }
+    if (this.searchFlushRetries >= SEARCH_FLUSH_MAX_RETRIES) {
+      const dropped = this.pendingSearchEvents.length
+      this.pendingSearchEvents = []
+      this.searchFlushRetries = 0
+      if (dropped > 0) {
+        logger.warn(`搜索索引连续 ${SEARCH_FLUSH_MAX_RETRIES} 次写入失败，丢弃 ${dropped} 条事件`)
+      }
+      return
+    }
+    this.searchFlushRetries += 1
+    if (this.searchFlushTimer) return
+    this.searchFlushTimer = setTimeout(() => this.flushSearchEvents(), SEARCH_EVENT_BATCH_WINDOW_MS)
   }
 
   /** 分离房间事件监听器
