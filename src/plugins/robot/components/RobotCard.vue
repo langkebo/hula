@@ -176,7 +176,8 @@ const handleClick = () => {
 }
 
 .robot-card__status--online {
-  color: var(--tjg-status-online);
+  /* 文字用途：success-600 (3.46) 仅够图形，文字须用 success-700（5.59） */
+  color: var(--tjg-color-success-700);
 }
 
 .robot-card__status--offline {

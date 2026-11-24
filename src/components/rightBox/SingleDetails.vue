@@ -352,7 +352,8 @@ const handleRemoveFriend = async () => {
   border: none;
   background: none;
   font-size: 12px;
-  color: var(--tjg-color-danger-500);
+  /* 文字用途：danger-500 (3.27) 仅够填充，文字须用 danger-700（7.75） */
+  color: var(--tjg-color-danger-700);
   cursor: pointer;
 }
 

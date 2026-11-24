@@ -53,7 +53,8 @@ const { t } = useI18n()
  * map `offline` → --tjg-status-busy (red) to match the brief's intent.
  */
 const STATUS_COLOR_MAP: Record<FedStatus, string> = {
-  online: 'var(--tjg-status-online)',
+  // 徽标含文字标签，属文字用途：success-600(3.46) 仅够图形，故用 success-700(5.59)
+  online: 'var(--tjg-color-success-700)',
   degraded: 'var(--tjg-status-away)',
   offline: 'var(--tjg-status-busy)'
 }
@@ -70,7 +71,9 @@ const label = computed(() => t(STATUS_LABEL_KEY[props.status]))
 
 <style scoped>
 .fed-status-badge {
-  --fed-status-color: var(--tjg-status-online);
+  /* 兜底值：模板上 :style 已按 status 注入同名变量，正常情况下本行被内联样式覆盖。
+     仅为防 status 缺省时 color-mix 取到无效值，故与 STATUS_COLOR_MAP.online 对齐。 */
+  --fed-status-color: var(--tjg-color-success-700);
 
   display: inline-flex;
   align-items: center;

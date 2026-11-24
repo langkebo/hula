@@ -38,7 +38,7 @@
         type="button"
         :aria-label="t('message.call_window.reject')"
         @click="emit('reject')"
-        class="size-40px rounded-full border-0 bg-[--tjg-color-danger-500] hover:bg-[--tjg-color-danger-600] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--tjg-color-danger-400] flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full border-0 bg-[--tjg-color-danger-500] hover:bg-[--tjg-color-danger-600] flex-center cursor-pointer shadow-lg">
         <svg class="text-[--tjg-text-inverse] size-20px" aria-hidden="true">
           <use href="#PhoneHangup"></use>
         </svg>
@@ -48,7 +48,7 @@
         type="button"
         :aria-label="t('message.call_window.accept')"
         @click="emit('accept')"
-        class="size-40px rounded-full border-0 bg-[--tjg-color-primary-500] hover:bg-[--tjg-color-primary-600] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-300] flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full border-0 bg-[--tjg-color-primary-500] hover:bg-[--tjg-color-primary-600] flex-center cursor-pointer shadow-lg">
         <svg class="text-[--tjg-text-inverse] size-20px" aria-hidden="true">
           <use href="#phone-telephone-entity"></use>
         </svg>
