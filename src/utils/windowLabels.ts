@@ -2,18 +2,43 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 
 /**
- * 不需要 Matrix 客户端运行时能力的窗口（截图/托盘/通知/更新）。
+ * 不需要 Matrix 客户端运行时能力的窗口。
  *
  * 这些窗口仍会加载 App 壳（main.ts → App.vue），但不需要连接状态、
  * 来电监听、离线消息队列、WebSocket 事件处理或在线状态轮询。
  *
- * 注意：与 messageLoading 的 NON_CHAT_WINDOW_LABELS 不同——后者包含 'login'
- * （登录窗不参与消息加载），但 login 窗口需要 Matrix 客户端来完成登录，故不在此列。
+ * `capture/tray/notify/update/checkupdate`：截图 / 托盘 / 通知 / 更新，本就与 Matrix 无关。
+ *
+ * `login/register/forgetPassword`：**登录类窗口**。它们的任务是建立会话，而不是消费会话：
+ * - 自动登录走 `useLoginOrchestrator` 自己的 `autoLoginEnabled` 分支（倒计时 → 调 login），
+ *   不依赖 `recoverColdStartSession`；
+ * - 登录成功后确实会短暂持有 client，但 `DesktopSessionTransition.openDesktopHomeWindow()`
+ *   在交接给 home 前显式 `stopClient()`（否则两条 sync 会并发写同一个 sliding sync pos，
+ *   导致游标回退与 400）；
+ * - 因此它们不该跑 `initOfflineQueue` / `wsEventHandler` / `invitePolicyEnforcement` /
+ *   `recoverColdStartSession` —— 尤其是最后一项：在登录窗口里它只会拿残留凭证去
+ *   尝试建 client，正是"登录页背后悄悄连上"这种状态的来源。
+ *
+ * ⚠️ 因此：**登录类窗口不得依赖 Matrix 运行时**。若将来需要（例如登录前就要 sync），
+ * 必须先把该窗口移回 `MATRIX_WINDOW_LABELS` 并重新评估上面三条。
+ *
+ * 注意：与 messageLoading 的 NON_CHAT_WINDOW_LABELS 不同——后者是"不参与消息加载"的名单，
+ * 与是否跑 Matrix 运行时是两件事，不要合并。
  *
  * 'notify' 由 `windowRtc.ensureNotifyWindow()` 运行时创建，不在 `createWebviewWindow`
  * 静态采集范围内，因此 `check-window-label-registry` 会把它列为“无静态来源”，属预期提示。
  */
-export const NON_MATRIX_WINDOW_LABELS = new Set(['capture', 'tray', 'notify', 'update', 'checkupdate'])
+export const NON_MATRIX_WINDOW_LABELS = new Set([
+  'capture',
+  'tray',
+  'notify',
+  'update',
+  'checkupdate',
+  // 登录类窗口：只建立会话，不消费会话（见上方说明）
+  'login',
+  'register',
+  'forgetPassword'
+])
 
 /**
  * 会**跑** App.vue 里 Matrix 运行时初始化（离线队列 / WebSocket 事件处理 / 在线状态轮询 /
@@ -36,14 +61,11 @@ export const NON_MATRIX_WINDOW_LABELS = new Set(['capture', 'tray', 'notify', 'u
 export const MATRIX_WINDOW_LABELS = new Set([
   'home',
   'mobile-home',
-  'login',
-  'register',
   'settings',
   'imageViewer',
   'videoViewer',
   'chat-history',
   'onlineStatus',
-  'forgetPassword',
   // aboutWindow 内无任何 Matrix 引用，但当前仍会跑运行时初始化；
   // 若要跳过，需整体迁入 NON_MATRIX_WINDOW_LABELS 并验证在窗口内核验。
   'about',
@@ -66,15 +88,17 @@ export function isNonMatrixWindow(): boolean {
 }
 
 /**
- * 登录类窗口的 label（登录 / 注册 / 找回密码）。
+ * 登录类窗口的 label（登录 / 注册 / 找回密码）。**是 `NON_MATRIX_WINDOW_LABELS` 的子集**。
  *
- * 这些窗口**不拥有 Matrix client**：用户在里面的目的是建立会话，而不是消费会话。
- * 因此任何"连接状态"提示对它们都是误报 —— 尤其 `useConnectionStatus` 的
+ * 这些窗口不承担连接：用户在里面的目的是建立会话，而不是消费会话。
+ * 任何"连接状态"提示对它们都是误报 —— 尤其 `useConnectionStatus` 的
  * `DISCONNECTED + isLoggedIn → error` 分支：`isLoggedIn` 来自**持久化的 userId**，
  * 在登录窗口里它只是上一次登录的残留，用它会得出"登录页连接失败"这种自相矛盾的结论。
  *
- * 注意：这些窗口仍在 `MATRIX_WINDOW_LABELS` 里（它们确实会跑 App.vue 的运行时初始化），
- * 本常量只用于"该不该显示连接提示 / 该不该恢复会话"这类判断，不要据此移除初始化。
+ * 本常量比 `NON_MATRIX_WINDOW_LABELS` 更窄（后者还有截图/托盘/通知/更新），
+ * 用于"该不该显示连接提示 / 该不该响应重试"这类**语义**判断；是否跳过运行时初始化
+ * 仍由 `isNonMatrixWindow()` 决定，两者不要合并 —— 托盘窗口同样不显示连接提示，
+ * 但它连 App 主界面都不渲染，语义不同。
  */
 export const LOGIN_WINDOW_LABELS = new Set(['login', 'register', 'forgetPassword'])
 

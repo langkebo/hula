@@ -73,7 +73,7 @@ import { applyFontScale, loadFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isWindows10 } from '@/utils/PlatformConstants'
 import { endPerfSpan, runAfterFirstPaint } from '@/utils/startupScheduling'
-import { isLoginWindow, isNonMatrixWindow } from '@/utils/windowLabels'
+import { isNonMatrixWindow } from '@/utils/windowLabels'
 
 const logger = createLogger('App')
 
@@ -452,17 +452,9 @@ let disposeSecretChatAutoLock: (() => void) | null = null
 async function initMatrixRuntimeAfterFirstPaint(): Promise<void> {
   performance.mark('tjg-matrix-init-start')
   try {
-    /**
-     * 声明本窗口"要拥有一个 client"。
-     *
-     * 登录类窗口**不声明**：它们不建 client，而 `userId` 是持久化的（会恢复上次登录的值），
-     * 若让 `useConnectionStatus` 用 `isLoggedIn` 反推"该有 client 却没有"，
-     * 登录页就会显示"连接失败，请重试"——与事实相反，且会诱导用户点"重试"
-     * 用残留凭证恢复出一个用户并不想要的会话。
-     */
-    if (!isLoginWindow()) {
-      matrixStore.claimClientOwnership()
-    }
+    // 登录类窗口已归入 NON_MATRIX_WINDOW_LABELS，本函数在它们里面不会被调用，
+    // 所以这里不需要再判窗口 —— 保留一个 `if (!isLoginWindow())` 只会是永远为真的死条件。
+    matrixStore.claimClientOwnership()
     await initOfflineQueue()
     // D12：冷启动（整页 reload / WebView 进程重建）不经过任何登录或窗口级恢复入口。
     // 两个平台都要跑（桌面 home 的整页 reload 同样无人恢复）；无会话时立即返回。
