@@ -1,6 +1,6 @@
 //
 //  TjgBridge.h
-//  原生 -> <-> Rust 的唯一桥接头。
+//  原生 <-> Rust 的唯一桥接头。
 //  所有 .mm 与 Rust 侧（bindgen 或手写 extern）引用同一份，签名变化时编译期即可发现。
 //
 
@@ -43,5 +43,10 @@ TJG_EXPORT void tjg_register_for_remote_notifications(void);
 
 /// 去掉键盘上方快捷键栏（iPad）。只需在启动时调用一次。
 TJG_EXPORT void tjg_disable_keyboard_accessory(void);
+
+/// 向 tao 在运行时创建的 "AppDelegate" ObjC 类注入 APNs 回调。
+/// 必须在 UIApplicationMain 之前发起（内部会重试等待 class 就绪，最多 5s）。
+/// 若将来 tao 自己实现了回调，本函数不会覆盖。
+TJG_EXPORT void tjg_install_apns_hooks(void);
 
 TJG_EXTERN_C_END

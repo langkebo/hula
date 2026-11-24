@@ -52,12 +52,14 @@ pub(crate) fn compile_ios_splash() {
         return;
     }
 
+    println!("cargo:rerun-if-changed=gen/apple/TjgBridge.h");
     println!("cargo:rerun-if-changed=gen/apple/Sources/tjg/SplashScreen.mm");
     println!("cargo:rerun-if-changed=gen/apple/Sources/tjg/BadgeBridge.mm");
 
     cc::Build::new()
         .file("gen/apple/Sources/tjg/SplashScreen.mm")
         .file("gen/apple/Sources/tjg/BadgeBridge.mm")
+        .include("gen/apple")
         .flag("-fobjc-arc")
         .compile("tjg_ios_helpers");
 }

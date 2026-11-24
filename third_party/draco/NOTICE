@@ -1,0 +1,37 @@
+Draco 3D Data Compression (WebAssembly decoder)
+===============================================
+
+用途
+----
+TJG 桌面端在本地加载 `.glb` 三维助理模型时，使用 Draco 解码器解压
+KHR_draco_mesh_compression 扩展数据。
+资源位置：`src-tauri/draco/`，通过 `bundle.resources` 随应用包分发。
+
+上游与许可证
+------------
+Project:  https://github.com/google/draco
+Variant:  glTF build（对应上游 gltf_2.0_draco_extension 分支）
+License:  Apache License, Version 2.0
+          https://www.apache.org/licenses/LICENSE-2.0
+          许可证全文见本仓库根目录 LICENSE。
+
+版权声明
+--------
+Copyright 2016 The Draco Authors
+
+来源与版本
+----------
+本目录下的构件取自 `three` npm 包内的 `examples/jsm/libs/draco/gltf/`
+（复制时 `three` 版本为 0.185.1），逐字节一致：
+
+  draco_decoder.wasm       192420 bytes  md5 279c1ac3a88b5620490d0b9835ab222f
+  draco_wasm_wrapper.js     58456 bytes  md5 7a48a3fdc5785631621f4b20cd0937dc
+
+上游未随构件分发 Draco 语义化版本号、Emscripten 版本号与构建命令，
+上述三项因此未在此记录；如需精确追溯，请以上游对应分支的发布说明为准。
+
+已移除的文件
+------------
+`draco_decoder.js`（纯 JS 回退解码器）已删除。调用方固定使用
+`DRACOLoader.setDecoderConfig({ type: 'wasm' })`，只会请求
+`draco_wasm_wrapper.js` 与 `draco_decoder.wasm`。
