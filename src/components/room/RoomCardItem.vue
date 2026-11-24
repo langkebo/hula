@@ -271,7 +271,7 @@ const cardClasses = computed(() => {
   // 属性配色（产品决策）：按房间属性（加密/联邦/普通群聊）区分卡片颜色，
   // 发现页只展示群聊（DM/空间不进此列表），故无类型色、只有属性色。
   const base =
-    'room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] cursor-pointer outline-none'
+    'room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] cursor-pointer focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-500] focus-visible:ring-offset-2 focus-visible:ring-offset-[--tjg-surface-panel]'
   if (props.item.isEncrypted) {
     return `${base} room-card-item--encrypted border border-[--tjg-room-card-encrypted-border]`
   }

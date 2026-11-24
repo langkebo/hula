@@ -1,6 +1,6 @@
 <template>
   <article
-    class="room-card flex items-center gap-[--tjg-space-3] p-[--tjg-space-3] rounded-[--tjg-radius-sm] bg-[--tjg-surface-panel] border border-[--tjg-border-muted] cursor-pointer outline-none"
+    class="room-card flex items-center gap-[--tjg-space-3] p-[--tjg-space-3] rounded-[--tjg-radius-sm] bg-[--tjg-surface-panel] border border-[--tjg-border-muted] cursor-pointer focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-500] focus-visible:ring-offset-1 focus-visible:ring-offset-[--tjg-surface-panel]"
     data-testid="room-card"
     role="button"
     tabindex="0"

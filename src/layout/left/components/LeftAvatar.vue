@@ -27,7 +27,7 @@
       <div class="mt-8px pt-10px border-t-(1px solid [--tjg-surface-subtle]) px-10px pb-8px">
         <button
           type="button"
-          class="flex items-center justify-center gap-8px w-full px-8px py-9px rounded-8px text-(13px [--tjg-text-secondary]) font-medium cursor-pointer outline-none transition-colors duration-150 hover:bg-[--tjg-color-danger-50] hover:text-[--tjg-color-danger-500] focus-visible:bg-[--tjg-color-danger-50] focus-visible:text-[--tjg-color-danger-500] active:bg-[--tjg-color-danger-100]"
+          class="flex items-center justify-center gap-8px w-full px-8px py-9px rounded-8px text-(13px [--tjg-text-secondary]) font-medium cursor-pointer outline-none transition-colors duration-150 hover:bg-[--tjg-color-danger-50] hover:text-[--tjg-color-danger-500] focus-visible:bg-[--tjg-color-danger-50] focus-visible:text-[--tjg-color-danger-500] focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-500] focus-visible:ring-inset active:bg-[--tjg-color-danger-100]"
           :aria-label="t('menu.sign_out')"
           @click="handleLogout">
           <svg class="size-16px shrink-0" aria-hidden="true"><use href="#power" /></svg>
