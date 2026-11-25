@@ -101,29 +101,41 @@ pub(crate) fn sanitize_uid_for_filename(uid: &str) -> String {
     }
 }
 
-/// 解析数据库所在目录（桌面 dev 用 `src-tauri/`，其余用 app_data_dir）。
+/// 桌面开发环境的数据库子目录名（相对 `app_data_dir`）。
+///
+/// 开发构建与正式安装包的 identifier 相同（`com.tjg.pc`）⇒ `app_data_dir` 也相同，
+/// 直接共用会让 dev 构建读写真实用户的本地消息库；而放在源码目录（旧实现
+/// `CARGO_MANIFEST_DIR`）又会让 `db_@user:host.sqlite` 散落在仓库里。
+const DEV_DATABASE_SUBDIR: &str = "dev";
+
+/// 选择数据库目录（纯函数，便于测试）。
+fn select_database_dir(app_data_dir: PathBuf, is_desktop_dev: bool) -> PathBuf {
+    if is_desktop_dev {
+        app_data_dir.join(DEV_DATABASE_SUBDIR)
+    } else {
+        app_data_dir
+    }
+}
+
+/// 解析数据库所在目录（桌面 dev 用 `app_data_dir/dev/`，其余用 `app_data_dir`）。
 ///
 /// 抽成独立函数是为了让「切库 / 迁库」能复用同一套目录规则：路径解析分散到两处时，
 /// 一旦某一处漏改就会在「迁移写 A 目录、连接读 B 目录」这种地方静默丢数据。
 fn database_dir(app_handle: &AppHandle) -> Result<PathBuf, CommonError> {
-    if cfg!(debug_assertions) && cfg!(desktop) {
-        // 桌面端开发环境：使用项目根目录（src-tauri）
-        return Ok(PathBuf::from(env!("CARGO_MANIFEST_DIR")));
-    }
-
-    match app_handle.path().app_data_dir() {
-        Ok(app_data_dir) => {
-            if let Err(create_err) = std::fs::create_dir_all(&app_data_dir) {
-                tracing::warn!("Failed to create app_data_dir: {}", create_err);
-            }
-            Ok(app_data_dir)
-        }
+    let app_data_dir = match app_handle.path().app_data_dir() {
+        Ok(dir) => dir,
         Err(e) => {
             let error_msg = format!("Failed to get app_data_dir: {}", e);
             tracing::error!("{}", error_msg);
-            Err(CommonError::RequestError(error_msg))
+            return Err(CommonError::RequestError(error_msg));
         }
+    };
+
+    let dir = select_database_dir(app_data_dir, cfg!(debug_assertions) && cfg!(desktop));
+    if let Err(create_err) = std::fs::create_dir_all(&dir) {
+        tracing::warn!("Failed to create database dir {:?}: {}", dir, create_err);
     }
+    Ok(dir)
 }
 
 impl DatabaseSettings {
@@ -767,6 +779,32 @@ mod database_filename_tests {
         assert_eq!(resolved, "db_@alice.sqlite");
         assert!(plain.exists());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod database_dir_tests {
+    use super::*;
+
+    /// 回归锁（B2）：桌面开发环境的库必须落在应用数据目录下的 `dev` 子目录。
+    ///
+    /// 旧实现 dev 直接用 `CARGO_MANIFEST_DIR`（`src-tauri/`）⇒ 用户本地账号、消息库
+    /// 散落在源码树里（连同 `db_@user:host.sqlite` 这类文件名），随源码/备份一起外泄。
+    #[test]
+    fn dev_desktop_uses_isolated_dev_subdir_under_app_data() {
+        let app_data = PathBuf::from("/tmp/com.tjg.pc");
+        assert_eq!(
+            select_database_dir(app_data.clone(), true),
+            app_data.join("dev")
+        );
+    }
+
+    /// 发布版与移动端行为不变：直接用 app_data_dir，不得额外多一层目录
+    /// （多一层会让既有安装「找不到」自己的数据库 = 静默丢聊天记录）。
+    #[test]
+    fn release_and_mobile_use_app_data_dir_directly() {
+        let app_data = PathBuf::from("/tmp/com.tjg.pc");
+        assert_eq!(select_database_dir(app_data.clone(), false), app_data);
     }
 }
 
