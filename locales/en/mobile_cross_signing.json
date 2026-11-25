@@ -1,0 +1,17 @@
+{
+  "title": "Complete security check",
+  "intro_desc": "The security check sets up cross-signing keys for your account. Afterwards your verified devices can recognise each other, and the message lock will show as verified.",
+  "password_notice": "The server requires a second confirmation, so your current account password is needed.",
+  "password_label": "Account password",
+  "password_placeholder": "Enter your current account password",
+  "password_required": "Please enter your account password",
+  "submit": "Start check",
+  "success_desc": "Security check complete — cross-signing keys are set up.",
+  "needs_security_key": "Your cross-signing private keys are not stored in your security key yet. They cannot be recovered after switching devices or clearing data — set it up now.",
+  "wrong_password": "Incorrect password, please try again.",
+  "failed": "Security check failed",
+  "retry": "Retry",
+  "finish_recovery": "Finish recovery setup",
+  "store_keys_success": "Cross-signing keys stored in your security key",
+  "store_keys_failed": "Failed to store keys in your security key"
+}

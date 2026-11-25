@@ -1,0 +1,17 @@
+{
+  "title": "完成安全检查",
+  "intro_desc": "安全检查会为你的账号建立交叉签名密钥。完成后，你验证过的设备之间才能互相认可，消息锁也才会显示「已验证」。",
+  "password_notice": "服务端要求二次确认，需要输入当前账号密码。",
+  "password_label": "账号密码",
+  "password_placeholder": "请输入当前账号密码",
+  "password_required": "请输入账号密码",
+  "submit": "开始检查",
+  "success_desc": "安全检查已完成，交叉签名密钥已建立。",
+  "needs_security_key": "交叉签名私钥还没有存进安全密钥。换设备或清除数据后可能无法恢复，建议现在设置。",
+  "wrong_password": "密码不正确，请重试。",
+  "failed": "安全检查失败",
+  "retry": "重试",
+  "finish_recovery": "完成恢复设置",
+  "store_keys_success": "交叉签名私钥已存入安全密钥",
+  "store_keys_failed": "私钥存入安全密钥失败"
+}

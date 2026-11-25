@@ -119,7 +119,7 @@
             :title="t('setting.encryption.cross_signing_setup')"
             :label="t('setting.encryption.cross_signing_not_setup_desc')"
             is-link
-            @click="router.push(MOBILE_SETTINGS_SECURITY_KEY_PATH)" />
+            @click="handleSetupCrossSigning" />
         </van-cell-group>
 
         <!-- 安全密钥（SSSS 恢复密钥）入口：方案 4.2 -->
@@ -201,6 +201,11 @@
         v-model:show="showDeviceTrustManager"
         @complete="loadDevices()"
         @setup-cross-signing="handleSetupCrossSigning" />
+
+      <MobileCrossSigningSetup
+        v-model="showCrossSigningSetup"
+        @completed="handleCrossSigningCompleted"
+        @needs-security-key="handleNeedsSecurityKey" />
     </template>
   </AutoFixHeightPage>
 </template>
@@ -217,6 +222,7 @@ import { useEncryptionSettings } from '@/composables/encryption/useEncryptionSet
 import { useKeyBackupFlow } from '@/composables/encryption/useKeyBackupFlow'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileCrossSigningSetup from '@/mobile/components/encryption/MobileCrossSigningSetup.vue'
 import MobileDehydratedDeviceDialog from '@/mobile/components/encryption/MobileDehydratedDeviceDialog.vue'
 import MobileDeviceTrustManager from '@/mobile/components/encryption/MobileDeviceTrustManager.vue'
 import MobileKeyBackupDialog from '@/mobile/components/encryption/MobileKeyBackupDialog.vue'
@@ -257,15 +263,33 @@ const showKeyBackupRestore = ref(false)
 const showDehydratedDevice = ref(false)
 // Device trust manager
 const showDeviceTrustManager = ref(false)
+// 交叉签名（安全检查）流程
+const showCrossSigningSetup = ref(false)
 
 /**
- * 从未验证设备列表跳去「设置安全密钥」。
+ * 打开「完成安全检查」（bootstrap cross-signing）流程。
  *
- * 移动端当前没有交叉签名设置界面（`MobileSecurityKeySetup` 只做 4S），
- * 因此这里只能引导到可以真正完成的下一步，而不是给一个点了没用的按钮。
+ * 设备管理器是模态弹窗，先关掉它，否则安全检查弹窗会被压在下面。
  */
 function handleSetupCrossSigning() {
   showDeviceTrustManager.value = false
+  showCrossSigningSetup.value = true
+}
+
+/**
+ * 交叉签名建立后必须重算结论。
+ *
+ * 建立之前「所有设备都未验证」是必然结果（`crossSigningVerified` 恒 false）；
+ * 建立之后同一条判断可能改变，不刷新就会把过期的「全红」列表留在界面上。
+ */
+async function handleCrossSigningCompleted() {
+  await refreshEncryptionSettings()
+  await loadDeviceSessions()
+}
+
+/** 私钥未入 4S：安全检查已完成但还差「可恢复」，引导去设置安全密钥 */
+function handleNeedsSecurityKey() {
+  showCrossSigningSetup.value = false
   router.push(MOBILE_SETTINGS_SECURITY_KEY_PATH)
 }
 // 已启用备份时的管理操作面板

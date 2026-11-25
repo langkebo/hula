@@ -390,7 +390,12 @@ describe('Mobile EncryptionSettings', () => {
     expect((wrapper.vm as any).showKeyBackupRestore).toBe(true)
   })
 
-  it('交叉签名未设置时跳转安全密钥设置页', async () => {
+  /**
+   * 交叉签名未设置时，入口必须打开「安全检查」流程本身。
+   * 此前跳的是安全密钥（4S）页，那里不做 bootstrap cross-signing，
+   * 用户点进去什么也不会发生 —— 属于把入口指错地方。
+   */
+  it('交叉签名未设置时打开安全检查流程', async () => {
     getCurrentSessionContextMock.mockReturnValue({
       userId: '@alice:example.com',
       deviceId: 'CURRENT_DEVICE',
@@ -406,7 +411,8 @@ describe('Mobile EncryptionSettings', () => {
 
     await setupCell?.trigger('click')
 
-    expect(routerPushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_SECURITY_KEY_PATH)
+    expect((wrapper.vm as any).showCrossSigningSetup).toBe(true)
+    expect(routerPushMock).not.toHaveBeenCalledWith(MOBILE_SETTINGS_SECURITY_KEY_PATH)
   })
 
   it('在加密不可用或设备加载失败时走降级提示', async () => {

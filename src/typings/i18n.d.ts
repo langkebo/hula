@@ -44,6 +44,7 @@ import type { Messages as mobile_chatMessages, KeyPaths as mobile_chatKeyPaths }
 import type { Messages as mobile_chat_settingMessages, KeyPaths as mobile_chat_settingKeyPaths } from './i18n/mobile_chat_setting'
 import type { Messages as mobile_connectionMessages, KeyPaths as mobile_connectionKeyPaths } from './i18n/mobile_connection'
 import type { Messages as mobile_contactMessages, KeyPaths as mobile_contactKeyPaths } from './i18n/mobile_contact'
+import type { Messages as mobile_cross_signingMessages, KeyPaths as mobile_cross_signingKeyPaths } from './i18n/mobile_cross_signing'
 import type { Messages as mobile_deactivateMessages, KeyPaths as mobile_deactivateKeyPaths } from './i18n/mobile_deactivate'
 import type { Messages as mobile_devicesMessages, KeyPaths as mobile_devicesKeyPaths } from './i18n/mobile_devices'
 import type { Messages as mobile_edit_brithdayMessages, KeyPaths as mobile_edit_brithdayKeyPaths } from './i18n/mobile_edit_brithday'
@@ -148,6 +149,7 @@ export type I18nKeys = {
   "mobile_chat_setting": mobile_chat_settingMessages
   "mobile_connection": mobile_connectionMessages
   "mobile_contact": mobile_contactMessages
+  "mobile_cross_signing": mobile_cross_signingMessages
   "mobile_deactivate": mobile_deactivateMessages
   "mobile_devices": mobile_devicesMessages
   "mobile_edit_brithday": mobile_edit_brithdayMessages
@@ -262,6 +264,7 @@ export type I18nKeyPaths =
   | mobile_chat_settingKeyPaths
   | mobile_connectionKeyPaths
   | mobile_contactKeyPaths
+  | mobile_cross_signingKeyPaths
   | mobile_deactivateKeyPaths
   | mobile_devicesKeyPaths
   | mobile_edit_brithdayKeyPaths
