@@ -9,10 +9,8 @@ import type { Plugin, UserConfig } from 'vite'
 import compression from 'vite-plugin-compression'
 import packageJson from '../../package.json' with { type: 'json' }
 import { cspNoncePlugin } from '../plugins/vite-plugin-csp-nonce.ts'
-import { createManualChunks } from './chunks.ts'
+import { createCodeSplittingGroups } from './chunks.ts'
 import { createSdkAliases } from './sdk-aliases.ts'
-
-const dependencies = Object.keys(packageJson.dependencies || {})
 
 /**
  * 把 package.json 的版本号注入 index.html 的 `<meta name="app-version">`。
@@ -114,7 +112,11 @@ export const baseConfig: UserConfig = {
         chunkFileNames: 'static/js/[name]-[hash].js',
         entryFileNames: 'static/js/[name]-[hash].js',
         assetFileNames: 'static/[ext]/[name]-[hash].[ext]',
-        manualChunks: createManualChunks(dependencies)
+        // 用 rolldown 原生分组替代 manualChunks：后者是 Rollup 兼容层，分组顺序按
+        // 模块发现顺序且递归吸收依赖，无法保证 capture 窗口不加载 Matrix 栈。
+        codeSplitting: {
+          groups: createCodeSplittingGroups()
+        }
       }
     }
   },

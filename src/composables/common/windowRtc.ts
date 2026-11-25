@@ -111,7 +111,7 @@ export function createRtcWindowManager(deps: RtcWindowManagerDeps) {
     return ensureDesktopWindowInstance(
       'capture',
       {
-        url: '/capture',
+        url: '/capture.html',
         fullscreen: false,
         transparent: true,
         resizable: false,

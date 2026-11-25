@@ -38,6 +38,9 @@ src-tauri/target
 dist/stats.html
 dist/bundle-metrics.json
 
+# capture 窗口入口的构建产物（vite build 输出到仓库根）
+/capture.html
+
 # Temporary optimization artifacts
 tsc*.log
 test_output*.log
