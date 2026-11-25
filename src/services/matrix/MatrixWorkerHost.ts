@@ -69,6 +69,8 @@ export class MatrixWorkerHost {
   private readonly pending = new Map<string, PendingRequest>()
   private nextId = 1
   private readyPromise: Promise<void> | null = null
+  /** 是否已收到 worker 的 ready 信号（`start()` 之后、ready 之前为 false）。 */
+  private readyResolved = false
   private readyResolve: (() => void) | null = null
   private readyReject: ((err: Error) => void) | null = null
   /** ready 超时兜底定时器（H-13）：worker 加载卡死时避免 start() 永挂。 */
@@ -273,6 +275,7 @@ export class MatrixWorkerHost {
     this.readyPromise = null
     this.readyResolve = null
     this.readyReject = null
+    this.readyResolved = false
   }
 
   /**
@@ -290,6 +293,15 @@ export class MatrixWorkerHost {
   protected async request<T>(type: string, payload?: unknown, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS): Promise<T> {
     const worker = this.worker
     if (!worker) {
+      throw new Error(useI18nGlobal().t('matrix_error.worker.not_started'))
+    }
+
+    // worker 已创建但模块尚未求值完成时先等 ready：否则 postMessage 虽会排队，
+    // 但模块求值慢于请求超时时，调用方会先收到 15s 超时误判成写入失败。
+    if (!this.readyResolved && this.readyPromise) {
+      await this.readyPromise
+    }
+    if (this.worker !== worker) {
       throw new Error(useI18nGlobal().t('matrix_error.worker.not_started'))
     }
 
@@ -328,6 +340,7 @@ export class MatrixWorkerHost {
       }
       // 重新启动成功后清除降级标记，横幅随之撤回。
       this.degraded = false
+      this.readyResolved = true
       this.readyResolve?.()
       this.readyResolve = null
       this.readyReject = null

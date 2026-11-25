@@ -441,6 +441,51 @@ describe('MatrixEventRouter', () => {
       }
     })
 
+    it('worker 冷启动超过旧的 150ms 重试预算后，缓冲事件仍能补写', () => {
+      vi.useFakeTimers()
+      try {
+        // 冷启动实测 0.6–1.5s：旧实现只等约 150ms 就丢批，这里验证新退避能撑到 worker 就绪
+        workerHostMock.isStarted = false
+        router.setup(client as never, syncManager as never)
+        client.handlers.get('Room.timeline')?.(makeMatrixEvent() as never, makeRoom() as never)
+
+        vi.advanceTimersByTime(1_200)
+        expect(workerHostMock.upsertSearchEvents).not.toHaveBeenCalled()
+
+        workerHostMock.isStarted = true
+        vi.advanceTimersByTime(2_000)
+
+        expect(workerHostMock.upsertSearchEvents).toHaveBeenCalledTimes(1)
+        expect(workerHostMock.upsertSearchEvents).toHaveBeenCalledWith([
+          expect.objectContaining({ eventId: '$event1', body: 'hello' })
+        ])
+      } finally {
+        workerHostMock.isStarted = true
+        vi.useRealTimers()
+      }
+    })
+
+    it('worker 超过 30s 仍未启动才丢弃缓冲，之后启动也不再补写', () => {
+      vi.useFakeTimers()
+      try {
+        workerHostMock.isStarted = false
+        router.setup(client as never, syncManager as never)
+        client.handlers.get('Room.timeline')?.(makeMatrixEvent() as never, makeRoom() as never)
+
+        // 退避到 30s 时限后的下一个重试点才判定超时丢批（约 30.4s）
+        vi.advanceTimersByTime(32_000)
+        expect(workerHostMock.upsertSearchEvents).not.toHaveBeenCalled()
+
+        workerHostMock.isStarted = true
+        vi.advanceTimersByTime(2_000)
+
+        expect(workerHostMock.upsertSearchEvents).not.toHaveBeenCalled()
+      } finally {
+        workerHostMock.isStarted = true
+        vi.useRealTimers()
+      }
+    })
+
     it('room_timeline 中非 m.text 消息不调用 worker upsertSearchEvents', () => {
       router.setup(client as never, syncManager as never)
       const event = makeMatrixEvent({

@@ -50,8 +50,18 @@ const logger = createLogger('MatrixEventRouter')
 const SEARCH_EVENT_BATCH_WINDOW_MS = 50
 /** 单批事件上限：超出按最旧丢弃，形成背压保护（索引可重建，丢批优于内存持续膨胀）。 */
 const SEARCH_EVENT_BATCH_MAX = 200
-/** 落批失败（worker 未启动/写入报错）的最大重试次数；超过后丢批并告警一次。 */
+/** 真实写入报错的最大重试次数；超过后丢批并告警一次。 */
 const SEARCH_FLUSH_MAX_RETRIES = 3
+/**
+ * worker 未启动时的退避参数（起点 / 单次上限 / 总时限）。
+ *
+ * 冷启动实测 spawn + SDK 求值需要 0.6–1.5s，旧实现按「50ms 窗口 × 3 次」重试，
+ * 预算只有约 150ms，冷启动期间到达的事件必然被丢弃。改为指数退避 + 总时限：
+ * 等待期间既不算作写入失败，也不会无限攒内存（单批上限仍在生效）。
+ */
+const SEARCH_FLUSH_WAIT_BASE_MS = 50
+const SEARCH_FLUSH_WAIT_MAX_MS = 1_600
+const SEARCH_FLUSH_WAIT_DEADLINE_MS = 30_000
 
 /**
  * 事件路由器
@@ -66,8 +76,12 @@ export class MatrixEventRouter {
   private searchFlushTimer: ReturnType<typeof setTimeout> | null = null
   /** 因单批上限被丢弃的事件数，仅在下次落批时汇总告警一次。 */
   private droppedSearchEvents = 0
-  /** 连续落批失败次数；成功一次即清零。 */
+  /** 连续写入失败次数（不含等待 worker 启动）；成功一次即清零。 */
   private searchFlushRetries = 0
+  /** 等待 worker 启动的退避次数。 */
+  private searchFlushWaitAttempts = 0
+  /** 开始等待 worker 启动的时间戳（ms）；成功落批后清空。 */
+  private searchFlushWaitingSince: number | null = null
   private readonly roomListeners: Map<string, { room: Room; handlers: Map<string, (...args: unknown[]) => void> }> =
     new Map()
   private observedClient: MatrixClient | null = null
@@ -315,9 +329,12 @@ export class MatrixEventRouter {
       clearTimeout(this.searchFlushTimer)
       this.searchFlushTimer = null
     }
-    if (this.pendingSearchEvents.length === 0) return
+    if (this.pendingSearchEvents.length === 0) {
+      this.resetSearchFlushState()
+      return
+    }
     if (!discardOnFailure && !matrixWorkerHost.isStarted) {
-      this.requeueSearchEvents()
+      this.requeueSearchEvents(undefined, 'worker-not-started')
       return
     }
 
@@ -330,7 +347,7 @@ export class MatrixEventRouter {
     void matrixWorkerHost
       .upsertSearchEvents(batch)
       .then(() => {
-        this.searchFlushRetries = 0
+        this.resetSearchFlushState()
       })
       .catch((err) => {
         if (discardOnFailure) {
@@ -338,27 +355,60 @@ export class MatrixEventRouter {
           return
         }
         logger.warn('搜索索引批量写入失败，稍后重试:', err)
-        this.requeueSearchEvents(batch)
+        this.requeueSearchEvents(batch, 'write-failed')
       })
   }
 
-  /** 把批次放回缓冲并在下个窗口重试；连续失败超过上限则丢批并告警一次。 */
-  private requeueSearchEvents(batch?: SearchEventDoc[]): void {
+  /**
+   * 把批次放回缓冲并安排下一次落批。
+   *
+   * - `worker-not-started`：worker 还没起来，按指数退避重试，不消耗写入失败预算；
+   *   超过 {@link SEARCH_FLUSH_WAIT_DEADLINE_MS} 仍未启动才丢批。
+   * - `write-failed`：真实写入报错，保留 {@link SEARCH_FLUSH_MAX_RETRIES} 次上限。
+   */
+  private requeueSearchEvents(
+    batch: SearchEventDoc[] | undefined,
+    reason: 'worker-not-started' | 'write-failed'
+  ): void {
     if (batch) {
       this.pendingSearchEvents = batch.concat(this.pendingSearchEvents)
     }
+    if (reason === 'worker-not-started') {
+      const now = Date.now()
+      this.searchFlushWaitingSince ??= now
+      if (now - this.searchFlushWaitingSince >= SEARCH_FLUSH_WAIT_DEADLINE_MS) {
+        const dropped = this.pendingSearchEvents.length
+        this.pendingSearchEvents = []
+        this.resetSearchFlushState()
+        if (dropped > 0) {
+          logger.warn(`worker 在 ${SEARCH_FLUSH_WAIT_DEADLINE_MS}ms 内仍未启动，丢弃 ${dropped} 条搜索索引事件`)
+        }
+        return
+      }
+      const delay = Math.min(SEARCH_FLUSH_WAIT_BASE_MS * 2 ** this.searchFlushWaitAttempts, SEARCH_FLUSH_WAIT_MAX_MS)
+      this.searchFlushWaitAttempts += 1
+      this.searchFlushTimer = setTimeout(() => this.flushSearchEvents(), delay)
+      return
+    }
+
     if (this.searchFlushRetries >= SEARCH_FLUSH_MAX_RETRIES) {
       const dropped = this.pendingSearchEvents.length
       this.pendingSearchEvents = []
-      this.searchFlushRetries = 0
+      this.resetSearchFlushState()
       if (dropped > 0) {
         logger.warn(`搜索索引连续 ${SEARCH_FLUSH_MAX_RETRIES} 次写入失败，丢弃 ${dropped} 条事件`)
       }
       return
     }
     this.searchFlushRetries += 1
-    if (this.searchFlushTimer) return
     this.searchFlushTimer = setTimeout(() => this.flushSearchEvents(), SEARCH_EVENT_BATCH_WINDOW_MS)
+  }
+
+  /** 落批成功或批次清空后重置退避/重试状态。 */
+  private resetSearchFlushState(): void {
+    this.searchFlushRetries = 0
+    this.searchFlushWaitAttempts = 0
+    this.searchFlushWaitingSince = null
   }
 
   /** 分离房间事件监听器

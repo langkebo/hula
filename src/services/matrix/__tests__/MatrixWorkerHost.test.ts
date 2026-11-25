@@ -102,6 +102,24 @@ describe('MatrixWorkerHost', () => {
     await expect(promise).resolves.toEqual({ timestamp: 12345 })
   })
 
+  it('request() 在 ready 之前等待，不提前 postMessage', async () => {
+    const { host, worker } = makeHost()
+    void host.start()
+
+    const promise = host.ping()
+    await Promise.resolve()
+    expect(worker.postedMessages).toHaveLength(0)
+
+    worker.emit({ type: 'ready', id: 'init', success: true })
+    await Promise.resolve()
+    expect(worker.postedMessages).toHaveLength(1)
+
+    const sent = worker.postedMessages[0]
+    expect(sent.type).toBe('ping')
+    worker.emit({ type: 'ping', id: sent.id, success: true, data: { timestamp: 42 } })
+    await expect(promise).resolves.toEqual({ timestamp: 42 })
+  })
+
   it('rejects the pending promise when the worker reports success: false', async () => {
     const { host, worker } = makeReadyHost()
 
