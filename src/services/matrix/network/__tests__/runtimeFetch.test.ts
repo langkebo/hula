@@ -129,6 +129,36 @@ describe('runtimeFetch', () => {
     expect(debugMock).not.toHaveBeenCalled()
   })
 
+  it('treats 401 on the guest capability probe as expected and logs at debug', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 401,
+      headers: { get: () => null }
+    })
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    const response = await runtimeFetch('https://matrix.test/_matrix/client/v3/account/guest')
+
+    expect(response.status).toBe(401)
+    expect(warnMock).not.toHaveBeenCalled()
+    expect(debugMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('still warns on 401 outside the guest capability probe', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 401,
+      headers: { get: () => null }
+    })
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/profile/@alice:matrix.test')
+
+    expect(warnMock).toHaveBeenCalledTimes(1)
+  })
+
   it('does not fall back to browser fetch when the request signal is aborted', async () => {
     vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
     const browserFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
