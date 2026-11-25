@@ -49,6 +49,8 @@ describe('secureStorage 后端上报', () => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
     resetSecureStorageBackendCache()
+    // 降级告警的去重标记会跨窗口持久化到 localStorage，用例之间必须清掉
+    localStorage.clear()
   })
 
   afterEach(() => {
@@ -214,6 +216,24 @@ describe('secureStorage 后端上报', () => {
       expect(invokeMock).toHaveBeenCalledTimes(2)
       expect(warnMessages().filter((message) => message.includes('降级'))).toHaveLength(1)
       nowSpy.mockRestore()
+    })
+
+    it('跨窗口去重：另一个 webview（进程内状态重置、共享 localStorage）不再重复告警', async () => {
+      stubTauriRuntime()
+      invokeMock.mockResolvedValue({
+        available: true,
+        backend: ENCRYPTED_FILE_FALLBACK_BACKEND,
+        nativeAvailable: false,
+        degraded: true
+      })
+
+      await getSecureStorageBackendInfo()
+      // 模拟另一个 webview：本窗口的进程内状态被清空，但同 origin 的 localStorage 仍在
+      resetSecureStorageBackendCache()
+      await getSecureStorageBackendInfo()
+
+      expect(invokeMock).toHaveBeenCalledTimes(2)
+      expect(warnMessages().filter((message) => message.includes('降级'))).toHaveLength(1)
     })
   })
 

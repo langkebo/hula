@@ -54,6 +54,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import { useSecretChatAutoLock } from '@/composables/secretChat/useSecretChatAutoLock'
 import { useLocalStorePlaintextWarning } from '@/composables/secure/useLocalStorePlaintextWarning'
 import { runLocalUnlockPreflight } from '@/composables/secure/useLocalUnlockGate'
+import { useSecureStorageDegradedNotice } from '@/composables/secure/useSecureStorageDegradedNotice'
 import { useLockScreen } from '@/composables/settings/useLockScreen'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
@@ -276,7 +277,10 @@ watch(
       return
     }
     invitePolicyEnforcement.start()
-  }
+  },
+  // 会话恢复后连接状态可能在建 watch 之前就已推进（整页 reload 场景），
+  // immediate 保证这种情况下也能补上启动；start() 幂等，重复触发是空操作。
+  { immediate: true }
 )
 
 // ========== WS event handler（含 Presence 单一管线） ==========
@@ -517,6 +521,8 @@ onMounted(async () => {
     // P-03：Matrix 运行时初始化延后到首帧之后；本机密钥库未加密提示同属非首屏必需
     runAfterFirstPaint(async () => {
       await useLocalStorePlaintextWarning().warnIfNeeded()
+      // B3：降级 / 恢复各告知一次（明文落盘那条链路不在这里）
+      await useSecureStorageDegradedNotice().notifyIfNeeded()
       await initMatrixRuntimeAfterFirstPaint()
     })
   }

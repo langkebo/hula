@@ -913,6 +913,8 @@
     "local_store_plaintext_title": "Not encrypted (plaintext on disk)",
     "local_store_plaintext_desc": "Secure storage is unavailable, so local message and room keys are written in plaintext. Anyone who can read files on this device can take them.",
     "local_store_plaintext_toast": "Secure storage is unavailable on this device, so message keys are stored unencrypted on disk. See Settings -> Security -> Local key store.",
+    "local_store_degraded_toast": "The system keychain is temporarily unavailable, so message keys have fallen back to a master-key protected file. Keys are still encrypted, only less strongly protected. See Settings -> Security -> Local key store.",
+    "local_store_recovered_toast": "The system keychain is available again, so message keys are protected by it once more.",
     "local_store_unknown_title": "Unknown",
     "local_store_unknown_desc": "Encryption has not been initialised yet, so the local key store state cannot be determined.",
     "local_unlock_setup_title": "Set a local unlock password",

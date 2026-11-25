@@ -54,6 +54,38 @@ const AVAILABILITY_CACHE_TTL_MS = 60_000
 let warnedDegradedBackend: string | null = null
 
 /**
+ * 降级告警的跨窗口去重标记（localStorage，同一 origin 全部 webview 共享）。
+ *
+ * 进程内去重只能挡住单窗口的重复探测；login / home / capture 各自有独立 JS 上下文，
+ * 于是同一条降级 WARN 会按窗口数刷屏。降级是**进程级**事实，必须跨窗口只报一次。
+ */
+const DEGRADED_NOTICE_STORAGE_KEY = 'tjg-secure-storage-degraded-notice-v1'
+
+/** 同一降级事实可能被两处诊断引用，各自只报一次，互不吞并 */
+export type DegradedNoticeScope = 'secure-storage' | 'crypto-storage-key'
+
+/**
+ * 认领"本窗口是否应该打印这次降级告警"。
+ *
+ * @returns true = 本窗口是首个报告者（应 warn）；false = 其它窗口已报过（应降级为 debug）
+ */
+export function claimDegradedNotice(scope: DegradedNoticeScope, backend: string): boolean {
+  try {
+    const raw = localStorage.getItem(DEGRADED_NOTICE_STORAGE_KEY)
+    const reported: Record<string, string> = raw ? (JSON.parse(raw) as Record<string, string>) : {}
+    if (reported[scope] === backend) {
+      return false
+    }
+    reported[scope] = backend
+    localStorage.setItem(DEGRADED_NOTICE_STORAGE_KEY, JSON.stringify(reported))
+    return true
+  } catch {
+    // localStorage 不可用（隐私模式/非浏览器环境）时退回"每次都报"，宁可吵也不吞告警
+    return true
+  }
+}
+
+/**
  * 把 IPC 响应映射为后端事实。
  *
  * 兼容推导（老二进制无新字段时）：
@@ -95,10 +127,14 @@ async function resolveSecureStorageBackend(): Promise<SecureStorageBackendInfo> 
       // 与「已存入操作系统密钥库」不是同一安全等级。
       const degradedBackend = info.backend ?? 'unknown'
       if (warnedDegradedBackend !== degradedBackend) {
-        logger.warn(
-          `[SecureStorage] 降级：系统密钥库不可用，secret 仅由本机 master-key 加密的文件保护（backend=${degradedBackend}）`
-        )
         warnedDegradedBackend = degradedBackend
+        if (claimDegradedNotice('secure-storage', degradedBackend)) {
+          logger.warn(
+            `[SecureStorage] 降级：系统密钥库不可用，secret 仅由本机 master-key 加密的文件保护（backend=${degradedBackend}）`
+          )
+        } else {
+          logger.debug(`[SecureStorage] 降级（其它窗口已上报）：backend=${degradedBackend}`)
+        }
       }
     } else {
       logger.info(`[SecureStorage] 生效后端：${describeSecureStorageBackend(info)}`)
@@ -133,7 +169,10 @@ async function isSecureStorageAvailable(): Promise<boolean> {
   return (await getSecureStorageBackendInfo()).available
 }
 
-/** 清空可用性缓存（登出/测试用：下一次调用会重新探测，降级告警也重新计一次） */
+/**
+ * 清空可用性缓存（登出/测试用：下一次调用会重新探测）。
+ * 仅清进程内标记；跨窗口去重标记保留在 localStorage，避免同一降级被反复刷屏。
+ */
 export function resetSecureStorageBackendCache(): void {
   backendInfoPromise = null
   availabilityCheckedAt = 0

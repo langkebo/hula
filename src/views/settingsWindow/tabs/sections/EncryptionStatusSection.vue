@@ -98,6 +98,7 @@ import { Icon } from '@iconify/vue'
 import { NButton, NDivider } from 'naive-ui'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { resetSecureStorageBackendCache } from '@/services/secure/secureStorage'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 
 defineOptions({
@@ -172,6 +173,9 @@ const localStoreLevelKey = computed(() => {
 })
 
 onMounted(() => {
+  // B3：状态卡是用户核对「降级是否已恢复」的地方，必须现探测（后端信息有 60s 缓存，
+  // 直接用会展示启动时的陈旧降级状态）。
+  resetSecureStorageBackendCache()
   void encryptionStore.loadLocalStoreEncryptionStatus()
 })
 

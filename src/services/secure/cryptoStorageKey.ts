@@ -1,4 +1,5 @@
 import {
+  claimDegradedNotice,
   deleteSecureSecret,
   describeSecureStorageBackend,
   getSecureSecret,
@@ -365,9 +366,14 @@ export async function logCryptoStorageKeyBackend(userId: string, deviceId: strin
   const backendLabel = describeSecureStorageBackend(backendInfo)
 
   if (backendInfo.degraded) {
-    logger.warn(
-      `crypto storageKey（32 字节）仅存于 ${backendLabel} —— 未受操作系统密钥库保护；crypto store 将加密: ${userId}/${deviceId}`
-    )
+    const degradedBackend = backendInfo.backend ?? 'unknown'
+    if (claimDegradedNotice('crypto-storage-key', degradedBackend)) {
+      logger.warn(
+        `crypto storageKey（32 字节）仅存于 ${backendLabel} —— 未受操作系统密钥库保护；crypto store 将加密: ${userId}/${deviceId}`
+      )
+    } else {
+      logger.debug(`crypto storageKey 后端降级（其它窗口已上报）: ${degradedBackend}`)
+    }
     return
   }
 

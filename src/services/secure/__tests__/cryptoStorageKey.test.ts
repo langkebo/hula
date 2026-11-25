@@ -75,7 +75,8 @@ import {
   CRYPTO_STORAGE_KEY_BYTES,
   clearCryptoStorageKeyCache,
   deleteCryptoStorageKey,
-  getOrCreateCryptoStorageKey
+  getOrCreateCryptoStorageKey,
+  logCryptoStorageKeyBackend
 } from '../cryptoStorageKey'
 
 /**
@@ -406,5 +407,48 @@ describe('cryptoStorageKey · 来源锁定（D3）', () => {
     await deleteCryptoStorageKey('@gina:hs', 'DEV10')
 
     expect(readSource()['@gina:hs:DEV10']).toBeUndefined()
+  })
+})
+
+/**
+ * F3：降级诊断日志不能按窗口刷屏。
+ *
+ * `logCryptoStorageKeyBackend` 在每个 webview 的 E2EE 初始化后各调一次；
+ * login/home/capture 三窗口 ⇒ 同一条"仅存于加密文件 fallback"WARN 打三次。
+ * 该告警描述的是**进程级后端降级**，属会话级事实，必须在同 origin 的所有窗口间去重，
+ * 否则真告警会被噪音淹没（用户实际反馈即此）。
+ */
+describe('cryptoStorageKey · 降级诊断日志跨窗口去重（F3）', () => {
+  const degradedWarns = (): string[] =>
+    logSpies.warn.mock.calls
+      .map(([message]) => String(message))
+      .filter((message) => message.includes('未受操作系统密钥库保护'))
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    hoisted.getSecureStorageBackendInfo.mockResolvedValue({
+      available: true,
+      backend: 'encrypted_file_fallback',
+      nativeAvailable: false,
+      degraded: true
+    })
+  })
+
+  it('同一上下文重复调用只告警一次', async () => {
+    await logCryptoStorageKeyBackend('@alice:hs', 'DEV1')
+    await logCryptoStorageKeyBackend('@alice:hs', 'DEV1')
+
+    expect(degradedWarns()).toHaveLength(1)
+  })
+
+  it('另一个 webview（全新模块实例、共享 localStorage）不再重复告警', async () => {
+    await logCryptoStorageKeyBackend('@alice:hs', 'DEV1')
+
+    vi.resetModules()
+    const freshWindow = await import('../cryptoStorageKey')
+    await freshWindow.logCryptoStorageKeyBackend('@alice:hs', 'DEV1')
+
+    expect(degradedWarns()).toHaveLength(1)
   })
 })

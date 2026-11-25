@@ -27,6 +27,8 @@ interface E2EEStatus {
 
 class MatrixE2EEManager {
   private isInitialized = false
+  /** 本次会话是否已提示过"密钥备份未启用"（bootstrap 可能被重复触发） */
+  private keyBackupNoticeReported = false
   private healthMonitor: CryptoHealthMonitor = new CryptoHealthMonitor()
 
   /**
@@ -74,8 +76,10 @@ class MatrixE2EEManager {
         logger.info('跨签名未就绪，尝试同步密钥...')
       }
 
-      if (status && !status.keyBackupEnabled) {
-        logger.warn('密钥备份未启用，建议用户设置密钥备份以防密钥丢失')
+      if (status && !status.keyBackupEnabled && !this.keyBackupNoticeReported) {
+        // 未启用备份是**可引导的配置缺失**，不是故障：用 INFO，并按会话去重
+        this.keyBackupNoticeReported = true
+        logger.info('密钥备份未启用，建议用户设置密钥备份以防密钥丢失')
       }
     } catch (err) {
       logger.error(`校验 E2EE 环境失败: ${formatMatrixError(err)}`)
@@ -272,6 +276,7 @@ class MatrixE2EEManager {
     this.healthMonitor.stop()
     cryptoSDKAdapter.invalidateCryptoCache()
     this.isInitialized = false
+    this.keyBackupNoticeReported = false
     logger.debug('E2EE 状态已重置')
   }
 }

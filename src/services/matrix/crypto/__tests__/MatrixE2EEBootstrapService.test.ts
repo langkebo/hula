@@ -7,13 +7,18 @@ import { cryptoSDKAdapter } from '../CryptoSDKAdapter'
 import { matrixCryptoService } from '../MatrixCryptoService'
 import { matrixE2EEBootstrapService } from '../MatrixE2EEBootstrapService'
 
-vi.mock('@/utils/Logger', () => ({
-  createLogger: () => ({
+// 共享同一个 logger 实例，便于断言"密钥备份未启用"这类提示到底落在哪个级别、报了几次
+const hoisted = vi.hoisted(() => ({
+  logger: {
     error: vi.fn(),
     warn: vi.fn(),
     info: vi.fn(),
     debug: vi.fn()
-  })
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => hoisted.logger
 }))
 
 vi.mock('@/common/matrixErrorTranslator', () => ({
@@ -89,6 +94,13 @@ function mockClient(client?: Record<string, unknown>): void {
   mockedClientService.getClient.mockReturnValue((client ?? {}) as unknown as MatrixClient)
 }
 
+type LogSpy = { mock: { calls: unknown[][] } }
+
+/** 统计包含关键词的日志条数（只关心第一参数，即消息体） */
+function countLogs(spy: LogSpy, keyword: string): number {
+  return spy.mock.calls.filter((call) => String(call[0]).includes(keyword)).length
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   matrixE2EEBootstrapService.reset()
@@ -126,6 +138,36 @@ describe('MatrixE2EEBootstrapService', () => {
       await expect(matrixE2EEBootstrapService.bootstrapE2EE()).rejects.toThrow('init failed')
       const status = await matrixE2EEBootstrapService.getE2EESettingsStatus()
       expect(status.isInitialized).toBe(false)
+    })
+  })
+
+  describe('F4 · 密钥备份未启用提示', () => {
+    function setupKeyBackupDisabled(): void {
+      mockClient()
+      mockedCryptoService.initializeCrypto.mockResolvedValue(undefined)
+      mockedSDKAdapter.isEncryptionAvailable.mockResolvedValue(true)
+      mockedCryptoService.getCryptoStatus.mockResolvedValue({
+        crossSigningReady: true,
+        keyBackupEnabled: false
+      })
+    }
+
+    it('密钥备份未启用时只记 INFO，不再刷 WARN', async () => {
+      setupKeyBackupDisabled()
+
+      await matrixE2EEBootstrapService.bootstrapE2EE()
+
+      expect(countLogs(hoisted.logger.warn, '密钥备份')).toBe(0)
+      expect(countLogs(hoisted.logger.info, '密钥备份')).toBe(1)
+    })
+
+    it('同一会话内重复 bootstrap 只提示一次', async () => {
+      setupKeyBackupDisabled()
+
+      await matrixE2EEBootstrapService.bootstrapE2EE()
+      await matrixE2EEBootstrapService.bootstrapE2EE()
+
+      expect(countLogs(hoisted.logger.info, '密钥备份')).toBe(1)
     })
   })
 
