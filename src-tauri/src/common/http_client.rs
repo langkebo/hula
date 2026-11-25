@@ -9,37 +9,57 @@
 
 use reqwest::redirect::Policy;
 
-/// 判断 URL 的主机是否为回环地址（`localhost` / `127.0.0.0/8` / `::1`）。
+/// 提取归一化主机名（小写、去尾部点、去 IPv6 方括号）。
 ///
-/// 解析失败一律返回 `false`（不放宽校验）。
-pub fn is_loopback_url(url: &str) -> bool {
-    let Ok(parsed) = url::Url::parse(url) else {
-        return false;
-    };
-    let Some(host) = parsed.host_str() else {
-        return false;
-    };
-
+/// 解析失败返回 `None`（调用方据此**不放宽**校验）。
+fn normalized_host(url: &str) -> Option<String> {
+    let parsed = url::Url::parse(url).ok()?;
+    let host = parsed.host_str()?;
     let normalized = host.trim_end_matches('.').to_ascii_lowercase();
-    // IPv6 字面量在 URL 里带方括号，剥掉后才能交给 IpAddr::parse。
-    let host = normalized
-        .strip_prefix('[')
-        .and_then(|h| h.strip_suffix(']'))
-        .unwrap_or(&normalized);
+    Some(
+        normalized
+            .strip_prefix('[')
+            .and_then(|h| h.strip_suffix(']'))
+            .unwrap_or(&normalized)
+            .to_string(),
+    )
+}
 
-    if host == "localhost" || host.ends_with(".localhost") {
+/// debug 构建允许放宽 TLS 校验的目标。
+///
+/// 放行范围必须与前端
+/// `src/services/matrix/network/runtimeFetch.ts` 的 `RELAXED_TLS_HOST_SUFFIXES`
+/// 保持一致，否则会出现「应用内可正常连 homeserver，但 Rust 侧健康检查/
+/// 管理接口一直因自签名证书失败」的割裂。
+///
+/// 两类目标：
+/// 1. 本机回环地址（`localhost` / `127.0.0.0/8` / `::1`）；
+/// 2. RFC 2606 / RFC 6762 保留的本地开发 TLD：`.test` / `.localhost` / `.local`
+///    —— 它们不可能指向公网主机，放宽不会削弱对真实服务端的中间人防护。
+pub fn relaxed_tls_target(url: &str) -> bool {
+    let Some(host) = normalized_host(url) else {
+        return false;
+    };
+
+    if host
+        .parse::<std::net::IpAddr>()
+        .map(|addr| addr.is_loopback())
+        .unwrap_or(false)
+    {
         return true;
     }
 
-    host.parse::<std::net::IpAddr>()
-        .map(|addr| addr.is_loopback())
-        .unwrap_or(false)
+    const RESERVED_DEV_SUFFIXES: [&str; 3] = [".test", ".localhost", ".local"];
+    host == "localhost"
+        || RESERVED_DEV_SUFFIXES
+            .iter()
+            .any(|suffix| host.ends_with(suffix))
 }
 
-/// 构建客户端：debug 构建下仅对本机回环地址放宽 TLS 校验。
+/// 构建客户端：debug 构建下仅对本地开发目标放宽 TLS 校验。
 pub fn builder_for(url: &str) -> reqwest::ClientBuilder {
     let builder = reqwest::Client::builder();
-    if cfg!(debug_assertions) && is_loopback_url(url) {
+    if cfg!(debug_assertions) && relaxed_tls_target(url) {
         builder.danger_accept_invalid_certs(true)
     } else {
         builder
@@ -56,19 +76,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn loopback_hosts_are_recognized() {
-        assert!(is_loopback_url("http://localhost:8008"));
-        assert!(is_loopback_url("https://app.localhost"));
-        assert!(is_loopback_url("http://127.0.0.1:8008"));
-        assert!(is_loopback_url("http://127.0.0.2:8008"));
-        assert!(is_loopback_url("http://[::1]:8008"));
+    fn loopback_hosts_are_relaxed() {
+        assert!(relaxed_tls_target("http://localhost:8008"));
+        assert!(relaxed_tls_target("https://app.localhost"));
+        assert!(relaxed_tls_target("http://127.0.0.1:8008"));
+        assert!(relaxed_tls_target("http://127.0.0.2:8008"));
+        assert!(relaxed_tls_target("http://[::1]:8008"));
+    }
+
+    /// 与前端 `RELAXED_TLS_HOST_SUFFIXES`（`.test` / `.localhost` / `.local`）保持一致：
+    /// 这几个 TLD 由 RFC 2606 / RFC 6762 保留给本地网络，永远不会是公网域名。
+    #[test]
+    fn reserved_dev_tlds_are_relaxed() {
+        assert!(relaxed_tls_target("https://matrix.test"));
+        assert!(relaxed_tls_target("https://hs.dev.test:8443"));
+        assert!(relaxed_tls_target("https://matrix.local"));
+        assert!(relaxed_tls_target("https://app.localhost"));
+        assert!(relaxed_tls_target("http://localhost:8008"));
+        assert!(relaxed_tls_target("http://127.0.0.1:8008"));
     }
 
     #[test]
-    fn remote_hosts_are_not_loopback() {
-        assert!(!is_loopback_url("https://matrix.example.com"));
-        assert!(!is_loopback_url("https://10.0.0.1"));
-        assert!(!is_loopback_url("not a url"));
-        assert!(!is_loopback_url(""));
+    fn public_hosts_are_not_relaxed() {
+        // 后缀必须是完整标签：`test.com` / `notlocal.local.example.com` 不解宽
+        assert!(!relaxed_tls_target("https://test.com"));
+        assert!(!relaxed_tls_target("https://notlocal.local.example.com"));
+        assert!(!relaxed_tls_target("https://matrix.example.com"));
+        assert!(!relaxed_tls_target("https://10.0.0.1"));
+        assert!(!relaxed_tls_target("not a url"));
+        assert!(!relaxed_tls_target(""));
     }
 }

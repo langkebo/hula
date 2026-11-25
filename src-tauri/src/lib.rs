@@ -776,15 +776,18 @@ async fn start_homeserver_health_check(app_handle: AppHandle) {
 
         let health_url = format!("{}/_matrix/client/versions", hs_url.trim_end_matches('/'));
 
-        // .test 自签名证书：仅 debug 构建 + 本机回环地址放宽 TLS 校验，
-        // 远程 homeserver 始终强制校验证书。
+        // 自签名开发环境：仅 debug 构建 + 本地开发目标（回环 / .test / .localhost / .local）
+        // 放宽 TLS 校验，远程 homeserver 始终强制校验证书。
         let client = match crate::common::http_client::builder_for(&health_url)
             .timeout(Duration::from_secs(10))
             .build()
         {
             Ok(client) => client,
             Err(e) => {
-                tracing::error!("[HEALTH] Failed to create health check HTTP client: {}", e);
+                tracing::error!(
+                    "[HEALTH] Failed to create health check HTTP client: {:?}",
+                    e
+                );
                 continue;
             }
         };
@@ -818,15 +821,17 @@ async fn start_homeserver_health_check(app_handle: AppHandle) {
             }
             Err(e) => {
                 let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
+                // Debug 而非 Display：reqwest 的 Display 只有一行，会把
+                // 「CertificateError → invalid peer certificate」这类 source chain 吞掉
                 if count <= 3 {
                     tracing::warn!(
-                        "[HEALTH] Homeserver health check failed (failure #{}): {}",
+                        "[HEALTH] Homeserver health check failed (failure #{}): {:?}",
                         count,
                         e
                     );
                 } else {
                     tracing::debug!(
-                        "[HEALTH] Homeserver health check failed (failure #{}): {}",
+                        "[HEALTH] Homeserver health check failed (failure #{}): {:?}",
                         count,
                         e
                     );
