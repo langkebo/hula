@@ -1,6 +1,38 @@
 use crate::utils::secure_store::{SecureStore, StorageBackend};
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn};
+use std::sync::{Mutex, OnceLock};
+use tracing::{debug, info, warn};
+
+/// 上次已告警过的降级后端。
+///
+/// 前端 availability 探测带 60s TTL，每轮都会重新 invoke 本命令；后端探测结果
+/// 不变时若每次都 `warn!`，终端会被同一条降级信息持续刷屏。仅在降级后端发生变化时
+/// 再告警，其余降为 `debug`。
+fn degraded_warned_backend() -> &'static Mutex<Option<String>> {
+    static WARNED: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+    WARNED.get_or_init(|| Mutex::new(None))
+}
+
+fn lock_degraded_warned() -> std::sync::MutexGuard<'static, Option<String>> {
+    degraded_warned_backend()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+/// 本次降级是否需要发出告警：同一后端仅首次为 `true`。
+fn should_warn_degraded(backend: &str) -> bool {
+    let mut warned = lock_degraded_warned();
+    if warned.as_deref() == Some(backend) {
+        return false;
+    }
+    *warned = Some(backend.to_string());
+    true
+}
+
+/// 恢复原生后端后清空记录，便于再次降级时仍能告警。
+fn clear_degraded_warned() {
+    *lock_degraded_warned() = None;
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -106,12 +138,20 @@ pub async fn check_secure_storage_available() -> Result<SecureStorageCheckRespon
     );
 
     if report.degraded {
-        warn!(
-            "Secure storage DEGRADED: available=true, backend={} —— 系统密钥库不可用，\
-             secret 仅由 master-key 加密落盘（不等价于操作系统密钥库保护）",
-            report.backend
-        );
+        if should_warn_degraded(&report.backend) {
+            warn!(
+                "Secure storage DEGRADED: available=true, backend={} —— 系统密钥库不可用，\
+                 secret 仅由 master-key 加密落盘（不等价于操作系统密钥库保护）",
+                report.backend
+            );
+        } else {
+            debug!(
+                "Secure storage DEGRADED (already reported): backend={}",
+                report.backend
+            );
+        }
     } else {
+        clear_degraded_warned();
         info!(
             "Secure storage availability check: available={}, backend={}",
             report.available, report.backend
@@ -192,6 +232,23 @@ mod tests {
         assert_eq!(object.get("degraded"), Some(&serde_json::Value::Bool(true)));
         // 不得出现 snake_case 泄漏（前端解析会静默取到 undefined）
         assert!(object.get("native_available").is_none());
+    }
+
+    /// 降级告警按后端去重：前端每 60s 重探测一次，同一后端只应 warn 一次；
+    /// 恢复原生后端（clear）后再次降级仍需重新告警。
+    #[test]
+    fn degraded_warning_is_deduplicated_per_backend() {
+        clear_degraded_warned();
+        assert!(should_warn_degraded("encrypted_file_fallback"));
+        assert!(!should_warn_degraded("encrypted_file_fallback"));
+        assert!(should_warn_degraded("unavailable"));
+
+        clear_degraded_warned();
+        assert!(
+            should_warn_degraded("encrypted_file_fallback"),
+            "recovery must reset dedupe so a fresh degrade still warns"
+        );
+        clear_degraded_warned();
     }
 
     /// 原生可用时不算降级。
