@@ -1,6 +1,6 @@
 import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { createRateLimitedFetch } from '@/services/matrix/MatrixRateLimitInterceptor'
-import { MATRIX_ROOT } from '@/services/matrix/paths/prefixes'
+import { MATRIX_ROOT, PREFIX_VENDOR_V1 } from '@/services/matrix/paths/prefixes'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { computeBackoffDelay, sleep } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
@@ -182,6 +182,25 @@ async function fetchWithRetry(
   throw lastError
 }
 
+/**
+ * 判断非 2xx 响应是否属于「预期结果」，从而不按异常告警记录。
+ *
+ * 这些状态码都是调用方已按正常分支处理的探测/权限结论，记 WARN 只会掩盖真正的问题：
+ * - 404：Matrix 端点或资源不存在（含能力探测），调用方按缺失处理；
+ * - presence 403：未与目标用户共享房间，MatrixPresenceService 已返回 offline；
+ * - /account/guest 401/403：访客能力探测，登录页挂载即触发一次；
+ * - admin whoami 403：非管理员用户的常态（普通用户都会访问一次）；
+ * - vendor 扩展 + limit=0 的 400/404：EndpointCapabilityService 的能力探测结论。
+ */
+export function isExpectedNonSuccess(url: string, status: number): boolean {
+  if (status === 404) return true
+  if (status === 403 && url.includes('/presence/')) return true
+  if ((status === 401 || status === 403) && url.includes('/account/guest')) return true
+  if (status === 403 && url.includes('/admin/v1/whoami')) return true
+  if (status === 400 && url.includes(PREFIX_VENDOR_V1) && url.includes('limit=0')) return true
+  return false
+}
+
 function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
   return (async (input: URL | RequestInfo, init?: RequestInit) => {
     const normalizedInit = withOmittedCredentials(init)
@@ -193,9 +212,6 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
 
     try {
       const response = await nativeFetch(input as URL | Request | string, normalizedInit)
-      // 403 on presence endpoints is expected (user doesn't share a room with target);
-      // MatrixPresenceService handles it gracefully by returning offline.
-      const isExpectedForbidden = response.status === 403 && url.includes('/presence/')
       // 访客能力探测：未鉴权 GET /account/guest 期望 401/403 —— 能回这两个状态恰说明
       // 端点存在，MatrixAuthService.getGuestSupport() 已按「支持访客」处理。
       // 登录页挂载即触发一次，不应记成异常告警。
@@ -203,7 +219,7 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
         (response.status === 401 || response.status === 403) && url.includes('/account/guest')
       if (isGuestCapabilityProbe) {
         logger.debug(`nativeFetch GET ${url} -> ${response.status} (guest capability probe, expected)`)
-      } else if (!response.ok && response.status !== 404 && !isExpectedForbidden) {
+      } else if (!response.ok && !isExpectedNonSuccess(url, response.status)) {
         const method = normalizedInit?.method || 'GET'
         // 429 需要区分来源以便排查：Rust 限流中间件会带 x-ratelimit-remaining 头，
         // nginx limit_req 的 429 没有该头；retry-after 反映服务端建议的退避时长

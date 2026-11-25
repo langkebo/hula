@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '../../../../../tests/msw'
-import { matrixOidcService } from '../MatrixOidcService'
+import { __resetAuthMetadataProbeCacheForTests, matrixOidcService } from '../MatrixOidcService'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   debug: vi.fn(),
@@ -52,10 +52,12 @@ const AUTH_METADATA = {
 }
 
 let authMetadataStatus: 200 | 404 = 200
+let authMetadataRequests = 0
 
 setupMswServer(
   http.get(`${BASE_URL}/_matrix/client/versions`, () => HttpResponse.json({ versions: ['v1.15'] })),
   http.get(`${BASE_URL}/_matrix/client/v1/auth_metadata`, () => {
+    authMetadataRequests += 1
     if (authMetadataStatus === 404) {
       return HttpResponse.json({ errcode: 'M_UNRECOGNIZED', error: 'Unrecognized request' }, { status: 404 })
     }
@@ -69,6 +71,12 @@ setupMswServer(
 )
 
 describe('matrixOidcService.probeAuthMetadata contract', () => {
+  beforeEach(() => {
+    authMetadataStatus = 200
+    authMetadataRequests = 0
+    __resetAuthMetadataProbeCacheForTests()
+  })
+
   it('maps a 200 auth_metadata response to supported with issuer and authorization endpoint', async () => {
     authMetadataStatus = 200
 
@@ -83,5 +91,22 @@ describe('matrixOidcService.probeAuthMetadata contract', () => {
     authMetadataStatus = 404
 
     await expect(matrixOidcService.probeAuthMetadata()).resolves.toEqual({ supported: false })
+  })
+
+  it('reuses the cached result instead of probing again', async () => {
+    await matrixOidcService.probeAuthMetadata()
+    await matrixOidcService.probeAuthMetadata()
+
+    expect(authMetadataRequests).toBe(1)
+  })
+
+  it('deduplicates concurrent probes into a single request', async () => {
+    const [first, second] = await Promise.all([
+      matrixOidcService.probeAuthMetadata(),
+      matrixOidcService.probeAuthMetadata()
+    ])
+
+    expect(first).toEqual(second)
+    expect(authMetadataRequests).toBe(1)
   })
 })

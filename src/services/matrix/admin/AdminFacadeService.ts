@@ -105,7 +105,8 @@ class AdminFacadeService extends AdminFacadeUserRoomMethods {
       const accessToken = client.getAccessToken()
 
       if (!userId || !accessToken) {
-        logger.warn('[Admin] 服务端权限验证: 缺少 userId 或 accessToken')
+        // 启动早期或未登录时会出现；属于常态时序，不是异常。
+        logger.debug('[Admin] 服务端权限验证: 缺少 userId 或 accessToken，跳过')
         return false
       }
 
@@ -122,7 +123,8 @@ class AdminFacadeService extends AdminFacadeUserRoomMethods {
           this.cachedAdminStatus = isAdmin
           this.adminVerifiedAt = now
           if (!isAdmin) {
-            logger.warn(`[Admin] 浏览器模式权限验证失败: userId=${userId}, isAdmin=false`)
+            // 普通用户（绝大多数）都会走到这里，是权限判定的正常结论，不是故障。
+            logger.debug(`[Admin] 浏览器模式权限验证: userId=${userId}, isAdmin=false`)
           }
           return isAdmin
         } catch (err) {
@@ -146,7 +148,8 @@ class AdminFacadeService extends AdminFacadeUserRoomMethods {
       this.adminVerifiedAt = now
 
       if (!result.value.is_admin) {
-        logger.warn(`[Admin] 服务端权限验证失败: userId=${result.value.user_id}, isAdmin=false`)
+        // 普通用户的常态结果，按 debug 记录；真正的验证失败走上面的 isErr 分支。
+        logger.debug(`[Admin] 服务端权限验证: userId=${result.value.user_id}, isAdmin=false`)
       }
 
       return result.value.is_admin

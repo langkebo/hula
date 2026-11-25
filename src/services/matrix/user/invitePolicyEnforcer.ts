@@ -95,7 +95,10 @@ export class InvitePolicyEnforcer {
 
     const client = matrixClientService.getClient()
     if (!client) {
-      logger.warn('无法启动邀请策略强制：客户端未初始化')
+      // 冷启动时序：调用方在首帧后会先尝试启动一次，此时客户端往往还没建好，
+      // 连接状态推进时（see useInvitePolicyEnforcement 的 watch）会重试。
+      // 这是正常时序而非故障，记 debug 避免每次启动都刷 WARN。
+      logger.debug('邀请策略强制延后启动：客户端尚未初始化，等待连接状态推进后重试')
       return false
     }
 

@@ -1,6 +1,11 @@
 import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { __resetRuntimeFetchWarningForTests, getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '../runtimeFetch'
+import {
+  __resetRuntimeFetchWarningForTests,
+  getRuntimeAwareFetch,
+  getRuntimeAwareFetchFn,
+  isExpectedNonSuccess
+} from '../runtimeFetch'
 
 const { warnMock, debugMock } = vi.hoisted(() => ({
   warnMock: vi.fn(),
@@ -271,5 +276,37 @@ describe('runtimeFetch', () => {
       credentials: 'include',
       method: 'POST'
     })
+  })
+})
+
+describe('isExpectedNonSuccess', () => {
+  it('把能力探测与权限结论视为预期结果', () => {
+    expect(isExpectedNonSuccess('https://matrix.test/_matrix/vendor/v1/friends?limit=0', 400)).toBe(true)
+    expect(isExpectedNonSuccess('https://matrix.test/_synapse/admin/v1/whoami', 403)).toBe(true)
+    expect(isExpectedNonSuccess('https://matrix.test/_matrix/client/v3/account/guest', 401)).toBe(true)
+    expect(isExpectedNonSuccess('https://matrix.test/_matrix/client/v3/presence/@a:b/status', 403)).toBe(true)
+    expect(isExpectedNonSuccess('https://matrix.test/_matrix/client/v3/rooms/x/state', 404)).toBe(true)
+  })
+
+  it('真实失败仍然按异常处理', () => {
+    expect(isExpectedNonSuccess('https://matrix.test/_matrix/client/v3/rooms/x/send', 400)).toBe(false)
+    expect(isExpectedNonSuccess('https://matrix.test/_synapse/admin/v1/users', 403)).toBe(false)
+    expect(isExpectedNonSuccess('https://matrix.test/_matrix/client/v3/sync', 500)).toBe(false)
+  })
+})
+
+describe('runtimeFetch 告警噪音', () => {
+  it('vendor 能力探测的 400 不再记为 WARN', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 400,
+      headers: new Headers()
+    })
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/vendor/v1/friends?limit=0')
+
+    expect(warnMock).not.toHaveBeenCalled()
   })
 })

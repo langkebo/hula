@@ -28,10 +28,12 @@ interface PerformanceMetric {
 }
 
 const defaultReporter: Reporter = (metric) => {
+  // 每个页面都会产生多条指标（INP/CLS/LCP…），按 debug 记录避免默认日志刷屏；
+  // 需要排查性能时把日志级别调到 debug 即可看到同样的数据。
   if (metric.type === 'web-vital') {
-    logger.info(`[WebVitals] ${metric.name}: ${metric.value?.toFixed(2)}`)
+    logger.debug(`[WebVitals] ${metric.name}: ${metric.value?.toFixed(2)}`)
   } else {
-    logger.info(`[WebVitals] longtask: ${metric.duration?.toFixed(2)}ms`)
+    logger.debug(`[WebVitals] longtask: ${metric.duration?.toFixed(2)}ms`)
   }
 }
 
@@ -180,7 +182,7 @@ export const createWebVitalsObserver = (): WebVitalsObserver => {
       }
     }
 
-    logger.info('[WebVitals] 性能监控已启动')
+    logger.debug('[WebVitals] 性能监控已启动')
   }
 
   /**

@@ -60,6 +60,28 @@ type OidcCallbackFailureReason = 'unsupported' | 'exchange-failed'
 const DEFAULT_OIDC_SCOPES = ['openid', 'profile', 'email']
 const OIDC_HOMESERVER_STORAGE_KEY = 'oidc_homeserver_url'
 
+/**
+ * `auth_metadata` 探测缓存。
+ *
+ * 登录页每次挂载都会探测一次，同一 homeserver 的 OIDC 支持情况在进程生命周期内
+ * 基本不变：缓存结果并合并并发探测，避免重复请求和重复「未通过」日志。
+ */
+const AUTH_METADATA_PROBE_TTL_MS = 5 * 60 * 1000
+let authMetadataProbeCache: {
+  homeserverUrl: string
+  result: OidcAuthMetadataSummary
+  checkedAt: number
+} | null = null
+let authMetadataProbeInFlight: {
+  homeserverUrl: string
+  promise: Promise<OidcAuthMetadataSummary>
+} | null = null
+
+export function __resetAuthMetadataProbeCacheForTests(): void {
+  authMetadataProbeCache = null
+  authMetadataProbeInFlight = null
+}
+
 class MatrixOidcService {
   private discovery: OidcDiscoveryDocument | null = null
   private homeserverUrl: string = ''
@@ -127,6 +149,32 @@ class MatrixOidcService {
    * 登录页据此隐藏 OIDC 入口而不是渲染死按钮。
    */
   async probeAuthMetadata(): Promise<OidcAuthMetadataSummary> {
+    const homeserverUrl = this.resolveHomeserverUrl()
+    const cached = authMetadataProbeCache
+    if (
+      cached &&
+      cached.homeserverUrl === homeserverUrl &&
+      Date.now() - cached.checkedAt < AUTH_METADATA_PROBE_TTL_MS
+    ) {
+      return cached.result
+    }
+    if (authMetadataProbeInFlight?.homeserverUrl === homeserverUrl) {
+      return authMetadataProbeInFlight.promise
+    }
+
+    const promise = this.probeAuthMetadataOnce()
+      .then((result) => {
+        authMetadataProbeCache = { homeserverUrl, result, checkedAt: Date.now() }
+        return result
+      })
+      .finally(() => {
+        authMetadataProbeInFlight = null
+      })
+    authMetadataProbeInFlight = { homeserverUrl, promise }
+    return promise
+  }
+
+  private async probeAuthMetadataOnce(): Promise<OidcAuthMetadataSummary> {
     try {
       const client = createTemporaryMatrixClient()
       // `getAuthMetadata` 内部走 `isVersionSupported`，该方法由异步注入的

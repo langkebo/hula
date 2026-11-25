@@ -84,8 +84,9 @@ class EndpointCapabilityService {
         return false
       }
 
-      // 404 和其他 4xx = 端点不可用
-      logger.warn(`[EndpointCapability] ${method} ${path} 不可用: Server returned ${response.status} error`)
+      // 404 和其他 4xx = 端点不可用：这是能力探测的正常结论（服务端未实现该扩展），
+      // 不是异常，按 info 记录，避免每次探测都刷 WARN。
+      logger.info(`[EndpointCapability] ${method} ${path} 不可用: Server returned ${response.status} error`)
       endpointCache.set(key, { available: false, checkedAt: now })
       return false
     } catch (err) {
