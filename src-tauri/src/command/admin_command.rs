@@ -62,7 +62,12 @@ async fn verify_admin_via_matrix(
         .map_err(|e| format!("admin verification request failed: {}", e))?;
 
     if response.status() == reqwest::StatusCode::FORBIDDEN {
-        tracing::warn!("admin verification rejected: userId={}", user_id);
+        // 普通用户访问 admin 端点必然 403：这是权限判定的正常结果，不是异常，
+        // 用 debug 记录避免每次启动都刷 WARN。
+        tracing::debug!(
+            "admin verification rejected (not an admin): userId={}",
+            user_id
+        );
         return Ok(false);
     }
 

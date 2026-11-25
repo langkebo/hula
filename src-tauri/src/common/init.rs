@@ -14,6 +14,9 @@ fn build_log_plugin<R: Runtime>() -> TauriPlugin<R> {
         .level_for("sqlx", tracing::log::LevelFilter::Warn)
         .level_for("sqlx::query", tracing::log::LevelFilter::Warn)
         .level_for("sea_orm", tracing::log::LevelFilter::Warn)
+        // 迁移器每次启动/切库都会打 INFO（"Applying all pending migrations" 等），
+        // 属于常规流程噪音，只在出现 WARN 及以上时保留。
+        .level_for("sea_orm_migration", tracing::log::LevelFilter::Warn)
         .level_for("tjg_app_lib", tracing::log::LevelFilter::Debug)
         // 过滤掉无用的 tauri 内部日志
         .level_for("tauri", tracing::log::LevelFilter::Warn)

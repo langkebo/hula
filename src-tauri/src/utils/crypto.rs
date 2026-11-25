@@ -180,6 +180,16 @@ fn load_key_from_keychain() -> Option<[u8; 32]> {
     }
 }
 
+/// 钥匙串写后校验失败是否属于开发构建的预期现象（决定日志级别）。
+///
+/// macOS 开发构建未固定签名：`set_password` 返回 Ok 但读回不一致是已知 ACL 行为，
+/// 此时调用方已回退到 0600 文件托管，功能不受影响。若仍按 WARN 打印，
+/// 每次启动都会刷屏并淹没发布版真正需要关注的环境问题。
+/// 发布版（以及移动端）保持 WARN。
+pub(crate) fn keychain_verification_failure_is_expected(debug_build: bool, desktop: bool) -> bool {
+    debug_build && desktop
+}
+
 /// 把主密钥写入系统钥匙串，并用**新 Entry** 读回验证。
 ///
 /// macOS dev 模式下存在「set_password 返回 Ok 但读不到」的 ACL 问题。
@@ -207,8 +217,10 @@ fn store_key_in_keychain(key: &[u8; 32]) -> bool {
         .is_some_and(|stored| stored == encoded);
     if verified {
         info!("Saved new encryption key to system keyring (verified)");
+    } else if keychain_verification_failure_is_expected(cfg!(debug_assertions), cfg!(desktop)) {
+        debug!("Keyring write could not be verified (dev mode ACL), keeping file fallback");
     } else {
-        warn!("Keyring write could not be verified (macOS dev mode ACL), keeping file fallback");
+        warn!("Keyring write could not be verified, keeping file fallback");
     }
     verified
 }
@@ -244,6 +256,14 @@ fn get_master_key() -> &'static [u8; 32] {
             info!("Successfully retrieved encryption key from file fallback");
             if store_key_in_keychain(&key) {
                 remove_key_file();
+            } else if keychain_verification_failure_is_expected(
+                cfg!(debug_assertions),
+                cfg!(desktop),
+            ) {
+                debug!(
+                    "Master key remains in 0600 file fallback during dev; \
+                     keyring migration will be retried on the next start"
+                );
             } else {
                 warn!(
                     "Master key remains in legacy file fallback because keyring is unavailable; \
@@ -700,5 +720,24 @@ mod tests {
 
         let loaded = load_key_from_file();
         assert!(loaded.is_none(), "Should return None for 64-byte key");
+    }
+}
+
+#[cfg(test)]
+mod keychain_log_level_tests {
+    use super::keychain_verification_failure_is_expected;
+
+    /// 开发构建（桌面）的钥匙串读回失败是 ACL 预期，必须降级为 debug。
+    #[test]
+    fn dev_desktop_downgrades_keychain_verification_failure() {
+        assert!(keychain_verification_failure_is_expected(true, true));
+    }
+
+    /// 发布版与移动端保持 WARN：此时读回失败代表真实环境问题。
+    #[test]
+    fn release_or_mobile_keeps_warn_level() {
+        assert!(!keychain_verification_failure_is_expected(false, true));
+        assert!(!keychain_verification_failure_is_expected(true, false));
+        assert!(!keychain_verification_failure_is_expected(false, false));
     }
 }

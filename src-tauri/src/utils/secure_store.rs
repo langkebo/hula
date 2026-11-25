@@ -263,10 +263,18 @@ fn native_set(key: &str, value: &str) -> bool {
         .and_then(|entry| entry.get_password().ok())
         .is_some_and(|stored| stored == value);
     if !verified {
-        warn!(
-            "[SECURE_STORE] Keychain write could not be verified for key '{}' (macOS dev mode ACL)",
-            key
-        );
+        if crypto::keychain_verification_failure_is_expected(cfg!(debug_assertions), cfg!(desktop))
+        {
+            debug!(
+                "[SECURE_STORE] Keychain write could not be verified for key '{}' (dev mode ACL), using file fallback",
+                key
+            );
+        } else {
+            warn!(
+                "[SECURE_STORE] Keychain write could not be verified for key '{}'",
+                key
+            );
+        }
     }
     verified
 }

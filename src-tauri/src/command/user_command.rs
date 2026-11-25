@@ -149,29 +149,56 @@ pub async fn remove_tokens(state: State<'_, AppData>) -> Result<(), String> {
     Ok(())
 }
 
+/// 判断本次上报的凭证是否与内存态完全一致（一致则无需重复落盘）。
+///
+/// B4：一次密码登录会走两遍持久化（SessionLoginService 一次 + matrix store 的
+/// persistNativeTokens 一次），冷启动恢复也会把同一 token 写回；每遍都要 SQLite 加密
+/// update + 系统钥匙串写入。内存态本身就是 `get_user_tokens` 的数据源，因此「与内存态
+/// 完全一致」即可安全跳过写库。内存态为空（首装 / 登出后）时始终落盘。
+fn is_same_credentials(
+    current: &crate::UserInfo,
+    uid: &str,
+    token: &str,
+    refresh_token: &str,
+) -> bool {
+    !current.uid.is_empty()
+        && current.uid == uid
+        && current.token == token
+        && current.refresh_token == refresh_token
+}
+
 #[tauri::command]
 pub async fn update_token(
     req: UpdateUserTokenRequest,
     state: State<'_, AppData>,
 ) -> Result<(), String> {
-    info!("Updating user token");
     let requested_refresh = req.refresh_token.unwrap_or_default();
+    let mut user_info = state.user_info.lock().await;
     let refresh_token = if requested_refresh.is_empty() {
-        let current_refresh = state.user_info.lock().await.refresh_token.clone();
-        if current_refresh.is_empty() {
+        if user_info.refresh_token.is_empty() {
             "".to_string()
         } else {
-            current_refresh
+            user_info.refresh_token.clone()
         }
     } else {
         requested_refresh
     };
-    {
-        let mut user_info = state.user_info.lock().await;
-        user_info.uid = req.uid.clone();
-        user_info.token = req.token.clone();
-        user_info.refresh_token = refresh_token.clone();
+
+    if is_same_credentials(&user_info, &req.uid, &req.token, &refresh_token) {
+        tracing::debug!(
+            "[SESSION] update_token: credentials unchanged for {}, skip persistence",
+            req.uid
+        );
+        return Ok(());
     }
+
+    info!("Updating user token for {}", req.uid);
+    user_info.uid = req.uid.clone();
+    user_info.token = req.token.clone();
+    user_info.refresh_token = refresh_token.clone();
+    // 先释放锁再 await DB / 钥匙串，避免长临界区阻塞 get_user_tokens
+    drop(user_info);
+
     UserService::save_tokens(
         &*state.db_conn.read().await,
         &req.uid,
@@ -184,4 +211,73 @@ pub async fn update_token(
     UserService::store_token_in_secure_storage(&req.uid, &req.token);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod token_persistence_tests {
+    use super::*;
+
+    fn user_info(uid: &str, token: &str, refresh: &str) -> crate::UserInfo {
+        crate::UserInfo {
+            token: token.to_string(),
+            refresh_token: refresh.to_string(),
+            uid: uid.to_string(),
+            profile_name: String::new(),
+        }
+    }
+
+    /// B4 回归锁：同一凭证被再次上报时必须判定为「无需落盘」。
+    ///
+    /// 实测一次密码登录会写两遍（SessionLoginService 写一次 + matrix store 的
+    /// persistNativeTokens 再写一次），每次都要 SQLite 加密 update + 系统钥匙串写入。
+    #[test]
+    fn identical_credentials_are_treated_as_noop() {
+        let current = user_info("@alice:matrix.test", "syt_abc", "syr_def");
+        assert!(is_same_credentials(
+            &current,
+            "@alice:matrix.test",
+            "syt_abc",
+            "syr_def"
+        ));
+    }
+
+    #[test]
+    fn changed_token_or_refresh_is_not_noop() {
+        let current = user_info("@alice:matrix.test", "syt_abc", "syr_def");
+        assert!(!is_same_credentials(
+            &current,
+            "@alice:matrix.test",
+            "syt_new",
+            "syr_def"
+        ));
+        assert!(!is_same_credentials(
+            &current,
+            "@alice:matrix.test",
+            "syt_abc",
+            "syr_new"
+        ));
+    }
+
+    #[test]
+    fn different_uid_is_not_noop() {
+        let current = user_info("@alice:matrix.test", "syt_abc", "syr_def");
+        assert!(!is_same_credentials(
+            &current,
+            "@bob:matrix.test",
+            "syt_abc",
+            "syr_def"
+        ));
+    }
+
+    /// 首次登录（内存态为空）必须照常落盘，不能被去重逻辑吞掉。
+    #[test]
+    fn empty_current_state_always_persists() {
+        let current = user_info("", "", "");
+        assert!(!is_same_credentials(
+            &current,
+            "@alice:matrix.test",
+            "syt_abc",
+            "syr_def"
+        ));
+    }
 }
