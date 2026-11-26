@@ -5,10 +5,16 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { triggerGlobalSearch, useSearchShortcut } from '../useSearchShortcut'
 
 // === Mock router ===
-const pushMock = vi.fn()
+const { pushMock, currentRouteMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  currentRouteMock: { value: { meta: {} as Record<string, unknown> } }
+}))
 
 vi.mock('@/router', () => ({
   default: {
+    get currentRoute() {
+      return currentRouteMock
+    },
     push: (...args: unknown[]) => pushMock(...args)
   }
 }))
@@ -41,6 +47,7 @@ const TestHost = defineComponent({
 describe('useSearchShortcut', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    currentRouteMock.value = { meta: {} }
     // 默认非 mac 平台
     vi.stubGlobal('navigator', { platform: 'Win32' })
   })
@@ -88,6 +95,24 @@ describe('useSearchShortcut', () => {
     await wrapper.vm.$nextTick()
 
     expect(focusSpy).toHaveBeenCalledTimes(1)
+    expect(pushMock).not.toHaveBeenCalled()
+
+    window.removeEventListener('search:focus', focusSpy)
+    wrapper.unmount()
+  })
+
+  it('does not hijack Ctrl+F on full-window routes (settings)', async () => {
+    currentRouteMock.value = { meta: { fullWindow: true } }
+    const wrapper = mountHost()
+    const focusSpy = vi.fn()
+    window.addEventListener('search:focus', focusSpy)
+
+    dispatchKey('f', { ctrl: true })
+    dispatchKey('F', { ctrl: true, shift: true })
+
+    await wrapper.vm.$nextTick()
+
+    expect(focusSpy).not.toHaveBeenCalled()
     expect(pushMock).not.toHaveBeenCalled()
 
     window.removeEventListener('search:focus', focusSpy)
