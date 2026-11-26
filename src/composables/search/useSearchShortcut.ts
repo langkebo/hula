@@ -32,6 +32,9 @@ export function useSearchShortcut() {
   }
 
   const handleKeydown = (event: KeyboardEvent) => {
+    // 全窗口视图（设置页）内不劫持 Ctrl/Cmd+F，避免与设置页搜索冲突
+    if (router.currentRoute.value.meta?.fullWindow) return
+
     const ctrlOrCmd = isMac ? event.metaKey : event.ctrlKey
     if (!ctrlOrCmd) return
 
