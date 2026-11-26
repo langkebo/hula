@@ -283,7 +283,23 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .settings-page {
+  --tjg-settings-sidebar-width: 260px;
+
+  @include responsive.down('xl') {
+    --tjg-settings-sidebar-width: 220px;
+  }
+
+  @include responsive.down('lg') {
+    --tjg-settings-sidebar-width: 200px;
+  }
+
+  @include responsive.down('md') {
+    --tjg-settings-sidebar-width: 168px;
+  }
+
   display: flex;
   flex-direction: row;
   flex: 1 1 auto;
