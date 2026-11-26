@@ -1,4 +1,4 @@
-import { emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { getCurrentScope, onScopeDispose } from 'vue'
 import {
@@ -23,8 +23,6 @@ type ShortcutConfig = {
   handler: () => Promise<void>
   /** 监听的更新事件名 */
   updateEventName: string
-  /** 发送注册状态的事件名 */
-  registrationEventName: string
 }
 
 // 全局快捷键状态管理
@@ -58,15 +56,13 @@ export const useGlobalShortcut = () => {
       key: 'screenshot',
       defaultValue: settingStore.screenshotShortcut,
       handler: () => handleScreenshot({ concealHome: settingStore.screenshotConcealEnabled }),
-      updateEventName: 'shortcut-updated',
-      registrationEventName: 'shortcut-registration-updated'
+      updateEventName: 'shortcut-updated'
     },
     {
       key: 'openMainPanel',
       defaultValue: settingStore.openMainPanelShortcut,
       handler: handleOpenMainPanel,
-      updateEventName: 'open-main-panel-shortcut-updated',
-      registrationEventName: 'open-main-panel-shortcut-registration-updated'
+      updateEventName: 'open-main-panel-shortcut-updated'
     }
   ]
 
@@ -150,10 +146,6 @@ export const useGlobalShortcut = () => {
     const normalized = normalizeShortcut(newShortcut)
     if (!normalized) {
       logger.warn(`快捷键组合非法，忽略更新 [${config.key}]: ${newShortcut}`)
-      await emitTo('settings', config.registrationEventName, {
-        shortcut: newShortcut,
-        registered: false
-      })
       return
     }
 
@@ -175,12 +167,7 @@ export const useGlobalShortcut = () => {
       logger.debug(`[Home] 快捷键回滚结果 [${config.key}]: ${rollbackSuccess ? '成功' : '失败'}`)
     }
 
-    // 通知设置页面注册状态更新
-    await emitTo('settings', config.registrationEventName, {
-      shortcut: newShortcut,
-      registered: success
-    })
-    logger.debug(`[Home] 已通知 settings 窗口快捷键状态更新 [${config.key}]: ${success ? '已注册' : '未注册'}`)
+    logger.debug(`[Home] 快捷键注册状态 [${config.key}]: ${success ? '已注册' : '未注册'}`)
   }
 
   /**
@@ -189,32 +176,14 @@ export const useGlobalShortcut = () => {
    */
   const handleGlobalShortcutToggle = async (enabled: boolean) => {
     if (enabled) {
-      // 开启时重新注册所有快捷键并通知设置页面
+      // 开启时重新注册所有快捷键
       for (const config of shortcutConfigs) {
         const savedShortcut =
           config.key === 'screenshot' ? settingStore.screenshotShortcut : settingStore.openMainPanelShortcut
-        const success = await registerShortcut(config, savedShortcut as string)
-
-        // 通知设置页面注册状态更新
-        await emitTo('settings', config.registrationEventName, {
-          shortcut: savedShortcut,
-          registered: success
-        })
+        await registerShortcut(config, savedShortcut as string)
       }
     } else {
-      // 关闭时取消注册所有快捷键并通知设置页面状态为未绑定
-      for (const config of shortcutConfigs) {
-        const savedShortcut =
-          config.key === 'screenshot' ? settingStore.screenshotShortcut : settingStore.openMainPanelShortcut
-
-        // 通知设置页面注册状态更新为未绑定
-        await emitTo('settings', config.registrationEventName, {
-          shortcut: savedShortcut,
-          registered: false
-        })
-      }
-
-      // 取消注册所有快捷键
+      // 关闭时取消注册所有快捷键
       await cleanupGlobalShortcut()
     }
   }
