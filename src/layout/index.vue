@@ -10,9 +10,7 @@
       <AsyncCenter />
       <AsyncRight v-if="showRightPane" />
     </div>
-    <div v-if="isFullWindowRoute" class="flex flex-1 min-w-0 min-h-0">
-      <router-view />
-    </div>
+    <div v-if="isFullWindowRoute" class="flex flex-1 min-w-0 min-h-0"><router-view /></div>
     <div
       v-if="overlayVisible && !isFullWindowRoute"
       class="absolute inset-0 z-10 flex items-center justify-center bg-[--tjg-surface-subtle]">
@@ -38,12 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import { emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { UserAttentionType } from '@tauri-apps/api/window'
 
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import SkipLink from '@/components/common/SkipLink.vue'
 import { useMessageSound } from '@/composables/common/useMessageSound'
@@ -52,6 +50,7 @@ import { useNativeFileDrop } from '@/composables/common/useNativeFileDrop'
 import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
 import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
+import { useSettingsFullWindowEntry } from '@/composables/settings/useSettingsFullWindowEntry'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
@@ -71,9 +70,8 @@ const logger = createLogger('Layout')
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
-// 全窗口视图（设置页）：隐藏三栏并让根级 router-view 接管，避免卸载 layout 重建全部监听
-const isFullWindowRoute = computed(() => Boolean(route.meta?.fullWindow))
+// 全窗口视图（设置页）的布局桥接与原生菜单入口
+const { isFullWindowRoute, setupMenuListener, cleanupMenuListener } = useSettingsFullWindowEntry()
 const isRoomListRoute = computed(() => route.name === 'room')
 const userStore = useUserStore()
 const chatStore = useChatStore()
@@ -103,7 +101,6 @@ const { overlayVisible, markAsyncLoaded } = useOverlayController({
 })
 
 let initPromise: Promise<void> | null = null
-let unlistenMenuSettings: UnlistenFn | null = null
 
 // 只有首次登录需要延迟异步组件的加载，后续重新登录直接渲染
 const maybeDelayForInitialRender = async () => {
@@ -242,16 +239,6 @@ watch(
   { immediate: true }
 )
 const { isDraggingFiles, setupNativeFileDropListeners, cleanupNativeFileDropListeners } = useNativeFileDrop(appWindow)
-
-watch(
-  () => appWindow?.label === 'home',
-  (newValue) => {
-    if (newValue) {
-      // 窗口就绪
-    }
-  },
-  { immediate: true }
-)
 
 // 监听shrinkStatus的变化
 watch(shrinkStatus, (newValue) => {
@@ -419,17 +406,14 @@ onMounted(async () => {
       await homeWindow.show()
     }
 
-    // 原生菜单 Settings... / Cmd+, → 应用内设置视图（此前前端无监听，快捷键无效）
-    unlistenMenuSettings = await listen('menu:open-settings', () => {
-      if (route.name !== 'settings') void router.push('/settings')
-    })
+    await setupMenuListener()
   }
 
   await setupNativeFileDropListeners()
 })
 
 onUnmounted(() => {
-  unlistenMenuSettings?.()
+  cleanupMenuListener()
   cleanupNativeFileDropListeners()
 })
 </script>
