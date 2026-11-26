@@ -21,8 +21,9 @@ const APPEARANCE_PATH = '/settings?tab=appearance'
 const DARK_OPTION = '[data-test="theme-option"][data-value="dark"]'
 
 const openAppearanceSettings = async (page: Page): Promise<void> => {
-  await page.goto(APPEARANCE_PATH)
-  await page.waitForLoadState('networkidle')
+  // 设置页已内嵌在 home 布局内，布局常驻会维持后台连接/轮询，networkidle 不可达；
+  // 改用 domcontentloaded + 组件可见断言（自带重试）判定就绪。
+  await page.goto(APPEARANCE_PATH, { waitUntil: 'domcontentloaded' })
   await markCapabilitiesLoaded(page)
   await expect(page.locator(DARK_OPTION)).toBeVisible()
 }
