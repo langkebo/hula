@@ -115,8 +115,7 @@ export type Messages = {
     "check_update": "检查更新",
     "video_viewer": "视频查看器",
     "preview_file": "预览文件",
-    "about": "关于",
-    "settings": "设置"
+    "about": "关于"
   },
   "copy": "复制",
   "details": "详情",
@@ -296,7 +295,6 @@ export type KeyPaths =
   | "common.window_titles.video_viewer"
   | "common.window_titles.preview_file"
   | "common.window_titles.about"
-  | "common.window_titles.settings"
   | "common.copy"
   | "common.details"
   | "common.capability.ready"

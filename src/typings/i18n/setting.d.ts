@@ -394,7 +394,6 @@ export type Messages = {
     "save_mode_instant": "修改即时保存",
     "save_mode_manual": "修改需点击保存后生效",
     "close_title": "关闭设置",
-    "close_aria_label": "关闭设置窗口",
     "back_label": "返回",
     "back_aria_label": "返回上一页",
     "content_aria_label": "{label} 设置内容",
@@ -1626,7 +1625,6 @@ export type KeyPaths =
   | "setting.dialog.save_mode_instant"
   | "setting.dialog.save_mode_manual"
   | "setting.dialog.close_title"
-  | "setting.dialog.close_aria_label"
   | "setting.dialog.back_label"
   | "setting.dialog.back_aria_label"
   | "setting.dialog.content_aria_label"

@@ -389,7 +389,6 @@
     "save_mode_instant": "Changes are saved automatically",
     "save_mode_manual": "Click save to apply changes",
     "close_title": "Close Settings",
-    "close_aria_label": "Close settings window",
     "back_label": "Back",
     "back_aria_label": "Back to previous page",
     "content_aria_label": "{label} settings content",
