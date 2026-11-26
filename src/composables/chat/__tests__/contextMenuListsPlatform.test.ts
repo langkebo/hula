@@ -48,7 +48,6 @@ const makeLists = (isDesktop: boolean) =>
       previewFile: vi.fn()
     } as never,
     handleCopy: vi.fn() as never,
-    openDeleteConfirm: vi.fn(),
     helpers: {
       checkFriendRelation: () => true,
       handleForward: vi.fn(),

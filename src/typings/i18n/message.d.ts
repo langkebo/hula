@@ -354,7 +354,8 @@ export type Messages = {
   "action": {
     "react": "表情回应",
     "reply": "回复",
-    "forward": "转发"
+    "forward": "转发",
+    "recall": "撤回"
   },
   "event_receipts": {
     "title": "已读明细",
@@ -660,6 +661,7 @@ export type KeyPaths =
   | "message.action.react"
   | "message.action.reply"
   | "message.action.forward"
+  | "message.action.recall"
   | "message.event_receipts.title"
   | "message.event_receipts.subtitle"
   | "message.event_receipts.empty"

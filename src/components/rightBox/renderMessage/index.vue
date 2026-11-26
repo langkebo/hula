@@ -186,11 +186,13 @@
               :visible="!chatStore.isMsgMultiChoose && !isMobileRef"
               :is-me="isMe"
               :message-type="message.message.type"
+              :is-local="isLocalMessage"
               @react="showReactionPickerId = message.message.id"
               @reply="useMitt.emit(MittEnum.REPLY_MEG, message)"
               @forward="handleForwardAction(message)"
               @copy="handleCopyAction(message)"
-              @delete="handleDeleteAction(message)" />
+              @recall="openRecallConfirm(message)"
+              @delete="handleDeleteLocalAction(message)" />
 
             <ReactionPicker
               v-if="showReactionPickerId === message.message.id"
@@ -344,7 +346,9 @@ import MessageLockBadge from '@/components/atomic/MessageLockBadge.vue'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
 import MessageTrustGate from '@/components/chat/MessageTrustGate.vue'
 import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
+import { deleteLocalMessage, isLocalOrFailedMessage } from '@/composables/chat/contextMessageLocalActions'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
 import { useMessageTrust } from '@/composables/encryption/useMessageTrust'
@@ -496,10 +500,7 @@ const {
   specialMenuList,
   handleMsgClick,
   handleCopy,
-  tips,
-  modalShow,
-  delIndex,
-  delRoomId
+  openRecallConfirm
 } = chatMainApi
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
@@ -550,11 +551,14 @@ const handleCopyAction = (item: MessageType) => {
   handleCopy(item.message.body.content || item.message.body.url || '', true, item.message.id)
 }
 
-const handleDeleteAction = (item: MessageType) => {
-  tips.value = t('home.chat_main.delete.confirm')
-  modalShow.value = true
-  delIndex.value = item.message.id
-  delRoomId.value = item.message.roomId
+const { showFeedback } = useActionFeedback()
+
+/** 本地/发送失败的消息只能本地删除；已发送消息统一走服务端撤回 */
+const isLocalMessage = computed(() => isLocalOrFailedMessage(props.message))
+
+const handleDeleteLocalAction = (item: MessageType) => {
+  deleteLocalMessage(item, (msgId) => chatStore.deleteMsg(msgId))
+  showFeedback(t('message.delete_success'), 'success')
 }
 
 const isThreadReply = computed(() => {

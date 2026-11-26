@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MsgEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
 
 /**
  * 右键菜单列表装配层（P0-13 拆分后的回归护栏）。
@@ -70,7 +70,6 @@ const makeLists = (
       previewFile: vi.fn()
     } as never,
     handleCopy: (options.handleCopy ?? vi.fn()) as never,
-    openDeleteConfirm: vi.fn(),
     helpers: {
       checkFriendRelation: () => true,
       handleForward: vi.fn(),
@@ -240,11 +239,24 @@ describe('右键菜单列表装配', () => {
     expect(lists.report.value.map((menu) => menu.icon)).toEqual(['people-delete-one', 'caution'])
   })
 
-  it('正常模式 specialMenuList 输出删除与消息视角', () => {
+  it('正常模式 specialMenuList 输出删除与消息视角，删除仅对本地/失败消息可见', () => {
     const lists = makeLists()
     const icons = lists.specialMenuList.value(MsgEnum.TEXT).map((menu) => menu.icon)
 
     expect(icons).toEqual(['delete', 'info', 'check', 'link', 'download'])
+
+    const deleteMenu = lists.specialMenuList.value(MsgEnum.TEXT).find((menu) => menu.icon === 'delete') as {
+      visible?: (item: never) => boolean
+    }
+    const sentMessage = {
+      message: { id: '$event', roomId: '!room:hs', type: MsgEnum.TEXT, body: {}, status: MessageStatusEnum.SUCCESS }
+    }
+    const failedMessage = {
+      message: { id: '$event', roomId: '!room:hs', type: MsgEnum.TEXT, body: {}, status: MessageStatusEnum.FAILED }
+    }
+
+    expect(deleteMenu.visible?.(sentMessage as never)).toBe(false)
+    expect(deleteMenu.visible?.(failedMessage as never)).toBe(true)
   })
 
   it('移动端不输出预览与在文件夹中显示的桌面专属项', () => {

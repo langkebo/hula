@@ -4,7 +4,7 @@ import type { useChatFileDownload } from '@/composables/chat/useChatFileDownload
 import type { useGroupRoleGuard } from '@/composables/chat/useGroupRoleGuard'
 import type { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { useDownload } from '@/composables/common/useDownload'
-import type { MessageType, useChatStore } from '@/stores/domains/chat/chat'
+import type { useChatStore } from '@/stores/domains/chat/chat'
 import type { useEmojiStore } from '@/stores/domains/chat/emoji'
 import type { useSettingStore } from '@/stores/domains/settings/setting'
 import type { useUserStore } from '@/stores/domains/user/user'
@@ -24,8 +24,6 @@ export type MessageMenuDeps = {
   downloadFile: ReturnType<typeof useDownload>['downloadFile']
   fileDownload: ReturnType<typeof useChatFileDownload>
   handleCopy: ReturnType<typeof useChatCopy>['handleCopy']
-  /** 打开删除确认弹窗（由 useMsgDeleteConfirm 提供，正常模式 specialMenuList 的唯一动作） */
-  openDeleteConfirm: (item: MessageType) => void
   helpers: ContextMenuHelpers
   chatStore: ReturnType<typeof useChatStore>
   emojiStore: ReturnType<typeof useEmojiStore>

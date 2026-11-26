@@ -349,7 +349,8 @@
   "action": {
     "react": "React",
     "reply": "Reply",
-    "forward": "Forward"
+    "forward": "Forward",
+    "recall": "Recall"
   },
   "event_receipts": {
     "title": "Read receipts",

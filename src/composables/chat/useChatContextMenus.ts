@@ -2,7 +2,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { useDownload } from '@/composables/common/useDownload'
 import { isDesktop } from '@/composables/usePlatform'
-import { type MessageType, useChatStore } from '@/stores/domains/chat/chat'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -23,8 +23,6 @@ type UseChatContextMenusOptions = {
   downloadFile: ReturnType<typeof useDownload>['downloadFile']
   fileDownload: ReturnType<typeof useChatFileDownload>
   handleCopy: ReturnType<typeof useChatCopy>['handleCopy']
-  /** 打开删除确认弹窗（由 useMsgDeleteConfirm 提供，正常模式 specialMenuList 的唯一动作） */
-  openDeleteConfirm: (item: MessageType) => void
 }
 
 /**
@@ -41,7 +39,7 @@ type UseChatContextMenusOptions = {
  * 本文件仅负责组装依赖并转发工厂结果，导出 API 与拆分前完全一致。
  */
 export const useChatContextMenus = (options: UseChatContextMenusOptions) => {
-  const { isHistoryMode, disableHistoryActions, downloadFile, fileDownload, handleCopy, openDeleteConfirm } = options
+  const { isHistoryMode, disableHistoryActions, downloadFile, fileDownload, handleCopy } = options
 
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
@@ -72,7 +70,6 @@ export const useChatContextMenus = (options: UseChatContextMenusOptions) => {
     downloadFile,
     fileDownload,
     handleCopy,
-    openDeleteConfirm,
     helpers,
     chatStore,
     emojiStore,

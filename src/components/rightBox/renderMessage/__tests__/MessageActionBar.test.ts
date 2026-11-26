@@ -25,22 +25,23 @@ const labels = (wrapper: ReturnType<typeof mountComponent>) =>
   wrapper.findAll('button.action-btn').map((button) => button.attributes('aria-label'))
 
 describe('MessageActionBar 可见性', () => {
-  it('本人普通消息展示删除动作', () => {
+  it('本人普通消息展示撤回动作', () => {
     const wrapper = mountComponent()
 
-    expect(labels(wrapper)).toContain(resolveMessage('common.delete'))
-  })
-
-  it('非本人消息隐藏删除动作', () => {
-    const wrapper = mountComponent({ isMe: false })
-
+    expect(labels(wrapper)).toContain(resolveMessage('message.action.recall'))
     expect(labels(wrapper)).not.toContain(resolveMessage('common.delete'))
   })
 
-  it('具备管理权限时可删除他人消息', () => {
+  it('非本人消息隐藏撤回动作', () => {
+    const wrapper = mountComponent({ isMe: false })
+
+    expect(labels(wrapper)).not.toContain(resolveMessage('message.action.recall'))
+  })
+
+  it('具备管理权限时可撤回他人消息', () => {
     const wrapper = mountComponent({ isMe: false, canModerate: true })
 
-    expect(labels(wrapper)).toContain(resolveMessage('common.delete'))
+    expect(labels(wrapper)).toContain(resolveMessage('message.action.recall'))
   })
 
   it('已撤回 / 系统消息不展示任何交互动作', () => {
@@ -51,14 +52,30 @@ describe('MessageActionBar 可见性', () => {
     expect(labels(system)).toEqual([])
   })
 
-  it('点击删除触发 delete 事件', async () => {
+  it('点击撤回触发 recall 事件', async () => {
     const wrapper = mountComponent()
+    const recallButton = wrapper
+      .findAll('button.action-btn')
+      .find((button) => button.attributes('aria-label') === resolveMessage('message.action.recall'))
+
+    await recallButton?.trigger('click')
+
+    expect(wrapper.emitted('recall')).toHaveLength(1)
+    expect(wrapper.emitted('delete')).toBeUndefined()
+  })
+
+  it('本地/发送失败消息展示删除并触发 delete 事件', async () => {
+    const wrapper = mountComponent({ isLocal: true })
     const deleteButton = wrapper
       .findAll('button.action-btn')
       .find((button) => button.attributes('aria-label') === resolveMessage('common.delete'))
 
+    expect(deleteButton).toBeDefined()
+    expect(labels(wrapper)).not.toContain(resolveMessage('message.action.recall'))
+
     await deleteButton?.trigger('click')
 
     expect(wrapper.emitted('delete')).toHaveLength(1)
+    expect(wrapper.emitted('recall')).toBeUndefined()
   })
 })

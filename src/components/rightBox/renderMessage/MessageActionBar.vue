@@ -38,6 +38,8 @@ const props = defineProps<{
   messageType: MsgEnum
   /** 具备管理权限时可操作他人消息；普通用户仅能操作本人消息 */
   canModerate?: boolean
+  /** 本地/发送失败的消息只能本地删除，已发送消息走服务端撤回 */
+  isLocal?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -45,6 +47,7 @@ const emit = defineEmits<{
   (e: 'reply'): void
   (e: 'forward'): void
   (e: 'copy'): void
+  (e: 'recall'): void
   (e: 'delete'): void
 }>()
 
@@ -58,8 +61,8 @@ const isInteractable = computed(
     props.messageType !== MsgEnum.UNKNOWN
 )
 
-/** 删除仅对本人消息（或有管理权限者）开放，且消息未撤回 */
-const canDelete = computed(() => isInteractable.value && (props.isMe || props.canModerate === true))
+/** 撤回/删除仅对本人消息（或有管理权限者）开放，且消息未撤回 */
+const canActOnMessage = computed(() => isInteractable.value && (props.isMe || props.canModerate === true))
 
 const actions = computed<ActionItem[]>(() => [
   {
@@ -91,12 +94,18 @@ const actions = computed<ActionItem[]>(() => [
     handler: () => emit('copy')
   },
   {
-    key: 'delete',
-    label: t('common.delete'),
-    // icon.js sprite 中无 trash 符号，使用语义等价的 delete 符号（均走 currentColor）
-    icon: 'delete',
-    visible: canDelete.value,
-    handler: () => emit('delete')
+    key: props.isLocal ? 'delete' : 'recall',
+    label: props.isLocal ? t('common.delete') : t('message.action.recall'),
+    // 已发送消息撤回沿用菜单里的 corner-down-left；本地消息删除使用 delete 符号
+    icon: props.isLocal ? 'delete' : 'corner-down-left',
+    visible: canActOnMessage.value,
+    handler: () => {
+      if (props.isLocal) {
+        emit('delete')
+        return
+      }
+      emit('recall')
+    }
   }
 ])
 

@@ -13,7 +13,7 @@ import { useChatContextMenus } from './useChatContextMenus'
 import { useChatCopy } from './useChatCopy'
 import { useChatFileDownload } from './useChatFileDownload'
 import { useGroupNicknameModal } from './useGroupNicknameModal'
-import { useMsgDeleteConfirm } from './useMsgDeleteConfirm'
+import { useMsgRecallConfirm } from './useMsgRecallConfirm'
 
 type UseChatMainOptions = {
   enableGroupNicknameModal?: boolean
@@ -29,7 +29,7 @@ type UseChatMainOptions = {
  *
  * 职责已拆分为专职 composable：
  * - 右键菜单工厂 → useChatContextMenus（含 useGroupRoleGuard 群角色权限）
- * - 删除确认弹窗 → useMsgDeleteConfirm
+ * - 撤回确认弹窗 → useMsgRecallConfirm
  * - 复制 → useChatCopy；附件下载 → useChatFileDownload；群昵称弹窗 → useGroupNicknameModal
  *
  * 本文件只保留：气泡点击/键盘复制、UI 状态（scrollTop/activeBubble/historyIndex/selectKey）、
@@ -66,8 +66,8 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   /** 当前点击的用户的key */
   const selectKey = ref()
 
-  /** 删除确认弹窗（抽离到 useMsgDeleteConfirm） */
-  const { tips, modalShow, delIndex, delRoomId, openDeleteConfirm, handleConfirm } = useMsgDeleteConfirm()
+  /** 撤回确认弹窗（抽离到 useMsgRecallConfirm） */
+  const { tips, modalShow, openRecallConfirm, handleConfirm } = useMsgRecallConfirm()
 
   /** 消息复制（抽离到 useChatCopy） */
   const { handleCopy } = useChatCopy()
@@ -78,8 +78,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     disableHistoryActions,
     downloadFile,
     fileDownload,
-    handleCopy,
-    openDeleteConfirm
+    handleCopy
   })
 
   /** 修改群昵称弹窗（抽离到 useGroupNicknameModal） */
@@ -151,6 +150,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   return {
     handleMsgClick,
     handleConfirm,
+    openRecallConfirm,
     handleItemType,
     handleCopy,
     videoMenuList,
@@ -173,9 +173,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     groupNicknameSubmitting,
     handleGroupNicknameConfirm,
     activeBubble,
-    avatarClickOpensProfile,
-    delIndex,
-    delRoomId
+    avatarClickOpensProfile
   }
 }
 

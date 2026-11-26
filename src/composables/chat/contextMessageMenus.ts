@@ -28,7 +28,6 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
     downloadFile,
     fileDownload,
     handleCopy,
-    openDeleteConfirm,
     helpers,
     chatStore,
     emojiStore,
@@ -105,7 +104,7 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
           msgId: msg.message.id
         })
       },
-      visible: (item: MessageType) => canRecallMessage(item),
+      visible: (item: MessageType) => canRecallMessage(item) && !isLocalOrFailedMessage(item),
       disabled: (item: MessageType) => isRecallExpired(item)
     }
   ])
@@ -282,22 +281,18 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
 
         return baseMenus
       } else {
-        // 正常聊天模式：删除 + 消息视角（G-08，只读统计浮层）
+        // 正常聊天模式：本地消息删除 + 消息视角（G-08，只读统计浮层）
         return [
           {
             label: () => t('menu.del'),
             icon: 'delete',
             /** 移动端长按菜单也展示删除（仅声明该标记的项会渲染） */
             mobile: true,
-            /** 已发送的消息移动端保持无删除入口，避免本地删除后同步又“复活” */
-            mobileVisible: (item: MessageType) => isLocalOrFailedMessage(item),
+            /** 仅本地/发送失败的消息走本地删除；已发送消息只能撤回（服务端 redact） */
+            visible: (item: MessageType) => isLocalOrFailedMessage(item),
             click: (item: MessageType) => {
-              if (isLocalOrFailedMessage(item)) {
-                deleteLocalMessage(item, (msgId) => chatStore.deleteMsg(msgId))
-                showFeedback(t('message.delete_success'), 'success')
-                return
-              }
-              openDeleteConfirm(item)
+              deleteLocalMessage(item, (msgId) => chatStore.deleteMsg(msgId))
+              showFeedback(t('message.delete_success'), 'success')
             }
           },
           {
