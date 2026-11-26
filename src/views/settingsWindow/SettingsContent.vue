@@ -13,23 +13,6 @@
         </div>
       </div>
       <n-button
-        v-if="standalone"
-        circle
-        :aria-label="t('setting.dialog.close_aria_label')"
-        class="settings-close-btn"
-        @click="$emit('close')">
-        <template #icon>
-          <n-icon :size="20">
-            <Icon icon="mdi:close" />
-          </n-icon>
-        </template>
-      </n-button>
-      <!--
-        嵌入式设置面板（路由模式）的返回入口：独立窗口模式仍用上面的圆形关闭按钮。
-        嵌入式无 standalone 时若只能依赖 LeftNav 切换，用户频繁反馈"进入设置后无法返回"。
-      -->
-      <n-button
-        v-else
         size="small"
         ghost
         class="settings-back-btn"
@@ -78,13 +61,11 @@ defineOptions({
 interface Props {
   activeTab: SettingsTabType
   hasDirtyTabs?: boolean
-  standalone?: boolean
   contentId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   hasDirtyTabs: false,
-  standalone: false,
   contentId: 'settings-tab-panel'
 })
 
@@ -273,20 +254,6 @@ onErrorCaptured((err) => {
   border: 1px solid color-mix(in srgb, var(--tjg-color-warning-500) 20%, transparent);
   border-radius: var(--tjg-radius-full);
   padding: 4px 10px;
-}
-
-.settings-close-btn {
-  flex-shrink: 0;
-  color: var(--tjg-text-secondary);
-  background-color: var(--tjg-surface-subtle);
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.settings-close-btn:hover {
-  color: var(--tjg-text-primary);
-  background-color: var(--tjg-surface-sidebar-hover);
 }
 
 .settings-back-btn {

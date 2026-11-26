@@ -2,17 +2,14 @@
   <div class="settings-window-page">
     <ActionBar :shrink="false" class="shrink-0" />
     <div class="settings-window-content">
-      <SettingsPage :standalone="isStandalone" />
+      <SettingsPage />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { hasTauriRuntime } from '@/utils/AppHarness'
 import {
   normalizeSettingsTab,
   type SettingsTabInput,
@@ -27,49 +24,14 @@ defineOptions({
 const route = useRoute()
 const settingsTabStore = useSettingsTabStore()
 
-const isStandalone = ref(false)
-
-function detectStandalone() {
-  if (!hasTauriRuntime()) {
-    isStandalone.value = false
-    return
-  }
-  const label = WebviewWindow.getCurrent().label
-  isStandalone.value = label === 'settings'
-}
-
 function syncRouteTab() {
   const tab = typeof route.query.tab === 'string' ? (route.query.tab as SettingsTabInput) : undefined
-  const normalizedTab = normalizeSettingsTab(tab)
-  settingsTabStore.setActiveTab(normalizedTab ?? 'account')
+  settingsTabStore.setActiveTab(normalizeSettingsTab(tab) ?? 'account')
 }
 
-let unlistenNavigate: UnlistenFn | undefined
+onMounted(syncRouteTab)
 
-onMounted(async () => {
-  detectStandalone()
-  syncRouteTab()
-  if (!isStandalone.value) return
-  // 独立窗口已存在时，打开方通过事件同步 tab，避免复用旧窗口后停留在旧页面
-  unlistenNavigate = await listen<{ tab?: SettingsTabInput }>('settings-window:navigate', (event) => {
-    const normalizedTab = normalizeSettingsTab(event.payload?.tab)
-    if (normalizedTab) {
-      settingsTabStore.setActiveTab(normalizedTab)
-    }
-  })
-})
-
-onBeforeUnmount(() => {
-  unlistenNavigate?.()
-  unlistenNavigate = undefined
-})
-
-watch(
-  () => route.query.tab,
-  () => {
-    syncRouteTab()
-  }
-)
+watch(() => route.query.tab, syncRouteTab)
 </script>
 
 <style scoped>

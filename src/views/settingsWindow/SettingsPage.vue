@@ -8,8 +8,8 @@
     <p class="settings-page-error__detail">{{ shellError.message }}</p>
     <n-button size="small" type="primary" @click="shellError = null">{{ t('setting.dialog.shell_retry') }}</n-button>
   </div>
-  <div v-else class="settings-page" :class="{ 'settings-page-standalone': standalone }">
-    <LeftNav v-if="!standalone" class="settings-page-left" />
+  <div v-else class="settings-page">
+    <LeftNav class="settings-page-left" />
     <SettingsSidebar
       :tabs="filteredTabs"
       :search-results="searchResults"
@@ -24,14 +24,12 @@
     <SettingsContent
       :active-tab="activeTab"
       :has-dirty-tabs="hasDirtyTabs"
-      :standalone="standalone"
       :content-id="SETTINGS_CONTENT_ID"
       @close="handleClose" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDialog } from 'naive-ui'
 import { computed, defineAsyncComponent, nextTick, onErrorCaptured, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -39,18 +37,16 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { locateSettingsAnchor } from '@/composables/settings/settingsAnchorNavigation'
-import { flushSettingsWrites, hasPendingSettingsWrites } from '@/composables/settings/settingsPendingWrites'
+import { flushSettingsWrites } from '@/composables/settings/settingsPendingWrites'
 import { findSettingsSearchResults, type SettingsSearchResult } from '@/composables/settings/settingsSearchIndex'
 import {
   createSettingsDirtyRegistry,
   provideSettingsDirtyRegistry
 } from '@/composables/settings/useSettingsDirtyRegistry'
-import { useSettingsNativeCloseGuard } from '@/composables/settings/useSettingsNativeCloseGuard'
 import { useSettingsShell } from '@/composables/settings/useSettingsShell'
 import { usePlatform } from '@/composables/usePlatform'
 import { SETTINGS_TABS } from '@/stores/domains/settings/settingsSchema'
 import { getSettingsTabLabel, type SettingsTabType, useSettingsTabStore } from '@/stores/domains/settings/settingsTab'
-import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import SettingsContent from './SettingsContent.vue'
 import SettingsSidebar from './SettingsSidebar.vue'
@@ -60,13 +56,11 @@ defineOptions({
   name: 'SettingsPage'
 })
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
-    standalone?: boolean
     loading?: boolean
   }>(),
   {
-    standalone: false,
     loading: false
   }
 )
@@ -200,15 +194,7 @@ async function handleClose() {
   if (!canClose) return
 
   dirtyRegistry.clearDirtyTabs()
-  if (props.standalone) {
-    if (hasTauriRuntime()) {
-      await WebviewWindow.getCurrent().close()
-    } else {
-      router.back()
-    }
-    return
-  }
-  // 非独立窗口模式：优先返回上一页，无历史记录时回退到消息页
+  // 优先返回上一页，无历史记录时回退到消息页
   if (window.history.length > 1) {
     router.back()
   } else {
@@ -283,27 +269,6 @@ onBeforeRouteLeave(async () => {
   return canLeave
 })
 
-// A-1: 原生关窗守卫。`handleBeforeUnload` 只能拦浏览器导航，拦不住 Tauri 的
-// `WindowEvent::CloseRequested`（窗口红灯 / Cmd+W），必须在独立窗口上另挂原生监听。
-useSettingsNativeCloseGuard({
-  enabled: () => props.standalone,
-  hasDirty: () => hasDirtyTabs.value,
-  // 自动保存表单不产生脏状态，靠"在飞写请求"判断是否有东西要保
-  hasPending: () => hasPendingSettingsWrites(),
-  flushPending: flushFormWrites,
-  confirm: () =>
-    dirtyRegistry.confirmIfNeeded({
-      scope: 'close',
-      tabId: activeTab.value,
-      currentTabLabel: getSettingsTabLabel(activeTab.value, t)
-    }),
-  onConfirmed: () => dirtyRegistry.clearDirtyTabs(),
-  resolveWindow: () => {
-    if (!props.standalone || !hasTauriRuntime()) return null
-    return WebviewWindow.getCurrent()
-  }
-})
-
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   window.addEventListener('keydown', handleShortcutKey)
@@ -320,6 +285,8 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .settings-page {
   display: flex;
+  flex-direction: row;
+  flex: 1 1 auto;
   height: 100%;
   min-height: 0;
   background: var(--tjg-surface-app);
@@ -330,13 +297,6 @@ onUnmounted(() => {
 
 .settings-page-left {
   flex-shrink: 0;
-}
-
-.settings-page-standalone {
-  border: 1px solid var(--tjg-border-default);
-  border-radius: var(--tjg-radius-lg);
-  box-shadow: var(--tjg-shadow-border), var(--tjg-shadow-md);
-  overflow: hidden;
 }
 
 .settings-page-error {
