@@ -1,12 +1,10 @@
 import { LogicalSize } from '@tauri-apps/api/dpi'
-import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { primaryMonitor } from '@tauri-apps/api/window'
 
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { EventEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
-import type { SettingsTabType } from '@/stores/domains/settings/settingsTab'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { isDesktop, isMac, isWindows10 } from '@/utils/PlatformConstants'
@@ -112,41 +110,6 @@ export const useWindow = () => {
     })
 
     return webview
-  }
-
-  /**
-   * 打开（或聚焦）独立设置窗口。
-   *
-   * 返回 `true` 表示已由独立窗口承接；返回 `false` 表示当前环境无法创建原生窗口
-   * （浏览器/移动端），调用方应回退为当前窗口内路由跳转。
-   */
-  const openSettingsWindow = async (tab?: SettingsTabType): Promise<boolean> => {
-    if (!isDesktop() || !hasTauriRuntime()) {
-      return false
-    }
-
-    // 窗口已存在时只聚焦并同步 tab，避免重复创建失败、也避免设置窗口停留在旧 tab
-    const existing = await WebviewWindow.getByLabel('settings')
-    if (existing) {
-      await emit('settings-window:navigate', { tab })
-      await existing.setFocus()
-      return true
-    }
-
-    const opened = await createWebviewWindow(
-      t('common.window_titles.settings'),
-      'settings',
-      1100,
-      760,
-      undefined,
-      true,
-      900,
-      620,
-      undefined,
-      true,
-      tab ? { tab } : undefined
-    )
-    return opened !== null
   }
 
   /**
@@ -259,7 +222,6 @@ export const useWindow = () => {
 
   return {
     createWebviewWindow,
-    openSettingsWindow,
     createModalWindow,
     resizeWindow,
     checkWinExist,

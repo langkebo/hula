@@ -44,7 +44,7 @@ const useItemsBottom = () =>
 const useMoreList = () => {
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
-  const { createWebviewWindow, openSettingsWindow } = useWindow()
+  const { createWebviewWindow } = useWindow()
   const { logout } = useLoginFlow()
   const router = useRouter()
   const showHomeserverDialog = ref(false)
@@ -98,11 +98,8 @@ const useMoreList = () => {
           label: t('menu.settings'),
           icon: 'settings',
           click: async () => {
-            // 桌面端优先独立设置窗口；无法创建原生窗口时回退为窗口内路由跳转
-            const openedInWindow = await openSettingsWindow()
-            if (!openedInWindow) {
-              await router.push('/settings')
-            }
+            // 设置已内嵌为应用内视图，直接路由跳转（不再创建独立窗口）
+            await router.push('/settings')
           }
         },
         {
