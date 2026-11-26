@@ -21,7 +21,7 @@
     <div id="centerList" class="h-full" :class="{ 'shadow-inner': settingStore.pageShadowEnabled }">
       <router-view v-slot="{ Component }">
         <keep-alive :include="['message', 'friendsList']">
-          <component :is="Component" />
+          <component :is="Component" v-if="!route.meta?.fullWindow" />
         </keep-alive>
       </router-view>
     </div>
