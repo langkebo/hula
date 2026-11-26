@@ -41,6 +41,9 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
       // /search - 全局搜索：当前复用 FriendsList 的搜索态，暂未拆独立视图
       { path: '/search', name: 'search', component: FriendsList },
 
+      // 设置：作为 home 子路由渲染，切换时 layout 常驻不卸载（见 meta.fullWindow）
+      { path: '/settings', name: 'settings', component: SettingsWindow, meta: { fullWindow: true } },
+
       // 旧路径 redirect（向后兼容）
       { path: '/friendsList', redirect: '/friend' },
       { path: '/roomList', redirect: '/room' },
@@ -93,11 +96,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/about',
     name: 'about',
     component: () => import('@/views/aboutWindow/index.vue')
-  },
-  {
-    path: '/settings',
-    name: 'settings',
-    component: SettingsWindow
   },
   {
     path: '/general',

@@ -23,5 +23,7 @@ declare module 'vue-router' {
     permission?: string
     requiresAdmin?: boolean
     keepAlive?: boolean
+    /** 全窗口视图：隐藏 layout 三栏，由 layout 根级 router-view 承载（当前用于 /settings） */
+    fullWindow?: boolean
   }
 }
