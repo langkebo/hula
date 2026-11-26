@@ -3,8 +3,8 @@
     id="layout"
     class="relative flex min-w-310px bg-[--tjg-surface-subtle] h-full"
     :class="{ 'is-dragging-files': isDraggingFiles }">
-    <SkipLink target="#center" :label="t('common.skip_to_sessions')" />
-    <SkipLink target="#chat-main" :label="t('common.skip_to_chat')" />
+    <SkipLink v-if="!isFullWindowRoute" target="#center" :label="t('common.skip_to_sessions')" />
+    <SkipLink v-if="!isFullWindowRoute" target="#chat-main" :label="t('common.skip_to_chat')" />
     <div v-show="!isFullWindowRoute" class="flex flex-1 min-h-0">
       <AsyncLeft />
       <AsyncCenter />
