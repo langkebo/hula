@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import MobileThreePid from '../MobileThreePid.vue'
 
 /**
@@ -262,5 +263,49 @@ describe('MobileThreePid', () => {
     expect(vm.challenge).toBeNull()
     expect(vm.formError).toBe('')
     expect(vm.form.email).toBe('')
+  })
+})
+
+/**
+ * keep-alive 下的刷新语义。
+ *
+ * `MyLayout` 的 RouterView 没有 keep-alive ⇒ 进别的二级页再返回会重新挂载，onMounted 重跑；
+ * 但 `MyLayout` 被外层 tab 布局缓存 ⇒ 切 Tab 回来是 activate，onMounted 不触发。
+ * 后者若不补，中途在网页端解绑的邮箱会一直留在列表里。
+ */
+function mountInKeepAlive() {
+  const Host = defineComponent({
+    name: 'MobileThreePidKeepAliveHost',
+    components: { MobileThreePid },
+    props: { visible: { type: Boolean, default: true } },
+    template: '<KeepAlive><MobileThreePid v-if="visible" /></KeepAlive>'
+  })
+  return mount(Host, { props: { visible: true } })
+}
+
+describe('MobileThreePid keep-alive 刷新', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getThreePidsMock.mockResolvedValue({ threepids: [], pending3pids: [] })
+  })
+
+  it('首次进入只加载一次，activated 不重复请求', async () => {
+    mountInKeepAlive()
+    await flushPromises()
+
+    // mounted 与 activated 在首次挂载时都会触发，若不做判断这里会是 2
+    expect(getThreePidsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('切走 Tab 再切回来（activate）时重读绑定列表', async () => {
+    const wrapper = mountInKeepAlive()
+    await flushPromises()
+    expect(getThreePidsMock).toHaveBeenCalledTimes(1)
+
+    await wrapper.setProps({ visible: false })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+
+    expect(getThreePidsMock).toHaveBeenCalledTimes(2)
   })
 })

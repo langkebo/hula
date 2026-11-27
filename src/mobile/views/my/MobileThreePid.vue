@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onActivated, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
@@ -284,6 +284,26 @@ async function handleBind(): Promise<void> {
 }
 
 onMounted(async () => {
+  await loadThreePids()
+})
+
+/**
+ * 切走 Tab 再回来时重读绑定列表。
+ *
+ * 两种「回来」语义不同：进别的二级页再返回时，`MyLayout` 的 RouterView 没有 keep-alive，
+ * 本页会重新挂载、onMounted 自然重跑；但 `MyLayout` 自身被外层 tab 布局缓存，
+ * 切到别的 Tab 再切回来是 deactivate/activate，onMounted 不触发，
+ * 中途在别处（如网页端）解绑的邮箱就会一直显示。
+ *
+ * 首次进入 mounted 与 activated 都会触发，用一次性开关跳过，避免刚进页发两轮请求。
+ */
+let isFirstActivation = true
+
+onActivated(async () => {
+  if (isFirstActivation) {
+    isFirstActivation = false
+    return
+  }
   await loadThreePids()
 })
 </script>
