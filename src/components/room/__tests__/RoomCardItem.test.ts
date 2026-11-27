@@ -123,14 +123,15 @@ describe('RoomCardItem', () => {
 
   it('emits preview with roomId when card body clicked', async () => {
     const wrapper = mountCard()
-    await wrapper.find('[data-testid="room-card-item"]').trigger('click')
+    await wrapper.find('[data-testid="room-card-item-preview"]').trigger('click')
     expect(wrapper.emitted('preview')).toEqual([['!room1:matrix.test']])
   })
 
-  it('emits preview with roomId when Enter is pressed on the card body', async () => {
+  it('preview control is a native button with accessible name (键盘激活由浏览器处理)', () => {
     const wrapper = mountCard()
-    await wrapper.find('[data-testid="room-card-item"]').trigger('keydown', { key: 'Enter' })
-    expect(wrapper.emitted('preview')).toEqual([['!room1:matrix.test']])
+    const preview = wrapper.find('[data-testid="room-card-item-preview"]')
+    expect(preview.element.tagName).toBe('BUTTON')
+    expect(preview.attributes('aria-label')).toBe('TJG 官方频道')
   })
 
   it('truncates long topic text', () => {

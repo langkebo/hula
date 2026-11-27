@@ -161,6 +161,7 @@ export type Messages = {
     "password_label": "锁屏密码",
     "password_placeholder": "请输入锁屏密码",
     "confirm_button": "确定",
+    "unlock_button": "解锁",
     "validation_required": "请输入锁屏密码",
     "tip_description": "这是一个开源的即时通讯(IM)应用，它采用了 Tauri、Vue3、Vite5、UnoCSS 和 TypeScript 等前沿技术。",
     "enter_system_tooltip": "进入系统",
@@ -503,6 +504,7 @@ export type KeyPaths =
   | "message.lock_screen.password_label"
   | "message.lock_screen.password_placeholder"
   | "message.lock_screen.confirm_button"
+  | "message.lock_screen.unlock_button"
   | "message.lock_screen.validation_required"
   | "message.lock_screen.tip_description"
   | "message.lock_screen.enter_system_tooltip"

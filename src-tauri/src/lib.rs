@@ -643,6 +643,8 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
     use crate::command::set_complete;
     use crate::command::upload_command::copy_file_to_app_scope;
     use crate::command::upload_command::upload_file_put;
+    use crate::command::user_command::begin_token_refresh;
+    use crate::command::user_command::finish_token_refresh;
     use crate::command::user_command::get_user_tokens;
     use crate::command::user_command::save_user_info;
     use crate::command::user_command::update_token;
@@ -693,6 +695,8 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         save_user_info,
         get_user_tokens,
         update_token,
+        begin_token_refresh,
+        finish_token_refresh,
         remove_tokens,
         update_user_last_opt_time,
         update_my_room_info,

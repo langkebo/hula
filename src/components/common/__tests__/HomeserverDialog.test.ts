@@ -10,6 +10,7 @@ type HomeserverDialogVm = {
 const {
   showFeedbackMock,
   discoverAndSaveMatrixEndpointsMock,
+  probeMatrixHomeserverMock,
   resolveMatrixEndpointConfigMock,
   saveMatrixIdentityServerUrlMock,
   isValidHttpUrlMock,
@@ -17,6 +18,7 @@ const {
 } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
   discoverAndSaveMatrixEndpointsMock: vi.fn(),
+  probeMatrixHomeserverMock: vi.fn(),
   resolveMatrixEndpointConfigMock: vi.fn(),
   saveMatrixIdentityServerUrlMock: vi.fn(),
   isValidHttpUrlMock: vi.fn(),
@@ -64,6 +66,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 
 vi.mock('@/services/backend', () => ({
   discoverAndSaveMatrixEndpoints: discoverAndSaveMatrixEndpointsMock,
+  probeMatrixHomeserver: probeMatrixHomeserverMock,
   resolveMatrixEndpointConfig: resolveMatrixEndpointConfigMock,
   saveMatrixIdentityServerUrl: saveMatrixIdentityServerUrlMock,
   isValidHttpUrl: isValidHttpUrlMock,
@@ -83,6 +86,7 @@ vi.mock('@/utils/Logger', () => ({
 describe('HomeserverDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    probeMatrixHomeserverMock.mockResolvedValue({ versions: ['v1.11'] })
     resolveMatrixEndpointConfigMock.mockReturnValue({
       homeserverUrl: 'https://default.example.com',
       identityServerUrl: 'https://identity.example.com'
@@ -163,6 +167,20 @@ describe('HomeserverDialog', () => {
     await vm.handleSave()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('menu.homeserver_save_failed', 'error')
+    expect(wrapper.emitted('save')).toBeUndefined()
+  })
+
+  it('服务器不可达时中止保存并给出 warning', async () => {
+    probeMatrixHomeserverMock.mockRejectedValue(new Error('unreachable'))
+
+    const wrapper = mountComponent()
+    const vm = wrapper.vm as unknown as HomeserverDialogVm
+    vm.homeserverUrl = 'https://matrix.example.com'
+
+    await vm.handleSave()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('menu.homeserver_unreachable', 'warning')
+    expect(discoverAndSaveMatrixEndpointsMock).not.toHaveBeenCalled()
     expect(wrapper.emitted('save')).toBeUndefined()
   })
 })

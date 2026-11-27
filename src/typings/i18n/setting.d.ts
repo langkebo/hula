@@ -105,6 +105,7 @@ export type Messages = {
     "extended_profile_updated": "资料已更新",
     "extended_profile_update_failed": "资料更新失败",
     "extended_profile_unsupported": "当前服务器暂不支持扩展资料字段",
+    "save_profile": "保存资料",
     "password_changed": "密码已修改",
     "password_change_failed": "密码修改失败",
     "password_change_failed_with_hint": "密码修改失败，请检查当前密码是否正确",
@@ -924,6 +925,7 @@ export type Messages = {
     "microphone_fallback": "麦克风 {id}",
     "camera_fallback": "摄像头 {id}",
     "load_devices_failed": "获取设备列表失败，请检查权限",
+    "devices_unavailable": "无法获取设备",
     "microphone_test_started": "麦克风测试已开始",
     "microphone_access_failed": "无法访问麦克风，请检查权限",
     "preview_started": "视频预览已开始",
@@ -939,6 +941,13 @@ export type Messages = {
     "media_quota_desc": "服务端媒体存储用量、上限与告警",
     "quota_loading": "正在读取配额...",
     "quota_unavailable": "配额信息暂不可用",
+    "local_cache_title": "本地缓存",
+    "local_cache_desc": "清理搜索索引与本地缩略图缓存（可重新生成），不会删除服务端媒体",
+    "clear_local_cache": "清理缓存",
+    "clear_local_cache_confirm_title": "清理本地缓存",
+    "clear_local_cache_confirm_message": "将删除搜索索引与本地缩略图/表情缓存（可重新生成），不会删除服务端媒体。",
+    "clear_local_cache_success": "本地缓存已清理",
+    "clear_local_cache_failed": "清理本地缓存失败，请稍后重试",
     "quota_used": "已用",
     "quota_limit": "配额上限",
     "quota_remaining": "剩余",
@@ -1010,6 +1019,7 @@ export type Messages = {
     "local_unlock_wrong_password": "密码不正确",
     "local_unlock_failed": "解锁失败，请重试",
     "local_unlock_forgot_hint": "忘记密码将无法恢复本机历史消息。这不影响服务端密钥备份（若已启用）。",
+    "local_unlock_keychain_unavailable": "系统钥匙串不可用，请签名应用或设置本地解锁。",
     "encryption_enabled_title": "端到端加密已启用",
     "encryption_disabled_title": "端到端加密未启用",
     "encryption_enabled_desc": "您的消息受到端到端加密保护",
@@ -1382,6 +1392,7 @@ export type KeyPaths =
   | "setting.account.extended_profile_updated"
   | "setting.account.extended_profile_update_failed"
   | "setting.account.extended_profile_unsupported"
+  | "setting.account.save_profile"
   | "setting.account.password_changed"
   | "setting.account.password_change_failed"
   | "setting.account.password_change_failed_with_hint"
@@ -2015,6 +2026,7 @@ export type KeyPaths =
   | "setting.voice_video.microphone_fallback"
   | "setting.voice_video.camera_fallback"
   | "setting.voice_video.load_devices_failed"
+  | "setting.voice_video.devices_unavailable"
   | "setting.voice_video.microphone_test_started"
   | "setting.voice_video.microphone_access_failed"
   | "setting.voice_video.preview_started"
@@ -2028,6 +2040,13 @@ export type KeyPaths =
   | "setting.storage.media_quota_desc"
   | "setting.storage.quota_loading"
   | "setting.storage.quota_unavailable"
+  | "setting.storage.local_cache_title"
+  | "setting.storage.local_cache_desc"
+  | "setting.storage.clear_local_cache"
+  | "setting.storage.clear_local_cache_confirm_title"
+  | "setting.storage.clear_local_cache_confirm_message"
+  | "setting.storage.clear_local_cache_success"
+  | "setting.storage.clear_local_cache_failed"
   | "setting.storage.quota_used"
   | "setting.storage.quota_limit"
   | "setting.storage.quota_remaining"
@@ -2097,6 +2116,7 @@ export type KeyPaths =
   | "setting.security.local_unlock_wrong_password"
   | "setting.security.local_unlock_failed"
   | "setting.security.local_unlock_forgot_hint"
+  | "setting.security.local_unlock_keychain_unavailable"
   | "setting.security.encryption_enabled_title"
   | "setting.security.encryption_disabled_title"
   | "setting.security.encryption_enabled_desc"

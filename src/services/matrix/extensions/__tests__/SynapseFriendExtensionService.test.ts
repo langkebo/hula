@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import endpointCapabilityService from '../../EndpointCapabilityService'
 import { matrixCapabilityService } from '../../MatrixCapabilityService'
 import { matrixClientService } from '../../MatrixClientService'
 import { getRuntimeAwareFetch } from '../../network/runtimeFetch'
@@ -19,13 +18,6 @@ vi.mock('../../network/runtimeFetch', () => ({
 
 vi.mock('@/services/i18n', () => ({
   useI18nGlobal: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('../../EndpointCapabilityService', () => ({
-  default: {
-    check: vi.fn(),
-    clear: vi.fn()
-  }
 }))
 
 vi.mock('../../MatrixCapabilityService', () => ({
@@ -69,7 +61,6 @@ describe('SynapseFriendExtensionService', () => {
   const getHomeserverUrl = matrixClientService.getHomeserverUrl as ReturnType<typeof vi.fn>
   const getAccessToken = matrixClientService.getAccessToken as ReturnType<typeof vi.fn>
   const getRuntimeAwareFetchMock = getRuntimeAwareFetch as ReturnType<typeof vi.fn>
-  const endpointCheckMock = endpointCapabilityService.check as ReturnType<typeof vi.fn>
   const canUseFriendListMock = matrixCapabilityService.canUseFriendList as ReturnType<typeof vi.fn>
   let fetchMock: ReturnType<typeof vi.fn>
 
@@ -77,7 +68,6 @@ describe('SynapseFriendExtensionService', () => {
     getHomeserverUrl.mockReset()
     getAccessToken.mockReset()
     getRuntimeAwareFetchMock.mockReset()
-    endpointCheckMock.mockReset()
     canUseFriendListMock.mockReset()
     fetchMock = vi.fn()
     getRuntimeAwareFetchMock.mockReturnValue(fetchMock)
@@ -90,14 +80,19 @@ describe('SynapseFriendExtensionService', () => {
 
   const makeUnavailable = (): void => {
     canUseFriendListMock.mockReturnValue(false)
-    endpointCheckMock.mockResolvedValue(false)
   }
 
   describe('getFriends', () => {
-    it('returns [] when endpoint is unavailable', async () => {
+    it('returns [] when endpoint is unavailable（能力不支持时不发请求）', async () => {
       makeUnavailable()
       const result = await synapseFriendExtensionService.getFriends()
       expect(result).toEqual([])
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('能力未声明时不发探测请求（不再用 GET limit=0 触发 400）', async () => {
+      canUseFriendListMock.mockReturnValue(false)
+      await synapseFriendExtensionService.getFriendsPage()
       expect(fetchMock).not.toHaveBeenCalled()
     })
 
@@ -246,6 +241,37 @@ describe('SynapseFriendExtensionService', () => {
       makeUnavailable()
       const result = await synapseFriendExtensionService.getFriendsPage()
       expect(result).toEqual({ friends: [], nextBatch: null })
+    })
+
+    it('服务端 400 负缓存：本会话内只请求一次', async () => {
+      fetchMock.mockResolvedValue(makeResponse({ ok: false, status: 400 }))
+
+      const first = await synapseFriendExtensionService.getFriendsPage()
+      const second = await synapseFriendExtensionService.getFriendsPage()
+
+      expect(first).toEqual({ friends: [], nextBatch: null })
+      expect(second).toEqual({ friends: [], nextBatch: null })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('服务端 404 同样进入负缓存（只请求一次）', async () => {
+      fetchMock.mockResolvedValue(makeResponse({ ok: false, status: 404 }))
+
+      await synapseFriendExtensionService.getFriendsPage()
+      await synapseFriendExtensionService.getFriendsPage()
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('清空会话后负缓存失效，可重新请求', async () => {
+      fetchMock.mockResolvedValue(makeResponse({ ok: false, status: 400 }))
+      await synapseFriendExtensionService.getFriendsPage()
+
+      synapseFriendExtensionService.clear()
+      fetchMock.mockResolvedValue(makeResponse({ ok: true, status: 200, textResp: '{"friends":[]}' }))
+      await synapseFriendExtensionService.getFriendsPage()
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
     })
   })
 

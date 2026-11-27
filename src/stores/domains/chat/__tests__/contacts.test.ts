@@ -93,8 +93,17 @@ vi.mock('@/services/matrix/room/MatrixDirectMessageService', () => ({
     stop: vi.fn(),
     getDmRoomInfos: vi.fn(),
     getDmForUser: vi.fn(),
-    createDm: vi.fn()
+    createDm: vi.fn(),
+    ensureDmRoomJoined: vi.fn(async () => true)
   }
+}))
+
+const presenceServiceMock = vi.hoisted(() => ({
+  getBatchPresence: vi.fn()
+}))
+
+vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
+  matrixPresenceService: presenceServiceMock
 }))
 
 const profileServiceMock = vi.hoisted(() => ({
@@ -518,6 +527,56 @@ describe('contacts store 分页渲染（F-6）', () => {
     releasePage2()
     await loading
     expect(list.contactsList.value.map((c) => c.userId)).toEqual(['@a:hs', '@b:hs'])
+  })
+})
+
+/**
+ * P-19 回归：DM-only 联系人被 presence 过滤清空时，不能把已加载的好友整段替换掉。
+ * 旧实现 `contactsList.value = merge(prev, kept)` 在 kept=[] 时得到空列表（好友列表被清空）。
+ */
+describe('contacts store DM-only 合并（P-19）', () => {
+  const createList = () => createContactsList({ ensureFriendServicesReady: async () => {} })
+
+  it('DM 联系人全部被过滤时仍保留好友', async () => {
+    mockFriendPages({
+      friends: [
+        { user_id: '@alice:hs', since: 1 },
+        { user_id: '@bob:hs', since: 2 }
+      ]
+    })
+    vi.mocked(matrixDirectMessageService.getDmRoomInfos).mockResolvedValue([
+      { roomId: '!dm:hs', invitees: ['@ghost:hs'], inviter: '@me:hs' } as never
+    ])
+    presenceServiceMock.getBatchPresence.mockImplementation(async (ids: string[]) =>
+      ids.map((id) => ({ user_id: id, notFound: id === '@ghost:hs' }))
+    )
+    vi.mocked(matrixFriendService.getSpecialFriends).mockResolvedValue([] as never)
+
+    const list = createList()
+    await list.getContactList()
+
+    expect(list.contactsList.value.map((c) => c.userId)).toEqual(['@alice:hs', '@bob:hs'])
+  })
+
+  it('DM 联系人与好友为同一人时只保留一条', async () => {
+    mockFriendPages({
+      friends: [
+        { user_id: '@alice:hs', since: 1 },
+        { user_id: '@bob:hs', since: 2 }
+      ]
+    })
+    vi.mocked(matrixDirectMessageService.getDmRoomInfos).mockResolvedValue([
+      { roomId: '!dm:hs', invitees: ['@alice:hs'], inviter: '@me:hs' } as never
+    ])
+    presenceServiceMock.getBatchPresence.mockImplementation(async (ids: string[]) =>
+      ids.map((id) => ({ user_id: id, notFound: false }))
+    )
+    vi.mocked(matrixFriendService.getSpecialFriends).mockResolvedValue([] as never)
+
+    const list = createList()
+    await list.getContactList()
+
+    expect(list.contactsList.value.map((c) => c.userId)).toEqual(['@alice:hs', '@bob:hs'])
   })
 })
 

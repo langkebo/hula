@@ -145,7 +145,7 @@ test.describe('跨设备消息互通（Android 模拟器 ↔ 本机桌面）', (
     }
     // 解锁门禁已由 bootstrap 统一处理（F-10）
     await bootstrapMatrixLivePage(page, env)
-    await loginToMatrixLive(page, env, 'password-api')
+    await loginToMatrixLive(page, env, 'primary')
     await dismissLocalUnlockDialog(page) // 登录后 crypto 初始化可能再问一次
 
     // 不做整页导航：浏览器态 token 只在内存里（Tauri IPC 取 token 不可用），重载即掉登录。

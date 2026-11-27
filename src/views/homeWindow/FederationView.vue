@@ -6,9 +6,9 @@
       <button
         type="button"
         class="federation-page__refresh"
-        :disabled="destinationsLoading"
+        :disabled="destinationsLoading || !canViewFederation"
         :aria-label="t('home.plugins.federation')"
-        @click="loadDestinations">
+        @click="loadIfAllowed">
         <svg
           viewBox="0 0 24 24"
           width="16"
@@ -49,19 +49,34 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminFederation } from '@/composables/admin/useAdminFederation'
+import { useAdminStore } from '@/stores/domains/admin/admin'
 
 const { t } = useI18n()
+const adminStore = useAdminStore()
 const { destinations, destinationsLoading, loadDestinations } = useAdminFederation()
+
+/** 无权限（非管理员 / Admin API 不可用）时不发请求，直接展示空态文案 */
+const canViewFederation = computed(() => adminStore.canShowAdminEntry)
 
 /** 加载完成且目标服务器列表为空时展示空态 */
 const isEmptyDestinations = computed(() => destinations.value.length === 0)
 
-onMounted(() => {
+function loadIfAllowed() {
+  if (!canViewFederation.value) return
   loadDestinations()
+}
+
+onMounted(loadIfAllowed)
+
+// 管理员状态可能在进入页面后才探测完成，届时再补一次加载
+watch(canViewFederation, (allowed) => {
+  if (allowed) {
+    loadDestinations()
+  }
 })
 </script>
 

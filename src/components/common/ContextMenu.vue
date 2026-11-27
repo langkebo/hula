@@ -64,7 +64,8 @@
               </div>
             </div>
             <!-- 判断是否有特别的菜单项才需要分割线 -->
-            <div v-if="visibleSpecialMenu.length > 0" class="flex-col-y-center gap-6px" role="separator">
+            <!-- 用 group 而非 separator：separator 的子节点会被无障碍树整体隐藏，屏幕阅读器与自动化都读不到这些危险操作 -->
+            <div v-if="visibleSpecialMenu.length > 0" class="flex-col-y-center gap-6px" role="group">
               <!-- 分割线（只有当常规菜单存在时才显示） -->
               <div
                 v-if="visibleMenu && visibleMenu.length > 0"

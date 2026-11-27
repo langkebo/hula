@@ -129,6 +129,7 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
 } {
   const mocks = {
     logout: vi.fn().mockResolvedValue(undefined),
+    stopClient: vi.fn().mockResolvedValue(undefined),
     closeAutoLogin: vi.fn(),
     clearUser: vi.fn(),
     updateCurrentSessionRoomId: vi.fn(),
@@ -149,6 +150,7 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
       login: vi.fn().mockResolvedValue(true),
       completeSSOLogin: vi.fn().mockResolvedValue(true),
       loginWithToken: vi.fn().mockResolvedValue(true),
+      stopClient: mocks.stopClient,
       logout: mocks.logout
     },
     user: {
@@ -406,6 +408,10 @@ describe('SessionLogoutService.logoutCurrentSession', () => {
     expect(state.cachedHasSession).toBeNull()
     expect(resetSearchIndexMock).toHaveBeenCalled()
     expect(matrixWorkerTerminateMock).toHaveBeenCalledWith('logout')
+    // P-12：索引重置必须在 terminate 之前完成，避免 terminate 后仍向 worker 发请求
+    expect(resetSearchIndexMock.mock.invocationCallOrder[0]).toBeLessThan(
+      matrixWorkerTerminateMock.mock.invocationCallOrder[0]
+    )
     expect(setPresenceMock).toHaveBeenCalledWith('unavailable')
     expect(mocks.logout).toHaveBeenCalled()
     expect(mocks.setTrayMenuShow).toHaveBeenCalledWith(false)
@@ -441,6 +447,38 @@ describe('SessionLogoutService.logoutCurrentSession', () => {
     expect(createWebviewWindow).toHaveBeenCalledWith('登录', 'login', 420, 580, undefined, false, 420, 580)
     expect(emitMock).toHaveBeenCalledWith(EventEnum.LOGOUT)
     expect(resizeWindow).toHaveBeenCalledWith('tray', 130, 44)
+  })
+
+  it('stops the old Matrix client before opening the login window', async () => {
+    const createWebviewWindow = vi.fn().mockResolvedValue(undefined)
+    useWindowMock.mockReturnValue({
+      resizeWindow: vi.fn().mockResolvedValue(undefined),
+      createWebviewWindow
+    } as unknown as ReturnType<typeof useWindow>)
+
+    const { host, mocks } = createMockHost()
+    const service = new SessionLogoutService(host, new SessionRuntimeState())
+
+    await service.logoutCurrentSession()
+
+    // P-11：旧 client 必须先停，否则登录窗口会沿用已撤销 token 继续 sync/refresh 并 401
+    expect(mocks.stopClient).toHaveBeenCalledTimes(1)
+    expect(mocks.stopClient.mock.invocationCallOrder[0]).toBeLessThan(createWebviewWindow.mock.invocationCallOrder[0])
+  })
+
+  it('still opens the login window when stopClient fails', async () => {
+    const createWebviewWindow = vi.fn().mockResolvedValue(undefined)
+    useWindowMock.mockReturnValue({
+      resizeWindow: vi.fn().mockResolvedValue(undefined),
+      createWebviewWindow
+    } as unknown as ReturnType<typeof useWindow>)
+
+    const { host, mocks } = createMockHost()
+    mocks.stopClient.mockRejectedValue(new Error('stop failed'))
+    const service = new SessionLogoutService(host, new SessionRuntimeState())
+
+    await expect(service.logoutCurrentSession()).resolves.toBeUndefined()
+    expect(createWebviewWindow).toHaveBeenCalled()
   })
 
   it('skips local state reset and only clears room id when resetLocalState is false', async () => {

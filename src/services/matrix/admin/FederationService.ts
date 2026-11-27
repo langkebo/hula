@@ -14,6 +14,12 @@ import type {
 
 const logger = createLogger('FederationService')
 
+const ADMIN_PERMISSION_DENIED = 'ADMIN_PERMISSION_DENIED'
+
+/** 非管理员访问是权限判定结论，不是故障，读接口按空数据降级 */
+const isAdminPermissionDenied = (err: unknown): boolean =>
+  err instanceof Error && err.message === ADMIN_PERMISSION_DENIED
+
 type SdkAdminGetter = () => Promise<AdminManager>
 
 export class AdminFederationService {
@@ -25,6 +31,9 @@ export class AdminFederationService {
       const destinations = await admin.getFederationDestinations()
       return (destinations ?? []).map((d) => this.mapFederationDestination(d))
     } catch (err) {
+      if (isAdminPermissionDenied(err)) {
+        return []
+      }
       logger.error(`[AdminFederation] 获取联邦目的地失败: ${err}`)
       return []
     }
@@ -36,6 +45,9 @@ export class AdminFederationService {
       const result = await admin.getFederationDestination(destination)
       return result ? this.mapFederationDestination(result, destination) : null
     } catch (err) {
+      if (isAdminPermissionDenied(err)) {
+        return null
+      }
       logger.error(`[AdminFederation] 获取联邦目的地详情失败: ${err}`)
       return null
     }
@@ -63,6 +75,9 @@ export class AdminFederationService {
         addedAt: item.added_at
       }))
     } catch (err) {
+      if (isAdminPermissionDenied(err)) {
+        return []
+      }
       logger.error(`[AdminFederation] 获取联邦黑名单失败: ${err}`)
       return []
     }
@@ -99,6 +114,9 @@ export class AdminFederationService {
       const page = await admin.getFederationCache()
       return this.mapFederationCache(page)
     } catch (err) {
+      if (isAdminPermissionDenied(err)) {
+        return { entries: [], total: 0 }
+      }
       logger.error(`[AdminFederation] 获取联邦缓存失败: ${err}`)
       return { entries: [], total: 0 }
     }
@@ -135,6 +153,9 @@ export class AdminFederationService {
       const page = await admin.getPendingFederationServers(from, limit)
       return this.mapPendingFederationPage(page)
     } catch (err) {
+      if (isAdminPermissionDenied(err)) {
+        return { servers: [], total: 0, limit: limit ?? 0 }
+      }
       logger.error(`[AdminFederation] 获取待确认联邦服务器失败: ${err}`)
       return { servers: [], total: 0, limit: limit ?? 0 }
     }

@@ -31,6 +31,8 @@ interface RoomSession {
   /** DM 对方用户 MXID（单聊时填充，供下游按 counterpart 去重；历史重复 DM 房间靠它合并） */
   detailId?: string
   account?: string
+  /** 当前用户在该房间的成员状态；invite 时列表展示「接受/拒绝邀请」 */
+  membership?: 'join' | 'leave' | 'invite' | 'ban' | 'knock' | undefined
 }
 
 interface VisibleRoomSession extends RoomSession {
@@ -147,6 +149,8 @@ export class MatrixRoomRealtimeService {
       type,
       unreadCount,
       activeTime,
+      membership:
+        typeof room.getMyMembership === 'function' ? (room.getMyMembership() as RoomSession['membership']) : undefined,
       ...(detailId ? { detailId, account: detailId } : {})
     }
   }

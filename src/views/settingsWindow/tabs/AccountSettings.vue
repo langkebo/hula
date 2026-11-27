@@ -76,8 +76,14 @@
               :disabled="extendedProfileDisabled"
               @blur="handleBirthdayChange" />
           </n-form-item>
+
+          <n-form-item>
+            <n-button type="primary" :loading="profileSaving" :disabled="!profileDirty" @click="saveProfile">
+              {{ t('setting.account.save_profile') }}
+            </n-button>
+          </n-form-item>
         </n-form>
-        <p v-if="!supportsExtendedProfile" class="extended-profile-hint">
+        <p v-if="extendedProfileUnsupported" class="extended-profile-hint">
           {{ t('setting.account.extended_profile_unsupported') }}
         </p>
       </div>
@@ -157,13 +163,16 @@ const { confirmDeactivateAccount } = useAccountDeactivation()
 
 const {
   userId,
-  supportsExtendedProfile,
+  extendedProfileUnsupported,
   extendedProfileLoadFailed,
   extendedProfileDisabled,
   displayNameSaving,
+  profileSaving,
+  profileDirty,
   formData,
   genderOptions,
   loadExtendedProfile,
+  saveProfile,
   handleDisplayNameChange,
   handleAboutChange,
   handleSexChange,

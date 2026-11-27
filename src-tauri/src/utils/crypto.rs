@@ -31,6 +31,43 @@ const KDF_ITERATIONS: u32 = 10_000;
 
 static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
+/// 主密钥的来源，决定它能否安全用于**写新的** fallback 密文（P-05）。
+///
+/// 关键区分：钥匙串里**有**条目但本次读不到时，新生成的随机密钥并不等于既有密文的密钥。
+/// 用它会覆盖钥匙串条目、并让既有 fallback 密文永久无法解密，因此标记为不可信。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MasterKeyOrigin {
+    /// 从系统钥匙串读取成功
+    Keychain,
+    /// 从旧版 0600 文件读取（钥匙串条目缺失/不可写）
+    LegacyFile,
+    /// 首次运行：钥匙串无条目，生成新密钥（已尝试托管到钥匙串）
+    GeneratedFirstRun,
+    /// 钥匙串存在但本次不可访问，且无旧文件：新生成的主密钥无法证明与既有密文匹配
+    GeneratedKeychainInaccessible,
+}
+
+impl MasterKeyOrigin {
+    /// 是否可安全用于写新的 fallback 密文。
+    pub(crate) fn fallback_trusted(self) -> bool {
+        !matches!(self, MasterKeyOrigin::GeneratedKeychainInaccessible)
+    }
+}
+
+static MASTER_KEY_ORIGIN: OnceLock<MasterKeyOrigin> = OnceLock::new();
+
+/// 当前主密钥是否可信（用于 `secure_store` 写 fallback 前的门禁）。
+///
+/// 会触发主密钥初始化（与 `encrypt`/`decrypt` 相同的一次性初始化）。
+pub(crate) fn fallback_master_key_trusted() -> bool {
+    let _ = get_master_key();
+    MASTER_KEY_ORIGIN
+        .get()
+        .copied()
+        .unwrap_or(MasterKeyOrigin::GeneratedFirstRun)
+        .fallback_trusted()
+}
+
 /// 启动时注入的应用数据目录。
 ///
 /// Android/iOS 进程没有 `HOME`（或 `HOME=/`），此时必须落到应用私有目录，
@@ -142,13 +179,27 @@ fn save_key_to_file(key: &[u8; 32]) {
     info!("Saved encryption key to file fallback: {:?}", path);
 }
 
+/// 钥匙串读取结果。
+///
+/// 必须区分「条目不存在」与「条目存在但本次不可访问」：前者可以安全地生成并写入新密钥，
+/// 后者若写入新密钥会**覆盖**既有条目、永久丢失旧密文的解密能力（P-05）。
+#[derive(Clone, Copy)]
+enum KeychainLoad {
+    /// 读取并解码成功
+    Found([u8; 32]),
+    /// 条目不存在（首次运行 / 迁移前的旧安装）
+    NoEntry,
+    /// 存在但本次不可访问（权限 / ACL / 平台错误），**不得覆盖**
+    Inaccessible,
+}
+
 /// 从系统钥匙串读取主密钥。
-fn load_key_from_keychain() -> Option<[u8; 32]> {
+fn load_key_from_keychain() -> KeychainLoad {
     let entry = match Entry::new(SERVICE_NAME, KEY_NAME) {
         Ok(entry) => entry,
         Err(e) => {
             warn!("Failed to create keyring entry: {:?}", e);
-            return None;
+            return KeychainLoad::Inaccessible;
         }
     };
 
@@ -158,24 +209,25 @@ fn load_key_from_keychain() -> Option<[u8; 32]> {
                 let mut key = [0u8; MASTER_KEY_LEN];
                 key.copy_from_slice(&key_bytes);
                 info!("Successfully retrieved encryption key from system keyring");
-                Some(key)
+                KeychainLoad::Found(key)
             }
             _ => {
-                warn!("Keyring key exists but format invalid, trying file fallback");
-                None
+                // 条目存在但格式不符：宁可当作不可访问，也不能覆盖它
+                warn!("Keyring key exists but format invalid, treating keyring as inaccessible");
+                KeychainLoad::Inaccessible
             }
         },
         Err(keyring::Error::NoEntry) => {
             // 首次运行或 macOS dev mode 签名变化的正常情况
             debug!("Keyring entry not found (first run or macOS dev mode)");
-            None
+            KeychainLoad::NoEntry
         }
         Err(e) => {
             warn!(
                 "Keyring get_password failed (likely macOS dev mode signature change): {:?}",
                 e
             );
-            None
+            KeychainLoad::Inaccessible
         }
     }
 }
@@ -246,8 +298,11 @@ fn remove_key_file() {
 /// - 只有钥匙串写入且读回验证失败时，才保留 0600 文件作为降级（否则会丢密钥）。
 fn get_master_key() -> &'static [u8; 32] {
     MASTER_KEY.get_or_init(|| {
+        let keychain = load_key_from_keychain();
+
         // 1. 系统钥匙串优先
-        if let Some(key) = load_key_from_keychain() {
+        if let KeychainLoad::Found(key) = keychain {
+            let _ = MASTER_KEY_ORIGIN.set(MasterKeyOrigin::Keychain);
             return key;
         }
 
@@ -270,6 +325,7 @@ fn get_master_key() -> &'static [u8; 32] {
                      it will be migrated on the next start once the keyring works"
                 );
             }
+            let _ = MASTER_KEY_ORIGIN.set(MasterKeyOrigin::LegacyFile);
             return key;
         }
 
@@ -278,9 +334,26 @@ fn get_master_key() -> &'static [u8; 32] {
         let mut key = [0u8; MASTER_KEY_LEN];
         OsRng.fill_bytes(&mut key);
 
-        if !store_key_in_keychain(&key) {
-            warn!("Keyring unavailable: master key is degraded to 0600 file fallback");
-            save_key_to_file(&key);
+        match keychain {
+            KeychainLoad::Inaccessible => {
+                // 钥匙串里已有条目但本次读不到：新密钥不代表既有密文的密钥。
+                // 写入钥匙串会覆盖旧条目（旧密钥/旧密文永久丢失）⇒ 只落 0600 文件，
+                // 并标记为不可信，供 secure_store 拒绝用新密钥写 fallback 密文。
+                warn!(
+                    "Keyring entry is inaccessible but exists: generated an independent master key \
+                     saved to the 0600 file and will NOT overwrite the keyring entry; \
+                     existing ciphertexts stay undecryptable until the keyring recovers"
+                );
+                save_key_to_file(&key);
+                let _ = MASTER_KEY_ORIGIN.set(MasterKeyOrigin::GeneratedKeychainInaccessible);
+            }
+            KeychainLoad::NoEntry | KeychainLoad::Found(_) => {
+                if !store_key_in_keychain(&key) {
+                    warn!("Keyring unavailable: master key is degraded to 0600 file fallback");
+                    save_key_to_file(&key);
+                }
+                let _ = MASTER_KEY_ORIGIN.set(MasterKeyOrigin::GeneratedFirstRun);
+            }
         }
 
         key
@@ -368,6 +441,18 @@ pub fn decrypt(encrypted_base64: &str) -> anyhow::Result<String> {
     String::from_utf8(plaintext_bytes).map_err(|e| anyhow::anyhow!("Invalid UTF-8: {:?}", e))
 }
 
+/// 判断一段文本是否「像」本模块产出的密文（v2 前缀，或可 base64 解码的旧密文）。
+///
+/// 用于 `secure_store` 在写 fallback 前区分「既有密文」与「损坏的垃圾内容」：
+/// 只有前者才意味着覆盖会造成不可逆的数据丢失。
+pub(crate) fn looks_like_ciphertext(value: &str) -> bool {
+    let value = value.trim();
+    if value.is_empty() {
+        return false;
+    }
+    value.starts_with(CIPHERTEXT_PREFIX_V2) || STANDARD.decode(value).is_ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -416,6 +501,27 @@ mod tests {
 
         let decrypted = decrypt(&encrypted).expect("Decryption failed");
         assert_eq!(original, decrypted);
+    }
+
+    /// P-05：只有「钥匙串存在但不可访问时新生成」的主密钥不可信，
+    /// 其余来源都可安全用于写新的 fallback 密文。
+    #[test]
+    fn test_master_key_origin_fallback_trust_mapping() {
+        assert!(MasterKeyOrigin::Keychain.fallback_trusted());
+        assert!(MasterKeyOrigin::LegacyFile.fallback_trusted());
+        assert!(MasterKeyOrigin::GeneratedFirstRun.fallback_trusted());
+        assert!(!MasterKeyOrigin::GeneratedKeychainInaccessible.fallback_trusted());
+    }
+
+    /// `looks_like_ciphertext` 用于区分「既有密文」与「损坏的垃圾内容」。
+    #[test]
+    fn test_looks_like_ciphertext() {
+        assert!(looks_like_ciphertext("tjg:v2:AAAA"));
+        assert!(looks_like_ciphertext("  dGVzdA==  "));
+        assert!(!looks_like_ciphertext(
+            "corrupted-garbage-data-not-valid-encrypted-content"
+        ));
+        assert!(!looks_like_ciphertext(""));
     }
 
     /// 新密文必须带 v2 前缀，且每份密文使用不同随机盐（盐随密文存储）。

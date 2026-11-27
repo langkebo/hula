@@ -29,6 +29,8 @@ export interface SessionInfo {
   account?: string | undefined
   text?: string
   isFavorite?: boolean
+  /** 当前用户在该房间的成员状态；invite 需要在会话列表展示「接受/拒绝邀请」 */
+  membership?: 'join' | 'leave' | 'invite' | 'ban' | 'knock' | undefined
 }
 
 export interface SessionDetail extends SessionInfo {}
@@ -82,7 +84,11 @@ export function buildSessionFromRoom(room: Room, dmRoomInfo: DmRoomInfo | null, 
     muteNotification: notificationSettings.muteNotification ?? NotificationTypeEnum.RECEPTION,
     detailId,
     account: detailId,
-    text: getLastMessagePreview(room)
+    text: getLastMessagePreview(room),
+    // 邀请状态的房间必须带出 membership，否则会话列表无法渲染「接受邀请」入口，
+    // 用户点进去会以非成员身份请求时间线并连续 403（P-27）
+    membership:
+      typeof room.getMyMembership === 'function' ? (room.getMyMembership() as SessionInfo['membership']) : undefined
   }
 }
 

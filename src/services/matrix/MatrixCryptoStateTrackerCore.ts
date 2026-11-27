@@ -93,6 +93,13 @@ export abstract class MatrixCryptoStateTrackerCore {
   protected disarmStorageKeyRetry: (() => void) | null = null
 
   /**
+   * 已为哪个代次安排过「安全存储恢复后补一次初始化」（P-04）。
+   *
+   * 只允许每代次补一次，避免安全存储长期不可用时变成无限轮询。
+   */
+  protected storageKeySecureRetryGeneration: number | null = null
+
+  /**
    * 把状态归属绑定到调用方传入的 client（D9）。
    *
    * 换绑时递增代次并清空旧状态：旧 client 的后台续跑任务持有旧代次，

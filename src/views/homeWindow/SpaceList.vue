@@ -120,7 +120,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import { useSpaces } from '@/composables/space'
-import { buildCreateSpaceRoute, buildSpaceRoute } from '@/router/spaceNavigation'
+import { buildCreateSpaceRoute, buildSpaceRoute, SPACE_ROUTE_NAMES } from '@/router/spaceNavigation'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
@@ -147,6 +147,18 @@ const spacesLoadFailed = computed(() => !!spacesError.value && !isLoading.value 
 // 选中空间 ID：从路由参数派生（路由为单一真相源）
 const route = useRoute()
 const selectedSpaceId = computed(() => (route.params.spaceId as string) || '')
+
+// 创建空间后从 create 切到空间详情/工作台会复用本组件实例，onMounted 不会再次触发；
+// 因此监听路由，进入空间列表或空间详情时重新拉取列表
+watch(
+  () => [route.name, route.params.spaceId] as const,
+  ([name], previous) => {
+    if (name !== SPACE_ROUTE_NAMES.workbench && name !== SPACE_ROUTE_NAMES.legacy) return
+    // 同一路由内切换 spaceId 不影响左侧列表，无需重复请求
+    if (previous && previous[0] === name) return
+    void reloadSpaces()
+  }
+)
 
 // 转换为 SpaceListItem 列表（带 isPublic 标记）
 const spaceItems = computed<SpaceListItem[]>(() => {

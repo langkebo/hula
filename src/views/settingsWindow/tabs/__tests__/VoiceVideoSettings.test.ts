@@ -214,6 +214,25 @@ describe('VoiceVideoSettings', () => {
     expect(vm.autoGainControl).toBe(false)
   })
 
+  it('enumerateDevices 无响应时超时退出 loading 并展示不可用空态', async () => {
+    vi.useFakeTimers()
+    try {
+      enumerateDevicesMock.mockReturnValue(new Promise(() => {}))
+      const wrapper = mount(VoiceVideoSettings)
+      await Promise.resolve()
+      expect((wrapper.vm as any).devicesLoading).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(3_100)
+      await Promise.resolve()
+
+      expect((wrapper.vm as any).devicesLoading).toBe(false)
+      expect((wrapper.vm as any).devicesUnavailable).toBe(true)
+      expect(wrapper.find('[data-testid="media-devices-unavailable"]').exists()).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('starts microphone test successfully', async () => {
     const wrapper = mount(VoiceVideoSettings)
     await flushPromises()

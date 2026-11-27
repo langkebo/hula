@@ -17,6 +17,7 @@ export type Messages = {
   "homeserver_example": "示例",
   "homeserver_empty": "请输入服务器地址",
   "homeserver_invalid": "请输入有效的服务器地址",
+  "homeserver_unreachable": "无法连接该服务器，请检查地址是否正确",
   "homeserver_saved": "服务器设置已保存，重新登录后生效",
   "homeserver_save_failed": "保存服务器设置失败",
   "select": "选择",
@@ -169,6 +170,7 @@ export type KeyPaths =
   | "menu.homeserver_example"
   | "menu.homeserver_empty"
   | "menu.homeserver_invalid"
+  | "menu.homeserver_unreachable"
   | "menu.homeserver_saved"
   | "menu.homeserver_save_failed"
   | "menu.select"

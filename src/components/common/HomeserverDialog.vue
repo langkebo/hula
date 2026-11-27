@@ -32,6 +32,7 @@ import {
   discoverAndSaveMatrixEndpoints,
   isPotentialHomeserverInput,
   MATRIX_DEFAULT_HOMESERVER_EXAMPLE,
+  probeMatrixHomeserver,
   resolveMatrixEndpointConfig,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'
@@ -83,6 +84,16 @@ async function handleSave() {
   saving.value = true
 
   try {
+    // 仅做格式校验会静默接受不可达地址：well-known 发现失败时会回退成 `https://<输入>` 并直接保存，
+    // 用户看到的却是「已保存」。保存前先探测 /versions，确认目标确实是可用的 homeserver。
+    try {
+      await probeMatrixHomeserver(rawValue)
+    } catch (probeError) {
+      logger.warn('Homeserver unreachable, abort save:', probeError)
+      showFeedback(t('menu.homeserver_unreachable'), 'warning')
+      return
+    }
+
     const discovery = await discoverAndSaveMatrixEndpoints(rawValue, resolveMatrixEndpointConfig())
     homeserverUrl.value = discovery.homeserverUrl
     if (!discovery.identityServerUrl) {

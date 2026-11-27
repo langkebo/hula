@@ -1,6 +1,90 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineAsyncComponent, defineComponent, h, KeepAlive, ref } from 'vue'
+import { defineAsyncComponent, defineComponent, h, KeepAlive, nextTick, ref } from 'vue'
+
+// P-03 回归：KeepAlive 以 vnode.key 作为缓存标识（key == null 时才退回组件类型）。
+// 模板中 <component :is> 上的 v-if 会让编译器写入固定 key(0)，令不同路由组件共用同一缓存实例，
+// 表现为点击「好友列表」后 URL 变为 /friend，但中栏仍渲染上一个会话列表组件。
+describe('P-03: keep-alive 内动态组件的缓存键', () => {
+  const MessageView = defineComponent({
+    name: 'MessageView',
+    setup: () => () => h('div', { class: 'view-message' }, 'message')
+  })
+  const FriendsView = defineComponent({
+    name: 'friendsList',
+    setup: () => () => h('div', { class: 'view-friends' }, 'friends')
+  })
+
+  // 复刻 RouterView 插槽行为：Component 是已创建的 VNode，组件定义在 vnode.type 上
+  function createHost(resolveKey: (vnode: ReturnType<typeof h>) => string | number) {
+    const current = ref<'message' | 'friendsList'>('message')
+    const Host = defineComponent({
+      setup() {
+        return () => {
+          const child = current.value === 'message' ? h(MessageView) : h(FriendsView)
+          return h('div', [
+            h(KeepAlive, { include: ['MessageView', 'friendsList'] }, () => h(child, { key: resolveKey(child) }))
+          ])
+        }
+      }
+    })
+    return { Host, current }
+  }
+
+  it('固定 key(0) 会串用缓存实例（缺陷根因）', async () => {
+    const { Host, current } = createHost(() => 0)
+    const wrapper = mount(Host)
+    expect(wrapper.find('.view-message').exists()).toBe(true)
+
+    current.value = 'friendsList'
+    // 缺陷状态下缓存实例被串用：要么渲染不出好友列表，要么在 activate/deactivate 阶段直接抛错
+    await nextTick().catch(() => undefined)
+
+    // 两个组件共用缓存键 0，KeepAlive 复用了 message 的 vnode，好友列表不渲染
+    expect(wrapper.find('.view-friends').exists()).toBe(false)
+    try {
+      wrapper.unmount()
+    } catch {
+      // 缺陷状态下组件实例已失配，卸载可能再次抛出 deactivate 错误，忽略即可
+    }
+  })
+
+  it('直接读取 VNode.name 会退化为固定 key（易错写法）', async () => {
+    // RouterView 插槽传的是 VNode，vnode.name 恒为 undefined，等价于固定 key
+    const { Host, current } = createHost((vnode) => (vnode as { name?: string }).name ?? 'view')
+    const wrapper = mount(Host)
+    expect(wrapper.find('.view-message').exists()).toBe(true)
+
+    current.value = 'friendsList'
+    await nextTick().catch(() => undefined)
+    expect(wrapper.find('.view-friends').exists()).toBe(false)
+    try {
+      wrapper.unmount()
+    } catch {
+      // 同上，缺陷态卸载可能抛错
+    }
+  })
+
+  it('以 vnode.type 的组件名作为缓存键时可正确切换并复用缓存（修复后行为）', async () => {
+    const { Host, current } = createHost((vnode) => {
+      const def = (vnode as { type?: { name?: string; __name?: string } }).type
+      return def?.name ?? def?.__name ?? 'view'
+    })
+    const wrapper = mount(Host)
+    expect(wrapper.find('.view-message').exists()).toBe(true)
+
+    current.value = 'friendsList'
+    await nextTick()
+    expect(wrapper.find('.view-friends').exists()).toBe(true)
+    expect(wrapper.find('.view-message').exists()).toBe(false)
+
+    current.value = 'message'
+    await nextTick()
+    expect(wrapper.find('.view-message').exists()).toBe(true)
+    expect(wrapper.find('.view-friends').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
 
 // N-2 反馈回路：验证 <keep-alive> + <AsyncComponent v-if> 模式不会抛出
 // "parentComponent.ctx.deactivate is not a function" 错误。

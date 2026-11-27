@@ -255,6 +255,23 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
   const backendLabel = describeSecureStorageBackend(backendInfo)
 
   if (recordedSource === 'secure') {
+    // P-04：安全存储**暂时**不可用，不能等同于"密钥已丢失"。
+    // 已配置且已解锁本地解锁时，本次改用本地解锁密钥完成初始化；
+    // 否则 fail-closed（返回 null），由 MatrixCryptoStateTracker 在安全存储恢复后补一次初始化。
+    if (!backendInfo.available) {
+      const localKey = resolveLocalUnlockKey()
+      if (localKey) {
+        localKey.fill(0)
+        logger.warn(
+          `安全存储后端暂不可用（${backendLabel}），改用本地解锁密钥完成初始化；既有 crypto store 若无法用该密钥解密，将在初始化失败后安全清理重建: ${userId}/${deviceId}`
+        )
+        return adoptLocalUnlockKey(cKey, userId, deviceId)
+      }
+      logger.warn(
+        `安全存储后端暂不可用（${backendLabel}）且本地解锁未就绪，本次跳过 crypto 初始化（fail-closed，保留既有加密 store），待安全存储恢复后重试: ${userId}/${deviceId}`
+      )
+      return null
+    }
     return readRecordedSecureKey(cKey, userId, deviceId, key, backendLabel)
   }
 

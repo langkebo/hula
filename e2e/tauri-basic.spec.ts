@@ -27,9 +27,8 @@ test.describe('Tauri 原生行为测试', () => {
     await expect(loginForm).toBeVisible({ timeout: 10000 })
   })
 
-  test('窗口标题应该包含版本号', async ({ tauriPage }) => {
+  test('窗口标题应该包含版本号', async () => {
     // 在 Tauri 中，我们可以通过 window.__TAURI__ 访问原生 API (如果未禁用)
     // 但在 Playwright 中，我们更多是检查 Webview 呈现的内容
-    const _title = await tauriPage.title()
   })
 })

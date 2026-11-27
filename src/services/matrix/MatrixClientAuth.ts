@@ -14,7 +14,6 @@
 
 import { useI18nGlobal } from '@/services/i18n'
 import { clearSenderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
-import { persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
 import type { LoginResponse } from '@/services/matrix/sdk'
 import { clearSecretStorageKeys } from '@/services/matrix/secretStorageKeyVault'
 import { clearCryptoStorageKeyCache, deleteCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
@@ -30,6 +29,7 @@ import type { MatrixCryptoStateTracker } from './MatrixCryptoStateTracker'
 import type { MatrixEventRouter } from './MatrixEventRouter'
 import type { MatrixSyncManager } from './MatrixSyncManager'
 import { type MatrixTokenManager, resolveTokenExpiryMs } from './MatrixTokenManager'
+import { refreshAccessToken } from './MatrixTokenRefreshCoordinator'
 
 const logger = createLogger('MatrixClient')
 
@@ -382,28 +382,20 @@ export class MatrixClientAuth {
 
         let activeAccessToken = token
         if (refreshToken) {
-          try {
-            const client = connectionManager.getClient()
-            if (client) {
-              const refreshResult = await client.refreshToken(refreshToken)
-
-              const newAccessToken = refreshResult.access_token
-              const newRefreshToken = refreshResult.refresh_token
-              // 与登录路径共用同一口径，避免再次出现「只读 expires_in_ms」的分叉。
-              const newExpiresInMs = resolveTokenExpiryMs(refreshResult)
-
-              if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
-                client.setAccessToken(newAccessToken)
-                activeAccessToken = newAccessToken
-                const uid = client.getUserId()
-                if (uid) {
-                  await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? refreshToken)
-                }
-                tokenManager.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs)
+          const client = connectionManager.getClient()
+          if (client) {
+            try {
+              // P-26：统一走刷新协调器。登录/恢复会与定时刷新、其他窗口形成并发，
+              // 必须共享单一执行者，否则旧 refresh token 重放会触发服务端全量吊销。
+              const refreshed = await refreshAccessToken(client, userId, refreshToken, 'loginWithToken')
+              activeAccessToken = refreshed.accessToken
+              if (refreshed.expiresInMs > 0) {
+                tokenManager.schedule(client, refreshed.refreshToken, refreshed.expiresInMs)
               }
+            } catch (err) {
+              // 服务器不支持 refresh 或刷新失败，不影响登录；但必须留痕，便于定位并发/吊销问题
+              logger.warn(`[MatrixClientAuth] 恢复会话时刷新 token 失败，继续使用原 access token: ${err}`)
             }
-          } catch {
-            // 服务器不支持 refresh 或刷新失败，不影响登录
           }
         }
 

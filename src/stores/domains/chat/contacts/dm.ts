@@ -40,14 +40,18 @@ export function createContactDm(ctx: ContactDmContext) {
   async function startDirectRoom(userId: string, encrypted = false): Promise<string | null> {
     try {
       const existingContact = contactsList.value.find((c) => c.userId === userId)
-      if (existingContact?.directRoomId) {
+      if (
+        existingContact?.directRoomId &&
+        (await matrixDirectMessageService.ensureDmRoomJoined(existingContact.directRoomId))
+      ) {
         return existingContact.directRoomId
       }
 
       // m.direct 账号数据兜底：DM 房间可能在其它入口/设备已创建，
       // 仅查 contactsList 缓存会导致同一用户反复新建房间（会话列表出现重复成员）。
+      // 复用的房间必须确保已加入：仅收到邀请的 DM 进入后是只读的。
       const existingDm = await matrixDirectMessageService.getDmForUser(userId, false)
-      if (existingDm) {
+      if (existingDm && (await matrixDirectMessageService.ensureDmRoomJoined(existingDm))) {
         const contactIndex = contactsList.value.findIndex((c) => c.userId === userId)
         if (contactIndex >= 0) {
           contactsList.value[contactIndex].directRoomId = existingDm

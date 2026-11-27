@@ -255,7 +255,10 @@ export type Messages = {
   "sso_login_failed": "SSO 登录失败",
   "remote_login": {
     "unknown_ip": "未知IP",
-    "title": "异地登录提醒"
+    "title": "异地登录提醒",
+    "description": "检测到你的账号在以下 IP 登录：{ip}。如非本人操作，请立即修改密码。",
+    "ip_label": "登录 IP",
+    "confirm": "我知道了"
   },
   "secret_chat": {
     "title": "私密聊天",
@@ -445,6 +448,9 @@ export type KeyPaths =
   | "login.sso_login_failed"
   | "login.remote_login.unknown_ip"
   | "login.remote_login.title"
+  | "login.remote_login.description"
+  | "login.remote_login.ip_label"
+  | "login.remote_login.confirm"
   | "login.secret_chat.title"
   | "login.secret_chat.description"
   | "login.secret_chat.password_placeholder"

@@ -177,6 +177,20 @@ describe('MatrixEventRouter', () => {
       expect(syncManager.offLifecycleEvent).toHaveBeenCalledTimes(1)
       expect(router.getObservedClient()).toBeNull()
     })
+
+    it('worker 已 terminate 时收尾落批静默跳过，不再向 worker 发请求', () => {
+      try {
+        router.setup(client as never, syncManager as never)
+        client.handlers.get('Room.timeline')?.(makeMatrixEvent() as never, makeRoom() as never)
+
+        // 登出流程先 terminate 再 detach：索引已随 worker 销毁，收尾路径必须静默丢弃
+        workerHostMock.isStarted = false
+        expect(() => router.detach(client as never, syncManager as never)).not.toThrow()
+        expect(workerHostMock.upsertSearchEvents).not.toHaveBeenCalled()
+      } finally {
+        workerHostMock.isStarted = true
+      }
+    })
   })
 
   describe('外部事件系统 (on/off/emit)', () => {

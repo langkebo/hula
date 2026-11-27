@@ -205,6 +205,32 @@ describe('BurnAfterReadSettings', () => {
     expect(wrapper.findAll('.stat-value').map((node) => node.text())).toEqual(['128', '3', '2'])
   })
 
+  it('统计请求失败时退出 loading 并展示 0，而不是永久转圈', async () => {
+    getBurnStatsMock.mockRejectedValue(new Error('stats down'))
+    const wrapper = mount(BurnAfterReadSettings)
+    await flushPromises()
+
+    expect((wrapper.vm as any).loadingStats).toBe(false)
+    expect(wrapper.findAll('.stat-value').map((node) => node.text())).toEqual(['0', '0', '0'])
+  })
+
+  it('统计请求超时（3s）后 finally 复位 loading', async () => {
+    vi.useFakeTimers()
+    try {
+      getBurnStatsMock.mockReturnValue(new Promise(() => {}))
+      const wrapper = mount(BurnAfterReadSettings)
+      await Promise.resolve()
+      expect((wrapper.vm as any).loadingStats).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(3_100)
+      await Promise.resolve()
+
+      expect((wrapper.vm as any).loadingStats).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('formatDuration works correctly', () => {
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).formatDuration(30)).toBe('30秒')

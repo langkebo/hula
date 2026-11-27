@@ -69,16 +69,19 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
 vi.mock('../TjgRoomListItem.vue', () => ({
   default: {
     name: 'TjgRoomListItem',
-    props: ['item', 'classes'],
-    emits: ['click'],
+    props: ['item', 'classes', 'menu'],
+    emits: ['click', 'select'],
     template: `
-      <button
-        type="button"
-        data-test="TjgRoomListItem"
-        :data-selected="String(Boolean(classes?.selected))"
-        @click="$emit('click', item)">
-        {{ item?.name }}
-      </button>
+      <div>
+        <button
+          type="button"
+          data-test="TjgRoomListItem"
+          :data-selected="String(Boolean(classes?.selected))"
+          @click="$emit('click', item)">
+          {{ item?.name }}
+        </button>
+        <button type="button" data-test="menu-select" @click="$emit('select', item, menu?.[0])">select</button>
+      </div>
     `
   }
 }))
@@ -283,5 +286,18 @@ describe('RoomSessionList', () => {
     const items = wrapper.findAll('[data-test="TjgRoomListItem"]')
     expect(items[0].attributes('data-selected')).toBe('false')
     expect(items[1].attributes('data-selected')).toBe('true')
+  })
+
+  it('invokes the selected menu item action with the row item', async () => {
+    const click = vi.fn()
+    const wrapper = mountComponent({
+      sessionList: [{ roomId: '!room:1', name: 'Alpha' }] as never,
+      visibleMenu: () => [{ label: 'pin', click } as never]
+    })
+
+    await wrapper.get('[data-test="menu-select"]').trigger('click')
+
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(click.mock.calls[0][0]).toMatchObject({ roomId: '!room:1' })
   })
 })

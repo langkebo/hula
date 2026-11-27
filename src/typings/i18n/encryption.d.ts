@@ -64,6 +64,7 @@ export type Messages = {
     "passphrase_too_short": "安全短语至少需要8个字符",
     "passphrase_mismatch": "两次输入的短语不一致",
     "generating": "正在生成安全密钥...",
+    "generating_hint": "正在创建密钥备份，最多等待 20 秒；期间请勿关闭窗口",
     "your_recovery_key": "你的恢复密钥",
     "key_warning": "请将此密钥保存在安全的地方，不要分享给任何人",
     "key_saved_confirm": "我已安全保存密钥",
@@ -478,6 +479,7 @@ export type KeyPaths =
   | "encryption.security_key.passphrase_too_short"
   | "encryption.security_key.passphrase_mismatch"
   | "encryption.security_key.generating"
+  | "encryption.security_key.generating_hint"
   | "encryption.security_key.your_recovery_key"
   | "encryption.security_key.key_warning"
   | "encryption.security_key.key_saved_confirm"

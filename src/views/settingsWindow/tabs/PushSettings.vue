@@ -2,8 +2,12 @@
   <div :class="['push-settings', { 'push-settings--embedded': embedded }]">
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.push.devices') }}</h3>
-      <n-spin :show="loading">
-        <div v-if="pushers.length > 0" class="device-list">
+      <n-spin :show="loading && !pushersLoaded">
+        <div v-if="pushersError" data-test="pushers-error" class="rules-error">
+          <span class="setting-desc">{{ t('common.load_failed') }}</span>
+          <n-button size="small" @click="fetchPushers">{{ t('common.retry') }}</n-button>
+        </div>
+        <div v-else-if="pushers.length > 0" class="device-list">
           <div v-for="pusher in pushers" :key="pusher.pushkey" class="device-item">
             <div class="device-info">
               <Icon :icon="getDeviceIcon(pusher.kind)" :width="24" />
@@ -66,7 +70,7 @@
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.push.rules_by_kind.title') }}</h3>
       <p class="section-desc">{{ t('setting.push.rules_by_kind.desc') }}</p>
-      <n-spin :show="rulesLoading">
+      <n-spin :show="rulesLoading && !rulesLoaded">
         <div v-if="rulesError" class="rules-error">
           <span class="setting-desc">{{ t('common.load_failed') }}</span>
           <n-button size="small" @click="fetchPushRules">{{ t('common.retry') }}</n-button>
@@ -133,6 +137,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
+import { withTimeout } from '@/services/matrix/media/mediaMetadata'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import type { IPusher, IPushRule, IPushRules, PushRuleKind } from '@/types/matrix-services'
@@ -142,6 +147,10 @@ import PushNotificationHistory from './PushNotificationHistory.vue'
 import PushDeviceSettings from './sections/PushDeviceSettings.vue'
 
 const logger = createLogger('PushSettings')
+
+/** 会话就绪 / 推送数据加载超时（ms）：超时后必须退出 spin，否则 naive-ui spin 覆盖层会吞掉点击。 */
+const SESSION_READY_TIMEOUT_MS = 10_000
+const PUSH_DATA_TIMEOUT_MS = 5_000
 
 withDefaults(
   defineProps<{
@@ -162,7 +171,11 @@ const dialog = useDialog()
 const { ensureSessionReady } = useWindowSessionReady()
 
 const loading = ref(false)
+/** 首次加载完成后不再让 spin 覆盖内容（避免 pointer-events:none 吞掉 switch 点击） */
+const pushersLoaded = ref(false)
+const pushersError = ref(false)
 const rulesLoading = ref(false)
+const rulesLoaded = ref(false)
 /** 规则拉取失败标记：仅展示失败态与重试入口，不再用本地 localStorage 伪造服务端状态 */
 const rulesError = ref(false)
 const pushers = ref<IPusher[]>([])
@@ -184,9 +197,14 @@ const ruleKinds = ['override', 'content', 'room', 'sender', 'underride'] as cons
 onMounted(async () => {
   // 设置类服务依赖 MatrixClient。恢复统一走 `useWindowSessionReady()`（幂等、每窗口一次），
   // 避免「冷启动直接进入本页签时没人触发恢复」⇒ 原先只能白等 waitForClientReady(10s) 拿默认值。
-  const sessionState = await ensureSessionReady()
-  if (sessionState !== 'ready') {
-    logger.warn(`[PushSettings] session state=${sessionState}; push settings may show local defaults`)
+  // 这里再加一层超时：会话恢复卡住时也必须继续渲染并按失败态收尾，不能整页挂起。
+  try {
+    const sessionState = await withTimeout(ensureSessionReady(), SESSION_READY_TIMEOUT_MS, 'ensureSessionReady timeout')
+    if (sessionState !== 'ready') {
+      logger.warn(`[PushSettings] session state=${sessionState}; push settings may show local defaults`)
+    }
+  } catch (error) {
+    logger.warn('[PushSettings] session ready wait timed out; loading push settings anyway', error)
   }
   sessionReady.value = true
   await Promise.allSettled([fetchPushers(), fetchPushRules()])
@@ -210,9 +228,13 @@ function handlePushRulesUpdate(rules: IPushRules) {
 
 async function fetchPushers() {
   loading.value = true
+  pushersError.value = false
   try {
-    pushers.value = await matrixPushService.getPushers()
+    pushers.value = await withTimeout(matrixPushService.getPushers(), PUSH_DATA_TIMEOUT_MS, 'getPushers timeout')
+    pushersLoaded.value = true
   } catch (error) {
+    logger.warn('Failed to fetch pushers', error)
+    pushersError.value = true
     showFeedback(t('setting.push.fetchFailed'), 'error')
   } finally {
     loading.value = false
@@ -223,9 +245,10 @@ async function fetchPushRules() {
   rulesLoading.value = true
   rulesError.value = false
   try {
-    const rules = await matrixPushService.getPushRules()
+    const rules = await withTimeout(matrixPushService.getPushRules(), PUSH_DATA_TIMEOUT_MS, 'getPushRules timeout')
     pushRules.value = rules
     updateUIFromRules(rules)
+    rulesLoaded.value = true
   } catch (error) {
     logger.warn('Failed to fetch push rules', error)
     rulesError.value = true
@@ -249,7 +272,11 @@ function updateUIFromRules(rules: IPushRules) {
 
 async function loadDndSettings() {
   // 服务是勿扰状态的唯一所有者：先尝试账号数据刷新缓存，再统一从服务读取
-  await matrixNotificationService.syncDndFromAccountData()
+  try {
+    await withTimeout(matrixNotificationService.syncDndFromAccountData(), PUSH_DATA_TIMEOUT_MS, 'syncDnd timeout')
+  } catch (error) {
+    logger.warn('Failed to sync DND settings from account data', error)
+  }
   const settings = matrixNotificationService.getDndSettings()
   dndEnabled.value = settings.enabled
   dndStartTime.value = settings.startTime

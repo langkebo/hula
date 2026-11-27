@@ -230,7 +230,7 @@ const refreshNotificationPermission = async () => {
     notificationPermissionGranted.value = await isPermissionGranted()
   } catch (error) {
     // 浏览器/单测环境没有该插件，属预期情况，不用 warn 级别污染日志
-    logger.debug('读取通知权限状态失败，按已授权处理', error)
+    logger.debug('[notification] Failed to read permission state, assuming granted', error)
     notificationPermissionGranted.value = true
   }
 }
@@ -243,7 +243,7 @@ const handleRequestNotificationPermission = async () => {
       showToast(t('mobile_notifications.permission_desc'))
     }
   } catch (error) {
-    logger.warn('请求通知权限失败', error)
+    logger.warn('[notification] Failed to request notification permission', error)
   }
 }
 

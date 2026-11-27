@@ -116,9 +116,8 @@
 import type { FormInst, FormRules, UploadCustomRequestOptions } from 'naive-ui'
 import { useDialog } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { openMsgSession } from '@/composables/chat/openMsgSession'
+import { openMsgSessionByRoomId } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { RoomTypeEnum } from '@/enums'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useRightViewDraftStore } from '@/stores/domains/widget/rightViewDraft'
@@ -164,8 +163,21 @@ const formData = reactive({
 
 const rules: FormRules = {
   name: [
-    { required: true, message: t('room.create.name_required'), trigger: 'blur' },
-    { min: 2, max: 100, message: t('room.create.name_length'), trigger: 'blur' }
+    {
+      required: true,
+      // 名称先 trim 再判空：全空白视为未填写，阻止提交
+      validator: () => {
+        const name = formData.name.trim()
+        if (!name) {
+          return new Error(t('room.create.name_required'))
+        }
+        if (name.length < 2 || name.length > 100) {
+          return new Error(t('room.create.name_length'))
+        }
+        return true
+      },
+      trigger: ['blur', 'input']
+    }
   ]
 }
 
@@ -203,11 +215,19 @@ const handleCreate = async (ignoreDuplicate = false) => {
     return
   }
 
+  // 提交使用 trim 后的值，避免名称/主题前后空白进入房间元数据
+  const name = formData.name.trim()
+  const topic = formData.topic.trim()
+  // 兜底：全空白名称直接阻止提交（不依赖表单组件实现）
+  if (!name) {
+    showFeedback(t('room.create.name_required'), 'error')
+    return
+  }
   creating.value = true
   try {
     const room = await matrixRoomActionFacade.createGroupRoom({
-      name: formData.name,
-      topic: formData.topic,
+      name,
+      topic,
       ...(formData.avatarUrl ? { avatarUrl: formData.avatarUrl } : {}),
       isPublic: formData.roomType === 'room',
       ...(formData.alias ? { alias: formData.alias } : {}),
@@ -228,11 +248,11 @@ const handleCreate = async (ignoreDuplicate = false) => {
     // 用户选择"仍然创建"后带 ignore_duplicate_name 重发（逃生阀）。
     const errMsg = error instanceof Error ? error.message : String(error)
     if (errMsg.includes('M_ROOM_IN_USE') || errMsg.includes('already in use')) {
-      logger.warn('Detected duplicate room name, waiting for user confirmation:', formData.name)
+      logger.warn('Detected duplicate room name, waiting for user confirmation:', name)
       creating.value = false
       dialog.warning({
         title: t('room.create.duplicate_name_title'),
-        content: t('room.create.duplicate_name_confirm', { name: formData.name }),
+        content: t('room.create.duplicate_name_confirm', { name }),
         positiveText: t('room.create.duplicate_name_continue'),
         negativeText: t('common.cancel'),
         onPositiveClick: () => {
@@ -249,12 +269,13 @@ const handleCreate = async (ignoreDuplicate = false) => {
 }
 
 const handleSkipInvite = async () => {
-  // 直接进入刚创建的房间
-  if (createdRoomId.value) {
-    await openMsgSession(createdRoomId.value, RoomTypeEnum.GROUP)
+  // 直接进入刚创建的房间（不再 router.back()，否则会退回创建页）
+  if (!createdRoomId.value) return
+  try {
+    await openMsgSessionByRoomId(createdRoomId.value)
+  } catch (error) {
+    logger.warn('Failed to navigate to the new room:', error instanceof Error ? error.message : String(error))
   }
-  const { default: router } = await import('@/router')
-  void router.back()
 }
 
 const handleInvite = async () => {
@@ -279,12 +300,14 @@ const handleInvite = async () => {
     showFeedback(t('room.create.invite_failed'), 'error')
   } finally {
     inviting.value = false
-    // 邀请结束后进入房间
+    // 邀请结束后进入房间（不再 router.back()，否则会退回创建页）
     if (createdRoomId.value) {
-      await openMsgSession(createdRoomId.value, RoomTypeEnum.GROUP)
+      try {
+        await openMsgSessionByRoomId(createdRoomId.value)
+      } catch (error) {
+        logger.warn('Failed to navigate to the new room:', error instanceof Error ? error.message : String(error))
+      }
     }
-    const { default: router } = await import('@/router')
-    void router.back()
   }
 }
 

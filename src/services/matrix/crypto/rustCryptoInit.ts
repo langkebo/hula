@@ -11,6 +11,8 @@
  *
  * 不依赖 `matrix-js-sdk` 运行时（仅类型引用），故不受 `check:sdk-boundary` 约束。
  */
+
+import { readKeySource } from '@/services/secure/cryptoKeySource'
 import { getOrCreateCryptoStorageKey, logCryptoStorageKeyBackend } from '@/services/secure/cryptoStorageKey'
 import { createLogger } from '@/utils/Logger'
 import type { RustCryptoCapableClient } from '../MatrixCryptoStateTrackerCore'
@@ -62,6 +64,7 @@ export async function prepareRustCryptoStore({
 }: PrepareRustCryptoStoreParams): Promise<RustCryptoStorePreparation> {
   const identity = `${userId}:${deviceId}`
   const lastCryptoUser = readLastCryptoUser()
+  const lastKeySource = readKeySource(identity)
 
   // ISSUE-08 对接：keychain 不可用时返回 null，由调用方 fail-closed（不写明文 store）。
   const storageKey = await getOrCreateCryptoStorageKey(userId, deviceId)
@@ -70,16 +73,39 @@ export async function prepareRustCryptoStore({
   const lastEncrypted = readLastCryptoEncrypted()
 
   const userChanged = lastCryptoUser !== identity
-  const encryptedChanged = lastCryptoUser === identity && lastEncrypted !== null && lastEncrypted !== currentEncrypted
+  // P-04：本次拿不到 storageKey，但本地已有加密 store —— 这是"暂时不可用"，
+  // 不是"密钥已丢失"。此时绝不能清理 store，也不能把标记降级成 '0'
+  // （降级会让恢复后用未加密路径打开，等于静默丢弃本地密钥）。保留 `k1` 等待恢复。
+  const failClosedWithEncryptedStore = !storeEncrypted && lastEncrypted === 'k1'
+  const encryptedChanged =
+    !failClosedWithEncryptedStore &&
+    lastCryptoUser === identity &&
+    lastEncrypted !== null &&
+    lastEncrypted !== currentEncrypted
 
-  if (useIndexedDB && (userChanged || encryptedChanged)) {
+  if (failClosedWithEncryptedStore) {
+    logger.warn(
+      `本次未取得 crypto storageKey，但本地存在加密 crypto store：保留现有 store 与加密标记，本次跳过初始化等待密钥恢复（fail-closed，不清理、不降级）: ${identity}`
+    )
+  }
+
+  // 安全存储暂时不可用 → 本次改用本地解锁密钥打开：旧 store 由原密钥加密，必然解密失败。
+  // 在清理前先明确告警，避免"静默丢密钥"。
+  const currentKeySource = readKeySource(identity)
+  if (storeEncrypted && lastEncrypted === 'k1' && lastKeySource === 'secure' && currentKeySource === 'local') {
+    logger.warn(
+      `crypto storageKey 来源由安全存储切换到本地解锁：既有加密 store 无法用新密钥解密，初始化失败后将清理重建（本地房间密钥会重新从服务端备份取回）: ${identity}`
+    )
+  }
+
+  if (useIndexedDB && !failClosedWithEncryptedStore && (userChanged || encryptedChanged)) {
     const reason = userChanged
       ? `用户/设备变化（${lastCryptoUser} → ${identity}）`
       : `加密状态/原语变化（${lastEncrypted} → ${currentEncrypted}）`
     logger.info(`检测到 crypto ${reason}，提前清理旧 crypto store 避免 initRustCrypto 失败`)
     await clearStaleCryptoStores(userId)
   }
-  if (userChanged || encryptedChanged || lastEncrypted === null) {
+  if (!failClosedWithEncryptedStore && (userChanged || encryptedChanged || lastEncrypted === null)) {
     writeLastCryptoUser(identity)
     writeLastCryptoEncrypted(currentEncrypted)
   }

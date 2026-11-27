@@ -1,5 +1,6 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { listen } from '@tauri-apps/api/event'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { computed } from 'vue'
 import { useExtensionEventBridge } from '@/composables/app/useExtensionEventBridge'
@@ -8,6 +9,7 @@ import { createMemberHandler } from '@/composables/app/wsMemberHandler'
 import { createPresenceHandler } from '@/composables/app/wsPresenceHandler'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
+import { isDesktop } from '@/composables/usePlatform'
 import { ChangeTypeEnum, MittEnum, OnlineEnum, WsResponseMessageType } from '@/enums'
 import { getSessionEventStrategy } from '@/platform/sessionEventStrategy'
 import type { LoginSuccessResType, OnStatusChangeType, WsTokenExpire } from '@/services/legacy/wsEventTypes'
@@ -22,9 +24,12 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { markEventBurned } from '@/utils/burnedMessages'
 import { createLogger } from '@/utils/Logger'
-import { normalizeMatrixUserId } from '@/utils/userIdentity'
+import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
 
 const logger = createLogger('WsEventHandler')
+
+/** 会话失效处理中的幂等标记：一次 401 风暴只触发一次登出流程。 */
+let sessionAuthInvalidHandling = false
 
 type VideoCallRequestPayload = {
   callerUid: string
@@ -160,10 +165,15 @@ export function useWsEventHandler() {
     )
 
     useMitt.on(WsResponseMessageType.TOKEN_EXPIRED, async (wsTokenExpire: WsTokenExpire) => {
-      if (
-        Number(userUid.value) === Number(wsTokenExpire.uid) &&
-        (userStore.userInfo?.client ?? '') === wsTokenExpire.client
-      ) {
+      // 用户标识统一按 localpart 比较：旧实现用 Number() 处理 MXID（如 "@testuser1:matrix.test"），
+      // 双方都会得到 NaN，条件恒为 false，导致服务端吊销 token 后永远不会登出（会话卡在 401 故障态）。
+      const currentLocalpart = toLocalpart(userUid.value).toLowerCase()
+      const expiredLocalpart = toLocalpart(wsTokenExpire.uid).toLowerCase()
+      const sameUser = Boolean(currentLocalpart) && currentLocalpart === expiredLocalpart
+      const currentDevice = userStore.userInfo?.client ?? ''
+      // 任一方缺失设备号时不阻断：否则旧数据/未写入 client 的场景会再次漏掉登出。
+      const sameDevice = !currentDevice || !wsTokenExpire.client || currentDevice === wsTokenExpire.client
+      if (sameUser && sameDevice) {
         const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
         const { logout } = useLoginFlow()
         await getSessionEventStrategy().handleRemoteLoginExpired({
@@ -171,6 +181,31 @@ export function useWsEventHandler() {
           logout,
           onLoggedOut: () => settingStore.toggleLogin(false, false)
         })
+      }
+    })
+
+    /**
+     * REST 兜底：access token 被服务端吊销时，WS 的 TOKEN_EXPIRED 未必送达
+     *（如重启后 sync 尚未建立），`runtimeFetch` 会在 401 M_UNKNOWN_TOKEN 时广播该事件。
+     * 桌面端多窗口共用 App.vue，仅 home 窗口负责登出，避免重复清理。
+     */
+    useMitt.on(MittEnum.SESSION_AUTH_INVALID, async () => {
+      if (sessionAuthInvalidHandling) return
+      if (isDesktop() && hasTauriRuntime() && WebviewWindow.getCurrent().label !== 'home') return
+      sessionAuthInvalidHandling = true
+      try {
+        const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
+        if (!(await sessionOrchestrator.hasAuthenticatedSession())) return
+        const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
+        const { logout } = useLoginFlow()
+        await getSessionEventStrategy().handleRemoteLoginExpired({
+          logout,
+          onLoggedOut: () => settingStore.toggleLogin(false, false)
+        })
+      } catch (error) {
+        logger.error(`处理会话失效失败: ${error}`)
+      } finally {
+        sessionAuthInvalidHandling = false
       }
     })
 

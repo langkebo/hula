@@ -158,7 +158,13 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
   useServerCapability: () => ({
     hasUnstable: (flag: string) => hasUnstableMock(flag),
     isCapabilityAvailable: (capability: string) =>
-      capability === 'extended-profile' ? hasUnstableMock('uk.tcpip.msc4133') : false
+      capability === 'extended-profile' ? hasUnstableMock('uk.tcpip.msc4133') : false,
+    getCapabilityStatus: (capability: string) =>
+      capability === 'extended-profile'
+        ? hasUnstableMock('uk.tcpip.msc4133')
+          ? 'supported'
+          : 'unsupported'
+        : 'unknown'
   })
 }))
 

@@ -61,13 +61,23 @@ export async function fetchQuotaAlerts(getMedia: () => MediaManager): Promise<Me
   }
 }
 
-/** 检查媒体配额（上限/已用/剩余）；失败返回 null。 */
+/**
+ * 检查媒体配额（上限/已用/剩余）；失败返回 null。
+ *
+ * 服务端未提供 `limit`（或给出 <=0 的无效上限）时同样返回 null：
+ * 缺字段不等于「真实额度为 0」，界面应展示「暂不可用」而不是 0。
+ */
 export async function fetchQuotaUsage(
   getMedia: () => MediaManager
 ): Promise<{ limit: number; used: number; remaining: number } | null> {
   try {
     const result = await getMedia().checkMediaQuota()
-    return { limit: result.limit ?? 0, used: result.used ?? 0, remaining: result.remaining ?? 0 }
+    const limit = typeof result.limit === 'number' && Number.isFinite(result.limit) ? result.limit : null
+    if (limit === null || limit <= 0) {
+      logger.warn('[MatrixMedia] 配额接口未返回有效上限，按不可用处理')
+      return null
+    }
+    return { limit, used: result.used ?? 0, remaining: result.remaining ?? 0 }
   } catch (err) {
     logger.error(`[MatrixMedia] 配额检查失败: ${err}`)
     return null

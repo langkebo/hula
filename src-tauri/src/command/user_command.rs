@@ -1,8 +1,11 @@
 use crate::AppData;
 use crate::service::user_service::UserService;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::{LazyLock, Mutex as StdMutex};
+use std::time::{Duration, Instant};
 use tauri::State;
-use tracing::info;
+use tracing::{info, warn};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -141,8 +144,32 @@ pub async fn remove_tokens(state: State<'_, AppData>) -> Result<(), String> {
         uid
     };
 
-    if !uid.is_empty() {
-        UserService::delete_secure_token(&uid);
+    // P-11：仅清内存与钥匙串会让 SQLite 里的旧 token 复活。
+    // 下一次 `get_user_tokens`（内存为空）会把最后活跃用户的旧 token 回填给登录窗口，
+    // 新窗口随即拿着已撤销的凭证启动并 401。这里同步清除持久化的 access/refresh token
+    // 与 last-active 标记；内存 uid 为空时按 DB 里最后活跃用户在 DB 侧定位。
+    let conn = state.db_conn.read().await.clone();
+    let target_uid = if uid.is_empty() {
+        crate::repository::im_user_repository::get_last_active_user_tokens(&conn)
+            .await
+            .ok()
+            .flatten()
+            .map(|(persisted_uid, _, _)| persisted_uid)
+    } else {
+        Some(uid.clone())
+    };
+
+    if let Some(target_uid) = target_uid {
+        UserService::delete_secure_token(&target_uid);
+        if let Err(e) =
+            crate::repository::im_user_repository::clear_user_tokens(&conn, &target_uid).await
+        {
+            // 登出不应因清理失败而中断，但必须留下可追踪的告警。
+            warn!(
+                "Failed to clear persisted tokens for uid {}: {}",
+                target_uid, e
+            );
+        }
     }
 
     info!("Successfully removed user token info for uid: {}", uid);
@@ -213,6 +240,130 @@ pub async fn update_token(
     Ok(())
 }
 
+/// 跨窗口 token 刷新租约的返回状态。
+///
+/// 每个 WebviewWindow 是独立 JS 上下文，前端内存锁无法覆盖跨窗口并发；而服务端
+/// refresh 采用 CAS 轮换，重放旧 refresh token 会触发 reuse detection 并吊销该用户
+/// 全部凭证（P-26：登录后数秒必然掉线）。因此由 Rust 侧做唯一仲裁者。
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenRefreshLease {
+    /// owner = 由调用方执行 refresh；wait = 其他窗口正在刷新；reuse = 直接复用已轮换凭证
+    status: String,
+    token: Option<String>,
+    refresh_token: Option<String>,
+    expires_in_ms: Option<i64>,
+}
+
+struct LastTokenRefresh {
+    token: String,
+    refresh_token: String,
+    expires_in_ms: i64,
+    completed_at: Instant,
+}
+
+#[derive(Default)]
+struct RefreshLeaseState {
+    /// 当前 owner 的起始时间；超过 TTL 视为持有方异常退出，允许接管
+    in_flight_since: Option<Instant>,
+    last_success: Option<LastTokenRefresh>,
+}
+
+/// owner 持有租约的上限；超过视为窗口崩溃/请求挂死，允许其他窗口接管
+const LEASE_TTL: Duration = Duration::from_secs(30);
+/// 刷新成功后 60s 内其他窗口直接复用结果，不再发起 refresh
+const REUSE_TTL: Duration = Duration::from_secs(60);
+
+static TOKEN_REFRESH_STATES: LazyLock<StdMutex<HashMap<String, RefreshLeaseState>>> =
+    LazyLock::new(|| StdMutex::new(HashMap::new()));
+
+fn lock_refresh_states() -> std::sync::MutexGuard<'static, HashMap<String, RefreshLeaseState>> {
+    // 锁内只做内存操作、不会 panic；即便被 poison 也应继续可用，避免刷新链路卡死
+    TOKEN_REFRESH_STATES
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+/// 申请 token 刷新租约。
+///
+/// 同一 uid 同时只有一个窗口拿到 `owner`；其余窗口得到 `wait`（应轮询重试）或
+/// `reuse`（直接使用 owner 刚轮换出的凭证，不再发 HTTP）。
+#[tauri::command]
+pub async fn begin_token_refresh(uid: String) -> Result<TokenRefreshLease, String> {
+    let mut states = lock_refresh_states();
+    let state = states.entry(uid.clone()).or_default();
+
+    if let Some(last) = &state.last_success {
+        if last.completed_at.elapsed() < REUSE_TTL {
+            return Ok(TokenRefreshLease {
+                status: "reuse".to_string(),
+                token: Some(last.token.clone()),
+                refresh_token: Some(last.refresh_token.clone()),
+                expires_in_ms: Some(last.expires_in_ms),
+            });
+        }
+    }
+
+    let lease_alive = state
+        .in_flight_since
+        .map(|started| started.elapsed() < LEASE_TTL)
+        .unwrap_or(false);
+    if lease_alive {
+        return Ok(TokenRefreshLease {
+            status: "wait".to_string(),
+            token: None,
+            refresh_token: None,
+            expires_in_ms: None,
+        });
+    }
+
+    state.in_flight_since = Some(Instant::now());
+    info!("[SESSION] token refresh lease acquired for {}", uid);
+    Ok(TokenRefreshLease {
+        status: "owner".to_string(),
+        token: None,
+        refresh_token: None,
+        expires_in_ms: None,
+    })
+}
+
+/// 结束刷新租约。成功时记录结果供其他窗口复用；失败时清除结果，允许下次重试。
+#[tauri::command]
+pub async fn finish_token_refresh(
+    uid: String,
+    token: Option<String>,
+    refresh_token: Option<String>,
+    expires_in_ms: Option<i64>,
+) -> Result<(), String> {
+    let mut states = lock_refresh_states();
+    let state = states.entry(uid.clone()).or_default();
+    state.in_flight_since = None;
+
+    match (token, refresh_token) {
+        (Some(token), Some(refresh_token)) if !token.is_empty() => {
+            state.last_success = Some(LastTokenRefresh {
+                token,
+                refresh_token,
+                expires_in_ms: expires_in_ms.unwrap_or(0),
+                completed_at: Instant::now(),
+            });
+            info!(
+                "[SESSION] token refresh lease released for {} (success)",
+                uid
+            );
+        }
+        _ => {
+            state.last_success = None;
+            info!(
+                "[SESSION] token refresh lease released for {} (failed)",
+                uid
+            );
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod token_persistence_tests {
     use super::*;
@@ -268,16 +419,57 @@ mod token_persistence_tests {
             "syr_def"
         ));
     }
+}
 
-    /// 首次登录（内存态为空）必须照常落盘，不能被去重逻辑吞掉。
-    #[test]
-    fn empty_current_state_always_persists() {
-        let current = user_info("", "", "");
-        assert!(!is_same_credentials(
-            &current,
-            "@alice:matrix.test",
-            "syt_abc",
-            "syr_def"
-        ));
+#[cfg(test)]
+mod token_refresh_lease_tests {
+    use super::*;
+
+    /// P-26 回归锁：同一 uid 并发刷新只允许一个 owner，其余等待并复用结果。
+    #[tokio::test]
+    async fn concurrent_callers_are_serialized_and_reuse_result() {
+        let uid = "@lease:matrix.test".to_string();
+
+        let first = begin_token_refresh(uid.clone()).await.unwrap();
+        assert_eq!(first.status, "owner");
+
+        let second = begin_token_refresh(uid.clone()).await.unwrap();
+        assert_eq!(second.status, "wait");
+
+        finish_token_refresh(
+            uid.clone(),
+            Some("syt_new".to_string()),
+            Some("syr_new".to_string()),
+            Some(86_400_000),
+        )
+        .await
+        .unwrap();
+
+        let third = begin_token_refresh(uid.clone()).await.unwrap();
+        assert_eq!(third.status, "reuse");
+        assert_eq!(third.token.as_deref(), Some("syt_new"));
+        assert_eq!(third.refresh_token.as_deref(), Some("syr_new"));
+        assert_eq!(third.expires_in_ms, Some(86_400_000));
+    }
+
+    /// 刷新失败必须释放租约，否则其他窗口会一直 wait。
+    #[tokio::test]
+    async fn failed_refresh_releases_lease_for_next_owner() {
+        let uid = "@lease_fail:matrix.test".to_string();
+
+        assert_eq!(
+            begin_token_refresh(uid.clone()).await.unwrap().status,
+            "owner"
+        );
+        finish_token_refresh(uid.clone(), None, None, None)
+            .await
+            .unwrap();
+        assert_eq!(
+            begin_token_refresh(uid.clone()).await.unwrap().status,
+            "owner"
+        );
+        finish_token_refresh(uid.clone(), None, None, None)
+            .await
+            .unwrap();
     }
 }

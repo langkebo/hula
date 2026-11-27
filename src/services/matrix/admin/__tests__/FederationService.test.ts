@@ -192,6 +192,22 @@ describe('AdminFederationService', () => {
     await expect(service.getPendingFederationServers()).resolves.toEqual({ servers: [], total: 0, limit: 0 })
   })
 
+  it('ADMIN_PERMISSION_DENIED 时读接口降级为空数据而不抛错', async () => {
+    const denied = () => new Error('ADMIN_PERMISSION_DENIED')
+
+    admin.getFederationDestinations.mockRejectedValueOnce(denied())
+    await expect(service.getFederationDestinations()).resolves.toEqual([])
+
+    admin.getFederationDestination.mockRejectedValueOnce(denied())
+    await expect(service.getFederationDestination('remote.hs')).resolves.toBeNull()
+
+    admin.getFederationBlacklist.mockRejectedValueOnce(denied())
+    await expect(service.getFederationBlacklist()).resolves.toEqual([])
+
+    admin.getPendingFederationServers.mockRejectedValueOnce(denied())
+    await expect(service.getPendingFederationServers()).resolves.toEqual({ servers: [], total: 0, limit: 0 })
+  })
+
   it('confirmFederation 委托 SDK 且失败时向上抛出', async () => {
     admin.confirmFederation.mockResolvedValueOnce(undefined)
     await expect(service.confirmFederation('pending.hs', true)).resolves.toBeUndefined()

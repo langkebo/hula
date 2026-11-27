@@ -1,7 +1,8 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import { logoutExpiredSession, persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
+import { logoutExpiredSession } from '@/services/matrix/matrixClientPlatform'
 import { computeBackoffDelay } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
+import { refreshAccessToken } from './MatrixTokenRefreshCoordinator'
 
 const logger = createLogger('TokenManager')
 
@@ -9,26 +10,8 @@ const MIN_REFRESH_INTERVAL_MS = 30000
 const RETRY_INTERVAL_MS = 30000
 const MAX_RETRIES = 5
 
-/**
- * 解析 token 有效期（毫秒）。
- *
- * 规范字段是 `expires_in`（**秒**），`expires_in_ms` 是草案扩展。synapse-rust 只返回
- * `expires_in`（实测 register/refresh 都是 86400）⇒ 旧代码读 `expires_in_ms ?? 0` 恒得 0，
- * `schedule()` 从未被调用，access token 24h 到期即掉线。
- *
- * @returns 毫秒数；无法判定时 0（= 不排期）
- */
-export function resolveTokenExpiryMs(response: unknown): number {
-  const { expires_in_ms: fromMs, expires_in: fromSeconds } = (response ?? {}) as {
-    expires_in_ms?: unknown
-    expires_in?: unknown
-  }
-  if (typeof fromMs === 'number' && Number.isFinite(fromMs) && fromMs > 0) return fromMs
-  if (typeof fromSeconds === 'number' && Number.isFinite(fromSeconds) && fromSeconds > 0) {
-    return fromSeconds * 1000
-  }
-  return 0
-}
+// 兼容旧引用：解析逻辑已收敛到刷新协调器（登录路径与定时刷新共用同一口径）
+export { resolveTokenExpiryMs } from './MatrixTokenRefreshCoordinator'
 
 export class MatrixTokenManager {
   private timer: ReturnType<typeof setTimeout> | null = null
@@ -90,31 +73,19 @@ export class MatrixTokenManager {
     this.refreshing = true
 
     try {
-      logger.info('[TokenRefresh] Attempting token refresh')
-      const result = await client.refreshToken(refreshToken)
-
-      const newAccessToken = result.access_token
-      const newRefreshToken = result.refresh_token
-      let newExpiresInMs = result.expires_in_ms
-      // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
-      const expiresInSec = (result as typeof result & { expires_in?: number }).expires_in
-      if (!newExpiresInMs && expiresInSec) {
-        newExpiresInMs = expiresInSec * 1000
-      }
-
-      if (newAccessToken) {
-        client.setAccessToken(newAccessToken)
-        const uid = client.getUserId()
-        if (uid) {
-          await persistRefreshedToken(uid, newAccessToken, newRefreshToken ?? '')
-        }
-        logger.info('[TokenRefresh] Access token refreshed successfully')
-        this.retryCount = 0
-        if (newExpiresInMs && newExpiresInMs > 0) {
-          this.schedule(client, newRefreshToken ?? refreshToken, newExpiresInMs)
-        } else {
-          logger.info('[TokenRefresh] Server returned no expiry, auto-refresh chain stops')
-        }
+      // P-26：定时刷新与登录/恢复路径共用同一协调器，避免多窗口并发重放旧 refresh token
+      // 触发服务端 reuse detection（导致全量吊销、登录后必然掉线）。
+      const refreshed = await refreshAccessToken(client, client.getUserId() ?? '', refreshToken, 'tokenManager')
+      this.retryCount = 0
+      logger.info(
+        refreshed.refreshed
+          ? '[TokenRefresh] Access token refreshed successfully'
+          : '[TokenRefresh] Adopted token rotated by another window'
+      )
+      if (refreshed.expiresInMs > 0) {
+        this.schedule(client, refreshed.refreshToken, refreshed.expiresInMs)
+      } else {
+        logger.info('[TokenRefresh] Server returned no expiry, auto-refresh chain stops')
       }
     } catch (err: unknown) {
       const httpStatus = (err as { httpStatus?: number })?.httpStatus

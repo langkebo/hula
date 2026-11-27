@@ -1,7 +1,7 @@
 {
   "deadKeys": 0,
   "deadKeyNames": [],
-  "dynamicKeys": 233,
+  "dynamicKeys": 236,
   "dynamicKeyNames": [
     "admin.cleanup.all.confirmContent",
     "admin.cleanup.all.confirmTitle",
@@ -88,6 +88,9 @@
     "error.cmd.drop_file_missing",
     "error.cmd.drop_outside_home",
     "error.cmd.drop_path_not_absolute",
+    "error.cmd.external_url_invalid",
+    "error.cmd.external_url_open_failed",
+    "error.cmd.external_url_scheme_not_allowed",
     "error.cmd.file_manager_nav_unsupported",
     "error.cmd.markdown_file_not_found",
     "error.cmd.markdown_not_markdown_file",

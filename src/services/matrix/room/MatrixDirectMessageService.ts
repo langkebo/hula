@@ -11,6 +11,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixClientService } from '../MatrixClientService'
 import { loadDmPrivacyPreferences, resolveDmEncryption } from '../user/dmPrivacyPreferences'
 import { DmRoomsCache } from './dmRoomsCache'
+import { matrixRoomActionFacade } from './RoomFacade'
 
 const logger = createLogger('MatrixDirectMessageService')
 
@@ -353,7 +354,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
   async getOrCreateDmRoom(userId: string, encrypted?: boolean): Promise<string> {
     try {
       const existingRoomId = await this.getDmForUser(userId)
-      if (existingRoomId) {
+      if (existingRoomId && (await this.ensureDmRoomJoined(existingRoomId))) {
         logger.info(`[MatrixDM] 使用现有私聊房间: ${existingRoomId}`)
         return existingRoomId
       }
@@ -368,6 +369,34 @@ class MatrixDirectMessageService extends BaseMatrixService {
       logger.error(`[MatrixDM] 获取或创建DM房间失败: ${userId} ${err}`)
       throw err
     }
+  }
+
+  /**
+   * 确保被复用的 DM 房间当前用户可发送消息。
+   *
+   * `m.direct` 里可能残留「只收到邀请、尚未接受」的 DM 房间（对方或其它设备创建），
+   * 直接进入会因 membership=invite 被判定为只读，底部覆盖层显示
+   * "当前房间为只读，无法发送消息"，用户完全无法私聊。
+   *
+   * 返回 `false` 表示该房间不可复用（已离开/被封禁/接受邀请失败），调用方应新建 DM。
+   */
+  async ensureDmRoomJoined(roomId: string): Promise<boolean> {
+    const client = matrixClientService.getClient()
+    const membership = client?.getRoom(roomId)?.getMyMembership?.()
+
+    if (membership === 'invite') {
+      try {
+        await matrixRoomActionFacade.joinRoom(roomId)
+        logger.info(`[MatrixDM] 已接受私聊房间邀请: ${roomId}`)
+        return true
+      } catch (err) {
+        logger.error(`[MatrixDM] 接受私聊房间邀请失败: ${roomId} ${err}`)
+        return false
+      }
+    }
+
+    // join / 尚未同步到本地（undefined）沿用旧行为；leave / ban 不可复用
+    return membership !== 'leave' && membership !== 'ban'
   }
 
   async getDmRoomList(): Promise<DmRoomInfo[]> {

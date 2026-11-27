@@ -88,13 +88,12 @@
         :aria-pressed="filterValue === filter.value"
         @click="$emit('update:filterValue', filter.value)">
         {{ filter.label }}
-        <n-badge
-          v-if="filter.value !== 'all'"
-          :value="getFilterCount(filter.value)"
-          :max="99"
-          :show="getFilterCount(filter.value) > 0"
-          type="info"
-          class="ml-4px" />
+        <span
+          v-if="filter.value !== 'all' && getFilterCount(filter.value) > 0"
+          class="friend-list-view__filter-count"
+          data-test="filter-count">
+          {{ getFilterCount(filter.value) }}
+        </span>
       </n-button>
     </n-flex>
   </header>
@@ -150,6 +149,15 @@ const { t } = useI18n()
 <style scoped lang="scss">
 .friend-list-view__header {
   flex-shrink: 0;
+}
+
+/* 分组计数用纯文本渲染：n-badge 内部的数字动画会把每一位拆成多个节点，
+   造成读屏与视觉上出现 "1 1 1" 式重复。 */
+.friend-list-view__filter-count {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--tjg-text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .friend-list-view__search-summary {

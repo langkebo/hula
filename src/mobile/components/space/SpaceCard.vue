@@ -64,7 +64,7 @@ const emit = defineEmits<{ select: [space: SpaceInfo] }>()
     }
 
     .default-cover {
-      color: var(--van-gray-5);
+      color: var(--tjg-text-secondary);
     }
   }
 
@@ -82,7 +82,7 @@ const emit = defineEmits<{ select: [space: SpaceInfo] }>()
 
     .space-topic {
       font-size: 12px;
-      color: var(--van-text-color-2);
+      color: var(--tjg-text-secondary);
       margin-bottom: 8px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -95,7 +95,7 @@ const emit = defineEmits<{ select: [space: SpaceInfo] }>()
       display: flex;
       gap: 12px;
       font-size: 12px;
-      color: var(--van-text-color-3);
+      color: var(--tjg-text-secondary);
 
       span {
         display: flex;

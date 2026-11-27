@@ -1,9 +1,16 @@
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { withTimeout } from '@/services/matrix/media/mediaMetadata'
 import type { BurnStats } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { createLogger } from '@/utils/Logger'
 import { useBurnAfterRead } from './useBurnAfterRead'
+
+const logger = createLogger('BurnAfterReadSettings')
+
+/** 统计请求超时（ms）：服务端无响应时不能让卡片永久转圈。 */
+const BURN_STATS_TIMEOUT_MS = 3_000
 
 /** 阅后即焚可选时长（秒），桌面与移动端共用 */
 /**
@@ -71,12 +78,19 @@ export function useBurnAfterReadSettings() {
   }
 
   const loadBurnStats = async () => {
+    if (loadingStats.value) return
     loadingStats.value = true
     try {
-      const stats = await getBurnStats()
+      const stats = await withTimeout(getBurnStats(), BURN_STATS_TIMEOUT_MS, 'burn stats request timeout')
       burnStats.totalBurned = stats.totalBurned
       burnStats.totalPending = stats.totalPending
       burnStats.roomsWithBurnEnabled = stats.roomsWithBurnEnabled
+    } catch (error) {
+      // 超时/失败时展示 0 而不是保留转圈；loading 由 finally 复位
+      logger.warn('Failed to load burn stats', error)
+      burnStats.totalBurned = 0
+      burnStats.totalPending = 0
+      burnStats.roomsWithBurnEnabled = 0
     } finally {
       loadingStats.value = false
     }

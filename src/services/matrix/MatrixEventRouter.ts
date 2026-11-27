@@ -333,7 +333,15 @@ export class MatrixEventRouter {
       this.resetSearchFlushState()
       return
     }
-    if (!discardOnFailure && !matrixWorkerHost.isStarted) {
+    if (!matrixWorkerHost.isStarted) {
+      if (discardOnFailure) {
+        // P-12：detach 收尾时 worker 可能已被登出流程 terminate。索引已随 worker 销毁，
+        // 此处静默丢弃缓冲，不再发一个注定失败的请求（旧实现会绕过 guard 并报写入失败）。
+        this.pendingSearchEvents = []
+        this.droppedSearchEvents = 0
+        this.resetSearchFlushState()
+        return
+      }
       this.requeueSearchEvents(undefined, 'worker-not-started')
       return
     }

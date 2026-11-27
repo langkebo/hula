@@ -406,7 +406,13 @@ const handleForgetRoom = () => {
   padding: 10px 12px;
   border-radius: 8px;
   background: var(--tjg-surface-panel-muted);
-  color: var(--tjg-color-danger-500);
+  color: var(--tjg-color-danger-600);
+}
+
+/* 文字按钮默认用 primary-500（在 surface-panel-muted 上仅约 3.4:1），
+   错误提示行需要 AA，统一压深/提亮到 danger-600（亮色 5.1:1 / 暗色 7:1）。 */
+.group-details__load-error :deep(.n-button__content) {
+  color: var(--tjg-color-danger-600);
 }
 
 .group-details__load-error-text {

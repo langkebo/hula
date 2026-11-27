@@ -15,6 +15,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { CLIENT_VERSIONS, PREFIX_V3 } from '@/services/matrix/paths/prefixes'
+import { classifySlidingSyncEndpointStatus } from '@/utils/slidingSyncEndpointStatus'
 
 const runtimeFetch = getRuntimeAwareFetch()
 
@@ -110,10 +111,11 @@ export async function handleProbeSlidingSyncEndpoints(
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
         })
+        // 400/401/403/405/429 都说明端点已路由；只有 404/501 才是真未实现
         return {
           endpoint,
           status: response.status,
-          available: response.status !== 404
+          available: classifySlidingSyncEndpointStatus(response.status) === 'available'
         }
       } catch (error) {
         return {

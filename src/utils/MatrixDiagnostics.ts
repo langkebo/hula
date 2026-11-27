@@ -4,6 +4,7 @@ import { CLIENT_VERSIONS, MATRIX_PATHS, PREFIX_V3 } from '@/services/matrix/path
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from './Logger'
+import { classifySlidingSyncEndpointStatus, isSlidingSyncAuthRequiredStatus } from './slidingSyncEndpointStatus'
 
 const logger = createLogger('MatrixDiagnostics')
 
@@ -12,6 +13,22 @@ export interface DiagnosticResult {
   status: 'success' | 'warning' | 'error'
   message: string
   details?: unknown
+}
+
+/**
+ * 从 HTTP 异常中提取状态码。
+ *
+ * 两条探测路径抛出的错误形状不同：
+ * - 主线程走 `HttpClient`，抛 `HttpClientError`，状态码在 `status`；
+ * - SDK / 部分旧代码抛 `MatrixError` 形状，状态码在 `httpStatus`。
+ * 只认 `httpStatus` 会让 401（端点存在但需认证）被当成网络错误，误报「未找到」。
+ */
+function extractHttpStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null) return undefined
+  const record = error as { status?: unknown; httpStatus?: unknown }
+  if (typeof record.status === 'number') return record.status
+  if (typeof record.httpStatus === 'number') return record.httpStatus
+  return undefined
 }
 
 export class MatrixDiagnostics {
@@ -102,50 +119,68 @@ export class MatrixDiagnostics {
     const { t } = useI18nGlobal()
     const endpoints = [...MATRIX_PATHS.SYNC.SLIDING_SYNC_CANDIDATES]
 
-    let results: Array<{ endpoint: string; status: number | 'error'; available: boolean; error?: string }>
+    let probes: Array<{ endpoint: string; status: number | 'error'; error?: string }>
 
     if (matrixWorkerHost.isStarted) {
-      results = await matrixWorkerHost.probeSlidingSyncEndpoints(this.homeserverUrl, endpoints)
+      probes = await matrixWorkerHost.probeSlidingSyncEndpoints(this.homeserverUrl, endpoints)
     } else {
-      results = []
+      probes = []
       for (const endpoint of endpoints) {
         try {
-          // Sliding Sync 是 POST 端点：用 GET 探测会得到 405（Method Not Allowed），
-          // 被误判为"未找到"。与 worker 侧探测保持一致——POST 空 body，非 404 即视为存在
-          // （401 需认证、400 body 不完整都说明端点已路由，只有 404 才是真不存在）。
+          // Sliding Sync 是 POST 端点：用 GET 探测会得到 405（Method Not Allowed）。
+          // 与 worker 侧一致——POST 空 body，只有 404/501 才代表未实现；
+          // 400/401/403/405/429 说明端点已路由。
           await HttpClient.post<Record<string, unknown>>(
             `${this.homeserverUrl}${endpoint}`,
             {},
             { allowDynamicHost: true }
           )
-          results.push({ endpoint, status: 200, available: true })
+          probes.push({ endpoint, status: 200 })
         } catch (error) {
-          const httpStatus = (error as { httpStatus?: unknown }).httpStatus
-          results.push({
+          const httpStatus = extractHttpStatus(error)
+          probes.push({
             endpoint,
-            status: typeof httpStatus === 'number' ? httpStatus : 'error',
-            available: typeof httpStatus === 'number' && httpStatus !== 404,
+            status: httpStatus ?? 'error',
             error: String(error)
           })
         }
       }
     }
 
-    const availableEndpoints = results.filter((r) => r.available)
+    // 三态：可用（含需鉴权）/ 未实现（404、501）/ 不可达（网络异常等无法确认）
+    const results = probes.map((probe) => ({
+      ...probe,
+      state: classifySlidingSyncEndpointStatus(probe.status)
+    }))
+    const available = results.filter((r) => r.state === 'available')
+    const notImplemented = results.filter((r) => r.state === 'not_implemented')
 
-    if (availableEndpoints.length > 0) {
+    if (available.length > 0) {
+      const needsAuth = available.some((r) => isSlidingSyncAuthRequiredStatus(r.status))
       return {
         name: 'Sliding Sync Endpoints',
         status: 'success',
-        message: t('diagnostics.sliding_sync_found', { count: availableEndpoints.length }),
+        message: needsAuth
+          ? t('diagnostics.sliding_sync_requires_auth', { count: available.length })
+          : t('diagnostics.sliding_sync_found', { count: available.length }),
         details: results
       }
     }
 
+    if (notImplemented.length > 0) {
+      return {
+        name: 'Sliding Sync Endpoints',
+        status: 'error',
+        message: t('diagnostics.sliding_sync_not_implemented'),
+        details: results
+      }
+    }
+
+    // 网络异常 / 5xx：无法确认端点是否存在，不能用「未实现」的结论误导用户
     return {
       name: 'Sliding Sync Endpoints',
-      status: 'error',
-      message: t('diagnostics.sliding_sync_not_found'),
+      status: 'warning',
+      message: t('diagnostics.sliding_sync_unreachable'),
       details: results
     }
   }

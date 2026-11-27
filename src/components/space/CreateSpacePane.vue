@@ -79,7 +79,15 @@ const formData = reactive({
 const rules = {
   name: {
     required: true,
-    message: t('space.name_required')
+    // 名称先 trim 再判空：全空白视为未填写，阻止提交
+    validator: () => {
+      const name = formData.name.trim()
+      if (!name) {
+        return new Error(t('space.name_required'))
+      }
+      return true
+    },
+    trigger: ['blur', 'input']
   }
 }
 
@@ -99,9 +107,17 @@ const handleSubmit = async (ignoreDuplicate = false) => {
   try {
     loading.value = true
     await formRef.value?.validate()
+    // 提交使用 trim 后的值，避免前后空白进入空间元数据
+    const name = formData.name.trim()
+    const topic = formData.topic.trim()
+    // 兜底：全空白名称直接阻止提交（不依赖表单组件实现）
+    if (!name) {
+      showFeedback(t('space.name_required'), 'error')
+      return
+    }
     const createdSpace = await createSpace({
-      name: formData.name,
-      topic: formData.topic,
+      name,
+      topic,
       avatarUrl: formData.avatarUrl,
       ignoreDuplicateName: ignoreDuplicate
     })
@@ -120,11 +136,11 @@ const handleSubmit = async (ignoreDuplicate = false) => {
     // 用户选择"仍然创建"后带 ignore_duplicate_name 重发（逃生阀）。
     const errMsg = error instanceof Error ? error.message : String(error)
     if (errMsg.includes('M_ROOM_IN_USE') || errMsg.includes('already in use')) {
-      logger.warn('Duplicate space name detected, awaiting user confirmation:', formData.name)
+      logger.warn('Duplicate space name detected, awaiting user confirmation:', formData.name.trim())
       loading.value = false
       dialog.warning({
         title: t('space.duplicate_name_title'),
-        content: t('space.duplicate_name_confirm', { name: formData.name }),
+        content: t('space.duplicate_name_confirm', { name: formData.name.trim() }),
         positiveText: t('space.duplicate_name_continue'),
         negativeText: t('common.cancel'),
         onPositiveClick: () => {

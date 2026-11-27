@@ -1,5 +1,4 @@
 import { createLogger } from '@/utils/Logger'
-import endpointCapabilityService from '../EndpointCapabilityService'
 import { normalizeFriendInfoList } from '../friends/friendUtils'
 import { matrixCapabilityService } from '../MatrixCapabilityService'
 import { MATRIX_PATHS } from '../paths'
@@ -10,6 +9,13 @@ const logger = createLogger('SynapseFriendExtensionService')
 /** 「客户端未就绪」是启动期临时态；其余失败一律抛出（吞成 `[]` 会让空与失败不可区分）。 */
 function isClientNotReadyError(err: unknown): boolean {
   return err instanceof Error && (err.message === 'MatrixClient 未在指定时间内就绪' || err.message === '客户端未初始化')
+}
+
+/** 服务端 400/404 说明好友扩展未实现或参数不被接受，按「能力不支持」处理。 */
+function isFriendEndpointMissingError(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false
+  const status = (err as { httpStatus?: unknown }).httpStatus
+  return status === 400 || status === 404
 }
 
 /** 后端 `limit` 只接受 1..=200；页数上限防异常游标导致的无界循环。 */
@@ -77,24 +83,30 @@ interface SynapseCheckFriendshipResult {
 /** synapse-rust 好友关系扩展（`/_matrix/vendor/v1/friends/*`），仅承载好友域方法。 */
 class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
   private hasLoggedFriendsBeforeClientReady = false
+  /** 会话级负缓存：服务端 400/404 说明好友扩展未实现，本次会话内不再请求。 */
+  private friendsEndpointUnsupported = false
+  private hasLoggedFriendsUnsupported = false
 
   override clear(): void {
     super.clear()
-    endpointCapabilityService.clear('friends')
+    this.friendsEndpointUnsupported = false
+    this.hasLoggedFriendsUnsupported = false
   }
 
-  private async isFriendEndpointAvailable(): Promise<boolean> {
-    // 优先声明式能力检测（versions 的 io.hula.friends），比 HEAD 探测可靠
-    if (matrixCapabilityService.canUseFriendList()) {
-      return true
-    }
-    return await endpointCapabilityService.check('GET', MATRIX_PATHS.FRIENDS.LIST)
+  /**
+   * 仅依赖声明式能力（versions 的 io.hula.friends）门控。
+   * 不再用 `GET ?limit=0` 探测端点：后端 `limit` 只接受 1..=200，
+   * 探测本身就会返回 400，既是噪音又会把可用端点误判为不可用。
+   */
+  private isFriendEndpointAvailable(): boolean {
+    if (this.friendsEndpointUnsupported) return false
+    return matrixCapabilityService.canUseFriendList()
   }
 
   /** 读取**一页**好友（游标分页）；真实失败抛出，仅「客户端未就绪」返回空页。 */
   async getFriendsPage(from?: string): Promise<{ friends: SynapseFriendInfo[]; nextBatch: string | null }> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return { friends: [], nextBatch: null }
+      if (!this.isFriendEndpointAvailable()) return { friends: [], nextBatch: null }
       const query = new URLSearchParams({ limit: String(FRIEND_LIST_PAGE_SIZE) })
       if (from) query.set('from', from)
 
@@ -116,6 +128,14 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
         if (!this.hasLoggedFriendsBeforeClientReady) {
           this.hasLoggedFriendsBeforeClientReady = true
           logger.info('[SynapseRust] Matrix 客户端未就绪，返回空好友列表')
+        }
+        return { friends: [], nextBatch: null }
+      }
+      if (isFriendEndpointMissingError(err)) {
+        this.friendsEndpointUnsupported = true
+        if (!this.hasLoggedFriendsUnsupported) {
+          this.hasLoggedFriendsUnsupported = true
+          logger.info('[SynapseRust] 好友端点不可用（HTTP 400/404），本次会话内不再请求好友列表')
         }
         return { friends: [], nextBatch: null }
       }
@@ -159,7 +179,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     status: string
   }> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return { request_id: '', status: 'unavailable' }
+      if (!this.isFriendEndpointAvailable()) return { request_id: '', status: 'unavailable' }
       // 后端读的是 `X-Request-Id`（`resolve_request_id`）⇒ 两个头都带，兼容两种实现
       const headers: Record<string, string> = {}
       if (options.idempotencyKey) {
@@ -202,7 +222,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     if (!trimmedQuery) {
       return []
     }
-    if (!(await this.isFriendEndpointAvailable())) return []
+    if (!this.isFriendEndpointAvailable()) return []
 
     try {
       const searchParams = new URLSearchParams({
@@ -237,7 +257,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
 
   /** 获取待处理的好友请求。任一侧失败即**抛出**（半个列表不能当完整列表展示）。 */
   async getPendingRequests(): Promise<SynapsePendingRequests> {
-    if (!(await this.isFriendEndpointAvailable())) return { incoming: [], outgoing: [] }
+    if (!this.isFriendEndpointAvailable()) return { incoming: [], outgoing: [] }
 
     type RequestListResponse = { requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }
     const [incoming, outgoing] = await Promise.allSettled([
@@ -269,7 +289,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     room_id: string
   }> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return { status: 'unavailable', room_id: '' }
+      if (!this.isFriendEndpointAvailable()) return { status: 'unavailable', room_id: '' }
       const response = await this.request<{
         status?: string
         room_id?: string
@@ -300,7 +320,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
    */
   async declineFriendRequest(userId: string): Promise<void> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return
+      if (!this.isFriendEndpointAvailable()) return
       await this.request(MATRIX_PATHS.FRIENDS.REJECT(encodeURIComponent(userId)), {
         method: 'POST',
         body: JSON.stringify({})
@@ -316,7 +336,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
    */
   async cancelFriendRequest(userId: string): Promise<void> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return
+      if (!this.isFriendEndpointAvailable()) return
       await this.request(MATRIX_PATHS.FRIENDS.CANCEL(encodeURIComponent(userId)), {
         method: 'POST',
         body: JSON.stringify({})
@@ -332,7 +352,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
    */
   async removeFriend(userId: string): Promise<void> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return
+      if (!this.isFriendEndpointAvailable()) return
       await this.request(MATRIX_PATHS.FRIENDS.REMOVE(encodeURIComponent(userId)), {
         method: 'DELETE'
       })
@@ -347,7 +367,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
    */
   async setFriendNote(userId: string, note: string): Promise<void> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return
+      if (!this.isFriendEndpointAvailable()) return
       await this.request(MATRIX_PATHS.FRIENDS.NOTE(encodeURIComponent(userId)), {
         method: 'PUT',
         body: JSON.stringify({ note })
@@ -363,7 +383,7 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
    */
   async checkFriendship(userId: string): Promise<boolean> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return false
+      if (!this.isFriendEndpointAvailable()) return false
       const response = await this.request<SynapseCheckFriendshipResult | { data?: SynapseCheckFriendshipResult }>(
         MATRIX_PATHS.FRIENDS.CHECK(encodeURIComponent(userId)),
         { method: 'GET' }

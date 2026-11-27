@@ -12,11 +12,11 @@ const logger = createLogger('MatrixSessionService')
 /**
  * 房间标签元数据。
  *
- * synapse-rust 接受字符串形式的 `order`（调用方传 `'0.5'`），而 SDK 的 `ITagMetadata`
- * 声明为 number；这里按后端实际契约放宽，避免为了类型去改动运行时值。
+ * synapse-rust 的标签接口按规范校验 `order` 必须为数字：传字符串 `'0.5'` 会返回
+ * `M_BAD_JSON`（实测 400），与 SDK `ITagMetadata` 的 number 声明一致。
  */
 interface RoomTagMetadata {
-  order?: string | number
+  order?: number
   [field: string]: unknown
 }
 
@@ -120,7 +120,7 @@ class MatrixSessionService extends BaseMatrixService {
 
       if (top) {
         if (typeof client.setRoomTag === 'function') {
-          await client.setRoomTag(roomId, tagName, { order: '0.5' })
+          await client.setRoomTag(roomId, tagName, { order: 0.5 })
           logger.info(`[MatrixSession] 设置会话置顶成功: ${roomId}`)
           return true
         }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DirectMessageManager, MatrixClient, Room } from '@/services/matrix/sdk'
 import { matrixClientService } from '../../MatrixClientService'
 import { matrixDirectMessageService } from '../MatrixDirectMessageService'
+import { matrixRoomActionFacade } from '../RoomFacade'
 import { makeDirectRoomsOnServer, makeDmPartnerResponse } from './fixtures/directMessage'
 
 // 门面上的 54 处 @deprecated 纯委托已删除（SDK C5）；调用点改走 sub-manager。
@@ -175,5 +176,42 @@ describe('MatrixDirectMessageService', () => {
     expect(oldDmManager.list.getDMRooms).toHaveBeenCalledTimes(1)
     expect(newDmManager.list.getDMRooms).toHaveBeenCalledTimes(1)
     expect(rooms[0].roomId).toBe('!new:example.com')
+  })
+
+  describe('ensureDmRoomJoined', () => {
+    const makeRoom = (membership: string) => ({ getMyMembership: () => membership }) as unknown as Room
+
+    it('accepts invite before reusing dm room', async () => {
+      mockClient.getRoom.mockReturnValueOnce(makeRoom('invite'))
+      const joinSpy = vi.spyOn(matrixRoomActionFacade, 'joinRoom').mockResolvedValueOnce({} as Room) // fixture-literal-ok: 内部 SDK Room 桩，非后端响应
+
+      await expect(matrixDirectMessageService.ensureDmRoomJoined('!dm:example.com')).resolves.toBe(true)
+      expect(joinSpy).toHaveBeenCalledWith('!dm:example.com')
+    })
+
+    it('keeps joined room without joining again', async () => {
+      mockClient.getRoom.mockReturnValueOnce(makeRoom('join'))
+      const joinSpy = vi.spyOn(matrixRoomActionFacade, 'joinRoom')
+
+      await expect(matrixDirectMessageService.ensureDmRoomJoined('!dm:example.com')).resolves.toBe(true)
+      expect(joinSpy).not.toHaveBeenCalled()
+    })
+
+    it('rejects left or banned room', async () => {
+      mockClient.getRoom.mockReturnValueOnce(makeRoom('leave'))
+      mockClient.getRoom.mockReturnValueOnce(makeRoom('ban'))
+      const joinSpy = vi.spyOn(matrixRoomActionFacade, 'joinRoom')
+
+      await expect(matrixDirectMessageService.ensureDmRoomJoined('!left:example.com')).resolves.toBe(false)
+      await expect(matrixDirectMessageService.ensureDmRoomJoined('!banned:example.com')).resolves.toBe(false)
+      expect(joinSpy).not.toHaveBeenCalled()
+    })
+
+    it('returns false when accepting invite fails', async () => {
+      mockClient.getRoom.mockReturnValueOnce(makeRoom('invite'))
+      vi.spyOn(matrixRoomActionFacade, 'joinRoom').mockRejectedValueOnce(new Error('forbidden'))
+
+      await expect(matrixDirectMessageService.ensureDmRoomJoined('!dm:example.com')).resolves.toBe(false)
+    })
   })
 })

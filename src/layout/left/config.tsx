@@ -7,6 +7,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { createLogger } from '@/utils/Logger'
+import { modalShow } from './model'
 
 const logger = createLogger('LeftConfig')
 
@@ -89,6 +90,9 @@ const useMoreList = () => {
           label: t('menu.lock_screen'),
           icon: 'lock',
           click: () => {
+            // LEFT_MODAL_SHOW 只负责挂载 LockScreen 组件，弹窗可见性由 modalShow 控制；
+            // 不置 true 会挂载一个隐藏的 NModal（P-04：点击「锁定屏幕」无任何界面）。
+            modalShow.value = true
             useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
               type: ModalEnum.LOCK_SCREEN
             })
@@ -165,23 +169,31 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
 const usePluginsList = () =>
   (() => {
     const { t } = useI18nGlobal()
-    return computed<STO.Plugins<PluginEnum>[]>(() => [
-      {
-        ...basePluginsList[0],
-        title: t('home.plugins.room_list'),
-        shortTitle: t('home.plugins.room_list_short_title')
-      },
-      {
-        ...basePluginsList[1],
-        title: t('home.plugins.space_list'),
-        shortTitle: t('home.plugins.space_list_short_title')
-      },
-      {
-        ...basePluginsList[2],
-        title: t('home.plugins.federation'),
-        shortTitle: t('home.plugins.federation_short_title')
+    return computed<STO.Plugins<PluginEnum>[]>(() => {
+      const plugins: STO.Plugins<PluginEnum>[] = [
+        {
+          ...basePluginsList[0],
+          title: t('home.plugins.room_list'),
+          shortTitle: t('home.plugins.room_list_short_title')
+        },
+        {
+          ...basePluginsList[1],
+          title: t('home.plugins.space_list'),
+          shortTitle: t('home.plugins.space_list_short_title')
+        }
+      ]
+
+      // 联邦页仅管理员可见，普通用户不出现入口
+      if (useAdminStore().canShowAdminEntry) {
+        plugins.push({
+          ...basePluginsList[2],
+          title: t('home.plugins.federation'),
+          shortTitle: t('home.plugins.federation_short_title')
+        })
       }
-    ])
+
+      return plugins
+    })
   })()
 
 export { useItemsBottom, useMoreList, usePluginsList }

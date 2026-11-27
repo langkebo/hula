@@ -1,15 +1,13 @@
 <template>
-  <article
-    :class="cardClasses"
-    data-testid="room-card-item"
-    :data-room-id="item.roomId"
-    role="button"
-    tabindex="0"
-    :aria-label="item.name"
-    @click="handlePreview"
-    @keydown.enter.self.prevent="handlePreview"
-    @keydown.space.self.prevent="handlePreview">
-    <header class="room-card-item__header flex items-start gap-[--tjg-space-3]">
+  <article :class="cardClasses" data-testid="room-card-item" :data-room-id="item.roomId">
+    <!-- 拉伸按钮：整卡可点，但不把 article 声明为 role=button（避免交互元素嵌套） -->
+    <button
+      type="button"
+      class="room-card-item__preview absolute inset-0 z-0 w-full h-full rounded-[--tjg-radius-lg] border-0 bg-transparent p-0 cursor-pointer focus-visible:outline-none"
+      :aria-label="item.name"
+      data-testid="room-card-item-preview"
+      @click="handlePreview"></button>
+    <header class="room-card-item__header relative z-10 pointer-events-none flex items-start gap-[--tjg-space-3]">
       <div
         class="room-card-item__avatar shrink-0 flex items-center justify-center size-[48px] overflow-hidden rounded-[--tjg-radius-md] bg-[--tjg-surface-subtle]">
         <img
@@ -102,12 +100,13 @@
 
     <p
       v-if="item.topic"
-      class="room-card-item__topic text-[--tjg-text-tertiary] text-[length:var(--tjg-font-size-sm)] leading-[1.5]"
+      class="room-card-item__topic relative z-10 pointer-events-none text-[--tjg-text-tertiary] text-[length:var(--tjg-font-size-sm)] leading-[1.5]"
       data-testid="room-card-topic">
       {{ truncatedTopic }}
     </p>
 
-    <div class="room-card-item__stats flex items-center gap-[--tjg-space-3] text-[length:var(--tjg-font-size-sm)]">
+    <div
+      class="room-card-item__stats relative z-10 pointer-events-none flex items-center gap-[--tjg-space-3] text-[length:var(--tjg-font-size-sm)]">
       <span class="inline-flex items-center gap-4px color-[--tjg-text-secondary]">
         <svg
           viewBox="0 0 24 24"
@@ -133,7 +132,7 @@
     </div>
 
     <footer
-      class="room-card-item__actions flex items-center gap-[--tjg-space-1] mt-auto pt-[--tjg-space-2] border-t border-[--tjg-border-muted]">
+      class="room-card-item__actions relative z-10 flex items-center gap-[--tjg-space-1] mt-auto pt-[--tjg-space-2] border-t border-[--tjg-border-muted]">
       <button
         type="button"
         class="room-card-item__action flex-center flex-1 h-[28px] rounded-[--tjg-radius-sm] color-[--tjg-text-secondary] hover:bg-[--tjg-surface-list-hover] hover:color-[--tjg-color-primary-500] transition-colors cursor-pointer"
@@ -271,7 +270,7 @@ const cardClasses = computed(() => {
   // 属性配色（产品决策）：按房间属性（加密/联邦/普通群聊）区分卡片颜色，
   // 发现页只展示群聊（DM/空间不进此列表），故无类型色、只有属性色。
   const base =
-    'room-card-item flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] cursor-pointer focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-500] focus-visible:ring-offset-2 focus-visible:ring-offset-[--tjg-surface-panel]'
+    'room-card-item relative flex flex-col gap-[--tjg-space-3] p-[--tjg-space-4] rounded-[--tjg-radius-lg] bg-[--tjg-surface-raised] focus-within:ring-2 focus-within:ring-[--tjg-color-primary-500] focus-within:ring-offset-2 focus-within:ring-offset-[--tjg-surface-panel]'
   if (props.item.isEncrypted) {
     return `${base} room-card-item--encrypted border border-[--tjg-room-card-encrypted-border]`
   }

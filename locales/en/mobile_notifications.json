@@ -17,7 +17,6 @@
   "mention_only": "Mentions Only",
   "mute": "Mute",
   "notify": "Notify",
-  "permission_action": "Enable",
   "permission_desc": "Not granted — no notifications will be delivered. Tap to enable",
   "permission_title": "System notification permission",
   "priority": "Notification priority",

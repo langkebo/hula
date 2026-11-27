@@ -23,9 +23,14 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
   }
 }))
 
+const adminState = vi.hoisted(() => ({ canShowAdminEntry: false }))
+
 vi.mock('@/stores/domains/admin/admin', () => ({
   useAdminStore: () => ({
-    canAccessAdmin: false
+    canAccessAdmin: adminState.canShowAdminEntry,
+    get canShowAdminEntry() {
+      return adminState.canShowAdminEntry
+    }
   })
 }))
 
@@ -57,11 +62,21 @@ vi.mock('@/utils/Logger', () => ({
 }))
 
 describe('usePluginsList', () => {
+  it('普通用户不出现联邦入口，管理员才出现', async () => {
+    const { usePluginsList } = await import('../config.tsx')
+
+    adminState.canShowAdminEntry = false
+    expect(usePluginsList().value.map((item) => item.url)).toEqual(['roomList', 'space'])
+
+    adminState.canShowAdminEntry = true
+    expect(usePluginsList().value.map((item) => item.url)).toEqual(['roomList', 'space', 'federation'])
+  })
+
   it('exposes the updated sidebar plugin entries for room and space lists', async () => {
     const { usePluginsList } = await import('../config.tsx')
+    adminState.canShowAdminEntry = false
     const plugins = usePluginsList()
 
-    expect(plugins.value.map((item) => item.url)).toEqual(['roomList', 'space', 'federation'])
     expect(plugins.value[0]).toMatchObject({
       icon: 'room',
       iconAction: 'room',

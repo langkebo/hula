@@ -166,25 +166,22 @@ describe('RoomOperations', () => {
   })
 
   describe('setPushRule', () => {
-    it('enabled=true deletes override push rule', async () => {
-      const deletePushRule = vi.fn().mockResolvedValue(undefined)
+    it('enabled=true restores default notifications via setRoomMutePushRule', async () => {
+      const setRoomMutePushRule = vi.fn().mockResolvedValue(undefined)
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getPushManager: vi.fn().mockReturnValue({ deletePushRule, createPushRule: vi.fn() })
+        getPushManager: vi.fn().mockReturnValue({ setRoomMutePushRule })
       } as never)
       await ops.setPushRule('!r', true)
-      expect(deletePushRule).toHaveBeenCalledWith('global', 'override', '!r')
+      expect(setRoomMutePushRule).toHaveBeenCalledWith('global', '!r', false)
     })
 
-    it('enabled=false installs an empty-actions override rule', async () => {
-      const createPushRule = vi.fn().mockResolvedValue(undefined)
+    it('enabled=false mutes the room via setRoomMutePushRule', async () => {
+      const setRoomMutePushRule = vi.fn().mockResolvedValue(undefined)
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getPushManager: vi.fn().mockReturnValue({ deletePushRule: vi.fn(), createPushRule })
+        getPushManager: vi.fn().mockReturnValue({ setRoomMutePushRule })
       } as never)
       await ops.setPushRule('!r', false)
-      expect(createPushRule).toHaveBeenCalledWith('global', 'override', '!r', {
-        conditions: [{ kind: 'event_match', key: 'room_id', pattern: '!r' }],
-        actions: []
-      })
+      expect(setRoomMutePushRule).toHaveBeenCalledWith('global', '!r', true)
     })
   })
 

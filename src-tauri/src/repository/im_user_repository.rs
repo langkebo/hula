@@ -173,6 +173,38 @@ where
     }
 }
 
+/// 清除用户持久化的 access/refresh token，并清空 last-active 排序标记。
+///
+/// 登出时仅清内存与钥匙串是不够的：`get_last_active_user_tokens` 会按
+/// `last_opt_time`/`update_time` 把 SQLite 里的旧 token 回填给后续启动的登录窗口，
+/// 导致新窗口拿着已撤销的凭证启动并持续 401。
+pub async fn clear_user_tokens<C>(db: &C, login_uid: &str) -> Result<(), CommonError>
+where
+    C: ConnectionTrait,
+{
+    let user_update = im_user::ActiveModel {
+        id: Set(login_uid.to_string()),
+        token: Set(None),
+        refresh_token: Set(None),
+        last_opt_time: Set(None),
+        ..Default::default()
+    };
+
+    match ImUserEntity::update(user_update).exec(db).await {
+        Ok(_) => {
+            info!("User {} persisted tokens cleared", login_uid);
+            Ok(())
+        }
+        Err(e) => {
+            error!(
+                "Failed to clear persisted tokens for {}: {:?}",
+                login_uid, e
+            );
+            Err(e.into())
+        }
+    }
+}
+
 /// 冷启动回填：取**最近活跃**且已持久化 token 的用户（uid + 解密后的 token/refresh_token）。
 ///
 /// 为什么需要（D2-R）：`get_user_tokens` 命令只读内存里的 `state.user_info`，

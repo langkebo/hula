@@ -142,7 +142,9 @@ export class SessionLogoutService {
         matrixWorkerHost.terminate('logout')
       }
     }
-    void cleanupAndTerminate()
+    // P-12：必须等搜索索引重置完成再 terminate，否则 resetSearchIndex 会在 worker
+    // 已终止之后继续发请求，抛出「worker 未启动，先调用 start()」并使 flush 报写入失败。
+    await cleanupAndTerminate()
     if (typeof window !== 'undefined' && this.state.beforeUnloadRegistered) {
       window.removeEventListener('beforeunload', this.state.onBeforeUnload)
       this.state.beforeUnloadRegistered = false
@@ -163,6 +165,10 @@ export class SessionLogoutService {
 
     try {
       await port.matrix.logout()
+    } catch (err) {
+      // token 已被服务端吊销时，/logout 自身也会返回 401；本地会话必须照常完成清理并回到登录页，
+      // 否则应用会卡在「已无有效 token 但仍在主界面反复 401」的故障态（P-01）。
+      logger.warn(`登出请求失败，继续清理本地会话: ${err}`)
     } finally {
       // D11：登出必须丢弃所有已登记/进行中的验证事务，避免下一次登录
       // 仍能从残留的 transactionId 里「取第一条」并操作旧请求。
@@ -171,6 +177,13 @@ export class SessionLogoutService {
 
     if (isDesktop()) {
       port.global.setTrayMenuShow(false)
+      // P-11：打开登录窗口前先停掉旧 client。否则登录窗口沿用的旧 token 仍会触发
+      // sync/refresh 并持续 401，在登录页弹出复用失效凭证的红色重试横幅。
+      try {
+        await port.matrix.stopClient()
+      } catch (err) {
+        logger.warn(`登出时停止 Matrix client 失败: ${err}`)
+      }
       try {
         await createWebviewWindow('登录', 'login', 420, 580, undefined, false, 420, 580)
         await emit(EventEnum.LOGOUT)

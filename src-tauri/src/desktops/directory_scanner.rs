@@ -61,8 +61,10 @@ async fn get_directory_size_with_progress(
 
 /// 校验扫描路径是否在已授权范围内
 ///
-/// 允许两类目录：dialog 选择后写入 fs scope 的目录，以及应用缓存目录。
-/// 避免前端传入任意本地路径进行全盘扫描。
+/// 允许三类目录：dialog 选择后写入 fs scope 的目录、应用缓存目录、应用数据目录。
+/// 应用数据目录是「存储管理」页的默认扫描目标（dev/prod 的 userData 都在其下），
+/// 之前只放行缓存目录，导致默认目录必然 `DIRECTORY_PATH_NOT_ALLOWED`。
+/// 仍不允许前端传入任意本地路径进行全盘扫描。
 fn ensure_scan_path_allowed(handle: &AppHandle, directory_path: &str) -> Result<PathBuf, String> {
     let canonical_path = PathBuf::from(directory_path)
         .canonicalize()
@@ -72,13 +74,19 @@ fn ensure_scan_path_allowed(handle: &AppHandle, directory_path: &str) -> Result<
         return Err(cmd_error("DIRECTORY_PATH_NOT_DIR"));
     }
 
-    let in_app_cache = handle
-        .path()
-        .app_cache_dir()
-        .map(|dir| canonical_path.starts_with(dir))
-        .unwrap_or(false);
+    // 两侧都做 canonicalize 再比较：macOS 上 `~/Library/Application Support` 等路径
+    // 可能因符号链接/大小写产生字符串差异，直接 starts_with 会误判。
+    let in_app_dir = [
+        handle.path().app_data_dir(),
+        handle.path().app_local_data_dir(),
+        handle.path().app_cache_dir(),
+    ]
+    .into_iter()
+    .flatten()
+    .filter_map(|dir| dir.canonicalize().ok())
+    .any(|dir| canonical_path.starts_with(dir));
 
-    if !in_app_cache && !handle.fs_scope().is_allowed(&canonical_path) {
+    if !in_app_dir && !handle.fs_scope().is_allowed(&canonical_path) {
         tracing::warn!(
             "Rejected directory scan outside scope: {}",
             canonical_path.display()

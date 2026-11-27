@@ -31,6 +31,7 @@ function makeRoom(overrides: Record<string, unknown> = {}) {
   return {
     roomId: '!r:hs',
     getMyMembership: vi.fn(() => 'join'),
+    updateMyMembership: vi.fn(),
     getMember: vi.fn(() => undefined),
     currentState: { getMember: vi.fn(() => undefined) },
     ...overrides

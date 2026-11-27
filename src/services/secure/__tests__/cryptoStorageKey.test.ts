@@ -411,6 +411,62 @@ describe('cryptoStorageKey · 来源锁定（D3）', () => {
 })
 
 /**
+ * P-04：安全存储「暂时」不可用不得被当成「密钥已丢失」。
+ *
+ * 真机形态：macOS 开发构建钥匙串回读被拒 → 后端上报 available=false。
+ * 此时若用户已配置并解锁本地解锁，应改用本地解锁密钥完成初始化；
+ * 否则 fail-closed 返回 null（保留既有加密 store），等安全存储恢复后由
+ * MatrixCryptoStateTracker 补一次初始化。
+ */
+describe('cryptoStorageKey · 安全存储暂时不可用（P-04）', () => {
+  const readSource = (): Record<string, string> =>
+    JSON.parse(localStorage.getItem(CRYPTO_KEY_SOURCE_STORAGE_KEY) ?? '{}') as Record<string, string>
+
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    clearCryptoStorageKeyCache()
+    hoisted.store.clear()
+    localStorage.removeItem(CRYPTO_KEY_SOURCE_STORAGE_KEY)
+    hoisted.getSecureStorageBackendInfo.mockResolvedValue({
+      available: false,
+      backend: null,
+      nativeAvailable: false,
+      degraded: false
+    })
+    const { clearLocalUnlock } = await import('../localUnlockKey')
+    clearLocalUnlock()
+  })
+
+  it('来源 secure + 后端暂不可用 + 本地解锁已解锁 → 改用本地解锁密钥并记账为 local', async () => {
+    const { configureLocalUnlock, getLocalUnlockStorageKey } = await import('../localUnlockKey')
+    await configureLocalUnlock('local-pass')
+    const expected = getLocalUnlockStorageKey()!
+    localStorage.setItem(CRYPTO_KEY_SOURCE_STORAGE_KEY, JSON.stringify({ '@amy:hs:DEV3': 'secure' }))
+
+    const key = await getOrCreateCryptoStorageKey('@amy:hs', 'DEV3')
+
+    expect(key).not.toBeNull()
+    expect(Array.from(key!)).toEqual(Array.from(expected))
+    // 后端不可用时不去读条目（读了也只会得到 null，且无法区分"缺失"与"不可用"）
+    expect(hoisted.getSecureSecret).not.toHaveBeenCalled()
+    expect(readSource()['@amy:hs:DEV3']).toBe('local')
+    expect(logSpies.warn.mock.calls.map(([m]) => String(m)).some((m) => m.includes('安全存储后端暂不可用'))).toBe(true)
+  })
+
+  it('来源 secure + 后端暂不可用 + 本地解锁未就绪 → 返回 null 且不改来源', async () => {
+    localStorage.setItem(CRYPTO_KEY_SOURCE_STORAGE_KEY, JSON.stringify({ '@amy:hs:DEV4': 'secure' }))
+
+    const key = await getOrCreateCryptoStorageKey('@amy:hs', 'DEV4')
+
+    expect(key).toBeNull()
+    expect(hoisted.setSecureSecret).not.toHaveBeenCalled()
+    expect(hoisted.getSecureSecret).not.toHaveBeenCalled()
+    expect(readSource()['@amy:hs:DEV4']).toBe('secure')
+    expect(logSpies.warn.mock.calls.map(([m]) => String(m)).some((m) => m.includes('本地解锁未就绪'))).toBe(true)
+  })
+})
+
+/**
  * F3：降级诊断日志不能按窗口刷屏。
  *
  * `logCryptoStorageKeyBackend` 在每个 webview 的 E2EE 初始化后各调一次；

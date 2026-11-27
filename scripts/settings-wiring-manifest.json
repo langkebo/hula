@@ -575,6 +575,24 @@
       "consumers": ["src/components/atomic/glass/TjGlass.vue", "src/main.ts"],
       "kind": "preference",
       "note": "液态玻璃用户偏好（mode/intensity/advancedRefraction）；TjGlass 消费开关与强度，main.ts 启动时 syncTier 同步性能档位（tier 不持久化）"
+    },
+    "tjg-secure-storage-degraded-notice-v1": {
+      "owner": "src/services/secure/secureStorage.ts:DEGRADED_NOTICE_STORAGE_KEY+claimDegradedNotice",
+      "consumers": ["src/services/secure/secureStorage.ts", "src/services/secure/cryptoStorageKey.ts"],
+      "kind": "state",
+      "note": "安全存储降级告警跨窗口去重标记（含时间戳与 scope）；secureStorage 与 cryptoStorageKey 共用 claimDegradedNotice"
+    },
+    "tjg-secure-storage-notice-state-v1": {
+      "owner": "src/composables/secure/useSecureStorageDegradedNotice.ts:SECURE_STORAGE_NOTICE_STATE_STORAGE_KEY",
+      "consumers": ["src/composables/secure/useSecureStorageDegradedNotice.ts", "src/App.vue"],
+      "kind": "state",
+      "note": "记录上次告知用户的安全存储后端（无值=原生后端）；App.vue 启动时据此决定是否提示降级或恢复"
+    },
+    "tjg:burned-messages": {
+      "owner": "src/utils/storageKeys.ts:BURNED_MESSAGES_STORAGE_KEY",
+      "consumers": ["src/utils/storageKeys.ts", "src/utils/burnedMessages.ts"],
+      "kind": "state",
+      "note": "阅后即焚已烧毁消息 ID 记忆（上限 1000），重新同步或重进会话后不再回显"
     }
   }
 }

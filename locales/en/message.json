@@ -156,6 +156,7 @@
     "password_label": "Lock password",
     "password_placeholder": "Enter lock password",
     "confirm_button": "Confirm",
+    "unlock_button": "Unlock",
     "validation_required": "Please enter the lock password",
     "tip_description": "An open-source IM app built with cutting-edge tech like Tauri, Vue 3, Vite 5, UnoCSS, and TypeScript.",
     "enter_system_tooltip": "Enter",

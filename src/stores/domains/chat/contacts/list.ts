@@ -221,7 +221,8 @@ export function createContactsList(ctx: ContactsListContext) {
         .map(({ dmRoom, partnerId }) => dmRoomToContact(dmRoom, partnerId, specialFriends))
       if (dmOnly.length > 0) {
         const kept = await filterGhostContacts(dmOnly)
-        contactsList.value = mergeContactListPreservingPresence(contactsList.value, kept)
+        // 只并集追加：`kept` 仅是非好友的会话联系人，直接用它当 next 会把已加载的好友整段顶掉
+        contactsList.value = mergeContactListPreservingPresence(contactsList.value, [...contactsList.value, ...kept])
       }
 
       logger.info(`[ContactStore] 加载联系人成功: ${contactsList.value.length} 个`)

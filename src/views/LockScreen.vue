@@ -2,8 +2,13 @@
   <!-- 锁屏页面 -->
   <div
     data-tauri-drag-region
+    @keydown.esc="preventEscClose"
     class="login-box overflow-y-hidden rounded-8px select-none absolute top-0 left-0 w-full h-full z-9999 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out">
-    <ActionBar class="absolute top-0 right-0 z-99999" :current-label="currentWindowLabel" :shrink="false" />
+    <ActionBar
+      class="absolute top-0 right-0 z-99999"
+      :current-label="currentWindowLabel"
+      :shrink="false"
+      :esc-close="false" />
 
     <Transition name="slide-fade" appear>
       <!--  壁纸界面  -->
@@ -45,17 +50,19 @@
 
           <!-- 密码输入框 -->
           <n-input
-            v-if="!isLogining && !isWrongPassword"
+            v-if="!isLogining"
             ref="inputInstRef"
             class="lock-input"
+            :class="{ 'lock-input--shake': isShaking }"
             spellCheck="false"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
             :placeholder="t('message.lock_screen.password_placeholder')"
+            :input-props="{ 'aria-invalid': showError ? 'true' : 'false' }"
             show-password-on="click"
             type="password"
-            @keyup.enter.prevent="unlock"
+            @update:value="clearError"
             v-model:value="password">
             <template #suffix>
               <n-popover trigger="hover">
@@ -72,25 +79,23 @@
             </template>
           </n-input>
 
+          <!-- 错误提示：空密码与密码错误共用同一行，避免主按钮位置跳动 -->
+          <p v-if="!isLogining && errorMessage" class="lock-error" role="alert">{{ errorMessage }}</p>
+
+          <!-- 主按钮：始终可见的解锁入口 -->
+          <button v-if="!isLogining" type="button" class="lock-unlock-button" @click="unlock">
+            {{ t('message.lock_screen.unlock_button') }}
+          </button>
+
           <!-- 登录时显示的文字 -->
-          <n-flex vertical align="center" justify="center" :size="30" v-if="isLogining && !isWrongPassword">
+          <n-flex v-if="isLogining" vertical align="center" justify="center" :size="30">
             <img class="size-42px" src="@/assets/img/loading-one.svg" :alt="t('common.loading')" />
             <p class="text-(20px [--tjg-text-secondary])">{{ t('message.lock_screen.unlocking') }}</p>
-          </n-flex>
-
-          <!-- 密码不正常时显示 -->
-          <n-flex v-if="isWrongPassword" vertical justify="center" align="center" :size="30">
-            <p class="text-(18px [--tjg-text-secondary])">{{ t('message.lock_screen.wrong_password') }}</p>
-            <p
-              @click="init"
-              class="w-120px bg-[--tjg-surface-inverse-hover] backdrop-blur-xl cursor-pointer p-10px rounded-8px text-(14px var(--tjg-text-primary) center) font-500">
-              {{ t('message.lock_screen.confirm_button') }}
-            </p>
           </n-flex>
         </n-flex>
 
         <n-flex
-          v-if="!isLogining && !isWrongPassword"
+          v-if="!isLogining"
           justify="space-around"
           align="center"
           :size="0"
@@ -110,7 +115,6 @@ import { onKeyStroke } from '@vueuse/core'
 import dayjs from 'dayjs'
 import type { InputInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { EventEnum } from '@/enums'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { verifyLockScreenVerifier } from '@/stores/domains/settings/lockScreenCredential'
@@ -129,7 +133,6 @@ const { lockScreen } = storeToRefs(settingStore)
 const { logout } = useLoginFlow()
 const { t } = useI18n()
 const timerManager = useTimerManager()
-const { showFeedback } = useActionFeedback()
 /** 解锁密码 */
 const password = ref('')
 /** 是否是解锁页面 */
@@ -138,6 +141,12 @@ const isUnlockPage = ref(false)
 const isLogining = ref(false)
 /** 密码不正确时显示 */
 const isWrongPassword = ref(false)
+/** 密码为空时显示 */
+const isEmptyPassword = ref(false)
+/** 输入框抖动反馈 */
+const isShaking = ref(false)
+/** Enter 键监听清理函数 */
+let stopEnterListener: (() => void) | null = null
 /** 当前时间 */
 const currentTime = ref(dayjs().format('HH:mm'))
 /** 当前月份和日期 */
@@ -147,6 +156,14 @@ const currentMonthAndDate = ref(dayjs().format('MM/DD'))
 const currentWeekday = ref(getWeekday(new Date().toLocaleString()))
 /** 密码输入框实例 */
 const inputInstRef = ref<InputInst | null>(null)
+/** 是否有错误提示 */
+const showError = computed(() => isWrongPassword.value || isEmptyPassword.value)
+/** 错误提示文案：密码错误复用现有文案，空密码提示重新输入 */
+const errorMessage = computed(() => {
+  if (isWrongPassword.value) return t('message.lock_screen.wrong_password')
+  if (isEmptyPassword.value) return t('message.lock_screen.toast_empty_password')
+  return ''
+})
 /** 白名单窗口（锁屏时不隐藏的窗口） */
 const whitelistWindows = ['home', 'tray', 'capture', 'checkupdate', 'notify']
 /** 被隐藏的窗口列表 */
@@ -160,19 +177,30 @@ watch(isUnlockPage, (val) => {
   }
 })
 
-watch(isWrongPassword, (val) => {
-  if (val) {
-    onKeyStroke('Enter', (e) => {
-      e.preventDefault()
-      init()
-    })
-  }
-})
+/** 用户重新输入时清除上一次的错误提示 */
+const clearError = () => {
+  isWrongPassword.value = false
+  isEmptyPassword.value = false
+}
+
+/** 拦截 Esc：阻止冒泡到 ActionBar 的全局监听，避免锁屏被关闭 */
+const preventEscClose = (event: KeyboardEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+}
 
 /** 解锁：校验 PBKDF2 verifier，成功后广播跨窗口解锁 */
 const unlock = async () => {
+  if (isLogining.value) return
+  clearError()
+
   if (password.value === '') {
-    showFeedback(t('message.lock_screen.toast_empty_password'), 'warning')
+    isEmptyPassword.value = true
+    isShaking.value = true
+    timerManager.setTimeout(() => {
+      isShaking.value = false
+    }, 400)
+    inputInstRef.value?.focus()
     return
   }
 
@@ -186,31 +214,19 @@ const unlock = async () => {
   const passed = await verifyLockScreenVerifier(password.value, lockScreen.value.passwordHash)
   timerManager.setTimeout(
     async () => {
+      isLogining.value = false
       if (passed) {
         lockScreen.value.enable = false
-        isLogining.value = false
         if (hasTauriRuntime()) {
           await emit(EventEnum.UNLOCK_SCREEN)
         }
         return
       }
-      isLogining.value = false
       isWrongPassword.value = true
+      inputInstRef.value?.focus()
     },
     passed ? 1000 : 300
   )
-}
-
-/** 重置登录状态 */
-const init = () => {
-  if (isWrongPassword.value) {
-    isWrongPassword.value = false
-    isLogining.value = false
-    timerManager.setTimeout(() => {
-      inputInstRef.value?.focus()
-    }, 600)
-    password.value = ''
-  }
 }
 
 /** 隐藏其他窗口 */
@@ -252,17 +268,27 @@ onMounted(() => {
     currentWeekday.value = getWeekday(new Date().toLocaleString())
   }, 1000)
 
-  if (!isUnlockPage.value) {
-    onKeyStroke('Enter', (e) => {
-      e.preventDefault()
-      isUnlockPage.value = true
-    })
-  }
+  /** 唯一的 Enter 监听：壁纸界面先进入解锁页，解锁页校验密码 */
+  stopEnterListener = onKeyStroke(
+    'Enter',
+    (event) => {
+      if (isLogining.value) return
+      event.preventDefault()
+      if (!isUnlockPage.value) {
+        isUnlockPage.value = true
+        return
+      }
+      void unlock()
+    },
+    { dedupe: true }
+  )
 
   hideOtherWindows()
 })
 
 onUnmounted(() => {
+  stopEnterListener?.()
+  stopEnterListener = null
   timerManager.clearAll()
 })
 </script>
@@ -343,5 +369,52 @@ onUnmounted(() => {
   border-bottom-color: var(--tjg-color-primary-500);
   background-color: var(--lock-input-bg, var(--tjg-surface-panel-muted));
   color: var(--lock-input-color, var(--tjg-text-inverse));
+}
+
+.lock-error {
+  @apply m-0 text-(14px [--tjg-color-danger-500]);
+}
+
+.lock-unlock-button {
+  @apply w-320px cursor-pointer select-none rounded-8px border-0 p-[10px_16px] text-(15px [--tjg-text-inverse]) font-500 transition-[background-color,box-shadow] duration-200 ease-in-out;
+  background-color: var(--tjg-color-primary-600);
+
+  &:hover {
+    background-color: var(--tjg-color-primary-500);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tjg-color-primary-400);
+    outline-offset: 2px;
+  }
+}
+
+.lock-input--shake {
+  animation: lock-shake 0.4s ease-in-out;
+}
+
+@keyframes lock-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lock-input--shake {
+    animation: none;
+  }
 }
 </style>

@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { NDropdown } from 'naive-ui'
 import { describe, expect, it, vi } from 'vitest'
 import SpaceViewHeader from '../SpaceViewHeader.vue'
 
@@ -27,5 +28,10 @@ describe('SpaceViewHeader', () => {
 
     await button.trigger('click')
     expect(wrapper.emitted('discover')).toHaveLength(1)
+  })
+
+  it('创建入口下拉使用点击触发', () => {
+    const wrapper = mountHeader()
+    expect(wrapper.findComponent(NDropdown).props('trigger')).toBe('click')
   })
 })

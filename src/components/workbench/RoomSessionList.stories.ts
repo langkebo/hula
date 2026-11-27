@@ -17,7 +17,7 @@ interface StorySessionItem extends SessionItem {
   highlightCount?: number
   notificationCount?: number
   isTombstoned?: boolean
-  membership?: 'join' | 'leave' | 'invite' | 'ban'
+  membership?: 'join' | 'leave' | 'invite' | 'ban' | 'knock' | undefined
 }
 
 import { createSidebarFrameStyle, resetStorybookMocks } from '~/.storybook/harness'

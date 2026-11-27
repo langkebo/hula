@@ -6,6 +6,8 @@ use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 #[cfg(not(target_os = "android"))]
 use std::sync::OnceLock;
+#[cfg(not(target_os = "android"))]
+use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::{debug, error, info, warn};
 
 // 复用 crypto.rs 的 master-key 加密能力
@@ -51,10 +53,77 @@ fn get_fallback_path(key: &str) -> Option<PathBuf> {
 /// 从文件 fallback 读取加密的 secret
 fn load_from_fallback(key: &str) -> Option<String> {
     let path = get_fallback_path(key)?;
-    let encrypted = fs::read_to_string(&path).ok()?;
-    let decrypted = crypto::decrypt(encrypted.trim()).ok()?;
-    debug!("Loaded secret from file fallback for key '{}'", key);
-    Some(decrypted)
+    let encrypted = match fs::read_to_string(&path) {
+        Ok(content) => content,
+        Err(_) => return None,
+    };
+    // 解密失败不能静默吞掉：意味着主密钥变化或文件损坏，必须留下可诊断的告警，
+    // 且**不得**顺手删除文件（可能是可恢复的既有数据）。
+    match crypto::decrypt(encrypted.trim()) {
+        Ok(decrypted) => {
+            debug!("Loaded secret from file fallback for key '{}'", key);
+            Some(decrypted)
+        }
+        Err(e) => {
+            warn!(
+                "Failed to decrypt fallback secret for key '{}' (master key changed or file corrupted): {:?}",
+                key, e
+            );
+            None
+        }
+    }
+}
+
+/// 是否存在「像既有密文、但当前主密钥无法解密」的 fallback 文件。
+///
+/// 只有这种文件才意味着用当前主密钥覆盖会造成不可逆的数据丢失；
+/// 损坏的垃圾内容（例如上次写坏的文件）不算，仍允许被覆盖修复。
+fn fallback_has_undecryptable_ciphertext() -> bool {
+    let Some(dir) = get_fallback_dir() else {
+        return false;
+    };
+    let Ok(entries) = fs::read_dir(&dir) else {
+        return false;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("enc") {
+            continue;
+        }
+        let Ok(content) = fs::read_to_string(&path) else {
+            continue;
+        };
+        if !crypto::looks_like_ciphertext(&content) {
+            continue;
+        }
+        if crypto::decrypt(content.trim()).is_err() {
+            return true;
+        }
+    }
+    false
+}
+
+/// P-05：写 fallback 前的主密钥可信度门禁。
+///
+/// 钥匙串条目「存在但本次不可访问」时会生成一个独立的新主密钥；用它覆盖既有密文
+/// 会让旧数据永久不可解密。这种情况下返回 false（`fallback` 明确不可用），
+/// 由上层把 `available=false` 透出给 UI（提示签名应用或设置本地解锁）。
+fn fallback_write_allowed() -> bool {
+    if crypto::fallback_master_key_trusted() {
+        return true;
+    }
+    if fallback_has_undecryptable_ciphertext() {
+        warn!(
+            "Master key is untrusted (keyring entry inaccessible) and existing fallback ciphertext \
+             cannot be decrypted by it: refusing to write, so the old data stays recoverable"
+        );
+        return false;
+    }
+    warn!(
+        "Master key is untrusted (keyring entry inaccessible) but no existing ciphertext is at \
+         risk: writing fallback with the independent new key"
+    );
+    true
 }
 
 /// 将 secret 加密后写入文件 fallback
@@ -62,8 +131,12 @@ fn load_from_fallback(key: &str) -> Option<String> {
 /// 写后验证契约：写入成功后必须读回并比较，确保内容真正落盘且可解密。
 /// 返回 true 仅当写后验证通过（读回值 == 写入值）。
 /// 返回 false 表示任何阶段失败：路径不可计算、目录创建失败、加密失败、
-/// 文件写入失败、或写后读回验证失败（内容不匹配 / 解密失败）。
+/// 文件写入失败、主密钥不可信（见 `fallback_write_allowed`）、或写后读回验证失败。
 fn save_to_fallback(key: &str, value: &str) -> bool {
+    if !fallback_write_allowed() {
+        return false;
+    }
+
     let Some(path) = get_fallback_path(key) else {
         warn!("Cannot determine fallback path for key '{}'", key);
         return false;
@@ -160,6 +233,32 @@ fn test_fallback_writable() -> bool {
     ok
 }
 
+/// 原生后端探测结果（P-05）。
+///
+/// 必须区分「写成功」与「写后可读回」：macOS 未签名开发构建会出现
+/// `set_password` 成功但新 Entry 读不到的 ACL 现象。此时原生后端**不可用**
+/// （不能把 secret 当作已托管），但也不应把整个 secure store 判死 ——
+/// 由文件 fallback 接管，并标记为降级（`degraded`）而不是 `available=false`。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct NativeProbe {
+    /// 写入是否成功
+    pub written: bool,
+    /// 写入后读回是否一致（只有它为 true 才算真正可用）
+    pub verified: bool,
+}
+
+impl NativeProbe {
+    /// 只有「写入并读取成功」才算原生后端可用。
+    pub(crate) fn available(self) -> bool {
+        self.verified
+    }
+
+    /// 写入成功但回读失败：降级（交由 fallback 接管），不是整体不可用。
+    pub(crate) fn is_degraded(self) -> bool {
+        self.written && !self.verified
+    }
+}
+
 /// 探测 keychain 是否真正可写（写-读-删往返验证）。
 ///
 /// 用于 `is_available()`：`Entry::new(...).is_ok()` 几乎恒为 true，不能作为
@@ -167,22 +266,25 @@ fn test_fallback_writable() -> bool {
 /// 与 `test_fallback_writable` 对齐。
 ///
 /// macOS dev 模式下常见 `set_password` 返回 Ok 但用新 Entry 读取返回 `NoEntry`
-/// （ACL 不匹配），该情形必须判定为不可用，否则上层会误以为 secret 已持久化。
+/// （ACL 不匹配），该情形报告为 `written && !verified`（降级），由 fallback 接管。
 #[cfg(not(target_os = "android"))]
-fn test_keychain_writable() -> bool {
+static KEYCHAIN_PROBE_DEGRADED_WARNED: AtomicBool = AtomicBool::new(false);
+
+#[cfg(not(target_os = "android"))]
+fn test_keychain_writable() -> NativeProbe {
     let probe_key = "__hula_probe_keychain_writable__";
     let probe_value = "probe";
     let service = get_service_name();
 
     let entry = match Entry::new(service, probe_key) {
         Ok(entry) => entry,
-        Err(_) => return false,
+        Err(_) => return NativeProbe::default(),
     };
 
     if entry.set_password(probe_value).is_err() {
         // 写入失败时也尽力清理可能残留的条目
         let _ = entry.delete_credential();
-        return false;
+        return NativeProbe::default();
     }
 
     // 用 NEW Entry 实例读回验证，模拟 SecureStore::get 的真实读取路径。
@@ -194,7 +296,17 @@ fn test_keychain_writable() -> bool {
     // 清理探测条目（无论验证结果如何）
     let _ = entry.delete_credential();
 
-    verified
+    let probe = NativeProbe {
+        written: true,
+        verified,
+    };
+    if probe.is_degraded() && !KEYCHAIN_PROBE_DEGRADED_WARNED.swap(true, Ordering::Relaxed) {
+        warn!(
+            "[SECURE_STORE] Keychain probe wrote but could not read back (likely macOS dev ACL): \
+             native backend is degraded, encrypted-file fallback will be used"
+        );
+    }
+    probe
 }
 
 // ===== 平台原生后端抽象 =====
@@ -300,7 +412,7 @@ fn native_delete(key: &str) {
 }
 
 #[cfg(not(target_os = "android"))]
-fn test_native_writable() -> bool {
+fn test_native_writable() -> NativeProbe {
     test_keychain_writable()
 }
 
@@ -459,8 +571,13 @@ fn native_delete(key: &str) {
 }
 
 #[cfg(target_os = "android")]
-fn test_native_writable() -> bool {
-    test_keystore_writable()
+fn test_native_writable() -> NativeProbe {
+    let ok = test_keystore_writable();
+    // Android keystore 的写入本身已包含读回验证：ok 即「写入并读取成功」。
+    NativeProbe {
+        written: ok,
+        verified: ok,
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -681,11 +798,12 @@ impl SecureStore {
     /// 供 IPC 层如实上报 `backend` / `degraded`：**不能**按平台硬编码后端名 ——
     /// keychain 写失败而文件 fallback 成功时，硬编码会把"密钥落文件"报成"keychain 可用"。
     pub fn check_backends() -> BackendAvailability {
+        // 原生后端探测区分「写成功」与「写后读回成功」：
+        // 回读失败（macOS dev ACL）只把原生后端降级，由文件 fallback 接管，
+        // 不能因此把整个 secure store 判为不可用（P-05）。
+        let native_probe = test_native_writable();
         BackendAvailability {
-            // 原生后端可用性检查：必须实际写-读-删往返验证。
-            // `Entry::new(...).is_ok()` 几乎恒为 true，会导致可用性误报
-            //（日志中出现 available=true 但 set 仍失败）。
-            native_keychain: test_native_writable(),
+            native_keychain: native_probe.available(),
             // 文件 fallback 可用性检查：不能仅检查路径可计算（HOME 存在不代表可写），
             // 必须实际尝试一次写-读-删往返来验证。
             encrypted_file_fallback: get_fallback_dir().is_some() && test_fallback_writable(),
@@ -1545,5 +1663,60 @@ mod tests {
         assert_eq!(both.backend, platform_native_backend_id());
         assert!(both.native_available);
         assert!(!both.degraded);
+    }
+
+    /// P-05：原生探测「写成功但回读失败」只算降级，不能据此把整个 secure store 判死。
+    #[test]
+    fn test_native_probe_treats_unverified_write_as_degraded_not_unavailable() {
+        let degraded = NativeProbe {
+            written: true,
+            verified: false,
+        };
+        assert!(!degraded.available(), "unverified write is not available");
+        assert!(
+            degraded.is_degraded(),
+            "unverified write must be reported degraded"
+        );
+
+        let healthy = NativeProbe {
+            written: true,
+            verified: true,
+        };
+        assert!(healthy.available());
+        assert!(!healthy.is_degraded());
+
+        let failed = NativeProbe::default();
+        assert!(!failed.available());
+        assert!(!failed.is_degraded());
+    }
+
+    /// P-05：只有「形态合法且当前主密钥解不开」的 fallback 文件才禁止覆盖；
+    /// 损坏的垃圾内容仍可被覆盖修复。
+    #[test]
+    fn test_fallback_undecryptable_ciphertext_detection() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("undecryptable");
+
+        let dir = get_fallback_dir().expect("fallback dir should be resolvable");
+        fs::create_dir_all(&dir).expect("fallback dir should be creatable");
+
+        let garbage_path = dir.join("00000000000000aa.enc");
+        fs::write(
+            &garbage_path,
+            "corrupted-garbage-data-not-valid-encrypted-content",
+        )
+        .expect("write garbage");
+        assert!(
+            !fallback_has_undecryptable_ciphertext(),
+            "garbage content must not be treated as existing ciphertext"
+        );
+
+        let cipher_path = dir.join("00000000000000bb.enc");
+        fs::write(&cipher_path, "tjg:v2:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            .expect("write ciphertext-shaped payload");
+        assert!(
+            fallback_has_undecryptable_ciphertext(),
+            "ciphertext-shaped payload that cannot be decrypted must block overwrite"
+        );
     }
 }

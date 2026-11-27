@@ -10,6 +10,7 @@ import type {
 } from '@/types/matrix-extensions'
 import { CryptoKeyBackupAdapter } from '../CryptoKeyBackupAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
+import { makeSdkKeyBackupInfo } from './fixtures/keyBackup'
 
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
@@ -260,6 +261,43 @@ describe('CryptoKeyBackupAdapter', () => {
 
       await expect(adapter.setupKeyBackupWithOptions({ generatedKey: fakeGeneratedKey })).rejects.toThrow(
         'backup version rejected'
+      )
+    })
+
+    /**
+     * P-00 回归：sliding sync 下 `resetKeyBackup` 可能等不到 sync 回声而永不 settle。
+     * 该流程必须有上限；超时后若服务端已出现新的备份版本，应判定成功而不是报失败。
+     */
+    it('branch 3: resetKeyBackup 超时但服务端已建新版本时视为成功', async () => {
+      const crypto = {
+        bootstrapSecretStorage: vi.fn().mockResolvedValue(undefined),
+        resetKeyBackup: vi.fn().mockRejectedValue(new Error('resetKeyBackup 超时 (20s)')),
+        getKeyBackupInfo: vi
+          .fn()
+          .mockResolvedValueOnce(null) // 重置前：无备份版本
+          .mockResolvedValueOnce(makeSdkKeyBackupInfo({ version: '2' })) // 超时后回查：新版本已建立
+      } as unknown as CryptoApi
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.setupKeyBackupWithOptions({ generatedKey: fakeGeneratedKey })).resolves.toBe(
+        fakeGeneratedKey.encodedPrivateKey
+      )
+    })
+
+    /**
+     * P-00 回归：超时且服务端仍无新版本时必须快速失败，且错误信息能说明原因，
+     * 不能继续无限 loading（旧实现会静默 61s 后只给笼统失败）。
+     */
+    it('branch 3: resetKeyBackup 超时且服务端无新版本时给出可诊断错误', async () => {
+      const crypto = {
+        bootstrapSecretStorage: vi.fn().mockResolvedValue(undefined),
+        resetKeyBackup: vi.fn().mockRejectedValue(new Error('resetKeyBackup 超时 (20s)')),
+        getKeyBackupInfo: vi.fn().mockResolvedValue({ version: '1' })
+      } as unknown as CryptoApi
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.setupKeyBackupWithOptions({ generatedKey: fakeGeneratedKey })).rejects.toThrow(
+        /密钥备份版本创建失败.*resetKeyBackup 超时/
       )
     })
 

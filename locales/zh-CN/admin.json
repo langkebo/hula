@@ -279,7 +279,6 @@
     "eventContextRequired": "请先输入事件 ID",
     "eventContextEmpty": "未获取到该事件的上下文",
     "eventContextFailed": "获取事件上下文失败",
-    "eventId": "事件ID",
     "forwardExtremities": "前向极值",
     "forwardExtremitiesEmpty": "暂无前向极值",
     "forwardExtremitiesFailed": "读取前向极值失败",

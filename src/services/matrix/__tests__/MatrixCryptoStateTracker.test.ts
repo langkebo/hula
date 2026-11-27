@@ -472,16 +472,25 @@ describe('MatrixCryptoStateTracker - storageKey 原语与加密状态可观测�
     expect(initRustCrypto).not.toHaveBeenCalled()
   })
 
-  it('原语标记写入 localStorage：有密钥 → k1，无密钥 → 0', async () => {
+  it('原语标记写入 localStorage：首次无密钥 → 0，已有 k1 时无密钥不清退', async () => {
+    // 首次运行（无历史标记）+ 无密钥 → 标记为未加密
+    localStorage.clear()
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+    const firstRun = createMockClient('@user:test.com', 'device-B')
+    await tracker.ensureCrypto(firstRun.client, true)
+    expect(localStorage.getItem('tjg.lastCryptoEncrypted')).toBe('0')
+
+    // 已有加密 store（k1）+ 本次无密钥 → 保留 k1，等待密钥恢复（P-04 不清退）
+    localStorage.clear()
     getOrCreateCryptoStorageKeyMock.mockResolvedValue(new Uint8Array(32))
     const withKey = createMockClient('@user:test.com', 'device-A')
     await tracker.ensureCrypto(withKey.client, true)
     expect(localStorage.getItem('tjg.lastCryptoEncrypted')).toBe('k1')
 
     getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
-    const withoutKey = createMockClient('@user:test.com', 'device-B')
+    const withoutKey = createMockClient('@user:test.com', 'device-C')
     await tracker.ensureCrypto(withoutKey.client, true)
-    expect(localStorage.getItem('tjg.lastCryptoEncrypted')).toBe('0')
+    expect(localStorage.getItem('tjg.lastCryptoEncrypted')).toBe('k1')
   })
 
   it('历史标记（storagePassword 时代的 "1"）必须触发提前清理，且一次初始化即成功', async () => {

@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-11-21T08:52:05.880Z",
-  "scanned": 312,
-  "callerFiles": 63,
-  "totalCalls": 164,
+  "generatedAt": "2026-11-27T15:35:47.458Z",
+  "scanned": 326,
+  "callerFiles": 64,
+  "totalCalls": 166,
   "totalUrls": 0,
   "ledger": {
     "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.default.json",
     "schemaVersion": "4",
-    "synapseRustCommit": "cbd8a51baacbfbfe216576f60b2b5bb0bf9676b8",
-    "entryCount": 959,
+    "synapseRustCommit": "b7dde2130ef7544259829475a652448a5463750a",
+    "entryCount": 951,
     "matchedPathCount": 0,
-    "uncoveredPathCount": 759
+    "uncoveredPathCount": 752
   },
   "unmatchedUrls": [],
   "uncoveredLedger": [
@@ -27,6 +27,9 @@
     "/_matrix/app/v1/transactions/{as_id}/{txn_id}",
     "/_matrix/app/v1/users/{user_id}",
     "/_matrix/app/v1/{as_id}",
+    "/_matrix/client/unstable/io.element.msc4388/rendezvous",
+    "/_matrix/client/unstable/io.element.msc4388/rendezvous/{id}",
+    "/_matrix/client/unstable/io.element.msc4388/rendezvous/{id}/{txn_id}",
     "/_matrix/client/unstable/io.element.msc4512/appservice/fed_proxy",
     "/_matrix/client/unstable/org.matrix.msc2965/auth_metadata",
     "/_matrix/client/unstable/org.matrix.msc3575/sync",
@@ -76,6 +79,7 @@
     "/_matrix/client/v1/rooms/{room_id}/threads/{thread_id}/subscribe",
     "/_matrix/client/v1/rooms/{room_id}/threads/{thread_id}/unsubscribe",
     "/_matrix/client/v1/rooms/{room_id}/timestamp_to_event",
+    "/_matrix/client/v1/rtc/transports",
     "/_matrix/client/v1/spaces/{space_id}/hierarchy",
     "/_matrix/client/v1/spaces/{space_id}/hierarchy/v1",
     "/_matrix/client/v1/sync",
@@ -128,8 +132,6 @@
     "/_matrix/client/v3/knock/{room_id_or_alias}",
     "/_matrix/client/v3/login",
     "/_matrix/client/v3/login/saml/callback",
-    "/_matrix/client/v3/login/sso/redirect/cas",
-    "/_matrix/client/v3/login/sso/redirect/cas/callback",
     "/_matrix/client/v3/login/sso/redirect/saml",
     "/_matrix/client/v3/logout",
     "/_matrix/client/v3/logout/all",
@@ -550,9 +552,6 @@
     "/_synapse/admin/v1/background_updates/{job_name}/progress",
     "/_synapse/admin/v1/background_updates/{job_name}/start",
     "/_synapse/admin/v1/captcha/cleanup",
-    "/_synapse/admin/v1/cas/services",
-    "/_synapse/admin/v1/cas/services/{service_id}",
-    "/_synapse/admin/v1/cas/users/{user_id}/attributes",
     "/_synapse/admin/v1/cleanup/all",
     "/_synapse/admin/v1/cleanup/rooms",
     "/_synapse/admin/v1/cleanup/tokens",
@@ -746,12 +745,6 @@
     "/_synapse/admin/v1/whois/{user_id}/{device_id}",
     "/_synapse/admin/v2/users",
     "/_synapse/admin/v2/users/{user_id}",
-    "/_synapse/cas/login",
-    "/_synapse/cas/logout",
-    "/_synapse/cas/p3/serviceValidate",
-    "/_synapse/cas/proxy",
-    "/_synapse/cas/proxyValidate",
-    "/_synapse/cas/serviceValidate",
     "/_synapse/external/webhook/{service_id}",
     "/_synapse/federation/v1/get_joining_rules/{room_id}",
     "/_synapse/federation/v1/room_auth/{room_id}",
@@ -801,7 +794,7 @@
     },
     {
       "file": "src/services/matrix/MatrixCapabilityService.ts",
-      "callCount": 1,
+      "callCount": 2,
       "kinds": ["sdk"],
       "urlCount": 0,
       "ledgerRoutes": [],
@@ -1024,14 +1017,6 @@
       "unmatchedUrls": []
     },
     {
-      "file": "src/services/matrix/friends/MatrixFriendService.ts",
-      "callCount": 2,
-      "kinds": ["sdk"],
-      "urlCount": 0,
-      "ledgerRoutes": [],
-      "unmatchedUrls": []
-    },
-    {
       "file": "src/services/matrix/friends/MatrixFriendSync.ts",
       "callCount": 2,
       "kinds": ["sdk"],
@@ -1041,6 +1026,14 @@
     },
     {
       "file": "src/services/matrix/friends/MatrixSpecialFriendService.ts",
+      "callCount": 2,
+      "kinds": ["sdk"],
+      "urlCount": 0,
+      "ledgerRoutes": [],
+      "unmatchedUrls": []
+    },
+    {
+      "file": "src/services/matrix/friends/friendStatus.ts",
       "callCount": 2,
       "kinds": ["sdk"],
       "urlCount": 0,
@@ -1185,7 +1178,7 @@
     },
     {
       "file": "src/services/matrix/room/MatrixDirectMessageService.ts",
-      "callCount": 4,
+      "callCount": 5,
       "kinds": ["sdk"],
       "urlCount": 0,
       "ledgerRoutes": [],
@@ -1249,7 +1242,15 @@
     },
     {
       "file": "src/services/matrix/widget/MatrixWidgetService.ts",
-      "callCount": 2,
+      "callCount": 1,
+      "kinds": ["sdk"],
+      "urlCount": 0,
+      "ledgerRoutes": [],
+      "unmatchedUrls": []
+    },
+    {
+      "file": "src/services/matrix/widget/widgetRoomState.ts",
+      "callCount": 1,
       "kinds": ["sdk"],
       "urlCount": 0,
       "ledgerRoutes": [],

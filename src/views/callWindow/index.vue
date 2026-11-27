@@ -282,8 +282,12 @@ const handleAcceptCall = async () => {
   }
 }
 
+// 关闭窗口会再次触发 onCloseRequested；用该标记避免与关闭监听重复挂断
+let isClosingWindow = false
+
 const closeCallWindow = async () => {
   if (!hasTauriRuntime()) return
+  isClosingWindow = true
   try {
     await WebviewWindow.getCurrent().close()
   } catch (error) {
@@ -308,7 +312,14 @@ const handleReject = async () => {
 
 const handleHangup = async () => {
   stopBell()
-  await voipHangup()
+  try {
+    await voipHangup()
+  } catch (error) {
+    logger.error('Failed to hang up call:', error)
+  } finally {
+    // 邀请失败后通话已进入 error 态，信令挂断可能直接抛错，不能让异常把窗口卡住
+    await closeCallWindow()
+  }
 }
 
 // ── 窗口关闭时挂断 ──
@@ -317,15 +328,26 @@ const setupCloseListener = async () => {
   const currentWindow = WebviewWindow.getCurrent()
   if (!currentWindow) return
 
-  const unlisten = await currentWindow.onCloseRequested(async () => {
+  const unlisten = await currentWindow.onCloseRequested(async (event) => {
+    // Tauri v2 只有在监听器 resolve 后才会 destroy 窗口：必须先 preventDefault，
+    // 再由 finally 保证 destroy，否则挂断抛错或信令卡住会让窗口永久无法关闭。
+    event.preventDefault()
     try {
       const s = state.value
-      if (s === 'ringing' || s === 'connecting' || s === 'connected') {
-        await voipHangup()
-        unlisten()
+      if (!isClosingWindow && (s === 'ringing' || s === 'connecting' || s === 'connected')) {
+        await Promise.race([
+          voipHangup(),
+          new Promise<void>((resolve) => {
+            timerManager.setTimeout(resolve, 3000)
+          })
+        ])
       }
     } catch (error) {
       logger.error('Failed to send hangup message:', error)
+    } finally {
+      unlisten()
+      isClosingWindow = true
+      await currentWindow.destroy().catch(() => {})
     }
   })
 }

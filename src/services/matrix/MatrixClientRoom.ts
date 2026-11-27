@@ -115,6 +115,10 @@ export class MatrixClientRoom {
       if (!room) {
         throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_join'))
       }
+      // SDK 只在滑窗同步路径更新本地 selfMembership；客户端主动 join 时（尤其是
+      // 房间已以 invite 状态存在于 store）不会刷新，导致 getMyMembership() 仍返回
+      // invite，UI 误判为只读房间。这里按 SDK 公共 API 补齐本地成员关系。
+      room.updateMyMembership('join')
       return room
     } catch (err) {
       const errorMessage =

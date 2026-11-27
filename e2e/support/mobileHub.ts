@@ -100,7 +100,7 @@ export const pushMobileRoute = async (
     settleMs = 1200,
     attempt = 0,
     expectPath
-  }: { settleMs?: number; attempt?: number; expectPath?: string | RegExp } = {}
+  }: { settleMs?: number; attempt?: number; expectPath?: string | RegExp | undefined } = {}
 ): Promise<{ name: string | null; path: string | null }> => {
   // 登录后 SPA 会重建 app，`#app.__vue_app__` 在新实例 mount 前短暂缺失；
   // 旧实现靠 3×1.5s 固定重试，实测 4.5s 内仍可能没挂上 ⇒ my-hub-live 4 条用例稳定报

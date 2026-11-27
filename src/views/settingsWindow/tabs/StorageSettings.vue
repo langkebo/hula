@@ -35,6 +35,20 @@
       <h3 class="section-title">{{ t('setting.storage.media_quota') }}</h3>
       <p class="section-desc">{{ t('setting.storage.media_quota_desc') }}</p>
 
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.storage.local_cache_title') }}</span>
+          <span class="setting-desc">{{ t('setting.storage.local_cache_desc') }}</span>
+        </div>
+        <n-button
+          size="small"
+          :loading="clearingLocalCache"
+          data-test="clear-local-cache"
+          @click="handleClearLocalCache">
+          {{ t('setting.storage.clear_local_cache') }}
+        </n-button>
+      </div>
+
       <div v-if="quotaState === 'loading'" data-test="quota-loading" class="quota-hint">
         {{ t('setting.storage.quota_loading') }}
       </div>
@@ -180,12 +194,13 @@
 </template>
 
 <script setup lang="ts">
-import { NDivider, NSelect, NSwitch } from 'naive-ui'
+import { NButton, NDivider, NSelect, NSwitch, useDialog } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useStorageSettings } from './storage/useStorageSettings'
 
 const { t } = useI18n()
+const dialog = useDialog()
 
 const {
   usage,
@@ -213,8 +228,27 @@ const {
   updateCompressQuality,
   updateChunkEnabled,
   retryPartialLoads,
+  clearingLocalCache,
+  clearLocalCache,
   formatBytes
 } = useStorageSettings()
+
+function handleClearLocalCache(): void {
+  dialog.warning({
+    title: t('setting.storage.clear_local_cache_confirm_title'),
+    content: t('setting.storage.clear_local_cache_confirm_message'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      const cleared = await clearLocalCache()
+      if (cleared) {
+        dialog.success({ title: t('setting.storage.clear_local_cache_success') })
+      } else {
+        dialog.error({ title: t('setting.storage.clear_local_cache_failed') })
+      }
+    }
+  })
+}
 </script>
 
 <style scoped lang="scss">

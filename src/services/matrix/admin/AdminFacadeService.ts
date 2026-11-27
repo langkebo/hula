@@ -133,11 +133,16 @@ class AdminFacadeService extends AdminFacadeUserRoomMethods {
         }
       }
 
-      const result = await invokeWithResult<{ is_admin: boolean; user_id: string }>(TauriCommand.CHECK_ADMIN_STATUS, {
-        userId,
-        accessToken,
-        homeserverUrl: client.getHomeserverUrl()
-      })
+      const result = await invokeWithResult<{ is_admin: boolean; user_id: string }>(
+        TauriCommand.CHECK_ADMIN_STATUS,
+        {
+          userId,
+          accessToken,
+          homeserverUrl: client.getHomeserverUrl()
+        },
+        // 普通用户被拒绝是正常结论，不弹原始错误提示
+        { showError: false }
+      )
 
       if (result.isErr()) {
         logger.error(`[Admin] 服务端权限验证异常: ${result.error}`)

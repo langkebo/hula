@@ -21,7 +21,7 @@
     <div id="centerList" class="h-full" :class="{ 'shadow-inner': settingStore.pageShadowEnabled }">
       <router-view v-slot="{ Component }">
         <keep-alive :include="['message', 'friendsList']">
-          <component :is="Component" v-if="!route.meta?.fullWindow" />
+          <component :is="Component" v-if="!route.meta?.fullWindow" :key="resolveViewCacheKey(Component)" />
         </keep-alive>
       </router-view>
     </div>
@@ -43,6 +43,17 @@ const CENTER_WIDTH_STORAGE_KEY = 'tjg-center-panel-width'
 
 const route = useRoute()
 const isRoomListRoute = computed(() => route.name === 'room')
+
+// keep-alive 缓存键必须按组件身份区分（P-03）：
+// <component> 上的 v-if 会让编译器写入固定 key(0)，而 KeepAlive 以 vnode.key 作为缓存标识，
+// 导致 /message 与 /friend 共用同一缓存实例（切到好友列表仍显示会话列表）。
+// 注意：RouterView 插槽的 Component 是已创建的 VNode，组件定义在 vnode.type 上。
+function resolveViewCacheKey(component: unknown): string {
+  if (!component || typeof component !== 'object') return 'view'
+  const vnode = component as { type?: unknown }
+  const def = (vnode.type ?? component) as { name?: string; __name?: string }
+  return def.name ?? def.__name ?? 'view'
+}
 
 function loadStoredWidth(): number {
   if (typeof localStorage === 'undefined') return DEFAULT_CENTER_WIDTH

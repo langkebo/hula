@@ -1,6 +1,7 @@
 <template>
   <n-config-provider :theme="naiveTheme">
-    <div data-tauri-drag-region class="login-box rounded-8px select-none flex flex-col login-box-container">
+    <div data-tauri-drag-region class="login-box-container relative isolate rounded-8px select-none flex flex-col">
+      <div aria-hidden="true" class="login-box absolute inset-0 -z-1 rounded-8px pointer-events-none" />
       <ActionBar :max-w="false" :shrink="false" proxy class="shrink-0" />
 
       <div class="flex flex-col login-body">

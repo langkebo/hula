@@ -103,7 +103,14 @@ const formData = reactive({
 const rules = {
   name: {
     required: true,
-    message: t('space.create_room_name_required'),
+    // 名称先 trim 再判空：全空白视为未填写，阻止提交
+    validator: () => {
+      const name = formData.name.trim()
+      if (!name) {
+        return new Error(t('space.create_room_name_required'))
+      }
+      return true
+    },
     trigger: ['input', 'blur']
   }
 }
@@ -139,11 +146,17 @@ const handleSubmit = async () => {
   } catch {
     return
   }
+  const name = formData.name.trim()
+  // 兜底：全空白名称直接阻止提交（不依赖表单组件实现）
+  if (!name) {
+    showFeedback(t('space.create_room_name_required'), 'error')
+    return
+  }
   submitting.value = true
   pendingAttachRoomId.value = null
   try {
     const result = await createRoomInSpace({
-      name: formData.name.trim(),
+      name,
       ...(formData.topic.trim() ? { topic: formData.topic.trim() } : {}),
       suggested: formData.suggested
     })

@@ -1,18 +1,20 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, type Mock, vi } from 'vitest'
+
+interface WaitForFunctionOptions {
+  timeout?: number
+}
+
+type WaitForFunction = (callback: () => boolean, arg?: unknown, options?: WaitForFunctionOptions) => Promise<unknown>
 
 type MockPage = {
-  waitForFunction: ReturnType<typeof vi.fn>
+  waitForFunction: Mock<WaitForFunction>
 }
 
 function createMockPage(overrides: Partial<MockPage> = {}): MockPage {
   return {
-    waitForFunction: vi.fn(),
+    waitForFunction: vi.fn<WaitForFunction>(),
     ...overrides
   }
-}
-
-interface WaitForFunctionOptions {
-  timeout?: number
 }
 
 async function waitForPinia(page: MockPage): Promise<void> {
@@ -41,11 +43,7 @@ describe('E2E support utilities - matrixLive', () => {
   describe('waitForPinia', () => {
     it('should resolve when __TJG_PINIA_READY__ is true', async () => {
       const page = createMockPage()
-      page.waitForFunction.mockImplementation(
-        (_callback: () => boolean, _arg: undefined, _options: WaitForFunctionOptions) => {
-          return Promise.resolve({ jsonValue: () => true })
-        }
-      )
+      page.waitForFunction.mockImplementation(() => Promise.resolve({ jsonValue: () => true }))
 
       await waitForPinia(page)
 
@@ -69,11 +67,7 @@ describe('E2E support utilities - matrixLive', () => {
   describe('waitForTjgAppReady', () => {
     it('should resolve when __TJG_APP_READY__ is true', async () => {
       const page = createMockPage()
-      page.waitForFunction.mockImplementation(
-        (_callback: () => boolean, _arg: undefined, _options: WaitForFunctionOptions) => {
-          return Promise.resolve({ jsonValue: () => true })
-        }
-      )
+      page.waitForFunction.mockImplementation(() => Promise.resolve({ jsonValue: () => true }))
 
       await waitForTjgAppReady(page)
 

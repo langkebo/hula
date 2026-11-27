@@ -17,6 +17,11 @@
         {{ needsConfigure ? t('setting.security.local_unlock_setup_desc') : t('setting.security.local_unlock_desc') }}
       </p>
 
+      <!-- P-05：后端是真不可用（fallback 已拒绝静默落盘），给出可操作出路 -->
+      <p v-if="backendUnavailable" class="local-unlock-dialog__notice" data-test="local-unlock-keychain-unavailable">
+        {{ t('setting.security.local_unlock_keychain_unavailable') }}
+      </p>
+
       <n-input
         v-model:value="password"
         type="password"
@@ -60,7 +65,7 @@ import { useLocalUnlockGate } from '@/composables/secure/useLocalUnlockGate'
 defineOptions({ name: 'LocalUnlockDialog' })
 
 const { t } = useI18n()
-const { visible, submitting, errorKey, needsConfigure, submit, skip } = useLocalUnlockGate()
+const { visible, submitting, errorKey, backendUnavailable, needsConfigure, submit, skip } = useLocalUnlockGate()
 
 // 弹窗必须有可访问名（axe: aria-dialog-name）——naive-ui 的 preset card
 // 不会把 title 接到 `aria-labelledby`，所以显式给 `aria-label`。
@@ -96,6 +101,16 @@ async function onSubmit(): Promise<void> {
   font-size: 13px;
   line-height: 1.6;
   color: var(--tjg-text-secondary);
+}
+
+.local-unlock-dialog__notice {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tjg-color-warning-600);
+  background: var(--tjg-color-warning-bg);
+  border-radius: 6px;
 }
 
 .local-unlock-dialog__error {

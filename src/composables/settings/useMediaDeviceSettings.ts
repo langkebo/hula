@@ -30,8 +30,13 @@ interface MediaDeviceSettingsOptions {
  * 设备枚举、音质偏好读写、麦克风测试与摄像头预览全部收敛在这里；
  * 两端只保留 UI 组件（Naive UI / Vant）与提示文案差异。
  */
+/** 设备枚举超时（ms）：驱动缺失或 enumerator 无响应时不能永久转圈。 */
+const ENUMERATE_DEVICES_TIMEOUT_MS = 3_000
+
 export function useMediaDeviceSettings(options: MediaDeviceSettingsOptions) {
   const devicesLoading = ref(false)
+  /** 设备枚举失败或超时：界面展示「无法获取设备」空态，而不是一直 loading */
+  const devicesUnavailable = ref(false)
   const isRecording = ref(false)
   const isPreviewing = ref(false)
   const audioLevel = ref(0)
@@ -88,8 +93,25 @@ export function useMediaDeviceSettings(options: MediaDeviceSettingsOptions) {
 
   async function loadDevices() {
     devicesLoading.value = true
+    devicesUnavailable.value = false
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices()
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
+        devicesUnavailable.value = true
+        options.feedback.devicesFailed()
+        return
+      }
+
+      // enumerateDevices 在部分环境（无权限/驱动异常）可能永不落地，必须加超时兜底
+      const devices = await Promise.race([
+        navigator.mediaDevices.enumerateDevices(),
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error(`enumerateDevices timeout after ${ENUMERATE_DEVICES_TIMEOUT_MS}ms`)),
+            ENUMERATE_DEVICES_TIMEOUT_MS
+          )
+        })
+      ])
 
       audioInputDevices.value = devices.filter((device) => device.kind === 'audioinput')
       videoInputDevices.value = devices.filter((device) => device.kind === 'videoinput')
@@ -102,8 +124,10 @@ export function useMediaDeviceSettings(options: MediaDeviceSettingsOptions) {
       }
     } catch (error) {
       logger.error('Failed to load media devices', error)
+      devicesUnavailable.value = true
       options.feedback.devicesFailed()
     } finally {
+      if (timeoutId) clearTimeout(timeoutId)
       devicesLoading.value = false
     }
   }
@@ -156,6 +180,10 @@ export function useMediaDeviceSettings(options: MediaDeviceSettingsOptions) {
 
   async function startAudioTest() {
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        options.feedback.microphoneTestFailed()
+        return
+      }
       const constraints: MediaStreamConstraints = {
         audio: {
           ...(audioInputId.value ? { deviceId: { exact: audioInputId.value } } : {}),
@@ -224,6 +252,10 @@ export function useMediaDeviceSettings(options: MediaDeviceSettingsOptions) {
 
   async function startPreview() {
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        options.feedback.previewFailed()
+        return
+      }
       const constraints: MediaStreamConstraints = {
         video: {
           ...(videoInputId.value ? { deviceId: { exact: videoInputId.value } } : {})
@@ -259,6 +291,7 @@ export function useMediaDeviceSettings(options: MediaDeviceSettingsOptions) {
 
   return {
     devicesLoading,
+    devicesUnavailable,
     isRecording,
     isPreviewing,
     audioLevel,

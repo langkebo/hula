@@ -76,7 +76,9 @@ export const useUserStore = defineStore(
     })
 
     const currentUserAvatarUrl = computed(() => {
-      return matrixProfile.value?.avatarUrl
+      // 设置窗口等独立 webview 不会调用 fetchUserProfile，matrixProfile 可能为 null；
+      // updateAvatar 已同步写入 userInfo.avatar，这里必须回退，否则设置页头像恒为空白。
+      return matrixProfile.value?.avatarUrl || userInfo.value?.avatar || ''
     })
 
     async function fetchUserProfile(userId?: string): Promise<MatrixUserProfile | null> {
@@ -168,12 +170,15 @@ export const useUserStore = defineStore(
     }
 
     function initUserInfo(matrixUserId: string, displayName?: string) {
+      // 会话恢复（冷启动 / 独立窗口）会重建 userInfo：同一账号必须保留已持久化的头像，
+      // 否则设置窗口这类不跑登录 bootstrap（不会写回 avatar）的窗口头像会永久空白。
+      const previousAvatar = userInfo.value?.uid === matrixUserId ? userInfo.value.avatar : ''
       userInfo.value = {
         uid: matrixUserId,
         name: displayName || toLocalpart(matrixUserId),
         account: toLocalpart(matrixUserId),
         email: '',
-        avatar: '',
+        avatar: previousAvatar,
         modifyNameChance: -1,
         sex: SexEnum.MAN,
         userStateId: '',

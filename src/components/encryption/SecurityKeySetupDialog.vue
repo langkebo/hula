@@ -58,6 +58,7 @@
         <div class="create-info">
           <Icon icon="mdi:key-chain" :width="48" />
           <p>{{ t('encryption.security_key.generating') }}</p>
+          <p class="create-hint">{{ t('encryption.security_key.generating_hint') }}</p>
         </div>
       </div>
 
@@ -408,6 +409,12 @@ async function verifyKey() {
   align-items: center;
   gap: 16px;
   padding: 32px 0;
+}
+
+.create-hint {
+  font-size: 12px;
+  color: var(--tjg-text-tertiary);
+  margin: 0;
 }
 
 .key-display {

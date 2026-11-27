@@ -232,8 +232,14 @@ const handleCardPin = async (roomId: string) => {
   const item = findSessionItem(roomId)
   if (!item) return
   try {
-    await matrixSessionService.setSessionTop(roomId, !item.top)
-    chatStore.updateSession(roomId, { top: !item.top })
+    const nextTop = !item.top
+    const ok = await matrixSessionService.setSessionTop(roomId, nextTop)
+    // 服务层捕获异常后返回 false，不能只看 resolve 就更新本地状态并提示成功
+    if (!ok) {
+      showFeedback(item.top ? t('message.message_menu.unpin_fail') : t('message.message_menu.pin_fail'), 'error')
+      return
+    }
+    chatStore.updateSession(roomId, { top: nextTop })
     showFeedback(item.top ? t('message.message_menu.unpin_success') : t('message.message_menu.pin_success'), 'success')
   } catch {
     showFeedback(item.top ? t('message.message_menu.unpin_fail') : t('message.message_menu.pin_fail'), 'error')

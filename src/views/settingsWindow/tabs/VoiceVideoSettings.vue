@@ -9,12 +9,23 @@
           <span class="setting-desc">{{ t('setting.voice_video.audio_input_desc') }}</span>
         </div>
         <n-select
+          v-if="!devicesUnavailable"
           v-model:value="audioInputId"
           :options="audioInputOptions"
           :loading="devicesLoading"
           :placeholder="t('setting.voice_video.select_microphone')"
           class="device-select-width"
           @update:value="selectAudioInput" />
+        <n-empty
+          v-else
+          data-testid="media-devices-unavailable"
+          :description="t('setting.voice_video.devices_unavailable')"
+          size="small"
+          class="device-select-width">
+          <template #extra>
+            <n-button size="small" @click="reloadDevices">{{ t('common.retry') }}</n-button>
+          </template>
+        </n-empty>
       </div>
 
       <div class="setting-item">
@@ -48,6 +59,7 @@
           <span class="setting-desc">{{ t('setting.voice_video.video_input_desc') }}</span>
         </div>
         <n-select
+          v-if="!devicesUnavailable"
           v-model:value="videoInputId"
           :options="videoInputOptions"
           :loading="devicesLoading"
@@ -188,6 +200,7 @@ async function loadRtcTransports() {
 // 设备枚举、偏好持久化、麦克风测试与预览统一走共享 composable，桌面只保留 Naive UI 呈现
 const {
   devicesLoading,
+  devicesUnavailable,
   isRecording,
   isPreviewing,
   audioLevel,
@@ -204,7 +217,8 @@ const {
   handleNoiseSuppressionChange,
   handleAutoGainChange,
   handleTestAudio,
-  handleTogglePreview
+  handleTogglePreview,
+  loadDevices: reloadDevices
 } = useMediaDeviceSettings({
   audioFallbackLabel: (deviceId) => t('setting.voice_video.microphone_fallback', { id: deviceId.slice(0, 8) }),
   videoFallbackLabel: (deviceId) => t('setting.voice_video.camera_fallback', { id: deviceId.slice(0, 8) }),

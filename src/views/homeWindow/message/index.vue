@@ -32,7 +32,9 @@
         :on-msg-click="onMsgClick"
         :on-msg-dblclick="handleMsgDblclick"
         :on-menu-show="handleMenuShow"
-        :on-retry-network="retrySessions" />
+        :on-retry-network="retrySessions"
+        :on-accept-invite="handleAcceptInvite"
+        :on-reject-invite="handleRejectInvite" />
     </template>
   </ListWorkbenchShell>
 </template>
@@ -57,6 +59,7 @@ import { useWorkbenchSessionQuerySync } from '@/composables/workbench/useWorkben
 import { MittEnum, RoomTypeEnum } from '@/enums' // Removed MsgEnum, UserType
 import { WORKBENCH_SESSION_ENGAGEMENT_FILTERS, WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
 import { loadPrivateRoomRegistry, migrateFromHiddenSessions } from '@/services/matrix/privateChat/privateRoomRegistry'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -88,11 +91,27 @@ const { handleMsgClick, handleMsgDelete, handleMsgDblclick, visibleMenu, visible
 
 // 包装 handleMsgClick：更新会话状态后跳转路由到 /message/:roomId，
 // 使右侧栏 rightView 从 'empty' 切换到 'chat'
-const onMsgClick = async (item: SessionItem) => {
+const enterSession = async (item: SessionItem) => {
   await handleMsgClick(item)
   if (route.params.roomId !== item.roomId) {
     await router.push({ name: MESSAGE_ROUTE_NAME, params: { roomId: item.roomId } }).catch(() => {})
   }
+}
+
+// 被邀请房间（membership=invite）点击即接受邀请再进入：直接打开会以非成员身份
+// 拉取时间线，服务端连续返回 403（messages/sticky_events/receipt），界面只看到错误。
+// joinRoom 幂等，走服务层封装（R1）。
+const onMsgClick = async (item: SessionItem) => {
+  if (item.membership === 'invite') {
+    try {
+      await matrixRoomActionFacade.joinRoom(item.roomId)
+      await chatStore.getSessionList(true)
+    } catch (err) {
+      logger.error('[message] Failed to accept room invite:', err)
+      return
+    }
+  }
+  await enterSession(item)
 }
 
 const {
@@ -104,6 +123,18 @@ const {
   getItemClasses,
   invalidateSessionCache
 } = useSessionListState()
+
+// 接受邀请：RoomInviteActions 内部已调用 joinRoom 完成加入，这里刷新会话列表
+// （让 membership 从 invite 变为 join、只读覆盖层随之消失）并直接打开该会话。
+const handleAcceptInvite = async (item: SessionItem) => {
+  await chatStore.getSessionList(true)
+  await enterSession({ ...item, membership: 'join' })
+}
+
+// 拒绝邀请：RoomInviteActions 内部已 leaveRoom，刷新列表移除该会话。
+const handleRejectInvite = async () => {
+  await chatStore.getSessionList(true)
+}
 
 const {
   searchKeyword,

@@ -210,6 +210,30 @@ describe('CreateSpacePane', () => {
     })
   })
 
+  it('submits trimmed name and topic', async () => {
+    const wrapper = mountPane()
+    await setFormData(wrapper, '  My Space  ', '  A topic  ')
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(createSpaceMock).toHaveBeenCalledWith({
+      name: 'My Space',
+      topic: 'A topic',
+      avatarUrl: '',
+      ignoreDuplicateName: false
+    })
+  })
+
+  it('does not create a space when the name is whitespace only', async () => {
+    const wrapper = mountPane()
+    await setFormData(wrapper, '   ', 'topic')
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(createSpaceMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.name_required', 'error')
+  })
+
   // (e) 成功后跳转 spaceChildren (via buildSpaceWorkbenchRoute)
   it('navigates to space workbench on successful create', async () => {
     const wrapper = mountPane()

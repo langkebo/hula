@@ -308,7 +308,10 @@ describe('FriendListHeader', () => {
       getFilterCount: (status: FriendStatus | 'all') => (status === 'favorite' ? 5 : 0)
     })
     const filterButtons = wrapper.findAll('[data-test="filter-button"]')
-    // Favorite button (index 1) should have a badge with count 5
+    // Favorite button (index 1) should render the count as a single plain-text node
     expect(filterButtons[1]?.text()).toContain('5')
+    const counts = filterButtons[1]?.findAll('[data-test="filter-count"]')
+    expect(counts).toHaveLength(1)
+    expect(counts?.[0]?.text()).toBe('5')
   })
 })

@@ -106,7 +106,7 @@ test.describe('账号内页双主题对比度（真后端）', () => {
     test.setTimeout(240_000)
     const axeSource = await loadAxeSource()
     test.skip(!axeSource, 'axe-core 未安装，跳过对比度取证')
-    await page.addInitScript({ content: axeSource })
+    await page.addInitScript({ content: axeSource ?? '' })
 
     const homeserverUrl = readLiveHomeserverUrl()
     const account = await registerLiveAccount(homeserverUrl, { prefix: 'e2ea11y' })

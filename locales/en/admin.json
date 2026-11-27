@@ -279,7 +279,6 @@
     "eventContextRequired": "Enter an event ID first",
     "eventContextEmpty": "No context found for this event",
     "eventContextFailed": "Failed to load event context",
-    "eventId": "Event ID",
     "forwardExtremities": "Forward Extremities",
     "forwardExtremitiesEmpty": "No forward extremities",
     "forwardExtremitiesFailed": "Failed to load forward extremities",

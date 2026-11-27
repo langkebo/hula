@@ -25,11 +25,15 @@ export function mergeContactPreservingPresence(existing: MatrixContact, next: Ma
  * 全量列表合并：按 userId 匹配上一次的本地联系人，保留其在线状态。
  *
  * 新出现的联系人直接用快照；消失的（已被删除）自然不进入结果。
+ * 同一 userId 在 next 中重复出现时只保留一条：好友接口可能返回重复记录，
+ * 且调用方会把好友与 DM 联系人并集后传入，否则联系人列表会出现重复行。
  */
 export function mergeContactListPreservingPresence(previous: MatrixContact[], next: MatrixContact[]): MatrixContact[] {
   const previousMap = new Map(previous.map((contact) => [contact.userId, contact]))
-  return next.map((contact) => {
+  const merged = new Map<string, MatrixContact>()
+  for (const contact of next) {
     const existing = previousMap.get(contact.userId)
-    return existing ? mergeContactPreservingPresence(existing, contact) : contact
-  })
+    merged.set(contact.userId, existing ? mergeContactPreservingPresence(existing, contact) : contact)
+  }
+  return [...merged.values()]
 }

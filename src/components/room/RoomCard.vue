@@ -1,15 +1,16 @@
 <template>
   <article
-    class="room-card flex items-center gap-[--tjg-space-3] p-[--tjg-space-3] rounded-[--tjg-radius-sm] bg-[--tjg-surface-panel] border border-[--tjg-border-muted] cursor-pointer focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-500] focus-visible:ring-offset-1 focus-visible:ring-offset-[--tjg-surface-panel]"
-    data-testid="room-card"
-    role="button"
-    tabindex="0"
-    :aria-label="item.name"
-    @click="handlePreview"
-    @keydown.enter.self.prevent="handlePreview"
-    @keydown.space.self.prevent="handlePreview">
+    class="room-card relative flex items-center gap-[--tjg-space-3] p-[--tjg-space-3] rounded-[--tjg-radius-sm] bg-[--tjg-surface-panel] border border-[--tjg-border-muted]"
+    data-testid="room-card">
+    <!-- 拉伸按钮：整卡可点，但不把 article 声明为 role=button（避免交互元素嵌套） -->
+    <button
+      type="button"
+      class="room-card__preview absolute inset-0 z-0 w-full h-full rounded-[--tjg-radius-sm] border-0 bg-transparent p-0 cursor-pointer focus-visible:outline-none"
+      :aria-label="item.name"
+      data-testid="room-card-preview"
+      @click="handlePreview"></button>
     <div
-      class="room-card__avatar shrink-0 flex items-center justify-center size-[40px] overflow-hidden rounded-[--tjg-radius-full] bg-[--tjg-surface-subtle]">
+      class="room-card__avatar relative z-10 pointer-events-none shrink-0 flex items-center justify-center size-[40px] overflow-hidden rounded-[--tjg-radius-full] bg-[--tjg-surface-subtle]">
       <img
         v-if="item.avatarUrl"
         :src="item.avatarUrl"
@@ -26,7 +27,7 @@
       </span>
     </div>
 
-    <div class="room-card__info flex-1 min-w-0">
+    <div class="room-card__info relative z-10 pointer-events-none flex-1 min-w-0">
       <div class="room-card__header flex items-center gap-[--tjg-space-2]">
         <span class="room-card__name truncate text-[--tjg-text-primary]" :title="item.name">{{ item.name }}</span>
         <FederationBadge
@@ -67,7 +68,7 @@
     </div>
 
     <n-button
-      class="room-card__join shrink-0"
+      class="room-card__join relative z-10 shrink-0"
       size="small"
       type="primary"
       secondary
@@ -131,12 +132,12 @@ const handlePreview = () => {
     border-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover,
-  &:focus-visible {
+  &:focus-within {
     border-color: var(--tjg-border-default);
     box-shadow: var(--tjg-shadow-card-hover);
   }
 
-  &:focus-visible {
+  &:focus-within {
     box-shadow:
       var(--tjg-shadow-card-hover),
       0 0 0 2px var(--tjg-color-primary-200);

@@ -1,4 +1,6 @@
 import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
+import { useMitt } from '@/composables/common/useMitt'
+import { MittEnum } from '@/enums'
 import { createRateLimitedFetch } from '@/services/matrix/MatrixRateLimitInterceptor'
 import { MATRIX_ROOT, PREFIX_VENDOR_V1 } from '@/services/matrix/paths/prefixes'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -52,6 +54,32 @@ function withOmittedCredentials(init?: RequestInit): RequestInit {
   return {
     ...init,
     credentials: init?.credentials ?? 'omit'
+  }
+}
+
+/** 信令事件 JSON 包：字段随 SDK `m.call.*` 事件内容变化，这里只声明需要归一化的 `version` */
+interface VoipSignalPayload {
+  version?: unknown
+  [key: string]: unknown
+}
+
+/**
+ * synapse-rust 的 rtc 路由用 serde 把 `version` 严格反序列化为 `i32`，
+ * 而 matrix-js-sdk 的信令事件（invite/answer/candidates/hangup）按
+ * `VOIP_PROTO_VERSION` 发送字符串 `"1"`，服务端会一律返回 400 `M_BAD_JSON`。
+ * SDK 以 tarball 固定、不允许就地修改，因此在 HTTP 边界把该字段归一化为数字。
+ */
+function normalizeVoipSignalBody(url: string, init: RequestInit): RequestInit {
+  if (!url.includes('/send/m.call.') || typeof init.body !== 'string') return init
+
+  try {
+    const payload = JSON.parse(init.body) as VoipSignalPayload
+    if (typeof payload.version !== 'string') return init
+    const version = Number(payload.version)
+    if (!Number.isInteger(version)) return init
+    return { ...init, body: JSON.stringify({ ...payload, version }) }
+  } catch {
+    return init
   }
 }
 
@@ -201,10 +229,50 @@ export function isExpectedNonSuccess(url: string, status: number): boolean {
   return false
 }
 
+/** 401 会话失效广播的最小间隔：一次 401 风暴（多端点同时失败）只登出一次。 */
+const SESSION_INVALID_NOTIFY_COOLDOWN_MS = 30_000
+let sessionInvalidNotifiedAt = 0
+
+/**
+ * `401 M_UNKNOWN_TOKEN` 表示服务端已吊销 access token（改密、被踢下线、token 重置等）。
+ *
+ * 重启应用时若 sync 未启动或未收到 WS 的 `TOKEN_EXPIRED`，应用会永久停留在 401 故障态
+ * （报告 P-01）。因此在 HTTP 边界兜底：命中即广播 `SESSION_AUTH_INVALID`，由 home 窗口
+ * 统一清理会话并打开登录窗口。
+ */
+function notifySessionInvalid(url: string, response: Response): void {
+  if (response.status !== 401) return
+  if (!url.includes(`${MATRIX_ROOT}/`)) return
+  // 登录/注册/访客探测的 401 是业务结论，不是会话失效
+  if (/\/(login|register|account\/guest)(\/|\?|$)/.test(url)) return
+  if (Date.now() - sessionInvalidNotifiedAt < SESSION_INVALID_NOTIFY_COOLDOWN_MS) return
+
+  let cloned: Response
+  try {
+    cloned = response.clone()
+  } catch {
+    // 响应不可克隆（测试桩 / body 已消费）时跳过探测，不能影响正常返回
+    return
+  }
+
+  void cloned
+    .json()
+    .then((payload: unknown) => {
+      const errcode = (payload as { errcode?: unknown } | null)?.errcode
+      if (errcode !== 'M_UNKNOWN_TOKEN') return
+      sessionInvalidNotifiedAt = Date.now()
+      logger.warn('access token 已失效（401 M_UNKNOWN_TOKEN），触发统一登出回到登录页')
+      useMitt.emit(MittEnum.SESSION_AUTH_INVALID)
+    })
+    .catch(() => {
+      // 响应体不是 JSON（代理/网关错误页）时无需处理
+    })
+}
+
 function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
   return (async (input: URL | RequestInfo, init?: RequestInit) => {
-    const normalizedInit = withOmittedCredentials(init)
     const url = resolveRequestUrl(input)
+    const normalizedInit = normalizeVoipSignalBody(url, withOmittedCredentials(init))
 
     if (isSignalAborted(init)) {
       throw createAbortError(url)
@@ -233,6 +301,7 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
           logger.warn(`nativeFetch ${method} ${url} -> ${response.status}`)
         }
       }
+      notifySessionInvalid(url, response)
       return response
     } catch (error) {
       // Tauri plugin-http 在请求被主动取消（SDK 显式 abort 或插件自身资源表竞态）时，
@@ -256,10 +325,12 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
 
       // 回退到浏览器 fetch 时重写 dev 域名 URL 为 Vite proxy URL，避免 CORS/SSL 问题
       const fallbackInput = import.meta.env.DEV ? rewriteToDevProxyUrl(url) : input
-      const fallbackInit = withOmittedCredentials(init)
+      const fallbackInit = normalizeVoipSignalBody(url, withOmittedCredentials(init))
 
       // 对网络级错误（如 ERR_CONNECTION_REFUSED）进行有限重试
-      return await fetchWithRetry(globalThis.fetch, fallbackInput, fallbackInit)
+      const fallbackResponse = await fetchWithRetry(globalThis.fetch, fallbackInput, fallbackInit)
+      notifySessionInvalid(url, fallbackResponse)
+      return fallbackResponse
     }
   }) as typeof globalThis.fetch
 }
@@ -270,8 +341,11 @@ export function getRuntimeAwareFetch(): typeof globalThis.fetch {
   if (hasTauriRuntime()) {
     baseFetch = createTauriFetchWithBrowserFallback()
   } else {
-    baseFetch = ((input: URL | RequestInfo, init?: RequestInit) =>
-      globalThis.fetch(input, withOmittedCredentials(init))) as typeof globalThis.fetch
+    baseFetch = (async (input: URL | RequestInfo, init?: RequestInit) => {
+      const response = await globalThis.fetch(input, withOmittedCredentials(init))
+      notifySessionInvalid(resolveRequestUrl(input), response)
+      return response
+    }) as typeof globalThis.fetch
   }
 
   return createRateLimitedFetch(baseFetch)

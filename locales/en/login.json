@@ -250,7 +250,10 @@
   "sso_login_failed": "SSO login failed",
   "remote_login": {
     "unknown_ip": "Unknown IP",
-    "title": "Remote Login Alert"
+    "title": "Remote Login Alert",
+    "description": "Your account signed in from IP {ip}. If this was not you, change your password immediately.",
+    "ip_label": "Login IP",
+    "confirm": "Got it"
   },
   "secret_chat": {
     "title": "Secret Chat",

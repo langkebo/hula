@@ -1,6 +1,6 @@
 use tauri::{Runtime, plugin::TauriPlugin};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
-use tauri_plugin_log::{Target, TargetKind};
+use tauri_plugin_log::{RotationStrategy, Target, TargetKind};
 
 pub trait CustomInit {
     fn init_plugin(self) -> Self;
@@ -34,6 +34,11 @@ fn build_log_plugin<R: Runtime>() -> TauriPlugin<R> {
                 file_name: Some("logs".to_string()),
             }),
         ])
+        // tauri-plugin-log 默认 max_file_size + RotationStrategy::KeepOne：写满即删除
+        // 唯一日志文件，登录瞬间的历史日志会整段丢失。显式抬高单文件上限并保留全部
+        // 历史文件（按日期重命名归档），避免排障时日志被截断。
+        .max_file_size(10 * 1024 * 1024)
+        .rotation_strategy(RotationStrategy::KeepAll)
         .with_colors(ColoredLevelConfig {
             error: Color::Red,
             warn: Color::Yellow,

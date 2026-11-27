@@ -86,9 +86,6 @@ export type Messages = {
       "save_failed": "保存图片失败",
       "download_failed": "图片下载失败，请重试~"
     },
-    "delete": {
-      "confirm": "删除后将不会出现在你的消息记录中，确定删除吗?"
-    },
     "announcement": {
       "view_all": "查看全部"
     },
@@ -534,7 +531,6 @@ export type KeyPaths =
   | "home.chat_main.image.save_success"
   | "home.chat_main.image.save_failed"
   | "home.chat_main.image.download_failed"
-  | "home.chat_main.delete.confirm"
   | "home.chat_main.announcement.view_all"
   | "home.chat_main.typing.single"
   | "home.chat_main.typing.multiple"

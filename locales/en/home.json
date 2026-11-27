@@ -81,9 +81,6 @@
       "save_failed": "Failed to save image",
       "download_failed": "Image download failed, please retry"
     },
-    "delete": {
-      "confirm": "Deleted messages will disappear from your history. Continue?"
-    },
     "announcement": {
       "view_all": "View all"
     },

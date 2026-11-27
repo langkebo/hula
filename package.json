@@ -93,6 +93,7 @@
     "check:sdk-aliases": "node scripts/verify-sdk-aliases.mjs",
     "lint": "biome check",
     "typecheck": "node scripts/check-generated-typings.mjs && vue-tsc --noEmit",
+    "check:e2e-types": "tsc --noEmit -p tsconfig.e2e.json",
     "test:unit": "node scripts/run-vitest.js run",
     "test:run:report": "node scripts/run-vitest.js run --reporter=default --reporter=json --outputFile.json=vitest-full-report.json",
     "check:unit-suite": "node scripts/run-vitest.js run --reporter=default --reporter=json --outputFile.json=vitest-full-report.json; node scripts/check-unit-suite-floor.mjs vitest-full-report.json",

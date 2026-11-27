@@ -81,9 +81,6 @@
       "save_failed": "保存图片失败",
       "download_failed": "图片下载失败，请重试~"
     },
-    "delete": {
-      "confirm": "删除后将不会出现在你的消息记录中，确定删除吗?"
-    },
     "announcement": {
       "view_all": "查看全部"
     },

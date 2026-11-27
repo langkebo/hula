@@ -15,11 +15,17 @@ function mockClient(opts: {
   } as unknown as MatrixClient
 }
 
-function mockRoom(opts: { roomId?: string; dmInviter?: string | undefined }): Room {
+function mockRoom(opts: { roomId?: string; dmInviter?: string | undefined; createIsDirect?: boolean }): Room {
   return {
     roomId: opts.roomId ?? '!test:matrix.org',
-    getDMInviter: (() => opts.dmInviter) as unknown as Room['getDMInviter']
-  } as Room
+    getDMInviter: (() => opts.dmInviter) as unknown as Room['getDMInviter'],
+    currentState: {
+      getStateEvents: ((eventType: string) =>
+        eventType === 'm.room.create' && opts.createIsDirect !== undefined
+          ? { getContent: () => ({ is_direct: opts.createIsDirect }) }
+          : null) as unknown as Room['currentState']['getStateEvents']
+    }
+  } as unknown as Room
 }
 
 describe('isDirectMessageRoom', () => {
@@ -67,6 +73,18 @@ describe('isDirectMessageRoom', () => {
     expect(isDirectMessageRoom(client, '!test:matrix.org')).toBe(false)
   })
 
+  it('returns true when m.room.create carries is_direct (synapse-rust DM)', () => {
+    const room = mockRoom({ dmInviter: undefined, createIsDirect: true })
+    const client = mockClient({ directMap: {}, room })
+    expect(isDirectMessageRoom(client, '!test:matrix.org')).toBe(true)
+  })
+
+  it('returns false when m.room.create is_direct is false', () => {
+    const room = mockRoom({ dmInviter: undefined, createIsDirect: false })
+    const client = mockClient({ directMap: {}, room })
+    expect(isDirectMessageRoom(client, '!test:matrix.org')).toBe(false)
+  })
+
   it('returns false when m.direct is absent and room is not found', () => {
     const client = mockClient({ directMap: null, room: null })
     expect(isDirectMessageRoom(client, '!missing:matrix.org')).toBe(false)
@@ -103,6 +121,16 @@ describe('isDirectMessageRoomFromRoom', () => {
     const room = mockRoom({
       roomId: '!test:matrix.org',
       dmInviter: '@inviter:matrix.org'
+    })
+    const client = mockClient({ directMap: {} })
+    expect(isDirectMessageRoomFromRoom(client, room)).toBe(true)
+  })
+
+  it('returns true when m.room.create carries is_direct (滑窗同步缺成员时的 DM 兜底)', () => {
+    const room = mockRoom({
+      roomId: '!rust-dm:matrix.test',
+      dmInviter: undefined,
+      createIsDirect: true
     })
     const client = mockClient({ directMap: {} })
     expect(isDirectMessageRoomFromRoom(client, room)).toBe(true)

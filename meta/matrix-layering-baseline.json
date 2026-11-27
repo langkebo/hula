@@ -1,15 +1,15 @@
 {
   "comment": "AR-07b 分层与 token 收口棘轮。数值只可收紧不可放宽；清理后运行 `node scripts/check-matrix-service-layering.mjs --update`。L6 按 logical_services（服务根 + 孤立模块）计数，service_files 仅观测。",
-  "updated_at": "2026-11-19T10:35:35.600Z",
+  "updated_at": "2026-11-27T15:37:15.246Z",
   "scope": "src/services/matrix/** 非测试 .ts（运行时 import 边，不含 import type）",
   "counters": {
-    "service_files": 272,
-    "logical_services": 130,
+    "service_files": 286,
+    "logical_services": 134,
     "service_roots": 103,
-    "orphan_modules": 27,
-    "runtime_edges": 499,
+    "orphan_modules": 31,
+    "runtime_edges": 519,
     "runtime_cycles": 0,
-    "runtime_max_depth": 14,
+    "runtime_max_depth": 13,
     "token_copies": 0
   },
   "token_read_sites": {

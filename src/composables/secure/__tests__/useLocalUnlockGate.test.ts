@@ -55,6 +55,7 @@ describe('useLocalUnlockGate（F-4 / B1）', () => {
     const gate = useLocalUnlockGate()
     await expect(gate.ensureReady()).resolves.toBe(true)
     expect(gate.visible.value).toBe(false)
+    expect(gate.backendUnavailable.value).toBe(false)
   })
 
   // 回归（D3）：安全存储"当前可用"不代表旧 store 的密钥就在安全存储里。
@@ -85,6 +86,7 @@ describe('useLocalUnlockGate（F-4 / B1）', () => {
     const gate = useLocalUnlockGate()
     await expect(gate.ensureReady()).resolves.toBe(true)
     expect(gate.visible.value).toBe(false)
+    expect(gate.backendUnavailable.value).toBe(false)
   })
 
   it('不可用且未配置过密码 → 以「设置」模式弹门禁', async () => {
@@ -96,6 +98,8 @@ describe('useLocalUnlockGate（F-4 / B1）', () => {
     await vi.waitFor(() => expect(gate.visible.value).toBe(true))
 
     expect(gate.mode.value).toBe('setup')
+    // P-05：只有真不可用才提示「签名应用或设置本地解锁」
+    expect(gate.backendUnavailable.value).toBe(true)
 
     await gate.submit('local-pass')
     await expect(ready).resolves.toBe(true)

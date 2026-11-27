@@ -95,17 +95,22 @@ export const useMessage = () => {
       label: (item: SessionItem) => (item.top ? t('menu.unpin') : t('menu.pin')),
       icon: (item: SessionItem) => (item.top ? 'to-bottom' : 'to-top'),
       click: (item: SessionItem) => {
+        const nextTop = !item.top
+        const successText = item.top ? t('message.message_menu.unpin_success') : t('message.message_menu.pin_success')
+        const failText = item.top ? t('message.message_menu.unpin_fail') : t('message.message_menu.pin_fail')
         matrixSessionService
-          .setSessionTop(item.roomId, !item.top)
-          .then(() => {
-            chatStore.updateSession(item.roomId, { top: !item.top })
-            showFeedback(
-              item.top ? t('message.message_menu.unpin_success') : t('message.message_menu.pin_success'),
-              'success'
-            )
+          .setSessionTop(item.roomId, nextTop)
+          .then((ok) => {
+            // 服务层捕获异常后返回 false，不能只看 resolve 就更新本地状态并提示成功
+            if (!ok) {
+              showFeedback(failText, 'error')
+              return
+            }
+            chatStore.updateSession(item.roomId, { top: nextTop })
+            showFeedback(successText, 'success')
           })
           .catch(() => {
-            showFeedback(item.top ? t('message.message_menu.unpin_fail') : t('message.message_menu.pin_fail'), 'error')
+            showFeedback(failText, 'error')
           })
       }
     },
@@ -297,7 +302,7 @@ export const useMessage = () => {
       // 标记前强制校验「已设密码 + 已解锁」，否则私密只是给谁都能点开的房间贴标签。
       label: (item: SessionItem) =>
         isRoomPrivate(item.roomId) ? t('home.secret_chat.unmark_private') : t('home.secret_chat.mark_private'),
-      icon: (item: SessionItem) => (isRoomPrivate(item.roomId) ? 'eye' : 'eye-close'),
+      icon: 'lock',
       click: async (item: SessionItem) => {
         await togglePrivateRoom(item, { confirmEnableEncryption })
       },

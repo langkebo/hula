@@ -770,6 +770,95 @@ export const openMessageWorkspace = async (page: Page): Promise<void> => {
   await expect(page.locator('.message-session-toolbar')).toBeVisible({ timeout: 30_000 })
 }
 
+type BrowserChatMessageBody = string | { content?: string; body?: string }
+
+interface BrowserChatMessageItem {
+  message: { id?: string; type?: unknown; body?: BrowserChatMessageBody; sendTime?: number }
+  fromUser?: { uid?: string }
+}
+
+interface BrowserRoomSummary {
+  roomId: string
+  name?: string
+}
+
+interface BrowserSessionSummary {
+  roomId: string
+  name?: string
+  type?: unknown
+  unreadCount?: number
+  highlightCount?: number
+  isInvite?: boolean
+}
+
+interface BrowserStateEventLike {
+  getContent?: () => Record<string, unknown>
+}
+
+interface BrowserTimelineEventLike {
+  getId?: () => string
+  getType?: () => string
+  getContent?: () => Record<string, unknown>
+  getTs?: () => number
+  getSender?: () => string
+}
+
+interface BrowserTimelineLike {
+  getEvents?: () => BrowserTimelineEventLike[]
+}
+
+interface BrowserRoomLike {
+  roomId: string
+  name?: string
+  currentState?: { getStateEvents?: (type: string, stateKey: string) => BrowserStateEventLike | null }
+  hasEncryptionStateEvent?: () => boolean
+  isEncrypted?: () => boolean
+  getPendingEvents?: () => unknown[]
+  getLiveTimeline?: () => BrowserTimelineLike | null
+}
+
+interface BrowserMatrixClientLike {
+  getRoom?: (id: string) => BrowserRoomLike | null
+  getRooms?: () => BrowserRoomLike[]
+  getCrypto?: () => unknown
+  getUserId?: () => string | null
+  getDeviceId?: () => string | null
+  initRustCrypto?: () => Promise<unknown>
+  isCryptoEnabled?: () => boolean
+}
+
+interface BrowserMatrixClientServiceLike {
+  getClient: () => BrowserMatrixClientLike | null
+  getRustCryptoDebugState: () => Record<string, unknown>
+  getEventDecryptedDebugState: () => Record<string, unknown>
+}
+
+interface BrowserMatrixStoreLike {
+  isLoggedIn?: boolean
+  userId?: string
+  deviceId?: string | null
+  accessToken?: string
+  connectionState?: unknown
+  syncState?: unknown
+  lastError?: unknown
+}
+
+interface BrowserRoomStoreLike {
+  roomList: BrowserRoomSummary[]
+}
+
+interface BrowserSessionStoreLike {
+  sessionList: BrowserSessionSummary[]
+}
+
+interface BrowserGlobalStoreLike {
+  currentSessionRoomId?: string | null
+}
+
+interface BrowserChatStoreLike {
+  chatMessageListByRoomId: (roomId: string) => BrowserChatMessageItem[]
+}
+
 export const collectMatrixLiveSessionDebugSnapshot = async (
   page: Page,
   requestedRoomId?: string
@@ -791,32 +880,24 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
         { resolveMatrixRuntimeEndpointConfig, resolveMatrixSessionEndpointConfig },
         { errorTracker }
       ] = await Promise.all([
-        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
+        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => BrowserMatrixStoreLike }>(
           '/src/stores/domains/chat/matrix.ts'
         ),
-        importBrowserModule<{ useRoomStore: (pinia?: unknown) => Record<string, unknown> }>(
+        importBrowserModule<{ useRoomStore: (pinia?: unknown) => BrowserRoomStoreLike }>(
           '/src/stores/domains/chat/room/index.ts'
         ),
-        importBrowserModule<{ useSessionStore: (pinia?: unknown) => Record<string, unknown> }>(
+        importBrowserModule<{ useSessionStore: (pinia?: unknown) => BrowserSessionStoreLike }>(
           '/src/stores/domains/chat/chat/session.ts'
         ),
-        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => Record<string, unknown> }>(
+        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => BrowserGlobalStoreLike }>(
           '/src/stores/domains/widget/global.ts'
         ),
-        importBrowserModule<{ useChatStore: (pinia?: unknown) => Record<string, unknown> }>(
+        importBrowserModule<{ useChatStore: (pinia?: unknown) => BrowserChatStoreLike }>(
           '/src/stores/domains/chat/chat/index.ts'
         ),
-        importBrowserModule<{
-          matrixClientService: {
-            getClient: () => {
-              getRoom?: (id: string) => unknown
-              getCrypto?: () => unknown
-              getRooms?: () => unknown[]
-            } | null
-            getRustCryptoDebugState: () => Record<string, unknown>
-            getEventDecryptedDebugState: () => Record<string, unknown>
-          }
-        }>('/src/services/matrix/MatrixClientService.ts'),
+        importBrowserModule<{ matrixClientService: BrowserMatrixClientServiceLike }>(
+          '/src/services/matrix/MatrixClientService.ts'
+        ),
         importBrowserModule<{ getMatrixSessionSnapshot: () => unknown }>('/src/services/matrix/matrixSessionState.ts'),
         importBrowserModule<{ getCurrentUserInfo: () => unknown }>('/src/common/currentUserState.ts'),
         importBrowserModule<{
@@ -1007,32 +1088,31 @@ const resolveMatrixLiveRoomCandidates = async (
   roomNameMatches: string[]
 }> => {
   return page.evaluate(
-    async ({ targetRoomId, targetRoomName }: { targetRoomId?: string; targetRoomName?: string }) => {
+    async ({
+      targetRoomId,
+      targetRoomName
+    }: {
+      targetRoomId?: string | undefined
+      targetRoomName?: string | undefined
+    }) => {
       const runtimeWindow = window as Window & { pinia?: unknown }
       const importBrowserModule = <T>(modulePath: string): Promise<T> =>
         import(/* @vite-ignore */ modulePath) as Promise<T>
-      const [{ useMatrixStore }, { useRoomStore }, { useSessionStore }, { useGlobalStore }, { matrixClientService }] =
-        await Promise.all([
-          importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
-            '/src/stores/domains/chat/matrix.ts'
-          ),
-          importBrowserModule<{ useRoomStore: (pinia?: unknown) => Record<string, unknown> }>(
-            '/src/stores/domains/chat/room/index.ts'
-          ),
-          importBrowserModule<{ useSessionStore: (pinia?: unknown) => Record<string, unknown> }>(
-            '/src/stores/domains/chat/chat/session.ts'
-          ),
-          importBrowserModule<{ useGlobalStore: (pinia?: unknown) => Record<string, unknown> }>(
-            '/src/stores/domains/widget/global.ts'
-          ),
-          importBrowserModule<{
-            matrixClientService: {
-              getClient: () => { getRoom?: (id: string) => unknown; getRooms?: () => unknown[] } | null
-            }
-          }>('/src/services/matrix/MatrixClientService.ts')
-        ])
+      const [{ useRoomStore }, { useSessionStore }, { useGlobalStore }, { matrixClientService }] = await Promise.all([
+        importBrowserModule<{ useRoomStore: (pinia?: unknown) => BrowserRoomStoreLike }>(
+          '/src/stores/domains/chat/room/index.ts'
+        ),
+        importBrowserModule<{ useSessionStore: (pinia?: unknown) => BrowserSessionStoreLike }>(
+          '/src/stores/domains/chat/chat/session.ts'
+        ),
+        importBrowserModule<{ useGlobalStore: (pinia?: unknown) => BrowserGlobalStoreLike }>(
+          '/src/stores/domains/widget/global.ts'
+        ),
+        importBrowserModule<{ matrixClientService: BrowserMatrixClientServiceLike }>(
+          '/src/services/matrix/MatrixClientService.ts'
+        )
+      ])
 
-      const _matrixStore = useMatrixStore(runtimeWindow.pinia)
       const roomStore = useRoomStore(runtimeWindow.pinia)
       const sessionStore = useSessionStore(runtimeWindow.pinia)
       const globalStore = useGlobalStore(runtimeWindow.pinia)
@@ -1261,23 +1341,19 @@ export const resolveLiveTimelineTextCandidate = async (
   preferredText?: string
 ): Promise<string | null> => {
   return page.evaluate(
-    async ({ targetRoomId, configuredText }: { targetRoomId: string; configuredText?: string }) => {
+    async ({ targetRoomId, configuredText }: { targetRoomId: string; configuredText?: string | undefined }) => {
       const runtimeWindow = window as Window & { pinia?: unknown }
       const importBrowserModule = <T>(modulePath: string): Promise<T> =>
         import(/* @vite-ignore */ modulePath) as Promise<T>
-      const [{ useMatrixStore }, { useChatStore }, { matrixClientService }] = await Promise.all([
-        importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
-          '/src/stores/domains/chat/matrix.ts'
-        ),
-        importBrowserModule<{ useChatStore: (pinia?: unknown) => Record<string, unknown> }>(
+      const [{ useChatStore }, { matrixClientService }] = await Promise.all([
+        importBrowserModule<{ useChatStore: (pinia?: unknown) => BrowserChatStoreLike }>(
           '/src/stores/domains/chat/chat/index.ts'
         ),
-        importBrowserModule<{
-          matrixClientService: { getClient: () => { getRoom?: (id: string) => unknown } | null }
-        }>('/src/services/matrix/MatrixClientService.ts')
+        importBrowserModule<{ matrixClientService: BrowserMatrixClientServiceLike }>(
+          '/src/services/matrix/MatrixClientService.ts'
+        )
       ])
 
-      const _matrixStore = useMatrixStore(runtimeWindow.pinia)
       const chatStore = useChatStore(runtimeWindow.pinia)
       const client = matrixClientService.getClient()
       const room = client?.getRoom?.(targetRoomId)

@@ -380,7 +380,7 @@ describe('MatrixSessionService', () => {
 
     await expect(matrixSessionService.setSessionTop('!room:example.com', true)).resolves.toBe(true)
 
-    expect(mockClient.setRoomTag).toHaveBeenCalledWith('!room:example.com', 'm.favourite', { order: '0.5' })
+    expect(mockClient.setRoomTag).toHaveBeenCalledWith('!room:example.com', 'm.favourite', { order: 0.5 })
   })
 
   it('should create dm detail fallback when direct room is not cached locally', async () => {

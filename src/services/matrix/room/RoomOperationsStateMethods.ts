@@ -1,5 +1,5 @@
 import type { IContent } from '@/services/matrix/sdk'
-import { ConditionKind, Preset, PushRuleKind, Visibility } from '@/services/matrix/sdk'
+import { Preset, Visibility } from '@/services/matrix/sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { BaseMatrixService } from '../BaseMatrixService'
 
@@ -160,29 +160,15 @@ export abstract class RoomOperationsStateMethods extends BaseMatrixService {
   }
 
   /**
-   * 切换房间的通知静音：`enabled=false` 时创建静音 override 规则，`true` 时删除该规则恢复默认。
-   * 离线时入队。
+   * 切换房间的通知静音：`enabled=false` 时静音，`true` 时恢复默认通知。
+   * 复用 SDK 的 `setRoomMutePushRule`（room 类型 DontNotify 规则），离线时入队。
    */
   async setPushRule(roomId: string, enabled: boolean): Promise<void> {
     if (!navigator.onLine) {
       offlineQueueService.enqueue('push_rule', roomId, { roomId, enabled })
       return
     }
-    const client = this.getClient()
-    if (enabled) {
-      // 置顶 = 删除 override 推送规则（恢复默认通知）；规则不存在时 M_NOT_FOUND 属良性，静默处理
-      try {
-        await client.getPushManager().deletePushRule('global', PushRuleKind.Override, roomId)
-      } catch (err) {
-        const errcode = (err as { errcode?: unknown })?.errcode
-        if (errcode !== 'M_NOT_FOUND') throw err
-      }
-    } else {
-      await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
-        conditions: [{ kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId }],
-        actions: []
-      })
-    }
+    await this.getClient().getPushManager().setRoomMutePushRule('global', roomId, !enabled)
   }
 
   // --- DirectMessage (was DirectMessageService) ---

@@ -65,7 +65,7 @@ test.describe('a11y baseline', () => {
     test.skip(!source, 'axe-core not installed — install it in CI to enforce a11y gate')
 
     // 使用 addInitScript 在页面加载前注入 axe-core，绕过 CSP 对内联脚本的限制
-    await page.addInitScript({ content: source })
+    await page.addInitScript({ content: source ?? '' })
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     const violations = blocking(await runAxe(page))
@@ -94,7 +94,7 @@ test.describe('a11y baseline', () => {
     const source = await loadAxeSource()
     test.skip(!source, 'axe-core not installed — install it in CI to enforce a11y gate')
 
-    await page.addInitScript({ content: source })
+    await page.addInitScript({ content: source ?? '' })
     // Navigate to the main app home window layout (friend view shows
     // FriendsList with its aria-annotated root container).
     await page.goto('/home/friend')
@@ -169,7 +169,7 @@ test.describe('a11y baseline', () => {
     const source = await loadAxeSource()
     test.skip(!source, 'axe-core not installed — install it in CI to enforce a11y gate')
 
-    await page.addInitScript({ content: source })
+    await page.addInitScript({ content: source ?? '' })
     await page.goto('/mobile/login')
     await page.waitForLoadState('networkidle')
     const violations = blocking(await runAxe(page))

@@ -126,7 +126,9 @@ export enum MittEnum {
   /** 打开消息视角浮层（G-08） */
   OPEN_EVENT_PERSPECTIVE = 'openEventPerspective',
   /** 打开「已读明细」浮层（ROOM-03 receipts 端点） */
-  OPEN_EVENT_RECEIPTS = 'openEventReceipts'
+  OPEN_EVENT_RECEIPTS = 'openEventReceipts',
+  /** access token 已被服务端吊销（401 M_UNKNOWN_TOKEN），需要清理会话并回到登录页 */
+  SESSION_AUTH_INVALID = 'sessionAuthInvalid'
 }
 
 /**

@@ -42,6 +42,8 @@ export interface SessionItem {
   operate?: number | undefined
   hide?: boolean | undefined
   isFavorite?: boolean | undefined
+  /** 当前用户在该房间的成员状态；invite 时列表展示「接受/拒绝邀请」 */
+  membership?: 'join' | 'leave' | 'invite' | 'ban' | 'knock' | undefined
 }
 
 export const useSessionStore = defineStore(StoresEnum.SESSION, () => {

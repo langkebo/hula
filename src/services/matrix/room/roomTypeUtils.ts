@@ -1,6 +1,26 @@
 import type { MatrixClient, Room } from 'matrix-js-sdk'
 
 /**
+ * 检查房间创建事件上的 `is_direct` 标记。
+ *
+ * synapse-rust 建 DM 时把 `is_direct: true` 写在 `m.room.create` 的 content 里
+ * （标准做法是写在邀请成员的 `m.room.member` 上）。滑窗同步不返回成员摘要与
+ * 成员事件时，`m.direct` 与 `getDMInviter()` 都可能拿不到 DM 信号，房间会被
+ * 误判成群聊（右键菜单与私密聊天入口全部走错分支），这个后端事实是兜底信号。
+ */
+function isDirectFromCreateEvent(room: Room): boolean {
+  try {
+    const createEvent = room.currentState?.getStateEvents?.('m.room.create', '')
+    const content = (
+      createEvent as { getContent?: () => { is_direct?: boolean } | undefined } | null | undefined
+    )?.getContent?.()
+    return content?.is_direct === true
+  } catch {
+    return false
+  }
+}
+
+/**
  * 判断房间是否为 DM（直接消息）房间。
  *
  * 统一封装 m.direct account data 检查逻辑，避免在 RealtimeService、useRoomType、
@@ -26,6 +46,7 @@ export function isDirectMessageRoom(client: MatrixClient | null | undefined, roo
   if (room) {
     const dmInviter = room.getDMInviter?.()
     if (dmInviter) return true
+    if (isDirectFromCreateEvent(room)) return true
   }
 
   return false
@@ -141,5 +162,6 @@ export function isDirectMessageRoomFromRoom(client: MatrixClient | null | undefi
   const dmInviter = room.getDMInviter?.()
   if (dmInviter) return true
 
-  return false
+  // 3. 兜底：创建事件上的 is_direct（滑窗同步未下发成员时的唯一可靠信号）
+  return isDirectFromCreateEvent(room)
 }

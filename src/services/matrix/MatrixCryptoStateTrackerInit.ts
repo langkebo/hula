@@ -9,11 +9,13 @@
 import { recordStaleCryptoReuseIfAny } from '@/services/matrix/crypto/cryptoBindingRelease'
 import { normalizeCryptoError } from '@/services/matrix/crypto/cryptoErrorNormalize'
 import { replayPersistedStrictness } from '@/services/matrix/crypto/strictDevicePolicyReplay'
+import { readKeySource } from '@/services/secure/cryptoKeySource'
 import {
   isLocalUnlockConfigured,
   isLocalUnlockUnlocked,
   subscribeLocalUnlockState
 } from '@/services/secure/localUnlockKey'
+import { getSecureStorageBackendInfo, resetSecureStorageBackendCache } from '@/services/secure/secureStorage'
 import { createLogger } from '@/utils/Logger'
 import { MatrixCryptoStateTrackerCore, type RustCryptoCapableClient } from './MatrixCryptoStateTrackerCore'
 import type { MatrixClient } from './sdk'
@@ -38,6 +40,13 @@ const logger = createLogger('MatrixCrypto')
  *   Tauri macOS WKWebView（Safari 16.4+）支持此 API。
  */
 const CRYPTO_LOCK_NAME = 'tjg-ensure-crypto'
+
+/**
+ * 安全存储（来源为 `secure`）暂时不可用时，等待其恢复后补一次初始化的延迟。
+ *
+ * 只延迟一次、不轮询：安全存储恢复通常发生在钥匙串/文件后端恢复可读写后。
+ */
+const SECURE_STORAGE_RETRY_DELAY_MS = 5_000
 
 /**
  * 检测 Web Locks API 是否可用。
@@ -218,34 +227,74 @@ export abstract class MatrixCryptoStateTrackerInit extends MatrixCryptoStateTrac
   }
 
   /**
-   * D9：storageKey 缺失导致 fail-closed 后，挂一个**一次性**本地解锁监听，解锁完成时补初始化。
+   * D9：storageKey 缺失导致 fail-closed 后，挂一个**一次性**补初始化：
    *
-   * 触发场景：冷启动先跳过本地解锁门禁 → 登录 → `getOrCreateCryptoStorageKey()` 返回 null
-   * （密钥来源是本地解锁密码，但本会话未解锁）⇒ 原来只写 debug state 就返回，此后没有任何
-   * 路径再触发 init，直到用户整页 reload。这里补上「解锁即可用」。
+   * 1. 密钥来源是本地解锁密码且本会话未解锁 → 监听解锁事件，解锁完成时补初始化；
+   * 2. 密钥来源是安全存储（`secure`）→ 安全存储可能只是**暂时**不可用，
+   *    等它恢复后补一次（每代次至多一次，**不轮询**）。
    *
-   * 只在**确实配置了本地解锁**时挂监听；Secure Store 不可用等其它 fail-closed 原因无解锁事件，
-   * 挂了也不会触发，但会增加噪音，故直接跳过。
+   * 其它 fail-closed 原因没有可观测的恢复事件，直接跳过，避免噪音。
    */
-  protected armStorageKeyRetry(cryptoClient: RustCryptoCapableClient, generation: number): void {
-    if (this.disarmStorageKeyRetry || !isLocalUnlockConfigured() || isLocalUnlockUnlocked()) {
+  protected armStorageKeyRetry(
+    cryptoClient: RustCryptoCapableClient,
+    generation: number,
+    userId: string,
+    deviceId: string
+  ): void {
+    if (this.disarmStorageKeyRetry) {
       return
     }
-    const unsubscribe = subscribeLocalUnlockState((unlocked) => {
-      if (!unlocked) return
-      unsubscribe()
-      this.disarmStorageKeyRetry = null
-      if (!this.isCurrentGeneration(generation)) {
-        logger.info('本地解锁后的 crypto 补初始化已过期（client 已换绑/状态已重置），丢弃')
-        return
+
+    if (isLocalUnlockConfigured() && !isLocalUnlockUnlocked()) {
+      const unsubscribe = subscribeLocalUnlockState((unlocked) => {
+        if (!unlocked) return
+        unsubscribe()
+        this.disarmStorageKeyRetry = null
+        if (!this.isCurrentGeneration(generation)) {
+          logger.info('本地解锁后的 crypto 补初始化已过期（client 已换绑/状态已重置），丢弃')
+          return
+        }
+        logger.info('本地解锁完成，补一次 Rust Crypto 初始化（此前 storageKey 缺失已 fail-closed）')
+        void this.doEnsureCrypto(cryptoClient, generation).catch((err: unknown) =>
+          logger.warn(`本地解锁后的 crypto 补初始化失败: ${normalizeCryptoError(err)}`)
+        )
+      })
+      this.disarmStorageKeyRetry = () => {
+        unsubscribe()
+        this.disarmStorageKeyRetry = null
       }
-      logger.info('本地解锁完成，补一次 Rust Crypto 初始化（此前 storageKey 缺失已 fail-closed）')
-      void this.doEnsureCrypto(cryptoClient, generation).catch((err: unknown) =>
-        logger.warn(`本地解锁后的 crypto 补初始化失败: ${normalizeCryptoError(err)}`)
-      )
-    })
+      return
+    }
+
+    // P-04：来源为安全存储时，不能把「后端暂时不可用」当成密钥丢失。
+    // 安全存储恢复后只补一次初始化，避免长期不可用演变成无限轮询。
+    if (readKeySource(`${userId}:${deviceId}`) !== 'secure') {
+      return
+    }
+    if (this.storageKeySecureRetryGeneration === generation) {
+      return
+    }
+    this.storageKeySecureRetryGeneration = generation
+
+    const timer = setTimeout(() => {
+      this.disarmStorageKeyRetry = null
+      void (async () => {
+        if (!this.isCurrentGeneration(generation)) {
+          logger.info('安全存储恢复后的 crypto 补初始化已过期（client 已换绑/状态已重置），丢弃')
+          return
+        }
+        resetSecureStorageBackendCache()
+        const info = await getSecureStorageBackendInfo().catch(() => null)
+        if (!info?.available) {
+          logger.info('安全存储仍未恢复，本次不补初始化（不做轮询，等待下次启动）')
+          return
+        }
+        logger.info('安全存储已恢复，补一次 Rust Crypto 初始化（此前 storageKey 缺失已 fail-closed）')
+        await this.doEnsureCrypto(cryptoClient, generation)
+      })().catch((err: unknown) => logger.warn(`安全存储恢复后的 crypto 补初始化失败: ${normalizeCryptoError(err)}`))
+    }, SECURE_STORAGE_RETRY_DELAY_MS)
     this.disarmStorageKeyRetry = () => {
-      unsubscribe()
+      clearTimeout(timer)
       this.disarmStorageKeyRetry = null
     }
   }

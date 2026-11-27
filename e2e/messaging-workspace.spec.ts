@@ -90,7 +90,6 @@ test.describe('Message Workspace', () => {
     await page.waitForSelector('#app', { state: 'visible' })
 
     // Since we're using mock auth with no real messages, the empty state should appear
-    const _emptyState = page.getByText(/empty|暂无|还没有/i)
     // Empty state may or may not appear depending on mock data state -
     // just verify no errors occurred
     await page.waitForTimeout(2000)

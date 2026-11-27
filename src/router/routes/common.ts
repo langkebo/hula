@@ -84,6 +84,11 @@ export const getCommonRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/loginWindow/SecretChatModal.vue')
   },
   {
+    path: '/modal-remoteLogin',
+    name: 'modal-remoteLogin',
+    component: () => import('@/views/loginWindow/RemoteLoginModal.vue')
+  },
+  {
     path: '/oidc/callback',
     name: 'oidcCallback',
     component: () => import('@/views/loginWindow/OidcCallback.vue')

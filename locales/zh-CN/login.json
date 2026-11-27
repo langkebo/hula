@@ -250,7 +250,10 @@
   "sso_login_failed": "SSO 登录失败",
   "remote_login": {
     "unknown_ip": "未知IP",
-    "title": "异地登录提醒"
+    "title": "异地登录提醒",
+    "description": "检测到你的账号在以下 IP 登录：{ip}。如非本人操作，请立即修改密码。",
+    "ip_label": "登录 IP",
+    "confirm": "我知道了"
   },
   "secret_chat": {
     "title": "私密聊天",

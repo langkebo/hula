@@ -232,7 +232,8 @@ const {
   shrink = true,
   shrinkStatus = true,
   isDrag = true,
-  iconColor = ''
+  iconColor = '',
+  escClose = true
 } = defineProps<{
   minW?: boolean
   maxW?: boolean
@@ -244,10 +245,12 @@ const {
   proxy?: boolean
   isDrag?: boolean
   iconColor?: string
+  /** 是否允许 Esc 关闭当前窗口，默认 true；锁屏等不可被快捷键退出的窗口传 false */
+  escClose?: boolean
 }>()
 const { getWindowTop, setWindowTop } = useAlwaysOnTopStore()
 const settingStore = useSettingStore()
-const { tips, escClose } = storeToRefs(settingStore)
+const { tips, escClose: escCloseSetting } = storeToRefs(settingStore)
 const { resizeWindow } = useWindow()
 const { closeCurrentWindow } = usePlatformClose()
 const tipsRef = reactive({
@@ -271,7 +274,7 @@ let unlistenResized: (() => void) | null = null
 // 是否是程序内部触发的关闭操作
 let isProgrammaticClose = false
 const handleEscKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && escClose.value) {
+  if (event.key === 'Escape' && escCloseSetting.value) {
     handleCloseWin()
   }
 }
@@ -281,7 +284,7 @@ watchEffect((onCleanup) => {
   if (appWindow && alwaysOnTopStatus.value) {
     appWindow.setAlwaysOnTop(alwaysOnTopStatus.value as boolean)
   }
-  if (escClose.value && isWindows()) {
+  if (escCloseSetting.value && escClose && isWindows()) {
     window.addEventListener('keydown', handleEscKeyDown)
     onCleanup(() => {
       window.removeEventListener('keydown', handleEscKeyDown)

@@ -6,10 +6,7 @@
 export type Messages = {
   "cancel": "取消",
   "change_password": "修改密码",
-  "changing_password": "正在修改密码...",
   "confirm": "确定",
-  "confirm_password": "确认密码",
-  "confirm_password_placeholder": "请再次输入新密码",
   "cross_signing": "交叉签名",
   "cross_signing_disabled": "您的账户未启用交叉签名",
   "cross_signing_enabled": "您的账户已启用交叉签名",
@@ -36,13 +33,6 @@ export type Messages = {
   "key_backup": "密钥备份",
   "key_backup_disabled": "您的密钥未备份",
   "key_backup_enabled": "您的密钥已备份",
-  "new_password": "新密码",
-  "new_password_placeholder": "请输入新密码",
-  "old_password": "当前密码",
-  "old_password_placeholder": "请输入当前密码",
-  "password_change_failed": "密码修改失败",
-  "password_changed": "密码修改成功",
-  "password_mismatch": "两次输入的密码不一致",
   "privacy_section": "隐私设置",
   "secret_chat": {
     "password": "私密聊天密码",
@@ -103,10 +93,7 @@ export type Messages = {
 export type KeyPaths =
   | "mobile_security.cancel"
   | "mobile_security.change_password"
-  | "mobile_security.changing_password"
   | "mobile_security.confirm"
-  | "mobile_security.confirm_password"
-  | "mobile_security.confirm_password_placeholder"
   | "mobile_security.cross_signing"
   | "mobile_security.cross_signing_disabled"
   | "mobile_security.cross_signing_enabled"
@@ -131,13 +118,6 @@ export type KeyPaths =
   | "mobile_security.key_backup"
   | "mobile_security.key_backup_disabled"
   | "mobile_security.key_backup_enabled"
-  | "mobile_security.new_password"
-  | "mobile_security.new_password_placeholder"
-  | "mobile_security.old_password"
-  | "mobile_security.old_password_placeholder"
-  | "mobile_security.password_change_failed"
-  | "mobile_security.password_changed"
-  | "mobile_security.password_mismatch"
   | "mobile_security.privacy_section"
   | "mobile_security.secret_chat.password"
   | "mobile_security.secret_chat.set_password"

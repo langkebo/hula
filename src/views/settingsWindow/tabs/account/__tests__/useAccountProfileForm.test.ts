@@ -35,11 +35,17 @@ vi.mock('@/services/matrix/user/MatrixProfileService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
-  useServerCapability: () => ({
-    isCapabilityAvailable: (name: string) => name === 'extended-profile'
-  })
-}))
+vi.mock('@/services/matrix/MatrixCapabilityService', async () => {
+  const { ref } = await import('vue')
+  const status = ref<'supported' | 'unsupported' | 'unknown'>('supported')
+  return {
+    __capabilityStatus: status,
+    useServerCapability: () => ({
+      isCapabilityAvailable: (name: string) => name === 'extended-profile' && status.value === 'supported',
+      getCapabilityStatus: () => status.value
+    })
+  }
+})
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({ showFeedback: showFeedbackMock })
@@ -64,6 +70,10 @@ vi.mock('@/utils/Logger', () => ({
 }))
 
 import { useAccountProfileForm } from '../useAccountProfileForm'
+
+const { __capabilityStatus: capabilityStatus } = (await import(
+  '@/services/matrix/MatrixCapabilityService'
+)) as unknown as { __capabilityStatus: import('vue').Ref<'supported' | 'unsupported' | 'unknown'> }
 
 /** 手动可控的 promise 替身。 */
 function deferred<T = void>() {
@@ -96,6 +106,7 @@ describe('useAccountProfileForm 登记在飞写请求', () => {
     vi.clearAllMocks()
     getExtendedProfileMock.mockResolvedValue({})
     userStoreMock.currentUserDisplayName = 'Alice'
+    capabilityStatus.value = 'supported'
   })
 
   it('昵称保存：请求在飞时 hasPending 为 true，settle 后自动清除', async () => {
@@ -176,5 +187,39 @@ describe('useAccountProfileForm 登记在飞写请求', () => {
     await flushing
     expect(flushed).toBe(true)
     expect(hasPendingSettingsWrites()).toBe(false)
+  })
+})
+
+describe('useAccountProfileForm 扩展资料能力状态', () => {
+  beforeEach(() => {
+    resetSettingsPendingWritesForTest()
+    vi.clearAllMocks()
+    getExtendedProfileMock.mockResolvedValue({})
+    capabilityStatus.value = 'supported'
+  })
+
+  it('能力 unknown 时不禁用字段，能力就绪后自动补读取', async () => {
+    capabilityStatus.value = 'unknown'
+
+    const form = useAccountProfileForm()
+
+    expect(form.supportsExtendedProfile.value).toBe(false)
+    expect(form.extendedProfileUnsupported.value).toBe(false)
+    expect(form.extendedProfileDisabled.value).toBe(false)
+    expect(getExtendedProfileMock).not.toHaveBeenCalled()
+
+    capabilityStatus.value = 'supported'
+    await flushMicrotasks()
+
+    expect(getExtendedProfileMock).toHaveBeenCalledWith('@alice:hs')
+  })
+
+  it('能力明确 unsupported 时才禁用字段', () => {
+    capabilityStatus.value = 'unsupported'
+
+    const form = useAccountProfileForm()
+
+    expect(form.extendedProfileUnsupported.value).toBe(true)
+    expect(form.extendedProfileDisabled.value).toBe(true)
   })
 })

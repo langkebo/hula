@@ -27,6 +27,13 @@ const visible = ref(false)
 const mode = ref<'setup' | 'unlock'>('setup')
 const submitting = ref(false)
 const errorKey = ref<string | null>(null)
+/**
+ * 安全存储后端整体不可用的原因（P-05）。
+ *
+ * 只在后端「真实不可用」时为 true（而非降级）：此时 fallback 已拒绝静默落盘，
+ * 对话框需要给出可操作出路（签名应用，或设置本地解锁密码）。
+ */
+const backendUnavailable = ref(false)
 
 let resolvePending: ((ready: boolean) => void) | null = null
 
@@ -34,6 +41,7 @@ function settle(ready: boolean): void {
   visible.value = false
   submitting.value = false
   errorKey.value = null
+  backendUnavailable.value = false
   const resolve = resolvePending
   resolvePending = null
   resolve?.(ready)
@@ -63,6 +71,9 @@ export function useLocalUnlockGate() {
     } catch (err) {
       logger.warn('读取安全存储状态失败，按不可用处理:', err)
     }
+
+    // 降级（available=true）不走这里：密钥仍加密，无需打扰用户
+    backendUnavailable.value = !info?.available
 
     if (info?.available && !isLocalUnlockConfigured()) {
       // 原生或加密文件 fallback 均可用，且用户从未设置本地解锁 —— 无需打扰用户
@@ -127,6 +138,7 @@ export function useLocalUnlockGate() {
     mode,
     submitting,
     errorKey,
+    backendUnavailable,
     needsConfigure,
     ensureReady,
     submit,
@@ -140,6 +152,7 @@ export function resetLocalUnlockGateForTest(): void {
   mode.value = 'setup'
   submitting.value = false
   errorKey.value = null
+  backendUnavailable.value = false
   resolvePending = null
 }
 

@@ -1,4 +1,4 @@
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { trackSettingsWrite } from '@/composables/settings/settingsPendingWrites'
@@ -21,14 +21,23 @@ export function useAccountProfileForm() {
   const { showFeedback } = useActionFeedback()
   const userStore = useUserStore()
   const matrixStore = useMatrixStore()
-  const { isCapabilityAvailable } = useServerCapability()
+  const { getCapabilityStatus } = useServerCapability()
 
   const displayNameSaving = ref(false)
+  const profileSaving = ref(false)
   const userId = computed(() => matrixStore.userId || '')
-  const supportsExtendedProfile = computed(() => isCapabilityAvailable('extended-profile'))
+  /**
+   * 能力快照未加载时为 unknown，此时不能当成「不支持」：否则首屏先渲染的组件
+   * 会把扩展资料永久禁用，且能力到达后也不会重试。
+   */
+  const extendedProfileStatus = computed(() => getCapabilityStatus('extended-profile'))
+  const supportsExtendedProfile = computed(() => extendedProfileStatus.value === 'supported')
+  const extendedProfileUnsupported = computed(() => extendedProfileStatus.value === 'unsupported')
+  let extendedProfileLoaded = false
+  let extendedProfileLoading = false
   // 读取扩展资料失败时不能把空值当成账号真实资料：既显示错误态，也禁用编辑，避免写回空值覆盖
   const extendedProfileLoadFailed = ref(false)
-  const extendedProfileDisabled = computed(() => !supportsExtendedProfile.value || extendedProfileLoadFailed.value)
+  const extendedProfileDisabled = computed(() => extendedProfileUnsupported.value || extendedProfileLoadFailed.value)
 
   const formData = reactive({
     displayName: userStore.currentUserDisplayName || '',
@@ -96,7 +105,7 @@ export function useAccountProfileForm() {
     value: string | number | null,
     previousValue: string | number | null
   ) {
-    if (!supportsExtendedProfile.value) {
+    if (extendedProfileUnsupported.value) {
       showFeedback(t('setting.account.extended_profile_unsupported'), 'warning')
       return
     }
@@ -137,8 +146,41 @@ export function useAccountProfileForm() {
     await updateExtendedProfileField('birthday', formData.birthday.trim(), initialExtendedProfile.birthday)
   }
 
+  // 资料字段此前只有 blur 自动保存，界面上没有任何「保存」入口，
+  // 用户改完字段不做失焦操作会误以为改动丢失。这里提供显式保存按钮：
+  // 有改动时可用，点击后按顺序复用各字段的既有保存逻辑（无改动字段会自动跳过）。
+  const profileDirty = computed(() => {
+    const displayNameChanged = formData.displayName.trim() !== (userStore.currentUserDisplayName || '')
+    const extendedChanged =
+      formData.about.trim() !== initialExtendedProfile.about ||
+      formData.sex !== initialExtendedProfile.sex ||
+      formData.region.trim() !== initialExtendedProfile.region ||
+      formData.birthday.trim() !== initialExtendedProfile.birthday
+    return displayNameChanged || extendedChanged
+  })
+
+  async function saveProfile() {
+    if (profileSaving.value) return
+    profileSaving.value = true
+    try {
+      formData.displayName = formData.displayName.trim()
+      formData.about = formData.about.trim()
+      formData.region = formData.region.trim()
+      formData.birthday = formData.birthday.trim()
+      await handleDisplayNameChange()
+      await handleAboutChange()
+      await updateExtendedProfileField('sex', formData.sex, initialExtendedProfile.sex)
+      await handleRegionChange()
+      await handleBirthdayChange()
+    } finally {
+      profileSaving.value = false
+    }
+  }
+
   async function loadExtendedProfile() {
-    if (!userId.value || !supportsExtendedProfile.value) return
+    // unknown 也要尝试读取：能力快照晚到时由 watch 重新触发，只有明确不支持才跳过
+    if (!userId.value || extendedProfileUnsupported.value || extendedProfileLoading) return
+    extendedProfileLoading = true
     extendedProfileLoadFailed.value = false
     try {
       const extendedProfile = await profileService.getExtendedProfile(userId.value)
@@ -148,23 +190,41 @@ export function useAccountProfileForm() {
       formData.birthday = typeof extendedProfile.birthday === 'string' ? extendedProfile.birthday : ''
       syncExtendedProfileSnapshot()
       patchCurrentUserExtendedProfile()
+      extendedProfileLoaded = true
     } catch (error) {
       logger.warn('Failed to load extended profile for account settings', error)
       extendedProfileLoadFailed.value = true
+    } finally {
+      extendedProfileLoading = false
     }
   }
+
+  // 能力快照到达后补一次读取（mount 时能力可能仍是 unknown）
+  watch(extendedProfileStatus, (status) => {
+    if (status === 'unsupported') {
+      extendedProfileLoadFailed.value = false
+      return
+    }
+    if (status === 'supported' && !extendedProfileLoaded) {
+      void loadExtendedProfile()
+    }
+  })
 
   onMounted(loadExtendedProfile)
 
   return {
     userId,
     supportsExtendedProfile,
+    extendedProfileUnsupported,
     extendedProfileLoadFailed,
     extendedProfileDisabled,
     displayNameSaving,
+    profileSaving,
+    profileDirty,
     formData,
     genderOptions,
     loadExtendedProfile,
+    saveProfile,
     handleDisplayNameChange,
     handleAboutChange,
     handleSexChange,

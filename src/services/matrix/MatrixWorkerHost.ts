@@ -168,8 +168,9 @@ export class MatrixWorkerHost {
   }
 
   /**
-   * 在 worker 内并行探测一组 Sliding Sync 候选端点（POST 一个空 body，
-   * 看 status 是否 404）。比主线程串行 fetch 更省墙钟时间，且不阻塞主线程。
+   * 在 worker 内并行探测一组 Sliding Sync 候选端点（POST 一个空 body）。
+   * 只有 404/501 才算未实现；400/401/403/405/429 表示端点已路由。
+   * 比主线程串行 fetch 更省墙钟时间，且不阻塞主线程。
    */
   async probeSlidingSyncEndpoints(
     baseUrl: string,
@@ -216,6 +217,9 @@ export class MatrixWorkerHost {
   }
 
   async resetSearchIndex(): Promise<void> {
+    // P-12：登出与 terminate 存在竞态，worker 已不在时重置索引属于无条件成功的 no-op，
+    // 不应抛出「worker 未启动」把正常的登出清理变成失败。
+    if (this.skipWhenNotStarted('resetSearchIndex')) return
     return this.request<void>('search.reset')
   }
 
@@ -232,6 +236,9 @@ export class MatrixWorkerHost {
   }
 
   async upsertSearchEvents(events: SearchEventDoc[]): Promise<void> {
+    // P-12：flush 可能在登出 terminate 之后才落地，此时索引已随 worker 消失，
+    // 静默跳过而不是抛错（真正的写入错误仍由 request 正常抛出）。
+    if (this.skipWhenNotStarted('upsertSearchEvents')) return
     return this.request<void>('search.upsertEvents', { events })
   }
 
@@ -276,6 +283,16 @@ export class MatrixWorkerHost {
     this.readyResolve = null
     this.readyReject = null
     this.readyResolved = false
+  }
+
+  /**
+   * worker 未启动时返回 true 并记 debug 日志，供可安全跳过的索引写入调用方使用。
+   * 只在 worker 不存在时生效；请求过程中的真实异常照常向上抛。
+   */
+  private skipWhenNotStarted(action: string): boolean {
+    if (this.isStarted) return false
+    logger.debug(`worker 未启动，跳过 ${action}`)
+    return true
   }
 
   /**

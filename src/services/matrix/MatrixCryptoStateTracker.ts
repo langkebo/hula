@@ -81,7 +81,7 @@ export class MatrixCryptoStateTracker extends MatrixCryptoStateTrackerInit {
       this.writeState(generation, rejectMissingStorageKeyState(userId, deviceId, useIndexedDB))
       // D9：本地解锁密码来源但本会话尚未解锁时，storageKey 就是 null。
       // 只报状态不够 —— 用户随后解锁后没人再触发 init，整个会话都拿不到 E2EE。
-      this.armStorageKeyRetry(cryptoClient, generation)
+      this.armStorageKeyRetry(cryptoClient, generation, userId, deviceId)
       return
     }
 

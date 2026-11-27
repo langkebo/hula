@@ -58,7 +58,7 @@
       </button>
 
       <!-- 创建下拉（创建空间 / 创建房间） -->
-      <n-dropdown :options="createOptions" @select="handleCreateSelect">
+      <n-dropdown trigger="click" :options="createOptions" @select="handleCreateSelect">
         <button
           type="button"
           class="space-view-header__icon-btn"

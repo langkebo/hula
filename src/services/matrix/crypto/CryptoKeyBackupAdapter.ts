@@ -310,7 +310,26 @@ export class CryptoKeyBackupAdapter {
       // ── 阶段 C：resetKeyBackup —— 备份版本必须真的建起来才允许报成功 ──
       // 历史缺陷（P0-②）：这里原本是 fire-and-forget，UI 拿到恢复密钥就提示成功，
       // 而服务端可能压根没有备份版本。用户以为有备份，真丢设备时就是永久丢失。
-      await withTimeout(crypto.resetKeyBackup(), 45_000, 'resetKeyBackup 超时 (45s)')
+      //
+      // 缺陷（P-00）：SDK 的 resetKeyBackup 内部先 `deleteAllKeyBackupVersions()`
+      // 再创建新版本，服务端未真正删除旧版本时该 Promise 会一直不 settle。实测
+      // 阶段 B 完成后再静默等待 61s（45s 超时 + 回查），期间界面只剩 loading，
+      // 用户侧表现为「应用无响应」。现在改为：20s 上限 + 超时后回查服务端，
+      // 只有确认出现新的备份版本才算成功，否则立刻抛带原因的错误。
+      const versionBefore = await this.readBackupVersion(crypto, log)
+      log(`阶段 C: resetKeyBackup 开始 — 重置前备份版本=${versionBefore ?? '无'}`)
+      try {
+        await withTimeout(crypto.resetKeyBackup(), 20_000, 'resetKeyBackup 超时 (20s)')
+      } catch (err) {
+        const versionAfter = await this.readBackupVersion(crypto, log)
+        if (versionAfter && versionAfter !== versionBefore) {
+          log(`阶段 C 超时但服务端已出现备份版本 ${versionAfter}，视为成功`)
+        } else {
+          throw new Error(
+            `密钥备份版本创建失败：${err instanceof Error ? err.message : String(err)}（当前备份版本=${versionAfter ?? '无'}）`
+          )
+        }
+      }
       log(`分支 3C 完成: 备份版本已建立 (${Date.now() - t3}ms)`)
 
       if (!generatedKey.encodedPrivateKey) {
@@ -319,10 +338,40 @@ export class CryptoKeyBackupAdapter {
       return generatedKey.encodedPrivateKey
     } else {
       log('分支 4: 调用 resetKeyBackup (bootstrapSecretStorage 不可用)')
-      await crypto.resetKeyBackup(authData)
+      // 同阶段 C：sliding sync 下 resetKeyBackup 可能等不到 sync 回声而永不 settle，
+      // 用短超时 + 服务端回查兜底，避免 UI 无限 loading。
+      const versionBefore = await this.readBackupVersion(crypto, log)
+      try {
+        await withTimeout(crypto.resetKeyBackup(authData), 20_000, 'resetKeyBackup 超时 (20s)')
+      } catch (err) {
+        const versionAfter = await this.readBackupVersion(crypto, log)
+        if (!versionAfter || versionAfter === versionBefore) {
+          throw new Error(
+            `密钥备份版本创建失败：${err instanceof Error ? err.message : String(err)}（当前备份版本=${versionAfter ?? '无'}）`
+          )
+        }
+        log(`分支 4 超时但服务端已出现备份版本 ${versionAfter}，视为成功`)
+      }
       const key = generatedKey?.encodedPrivateKey || ''
       log('分支 4 完成: resetKeyBackup 成功')
       return key
+    }
+  }
+
+  /**
+   * 读取服务端当前 key backup 版本号。
+   *
+   * 用于阶段 C 的前置记录与超时回查：`resetKeyBackup` 在 sliding sync 下可能
+   * 因为等不到 sync 回声而永不 settle，此时只能靠服务端真实状态判断成败。
+   * 读取失败一律返回 null，不打断主流程。
+   */
+  private async readBackupVersion(crypto: CryptoApi, log: (msg: string) => void): Promise<string | null> {
+    try {
+      const info = await withTimeout(crypto.getKeyBackupInfo(), 5_000, 'getKeyBackupInfo 超时 (5s)')
+      return info?.version ?? null
+    } catch (err) {
+      log(`阶段 C: 读取备份版本失败 — ${err instanceof Error ? err.message : String(err)}`)
+      return null
     }
   }
 

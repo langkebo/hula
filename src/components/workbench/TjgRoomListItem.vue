@@ -90,7 +90,7 @@
       ref="contextMenuRef"
       :content="item"
       :menu="menu"
-      :special-menu="props['special-menu']"
+      :special-menu="specialMenu"
       @select="handleMenuSelect"
       @menu-show="handleMenuShow" />
   </div>
@@ -118,14 +118,14 @@ const props = defineProps<{
     highlightCount?: number
     notificationCount?: number
     isTombstoned?: boolean
-    membership?: 'join' | 'leave' | 'invite' | 'ban'
+    membership?: 'join' | 'leave' | 'invite' | 'ban' | 'knock' | undefined
     isEncrypted?: boolean
     isBurnAfterRead?: boolean
     memberCount?: number
   }
   classes?: Record<string, boolean>
   menu?: ContextMenuItem[]
-  'special-menu'?: ContextMenuItem[]
+  specialMenu?: ContextMenuItem[]
 }>()
 
 const emit = defineEmits<{

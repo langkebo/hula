@@ -30,7 +30,11 @@ const installMatrixApiMock = async (page: Page): Promise<void> => {
     const body = route.request().postDataJSON() as Record<string, unknown> | null
 
     // 创建空间（createRoom with creation_content.type === 'm.space'）
-    if (url.includes('/createRoom') && method === 'POST' && body?.creation_content?.type === 'm.space') {
+    if (
+      url.includes('/createRoom') &&
+      method === 'POST' &&
+      (body?.creation_content as { type?: string } | undefined)?.type === 'm.space'
+    ) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

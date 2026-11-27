@@ -59,6 +59,7 @@
     "passphrase_too_short": "Passphrase must be at least 8 characters",
     "passphrase_mismatch": "Passphrases do not match",
     "generating": "Generating security key...",
+    "generating_hint": "Creating the key backup version, up to 20 seconds. Please keep this window open",
     "your_recovery_key": "Your Recovery Key",
     "key_warning": "Save this key in a safe place and do not share it with anyone",
     "key_saved_confirm": "I have safely saved the key",

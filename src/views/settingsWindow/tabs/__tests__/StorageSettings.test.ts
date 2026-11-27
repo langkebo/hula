@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils'
+import { NDialogProvider } from 'naive-ui'
 import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 import { makeQuotaAlertsUnavailable } from '@/services/matrix/media/__tests__/fixtures/quota'
 import StorageSettings from '../StorageSettings.vue'
 
@@ -41,12 +43,17 @@ vi.mock('vue-i18n', () => ({
 }))
 
 const mountTab = () =>
-  mount(StorageSettings, {
-    global: {
-      plugins: [createPinia()],
-      stubs: { NDivider: true }
+  mount(
+    {
+      render: () => h(NDialogProvider, null, { default: () => h(StorageSettings) })
+    },
+    {
+      global: {
+        plugins: [createPinia()],
+        stubs: { NDivider: true }
+      }
     }
-  })
+  )
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -112,6 +119,23 @@ describe('StorageSettings 媒体配额', () => {
     await flush()
 
     expect(wrapper.find('[data-test="quota-unavailable"]').exists()).toBe(true)
+  })
+
+  it('接口返回 limit<=0（字段缺失折算）时视为不可用，而不是展示 0', async () => {
+    checkQuotaMock.mockResolvedValue({ used: 0, limit: 0, remaining: 0 })
+
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-test="quota-unavailable"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="quota-stats"]').exists()).toBe(false)
+  })
+
+  it('配额区提供本地缓存清理入口', async () => {
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-test="clear-local-cache"]').exists()).toBe(true)
   })
 
   it('剩余为 0 时展示超限提示', async () => {

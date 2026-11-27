@@ -12,6 +12,7 @@
   "homeserver_example": "Example",
   "homeserver_empty": "Please enter server URL",
   "homeserver_invalid": "Please enter a valid server URL",
+  "homeserver_unreachable": "Cannot reach this server. Please check the address",
   "homeserver_saved": "Server settings saved. It takes effect after you sign in again.",
   "homeserver_save_failed": "Failed to save server settings",
   "select": "Select",

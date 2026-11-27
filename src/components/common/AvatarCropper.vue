@@ -104,7 +104,9 @@
       </n-flex>
       <n-flex class="p-12px" align="center" justify="center" :size="12">
         <n-button quaternary @click="closeWindow">{{ t('components.common.cancel') }}</n-button>
-        <n-button secondary type="primary" @click="handleCrop" :loading="loading">{{ loadingText }}</n-button>
+        <n-button secondary type="primary" :disabled="!cropperReady" :loading="loading" @click="handleCrop">
+          {{ loadingText }}
+        </n-button>
       </n-flex>
     </div>
   </n-modal>
@@ -118,8 +120,10 @@ import { VueCropper as VueCropperComp } from 'vue-cropper'
 import { useI18n } from 'vue-i18n'
 import 'vue-cropper/dist/index.css'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
+import { createLogger } from '@/utils/Logger'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
+const logger = createLogger('AvatarCropper')
 const { t } = useI18n()
 const dialog = useDialog()
 const localImageUrl = ref('')
@@ -143,6 +147,23 @@ const loadingText = computed(() =>
 )
 const previewUrl = ref<CropPreview | null>(null)
 
+// getCropBlob 在图片未加载完成时不会回调：若不复位 loading，naive-ui 的 loading 按钮
+// 会吞掉后续点击，弹窗在本会话内只能通过重启应用恢复。这里加超时兜底。
+const CROP_TIMEOUT_MS = 10_000
+let cropTimer: ReturnType<typeof setTimeout> | null = null
+
+const clearCropTimer = () => {
+  if (cropTimer) {
+    clearTimeout(cropTimer)
+    cropTimer = null
+  }
+}
+
+const resetCropState = () => {
+  clearCropTimer()
+  loading.value = false
+}
+
 // Calculate scale factor to fit preview into the wrapper (128px)
 const PREVIEW_SIZE = 128
 const previewScaleTransform = computed(() => {
@@ -165,6 +186,8 @@ const props = defineProps<{
 watch(
   [() => props.show, () => props.imageUrl],
   ([show, imageUrl]) => {
+    // 弹窗重新打开或换图时复位加载态，避免上一次上传的 loading 残留
+    resetCropState()
     if (show && imageUrl) {
       // 先同步设置图片 URL，确保 v-if 渲染 VueCropperComp 时 img 已就绪
       localImageUrl.value = imageUrl
@@ -185,15 +208,22 @@ const handleRealTime = (data: CropPreview) => {
 }
 
 const handleCrop = () => {
-  loading.value = true
+  // 画布未就绪时不进入 loading，避免 getCropBlob 不回调导致 loading 永久卡死
+  if (!cropperReady.value) return
 
   const cropper = cropperRef.value as VueCropperInstance | null
-  if (!cropper?.getCropBlob) {
+  if (!cropper?.getCropBlob) return
+
+  loading.value = true
+  clearCropTimer()
+  cropTimer = setTimeout(() => {
+    cropTimer = null
     loading.value = false
-    return
-  }
+    logger.warn('getCropBlob timed out, upload state reset')
+  }, CROP_TIMEOUT_MS)
 
   cropper.getCropBlob((blob: Blob) => {
+    clearCropTimer()
     emit('crop', blob)
   })
 }
@@ -218,7 +248,7 @@ const closeWindow = () => {
 
 /** 结束加载状态 */
 const finishLoading = () => {
-  loading.value = false
+  resetCropState()
 }
 
 // 定义组件实例类型
@@ -229,8 +259,9 @@ defineExpose<AvatarCropperInstance>({
   finishLoading
 })
 
-// 确保在组件卸载时清理预览
+// 确保在组件卸载时清理预览与计时器
 onUnmounted(() => {
+  clearCropTimer()
   previewUrl.value = {
     url: '',
     img: null,

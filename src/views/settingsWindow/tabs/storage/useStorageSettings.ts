@@ -1,10 +1,16 @@
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { applyMediaUploadPreferences } from '@/services/matrix/media/mediaUploadPreferences'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { formatBytes } from '@/utils/Formatting'
+import { createLogger } from '@/utils/Logger'
+import { clearAllSearchData } from '@/workers/searchIndexDb'
+
+const logger = createLogger('StorageSettings')
 
 type QuotaState = 'loading' | 'available' | 'unavailable'
 type MediaConfigState = 'loading' | 'available' | 'unavailable'
@@ -128,7 +134,8 @@ export function useStorageSettings() {
       matrixMediaService.getQuotaAlerts()
     ])
 
-    if (usageResult.status === 'rejected' || !usageResult.value) {
+    if (usageResult.status === 'rejected' || !usageResult.value || usageResult.value.limit <= 0) {
+      // 接口失败 / 未返回上限字段都视为不可用：不要把自己的缺失画成用量 0
       quotaState.value = 'unavailable'
       return
     }
@@ -154,6 +161,45 @@ export function useStorageSettings() {
   /** partial 态的重试只补读失败的子资源，不触碰压缩 / 分片等本地偏好 */
   function retryPartialLoads(): void {
     void Promise.all([loadQuota(), loadMediaConfig()])
+  }
+
+  const clearingLocalCache = ref(false)
+
+  /**
+   * 清空搜索索引：worker 存活时同时清内存与落盘库，否则直接清 IndexedDB。
+   * 与移动端清理逻辑保持一致，避免「清完还能搜到」。
+   */
+  async function clearSearchIndex(): Promise<void> {
+    if (matrixWorkerHost.isStarted) {
+      try {
+        await matrixWorkerHost.resetSearchIndex()
+        return
+      } catch (error) {
+        logger.warn('worker clear failed, falling back to clearing IndexedDB directly', error)
+      }
+    }
+    await clearAllSearchData()
+  }
+
+  /**
+   * 清理本地可安全重建的缓存：搜索索引 DB + 缩略图/表情等本地媒体缓存。
+   * 不删除服务端媒体；完成后刷新浏览器存储用量。
+   */
+  async function clearLocalCache(): Promise<boolean> {
+    if (clearingLocalCache.value) return false
+    clearingLocalCache.value = true
+    try {
+      await clearSearchIndex()
+      await useThumbnailCacheStore().clearMediaCache()
+      // 用量刷新失败不影响「清理成功」的结论
+      await loadStats().catch((error) => logger.warn('Failed to refresh storage usage', error))
+      return true
+    } catch (error) {
+      logger.error('Failed to clear local cache', error)
+      return false
+    } finally {
+      clearingLocalCache.value = false
+    }
   }
 
   onMounted(() => {
@@ -188,6 +234,8 @@ export function useStorageSettings() {
     updateCompressQuality,
     updateChunkEnabled,
     retryPartialLoads,
+    clearingLocalCache,
+    clearLocalCache,
     formatBytes
   }
 }

@@ -134,6 +134,17 @@ describe('MatrixWorkerHost', () => {
     await expect(host.ping()).rejects.toThrow(/worker 未启动/)
   })
 
+  it('skips search index writes when the worker is not started', async () => {
+    const { host, worker } = makeHost()
+
+    // P-12：登出竞态下索引写入属于可安全跳过的 no-op，不应抛出「worker 未启动」
+    await expect(host.resetSearchIndex()).resolves.toBeUndefined()
+    await expect(
+      host.upsertSearchEvents([{ eventId: '$1', roomId: '!r:hs', sender: '@u:hs', timestamp: 1, body: 'hello' }])
+    ).resolves.toBeUndefined()
+    expect(worker.postedMessages).toHaveLength(0)
+  })
+
   it('ignores responses with unknown ids without throwing', async () => {
     const { worker } = makeReadyHost()
     expect(() => worker.emit({ type: 'ping', id: 'never-registered', success: true })).not.toThrow()
