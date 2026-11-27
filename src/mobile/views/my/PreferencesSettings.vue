@@ -166,6 +166,15 @@
           </div>
 
           <van-cell-group inset>
+            <!-- 在线状态可见性：与桌面「安全设置 → 隐私设置」同源，均走 settingStore -->
+            <van-cell
+              :title="t('mobile_preferences.show_online_status')"
+              :label="t('mobile_preferences.show_online_status_desc')">
+              <template #right-icon>
+                <van-switch v-model="showOnlineStatus" size="22px" />
+              </template>
+            </van-cell>
+
             <van-cell :title="t('mobile_preferences.send_read_receipts')">
               <template #icon>
                 <div
@@ -246,6 +255,7 @@ const {
   burnShowCountdown,
   threadAutoSubscribe,
   threadShowInRoom,
+  showOnlineStatus,
   sendReadReceipts,
   sendTypingNotifications
 } = usePreferenceSettings()

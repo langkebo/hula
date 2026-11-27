@@ -93,6 +93,11 @@ export function usePreferenceSettings() {
     set: (value: string) => settingStore.setSpaceDefaultNotification(value)
   })
 
+  const showOnlineStatus = computed({
+    get: () => settingStore.showOnlineStatusEnabled,
+    set: (value: boolean) => settingStore.setShowOnlineStatusEnabled(value)
+  })
+
   const sendReadReceipts = computed({
     get: () => settingStore.sendReadReceiptsEnabled,
     set: (value: boolean) => settingStore.setSendReadReceiptsEnabled(value)
@@ -119,6 +124,7 @@ export function usePreferenceSettings() {
     spaceAutoJoinRooms,
     spaceShowSubspaces,
     spaceDefaultNotification,
+    showOnlineStatus,
     sendReadReceipts,
     sendTypingNotifications
   }
