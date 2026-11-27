@@ -8,7 +8,7 @@ import {
 } from '@/services/matrix/admin'
 
 /** 注册外部服务时页面收集的草稿字段。 */
-interface ExternalServiceDraft {
+export interface ExternalServiceDraft {
   service_type: string
   service_id: string
   display_name: string

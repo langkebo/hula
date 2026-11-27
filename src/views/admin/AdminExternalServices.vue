@@ -184,6 +184,7 @@ import {
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminExternalServices } from '@/composables/admin'
+import type { ExternalServiceDraft } from '@/composables/admin/useAdminExternalServices'
 import AdminServiceRow from './AdminServiceRow.vue'
 
 defineOptions({
@@ -216,7 +217,14 @@ const SERVICE_TYPES = ['trendradar', 'openclaw', 'webhook', 'irc', 'slack', 'dis
 
 const selectedType = ref(serviceType.value)
 const showRegister = ref(false)
-const draft = reactive({ service_type: 'webhook', service_id: '', display_name: '', webhook_url: '', api_key: '' })
+// 表单始终持有受控字符串，注册时再按可选字段的草稿契约提交
+const draft = reactive<Required<ExternalServiceDraft>>({
+  service_type: 'webhook',
+  service_id: '',
+  display_name: '',
+  webhook_url: '',
+  api_key: ''
+})
 
 const typeOptions = SERVICE_TYPES.map((value) => ({ label: value, value }))
 
