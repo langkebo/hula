@@ -1,5 +1,6 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import SecuritySettings from '../SecuritySettings.vue'
 import { MOBILE_SETTINGS_PASSWORD_PATH } from '../settingsRoutes'
 
@@ -64,23 +65,25 @@ vi.mock('@/stores/domains/chat/matrix', () => ({
 }))
 
 // Helper to mount SecuritySettings with $t global mock (needed for template usage)
-function mountSecuritySettings(extraOpts: Record<string, any> = {}) {
-  const mergedStubs = {
+function buildStubs(): Record<string, any> {
+  return {
     'van-cell': {
       inheritAttrs: true,
       props: ['title', 'label', 'value', 'isLink'],
       template:
         '<div v-bind="$attrs" data-test="van-cell"><span>{{ title }}</span><span>{{ label }}</span><slot name="icon" /><slot name="right-icon" /></div>'
     },
-    ...(extraOpts.stubs || {}),
     MobilePrivateChatSection: { template: '<div data-test="private-chat-section" />' }
   }
+}
+
+function mountSecuritySettings(extraOpts: Record<string, any> = {}) {
   return mount(SecuritySettings, {
     global: {
       mocks: {
         $t: (key: string) => key
       },
-      stubs: mergedStubs
+      stubs: { ...buildStubs(), ...(extraOpts.stubs || {}) }
     }
   })
 }
@@ -283,5 +286,62 @@ describe('SecuritySettings', () => {
 
     // Verify the van-cell with secure backup title is rendered
     expect(wrapper.text()).toContain('mobile_security.secure_backup.title')
+  })
+})
+
+/**
+ * keep-alive 下的刷新语义。
+ *
+ * 本页挂在 `MyLayout` 的 RouterView 下，该 RouterView **没有** keep-alive
+ * ⇒ 「进二级页再返回」会重新挂载，onMounted 自己会重跑（无需 onActivated）。
+ * 但 `MyLayout` 被外层 tab 布局的 keep-alive 缓存
+ * ⇒ 「切到别的 Tab 再切回来」是 deactivate/activate，onMounted 不触发，
+ * 设备数、已忽略用户数、加密状态都会停在旧值 —— 这才是 onActivated 要覆盖的场景。
+ *
+ * 两个用例分别钉住两半：首次进入不能双请求，再次激活必须刷新。
+ */
+function mountInKeepAlive() {
+  const Host = defineComponent({
+    name: 'SecuritySettingsKeepAliveHost',
+    components: { SecuritySettings },
+    props: { visible: { type: Boolean, default: true } },
+    template: '<KeepAlive><SecuritySettings v-if="visible" /></KeepAlive>'
+  })
+  return mount(Host, {
+    props: { visible: true },
+    global: {
+      mocks: { $t: (key: string) => key },
+      stubs: buildStubs()
+    }
+  })
+}
+
+describe('SecuritySettings keep-alive 刷新', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getDevicesMock.mockResolvedValue([])
+    getIgnoredUsersMock.mockResolvedValue([])
+  })
+
+  it('首次进入只加载一次，activated 不重复请求', async () => {
+    mountInKeepAlive()
+    await flushPromises()
+
+    // mounted 与 activated 在首次挂载时都会触发，若不做判断这里会是 2
+    expect(getDevicesMock).toHaveBeenCalledTimes(1)
+    expect(getIgnoredUsersMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('切走 Tab 再切回来（activate）时重新加载计数', async () => {
+    const wrapper = mountInKeepAlive()
+    await flushPromises()
+    expect(getDevicesMock).toHaveBeenCalledTimes(1)
+
+    await wrapper.setProps({ visible: false })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+
+    expect(getDevicesMock).toHaveBeenCalledTimes(2)
+    expect(getIgnoredUsersMock).toHaveBeenCalledTimes(2)
   })
 })
