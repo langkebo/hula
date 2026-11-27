@@ -42,7 +42,7 @@
             :special-menu="visibleSpecialMenu(item)"
             @click="onMsgClick(item)"
             @dblclick="onMsgDblclick(item)"
-            @select="(e: any) => handleSelect(item as SessionItem, e)"
+            @select="(row: SessionItem, menuItem: unknown) => handleSelect(row, menuItem as OPT.RightMenu<SessionItem>)"
             @accept-invite="onAcceptInvite?.($event)"
             @reject-invite="onRejectInvite?.($event)"
             @menu-show="onMenuShow as () => void" />
@@ -89,7 +89,7 @@ type SessionListItem = SessionItem & {
   highlightCount?: number
   notificationCount?: number
   isTombstoned?: boolean
-  membership?: 'join' | 'leave' | 'invite' | 'ban'
+  membership?: 'join' | 'leave' | 'invite' | 'ban' | 'knock' | undefined
 }
 
 type ScrollbarInstance = {
