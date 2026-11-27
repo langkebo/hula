@@ -10,6 +10,7 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   labsIntegrations: `${SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs}/${SETTINGS_LABS_CHILD_ROUTE_SEGMENTS.integrations}`,
   securityPrivacy: SETTINGS_CANONICAL_ROUTE_SEGMENTS.securityPrivacy,
   password: 'password',
+  threePid: 'threePid',
   ignoredUsers: 'ignoredUsers',
   securityKey: 'securityKey',
   encryption: 'encryption',
@@ -27,6 +28,7 @@ export const MOBILE_SETTINGS_LABS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_
 export const MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.labsIntegrations}`
 export const MOBILE_SETTINGS_SECURITY_PRIVACY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.securityPrivacy}`
 export const MOBILE_SETTINGS_PASSWORD_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.password}`
+export const MOBILE_SETTINGS_THREE_PID_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.threePid}`
 export const MOBILE_SETTINGS_IGNORED_USERS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.ignoredUsers}`
 export const MOBILE_SETTINGS_SECURITY_KEY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.securityKey}`
 export const MOBILE_SETTINGS_ENCRYPTION_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.encryption}`
@@ -43,6 +45,7 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   labsIntegrations: 'mobileLabsIntegrationsSettings',
   securityPrivacy: 'mobileSecurityPrivacySettings',
   password: 'mobilePasswordSettings',
+  threePid: 'mobileThreePid',
   ignoredUsers: 'mobileIgnoredUsers',
   securityKey: 'mobileSecurityKeySetup',
   encryption: 'mobileEncryption',

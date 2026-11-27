@@ -81,5 +81,7 @@
     "delete_success": "Backup deleted successfully",
     "delete_failed": "Failed to delete backup"
   },
+  "three_pid": "Email / Phone",
+  "three_pid_hint": "Bind for account recovery and identity verification",
   "title": "Security Settings"
 }

@@ -86,6 +86,8 @@ export type Messages = {
     "delete_success": "备份删除成功",
     "delete_failed": "备份删除失败"
   },
+  "three_pid": "邮箱 / 手机号",
+  "three_pid_hint": "绑定后可用于账号找回与身份验证",
   "title": "安全设置"
 }
 
@@ -175,4 +177,6 @@ export type KeyPaths =
   | "mobile_security.secure_backup.verify_failed"
   | "mobile_security.secure_backup.delete_success"
   | "mobile_security.secure_backup.delete_failed"
+  | "mobile_security.three_pid"
+  | "mobile_security.three_pid_hint"
   | "mobile_security.title"

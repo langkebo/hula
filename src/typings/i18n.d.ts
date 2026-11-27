@@ -80,6 +80,7 @@ import type { Messages as mobile_settingMessages, KeyPaths as mobile_settingKeyP
 import type { Messages as mobile_statusMessages, KeyPaths as mobile_statusKeyPaths } from './i18n/mobile_status'
 import type { Messages as mobile_storageMessages, KeyPaths as mobile_storageKeyPaths } from './i18n/mobile_storage'
 import type { Messages as mobile_tabbarMessages, KeyPaths as mobile_tabbarKeyPaths } from './i18n/mobile_tabbar'
+import type { Messages as mobile_three_pidMessages, KeyPaths as mobile_three_pidKeyPaths } from './i18n/mobile_three_pid'
 import type { Messages as mobile_voice_videoMessages, KeyPaths as mobile_voice_videoKeyPaths } from './i18n/mobile_voice_video'
 import type { Messages as moderationMessages, KeyPaths as moderationKeyPaths } from './i18n/moderation'
 import type { Messages as pinned_messageMessages, KeyPaths as pinned_messageKeyPaths } from './i18n/pinned_message'
@@ -185,6 +186,7 @@ export type I18nKeys = {
   "mobile_status": mobile_statusMessages
   "mobile_storage": mobile_storageMessages
   "mobile_tabbar": mobile_tabbarMessages
+  "mobile_three_pid": mobile_three_pidMessages
   "mobile_voice_video": mobile_voice_videoMessages
   "moderation": moderationMessages
   "pinned_message": pinned_messageMessages
@@ -300,6 +302,7 @@ export type I18nKeyPaths =
   | mobile_statusKeyPaths
   | mobile_storageKeyPaths
   | mobile_tabbarKeyPaths
+  | mobile_three_pidKeyPaths
   | mobile_voice_videoKeyPaths
   | moderationKeyPaths
   | pinned_messageKeyPaths

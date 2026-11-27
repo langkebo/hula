@@ -36,6 +36,23 @@
                 </div>
               </template>
             </van-cell>
+
+            <!-- 3PID：与桌面「安全设置 → 邮箱 / 手机号」同一组账号服务，用于账号找回 -->
+            <van-cell
+              data-testid="security-three-pid"
+              :title="t('mobile_security.three_pid')"
+              :label="t('mobile_security.three_pid_hint')"
+              is-link
+              @click="router.push(MOBILE_SETTINGS_THREE_PID_PATH)">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                  <svg class="w-20px h-20px color-[--tjg-color-info-500]" aria-hidden="true">
+                    <use href="#mail" />
+                  </svg>
+                </div>
+              </template>
+            </van-cell>
           </van-cell-group>
 
           <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
@@ -212,7 +229,8 @@ import {
   MOBILE_SETTINGS_DEVICES_PATH,
   MOBILE_SETTINGS_IGNORED_USERS_PATH,
   MOBILE_SETTINGS_INVITE_PERMISSION_PATH,
-  MOBILE_SETTINGS_PASSWORD_PATH
+  MOBILE_SETTINGS_PASSWORD_PATH,
+  MOBILE_SETTINGS_THREE_PID_PATH
 } from './settingsRoutes'
 
 const logger = createLogger('SecuritySettings')

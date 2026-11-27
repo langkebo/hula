@@ -90,6 +90,12 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     keywords: ['ignore', '屏蔽', '黑名单', 'block', '忽略']
   },
   {
+    labelKey: 'mobile_security.three_pid',
+    groupKey: 'mobile_setting.account_section',
+    path: '/mobile/mobileMy/threePid',
+    keywords: ['3pid', 'email', '邮箱', '手机号', '绑定', 'bind', '找回', 'recovery', '身份验证']
+  },
+  {
     labelKey: 'mobile_security.invite_permission',
     groupKey: 'mobile_setting.account_section',
     path: '/mobile/mobileMy/invitePermission',

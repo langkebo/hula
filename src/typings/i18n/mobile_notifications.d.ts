@@ -22,6 +22,9 @@ export type Messages = {
   "mention_only": "仅{'@'}提及",
   "mute": "静音",
   "notify": "通知",
+  "permission_action": "去开启",
+  "permission_desc": "未开启，所有通知都不会送达。点击前往开启",
+  "permission_title": "系统通知权限",
   "priority": "通知优先级",
   "priority_high": "高",
   "priority_hint": "高：始终显示正文；中：遵循内容摘要开关；低：仅显示标题",
@@ -62,6 +65,9 @@ export type KeyPaths =
   | "mobile_notifications.mention_only"
   | "mobile_notifications.mute"
   | "mobile_notifications.notify"
+  | "mobile_notifications.permission_action"
+  | "mobile_notifications.permission_desc"
+  | "mobile_notifications.permission_title"
   | "mobile_notifications.priority"
   | "mobile_notifications.priority_high"
   | "mobile_notifications.priority_hint"
