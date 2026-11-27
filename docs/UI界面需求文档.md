@@ -1466,7 +1466,7 @@ pnpm check:ratchet  ->  hardcoded_color: 0 (baseline 0)
 | 2 | 在线状态开关 | 隐私 | **真缺口**：两端 store 同源，移动端未渲染 | P1 | ✅ `44b1d5eb5` |
 | ~~3~~ | ~~屏蔽用户管理~~ | 安全 | **误报**：三种机制移动端全有（见下） | — | 无需改动 |
 | ~~4~~ | ~~私密聊天自动锁定~~ | 安全 | **误报**：`MobilePrivateChatSection` 已渲染 | — | 无需改动 |
-| 5 | 第三方 ID（绑定邮箱） | 安全 | **真缺口**：移动端 3PID 零覆盖 | P2 | 待做 |
+| 5 | 第三方 ID（绑定邮箱） | 安全 | **真缺口**：移动端 3PID 零覆盖 | P2 | ✅ `a47151ceb` |
 
 **候选从 5 项收缩到 1 项。** 第 3、4 项是我的误判，原文写「只能屏蔽、无法查看或解除」
 与「私密会话无自动锁定」，两条都与代码不符。
@@ -1532,7 +1532,7 @@ src/mobile/views/my/SecuritySettings.vue:169                    <MobilePrivateCh
 本轮有效的判据是**反查能力落地链路**——开关最终写到哪个 store / 哪个 service 方法，
 再去移动端找同一写入点。第 3 项就是靠 `setRoomShield` 与 `setIgnoredUsers` 两个写入点找到的。
 
-#### 12.3.3 仅剩的第 5 项（第三方 ID）真实缺口
+#### 12.3.3 第 5 项（第三方 ID）—— **已补齐（`a47151ceb`）**
 
 移动端 3PID 覆盖为 **0**：
 
@@ -1548,8 +1548,38 @@ grep -rniE 'threePid|threepid|绑定邮箱' src/mobile/ --include=*.vue --includ
 且桌面实现里手机号（`msisdn`）流程**故意不开放**——SDK 只有 `requestAdd3pidMsisdnToken`，
 没有对应的 `submitToken` 封装，后端也没有 msisdn 提交端点，做不出闭环。移动端若实现须保持同一取舍。
 
-**本条不再建议改代码**（原「等产品定精简是否有意」的前提已不适用）：
-1、2 项已落地，3、4 项经查为误报，第 5 项作为独立 P2 低优先事项登记即可。
+**本轮实施**（按「复用一个独立二级页」的决策）：
+
+| 环节 | 落点 |
+|---|---|
+| 页面 | `src/mobile/views/my/MobileThreePid.vue`（289 行），复用 `AutoFixHeightPage` + `HeaderBar` 二级页壳 |
+| 路由 | `settingsRoutes.ts` 加 `threePid` → `/mobile/mobileMy/threePid`，注册在 `mobileMySettingsRoutes.ts` |
+| 入口 | `SecuritySettings.vue` 账号组「设备管理」之后（`data-testid="security-three-pid"`） |
+| 搜索 | `mobileSettingsSearchIndex.ts` 补一条，keywords 覆盖「3pid / 邮箱 / 找回 / 绑定」 |
+| i18n | 新命名空间 `mobile_three_pid`（中英各 33 键）+ `mobile_security.three_pid{,_hint}` |
+
+**三步链路不能省**，这是本条唯一的实现风险点：
+
+```
+requestThreePidEmailToken(email)                 → 生成 clientSecret、拿 sid
+submitThreePidEmailToken(sid, clientSecret, code) → 校验验证码
+addThreePidWithPassword(sid, clientSecret, pwd)   → /account/3pid/add 的 UIA 阶段
+```
+
+少调第二步就会拿**未验证的 sid** 去 add，服务端必失败；而失败信息通常只是 403/400，
+现场表现为「点了确认绑定没反应」。因此单测用 `invocationCallOrder` 断言
+submit 必须早于 add，并做了变异自证：删掉 submit 那一行后 **2 例转红**。
+
+**手机号仍未开放**，与桌面同一取舍：SDK 只有 `requestAdd3pidMsisdnToken`、
+没有对应 `submitToken` 封装，后端也没有 msisdn 提交端点。页面里显式写「暂未开放」，
+而不是放一个必然失败的表单。
+
+**验证**：`MobileThreePid` 12/12、`SecuritySettings`+`MobileSettings` 25/25、`vue-tsc` 0 error；
+`check:i18n` / `check:i18n-refs` / `check:mobile-css` / `check:doc-coverage` 均 OK。
+`check:file-size` 当次红在 8 个并行改动文件上（`App.vue`、`Image.vue` 等），与本次无关，
+未 `--update` 洗白。
+
+**安全 / 通知两类至此清零**：1、2、5 已落地，3、4 为误报。
 
 ### 12.4 全局搜索页中间栏错位（P1）—— **已修复（2026-11-27，`1cf9ac116`）**
 
