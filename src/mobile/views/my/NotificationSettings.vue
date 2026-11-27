@@ -12,6 +12,29 @@
           </div>
 
           <van-cell-group inset>
+            <!--
+              系统通知权限状态。
+
+              原来 `usePushReceiver` 定义了 requestPermission()，但没有任何界面调用它，
+              也没有地方展示 hasPermission —— 用户安装后若没手动授予通知权限，
+              所有推送都会静默失败，而 App 内「启用通知」开关仍显示为开。
+            -->
+            <van-cell
+              v-if="!notificationPermissionGranted"
+              :title="t('mobile_notifications.permission_title')"
+              :label="t('mobile_notifications.permission_desc')"
+              is-link
+              @click="handleRequestNotificationPermission">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
+                  <svg class="w-20px h-20px color-[--tjg-color-warning-500]" aria-hidden="true">
+                    <use href="#remind" />
+                  </svg>
+                </div>
+              </template>
+            </van-cell>
+
             <van-cell :title="t('mobile_notifications.enable_notifications')">
               <template #icon>
                 <div
@@ -177,8 +200,9 @@
 </template>
 
 <script setup lang="ts">
+import { isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification'
 import { showToast } from 'vant'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onActivated, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useNotificationDisplayPreferences } from '@/composables/settings/useNotificationDisplayPreferences'
@@ -192,6 +216,40 @@ import { createLogger } from '@/utils/Logger'
 import { MOBILE_SETTINGS_PUSH_PATH } from './settingsRoutes'
 
 const logger = createLogger('NotificationSettings')
+
+/**
+ * 系统通知权限是否已授予。
+ *
+ * 默认 true：首帧不闪警示；真实值由 refreshNotificationPermission() 在挂载/激活时回填。
+ * 非 Tauri 环境（浏览器、单测）没有该插件，catch 后同样保持 true，不打扰用户。
+ */
+const notificationPermissionGranted = ref(true)
+
+const refreshNotificationPermission = async () => {
+  try {
+    notificationPermissionGranted.value = await isPermissionGranted()
+  } catch (error) {
+    // 浏览器/单测环境没有该插件，属预期情况，不用 warn 级别污染日志
+    logger.debug('读取通知权限状态失败，按已授权处理', error)
+    notificationPermissionGranted.value = true
+  }
+}
+
+const handleRequestNotificationPermission = async () => {
+  try {
+    const result = await requestPermission()
+    notificationPermissionGranted.value = result === 'granted'
+    if (result !== 'granted') {
+      showToast(t('mobile_notifications.permission_desc'))
+    }
+  } catch (error) {
+    logger.warn('请求通知权限失败', error)
+  }
+}
+
+onMounted(refreshNotificationPermission)
+// keep-alive 下从系统设置返回时不会重新挂载，用 onActivated 再读一次
+onActivated(refreshNotificationPermission)
 
 const { t } = useI18n()
 const router = useRouter()

@@ -1453,6 +1453,54 @@ pnpm check:ratchet  ->  hardcoded_color: 0 (baseline 0)
 | 3 | 若「遗漏」→ 按功能优先级补齐，**先补安全与通知**（用户感知最强） | 开发 |
 | 4 | 长期：抽「设置项清单」作为单一数据源，两端只负责渲染 | 架构 |
 
+---
+
+#### 12.3.1 安全 / 通知两类的补齐优先级（2026-11-27 实测）
+
+用户已决定「先补安全与通知」。逐项核查移动端是否真缺之后，**候选范围从最初估计的十几项收缩到 5 项**
+（已读回执、输入状态本来就存在，只是在 `PreferencesSettings` 而非 `SecuritySettings` 里）。
+
+| 序 | 缺口 | 类别 | 缺失后果 | 级别 | 工作量 |
+|---|---|---|---:|---|---|
+| **1** | **系统通知权限状态与请求入口** | 通知 | **权限未授予时所有推送静默失败**，App 内开关仍显示"开"，用户无从得知 | **P0** | 1 文件 + 3 i18n |
+| 2 | 在线状态开关 | 隐私 | 无法隐藏在线状态，随时被看到 | P1 | 1 文件 + 3 i18n |
+| 3 | 屏蔽用户管理 | 安全 | 只能屏蔽、无法查看或解除 | P1 | 1 文件 + 入口 |
+| 4 | 私密聊天自动锁定 | 安全 | 私密会话无自动锁定，安全弱化 | P1 | 1 文件 |
+| 5 | 第三方 ID（绑定邮箱） | 安全 | 无法绑定/查看，属低频 | P2 | 1 文件 |
+
+**为什么第 1 项是 P0 而不是 P2**：
+
+它不是"少一个开关"，而是**功能整体失效且无反馈**。实测证据：
+
+```ts
+// src/composables/mobile/usePushReceiver.ts:39
+async function requestPermission() { ... }   // 定义了
+```
+
+```
+grep -rn 'requestPermission' src/mobile/ --include=*.vue
+→ 空（从未被任何界面调用）
+grep -rn 'hasPermission' src/mobile/ --include=*.vue
+→ 空（从未用于 UI 提示）
+```
+
+也就是说：**权限请求代码写了但没接线**，`hasPermission` 也只是内部状态。
+用户安装后若没手动去系统设置授予通知权限，推送永远不显示。
+
+**第 1 项已实施**（本轮）：
+
+- `src/mobile/views/my/NotificationSettings.vue`：全局设置组顶部增加权限 cell，
+  未授权时显示警示图标 + 「去开启」，点击调 `requestPermission()`
+- 非 Tauri 环境（浏览器预览、jsdom 单测）catch 后按已授权处理，不打扰用户
+- `onMounted` + `onActivated` 双重读取：`keep-alive` 下从系统设置返回也能刷新状态
+- i18n：`mobile_notifications.permission_{title,desc,action}`（中英）
+
+**第 2–5 项待做**，建议顺序即上表顺序：
+在线状态（隐私感知最强）→ 屏蔽用户（安全刚需）→ 私密聊天自动锁定 → 第三方 ID。
+
+**注意第 2 项的实现路径**：桌面用 `settingStore.setShowOnlineStatusEnabled()`，
+是**纯前端 store**，无后端调用。移动端可直接复用同一 store，不需要新增 API。
+
 **本条不建议现在动手改代码**：在「精简是否有意」确定之前，任何补齐都可能推翻后续设计决策。
 
 ### 12.4 全局搜索页中间栏错位（P1）—— **已修复（2026-11-27，`1cf9ac116`）**
