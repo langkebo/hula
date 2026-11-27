@@ -38,7 +38,7 @@
         type="button"
         :aria-label="t('message.call_window.reject')"
         @click="emit('reject')"
-        class="size-40px rounded-full border-0 bg-[--tjg-color-danger-500] hover:bg-[--tjg-color-danger-600] flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full border-0 bg-[--tjg-danger-solid-bg] hover:opacity-90 flex-center cursor-pointer shadow-lg">
         <svg class="text-[--tjg-text-inverse] size-20px" aria-hidden="true">
           <use href="#PhoneHangup"></use>
         </svg>

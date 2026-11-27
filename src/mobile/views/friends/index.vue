@@ -73,7 +73,7 @@
         <div v-clickable class="flex items-center gap-8px" @click="toMessage">
           <span
             v-if="contactUnreadCount > 0"
-            class="px-4px py-4px rounded-999px bg-[--tjg-color-danger-500] text-white text-[length:var(--tjg-font-size-sm)] font-600 min-w-20px text-center">
+            class="px-4px py-4px rounded-999px bg-[--tjg-danger-solid-bg] text-white text-[length:var(--tjg-font-size-sm)] font-600 min-w-20px text-center">
             {{ contactUnreadCount > 99 ? '99+' : contactUnreadCount }}
           </span>
           <img src="@/assets/mobile/friend/right-arrow.webp" class="block h-20px dark:invert" alt="" />

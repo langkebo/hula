@@ -37,7 +37,7 @@
 
             <!-- 有多少条消息 -->
             <div
-              class="text-(10px [--tjg-text-inverse]) rounded-full px-6px py-2px flex-center bg-[--tjg-color-danger-500]">
+              class="text-(10px [--tjg-text-inverse]) rounded-full px-6px py-2px flex-center bg-[--tjg-danger-solid-bg]">
               {{ group.messageCount > 99 ? '99+' : group.messageCount }}
             </div>
           </n-flex>

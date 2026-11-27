@@ -146,7 +146,7 @@
                   }}
                 </div>
                 <div
-                  class="h-full text-[length:var(--tjg-font-size-base)] w-80px bg-[--tjg-color-danger-500] text-white flex items-center justify-center"
+                  class="h-full text-[length:var(--tjg-font-size-base)] w-80px bg-[--tjg-danger-solid-bg] text-white flex items-center justify-center"
                   @click="emit('delete', item)">
                   {{ t('mobile_home.chat.delete') }}
                 </div>

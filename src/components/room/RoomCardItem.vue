@@ -94,7 +94,7 @@
 
       <span
         v-if="item.unreadCount > 0"
-        class="room-card-item__unread shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] px-4px rounded-full bg-[--tjg-color-danger-600] text-[--tjg-text-inverse] text-[length:var(--tjg-font-size-2xs)] font-[--tjg-font-weight-medium]"
+        class="room-card-item__unread shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] px-4px rounded-full bg-[--tjg-danger-solid-bg] text-[--tjg-text-inverse] text-[length:var(--tjg-font-size-2xs)] font-[--tjg-font-weight-medium]"
         data-testid="room-card-unread">
         {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
       </span>

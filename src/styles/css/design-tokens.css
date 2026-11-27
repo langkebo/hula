@@ -40,6 +40,17 @@
   --tjg-color-danger-600: #cf1322;
   /* 白底对比度 7.5:1 @danger-700（小字号趋势/倒计时文字达标 AA） */
   --tjg-color-danger-700: #a8071a;
+  /*
+   * 实心危险底 + 白字专用。
+   *
+   * danger-500/600 是为「暗底上的彩色文字」调的色相：亮色 #ff4d4f（白字 3.27:1）、
+   * 暗色被提亮到 #ff7875（白字 2.56:1）—— 用作前景没问题，用作背景时白字全都不达标。
+   * 未读徽章、私密模式气泡这类「红底白字」必须用本 token。
+   *
+   * 亮暗同值：它的唯一职责是承载白字（5.44:1 达 AA 正文），
+   * 与主题无关；且对亮底 #fff 与暗底 #1a1a1a 都有 >=3:1 的可分辨度。
+   */
+  --tjg-danger-solid-bg: #c62f34;
   --tjg-color-danger-100: rgba(255, 77, 79, 0.05);
   --tjg-color-danger-200: rgba(255, 77, 79, 0.1);
   --tjg-color-danger-50: rgba(255, 77, 79, 0.08);
@@ -451,6 +462,8 @@ html[data-theme='dark'] {
   --tjg-color-danger-700: #ffb3b0;
   --tjg-color-danger-100: rgba(255, 77, 79, 0.08);
   --tjg-color-danger-200: rgba(255, 77, 79, 0.15);
+  /* 实心危险底 + 白字：与亮色同值，理由见亮色块的说明 */
+  --tjg-danger-solid-bg: #c62f34;
   --tjg-color-info-500: #40a9ff;
   --tjg-color-info-600: #69b1ff;
   --tjg-color-info-700: #91caff;

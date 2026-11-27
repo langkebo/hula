@@ -304,7 +304,8 @@
 .private-mode-active {
   // 发送方气泡红色背景
   .bubble-oneself {
-    background-color: var(--tjg-color-danger-500);
+    /* 气泡内是白字正文：danger-500 亮 3.27:1 / 暗 2.56:1 都不达 AA，改用实心底 token */
+    background-color: var(--tjg-danger-solid-bg);
   }
   // 接收方气泡红色边框
   .bubble {
