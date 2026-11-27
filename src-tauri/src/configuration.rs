@@ -529,17 +529,137 @@ pub fn get_configuration(app_handle: &AppHandle) -> Result<Settings, config::Con
     }
 }
 
+/// 解析桌面开发环境（debug 构建）的 configuration 目录。
+///
+/// 常规开发流程 `pnpm td` 的工作目录是 `src-tauri`，配置就在 `./configuration`。
+/// 但 debug 包经 LaunchServices（`open` / Finder）启动时工作目录是 `/`，直接拼接会得到
+/// `/configuration/base.yaml` 而启动失败。因此按以下顺序回退：
+/// 1. 当前工作目录下的 `configuration`（存在 base.yaml 时）
+/// 2. 可执行文件所在 .app 的 `Contents/Resources/configuration`
+/// 3. 编译期已知的 `CARGO_MANIFEST_DIR/configuration`
+/// 4. 仍无匹配时返回当前目录路径，交由调用方报出原始错误
+#[cfg(not(target_os = "android"))]
+fn resolve_dev_config_dir() -> Result<PathBuf, config::ConfigError> {
+    let cwd = std::env::current_dir()
+        .map_err(|e| config::ConfigError::Message(format!("Failed to get current dir: {}", e)))?;
+    let exe = std::env::current_exe().ok();
+
+    Ok(resolve_dev_config_dir_with(
+        &cwd,
+        exe.as_deref(),
+        Path::new(env!("CARGO_MANIFEST_DIR")),
+    ))
+}
+
+/// `resolve_dev_config_dir` 的纯路径版本，便于回归测试覆盖 LaunchServices 启动场景。
+fn resolve_dev_config_dir_with(cwd: &Path, exe: Option<&Path>, manifest_dir: &Path) -> PathBuf {
+    let cwd_dir = cwd.join("configuration");
+    if cwd_dir.join("base.yaml").is_file() {
+        return cwd_dir;
+    }
+
+    if let Some(bundle_dir) = exe.and_then(|exe| {
+        exe.parent()
+            .and_then(|p| p.parent())
+            .map(|p| p.join("Resources").join("configuration"))
+    }) {
+        if bundle_dir.join("base.yaml").is_file() {
+            return bundle_dir;
+        }
+    }
+
+    let manifest_config_dir = manifest_dir.join("configuration");
+    if manifest_config_dir.join("base.yaml").is_file() {
+        return manifest_config_dir;
+    }
+
+    cwd_dir
+}
+
+#[cfg(all(test, not(target_os = "android")))]
+mod dev_config_dir_tests {
+    use super::*;
+
+    fn temp_dir(suffix: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("tjg-dev-config-{suffix}"));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+        dir
+    }
+
+    fn write_base_yaml(config_dir: &Path) {
+        std::fs::create_dir_all(config_dir).expect("create configuration dir");
+        std::fs::write(config_dir.join("base.yaml"), "active_config: local\n")
+            .expect("write base.yaml");
+    }
+
+    #[test]
+    fn prefers_working_directory_configuration() {
+        let root = temp_dir("cwd");
+        write_base_yaml(&root.join("configuration"));
+
+        assert_eq!(
+            resolve_dev_config_dir_with(&root, None, Path::new("/nonexistent")),
+            root.join("configuration")
+        );
+    }
+
+    /// 回归锁（P-01）：debug 包经 LaunchServices 启动时 cwd 为 `/`，
+    /// 必须回退到 .app 内嵌的 Contents/Resources/configuration。
+    #[test]
+    fn falls_back_to_bundle_resources_when_cwd_is_root() {
+        let root = temp_dir("bundle");
+        let exe = root
+            .join("Tjg.app")
+            .join("Contents")
+            .join("MacOS")
+            .join("tjg");
+        write_base_yaml(
+            &root
+                .join("Tjg.app")
+                .join("Contents")
+                .join("Resources")
+                .join("configuration"),
+        );
+
+        assert_eq!(
+            resolve_dev_config_dir_with(Path::new("/"), Some(&exe), Path::new("/nonexistent")),
+            root.join("Tjg.app")
+                .join("Contents")
+                .join("Resources")
+                .join("configuration")
+        );
+    }
+
+    #[test]
+    fn falls_back_to_manifest_configuration() {
+        let root = temp_dir("manifest");
+        write_base_yaml(&root.join("configuration"));
+
+        assert_eq!(
+            resolve_dev_config_dir_with(Path::new("/nonexistent"), None, &root),
+            root.join("configuration")
+        );
+    }
+
+    #[test]
+    fn returns_cwd_path_when_no_configuration_found() {
+        let root = temp_dir("empty");
+
+        assert_eq!(
+            resolve_dev_config_dir_with(&root, None, &root.join("missing")),
+            root.join("configuration")
+        );
+    }
+}
+
 #[cfg(not(target_os = "android"))]
 fn get_config_path_buf(
     app_handle: &AppHandle,
     is_desktop_dev: bool,
 ) -> Result<(PathBuf, PathBuf), config::ConfigError> {
     let dir = if is_desktop_dev {
-        let base_path = std::env::current_dir().map_err(|e| {
-            config::ConfigError::Message(format!("Failed to get current dir: {}", e))
-        })?;
-
-        base_path.join("configuration")
+        resolve_dev_config_dir()?
     } else {
         // 优先用 Tauri 的 resource_dir（经 LaunchServices 启动时指向 .app/Contents/Resources）。
         // 但直接运行 .app 内二进制（无 NSBundle 上下文）时，resource_dir() 会返回
