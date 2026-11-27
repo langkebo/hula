@@ -32,14 +32,18 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
       { path: '/space/create', name: 'space-create', component: SpaceList },
       { path: '/space/:spaceId', name: 'space-details', component: SpaceList },
 
-      // /federation - 联邦主视图
-      { path: '/federation', name: 'federation', component: FederationView },
+      // /federation - 联邦主视图（仅管理员）
+      { path: '/federation', name: 'federation', component: FederationView, meta: { requiresAdmin: true } },
 
       // /message 系列 - 渲染消息列表，:roomId 可选
       { path: '/message/:roomId?', name: 'message', component: Message },
 
-      // /search - 全局搜索：当前复用 FriendsList 的搜索态，暂未拆独立视图
-      { path: '/search', name: 'search', component: FriendsList },
+      // /search - 全局搜索：搜索框在右侧栏（SearchPane），中间栏只放引导，不再复用 FriendsList
+      {
+        path: '/search',
+        name: 'search',
+        component: () => import('@/views/search/SearchLanding.vue')
+      },
 
       // 设置：作为 home 子路由渲染，切换时 layout 常驻不卸载（见 meta.fullWindow）
       { path: '/settings', name: 'settings', component: SettingsWindow, meta: { fullWindow: true } },
