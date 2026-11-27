@@ -1460,13 +1460,16 @@ pnpm check:ratchet  ->  hardcoded_color: 0 (baseline 0)
 用户已决定「先补安全与通知」。逐项核查移动端是否真缺之后，**候选范围从最初估计的十几项收缩到 5 项**
 （已读回执、输入状态本来就存在，只是在 `PreferencesSettings` 而非 `SecuritySettings` 里）。
 
-| 序 | 缺口 | 类别 | 缺失后果 | 级别 | 工作量 |
+| 序 | 项目 | 类别 | 核查结论 | 级别 | 状态 |
 |---|---|---|---:|---|---|
-| ~~1~~ | ~~系统通知权限状态与请求入口~~ **已完成（`32e6b2e3a`）** | 通知 | 权限未授予时推送静默失败 | **P0** | 已完成 |
-| ~~2~~ | ~~在线状态开关~~ **已完成（`44b1d5eb5`）** | 隐私 | 无法隐藏在线状态 | P1 | 已完成 |
-| 3 | 屏蔽用户管理 | 安全 | 只能屏蔽、无法查看或解除 | P1 | 1 文件 + 入口 |
-| 4 | 私密聊天自动锁定 | 安全 | 私密会话无自动锁定，安全弱化 | P1 | 1 文件 |
-| 5 | 第三方 ID（绑定邮箱） | 安全 | 无法绑定/查看，属低频 | P2 | 1 文件 |
+| 1 | 系统通知权限状态与请求入口 | 通知 | **真缺口**：`requestPermission()` 写了但无界面调用 | **P0** | ✅ `32e6b2e3a` |
+| 2 | 在线状态开关 | 隐私 | **真缺口**：两端 store 同源，移动端未渲染 | P1 | ✅ `44b1d5eb5` |
+| ~~3~~ | ~~屏蔽用户管理~~ | 安全 | **误报**：三种机制移动端全有（见下） | — | 无需改动 |
+| ~~4~~ | ~~私密聊天自动锁定~~ | 安全 | **误报**：`MobilePrivateChatSection` 已渲染 | — | 无需改动 |
+| 5 | 第三方 ID（绑定邮箱） | 安全 | **真缺口**：移动端 3PID 零覆盖 | P2 | 待做 |
+
+**候选从 5 项收缩到 1 项。** 第 3、4 项是我的误判，原文写「只能屏蔽、无法查看或解除」
+与「私密会话无自动锁定」，两条都与代码不符。
 
 **为什么第 1 项是 P0 而不是 P2**：
 
@@ -1495,13 +1498,58 @@ grep -rn 'hasPermission' src/mobile/ --include=*.vue
 - `onMounted` + `onActivated` 双重读取：`keep-alive` 下从系统设置返回也能刷新状态
 - i18n：`mobile_notifications.permission_{title,desc,action}`（中英）
 
-**第 2–5 项待做**，建议顺序即上表顺序：
-在线状态（隐私感知最强）→ 屏蔽用户（安全刚需）→ 私密聊天自动锁定 → 第三方 ID。
+#### 12.3.2 第 3、4 项为什么判错了（方法论记录）
 
-**注意第 2 项的实现路径**：桌面用 `settingStore.setShowOnlineStatusEnabled()`，
-是**纯前端 store**，无后端调用。移动端可直接复用同一 store，不需要新增 API。
+这两项都是「桌面有、移动端没找到」推出来的，而**「没找到」不等于「不存在」**。
+实际情况是移动端换了文件名、换了挂载位置，粗筛就漏了。
 
-**本条不建议现在动手改代码**：在「精简是否有意」确定之前，任何补齐都可能推翻后续设计决策。
+**第 3 项「屏蔽用户管理」——移动端三种机制齐备**
+
+注意这里其实是三套**互不相同**的机制，桌面也分两处放，混为一谈是第一个错误来源：
+
+| 机制 | 存储 | 桌面 | 移动 | 结论 |
+|---|---|---|---|---|
+| 会话消息屏蔽（`shield`） | 房间级 | `useMessage.ts:275` 右侧菜单项 | `ChatSettingToggles.vue:119` `handleShield` | 两端都有 |
+| 已忽略用户（`m.ignored_user_list`） | 账号级 | `IgnoredUsersSection.vue` 仅「解除」 | `MobileIgnoredUsers.vue` 列表+解除，入口 `SecuritySettings.vue:134` | 两端都有，**均无「添加」** |
+| 邀请黑名单（`im.hula.invite_policy.blocklist`） | 账号级 | `BlockedUsersSection.vue`（含按 userId 添加） | `MobileInvitePermission.vue:112` 输入框+添加+移除，入口 `SecuritySettings.vue:153` | 两端都有 |
+
+**关键澄清**：桌面那个「已屏蔽用户」`BlockedUsersSection` **不是**忽略列表，
+它读写的是邀请策略 `blocklist`，服务于 `shouldRejectInvite`。
+把两者当成一件事，就会得出「移动端只能屏蔽、无法解除」的错误结论。
+
+**第 4 项「私密聊天自动锁定」——组件在，只是不叫这名字**
+
+```
+src/mobile/components/settings/MobilePrivateChatSection.vue:14  auto_lock 开关
+src/mobile/components/settings/MobilePrivateChatSection.vue:25  v-if="autoLock" 时长选择
+src/mobile/views/my/SecuritySettings.vue:169                    <MobilePrivateChatSection />
+```
+
+它有 `autoLock` 开关、`handleAutoLockChange` 写 `settingStore.setSecretChatAutoLock`，
+且**已挂在安全设置页并真实渲染**。原表说「无自动锁定」是错的。
+
+**教训**：判定「移动端缺失某功能」时，不能只 grep 桌面组件的类名。
+本轮有效的判据是**反查能力落地链路**——开关最终写到哪个 store / 哪个 service 方法，
+再去移动端找同一写入点。第 3 项就是靠 `setRoomShield` 与 `setIgnoredUsers` 两个写入点找到的。
+
+#### 12.3.3 仅剩的第 5 项（第三方 ID）真实缺口
+
+移动端 3PID 覆盖为 **0**：
+
+```
+grep -rniE 'threePid|threepid|绑定邮箱' src/mobile/ --include=*.vue --include=*.ts
+→ 空
+```
+
+桌面 `ThreePidSection.vue`（449 行）提供：列表、绑定邮箱（**三步**：`requestToken` → 用户收码
+→ `submitToken` 得 `sid`/`clientSecret` → `addThreePid`）、解绑（需密码）。
+
+**范围提示**：这不是「一个开关 + 3 个 i18n」的量级，而是一个带多步验证的表单流。
+且桌面实现里手机号（`msisdn`）流程**故意不开放**——SDK 只有 `requestAdd3pidMsisdnToken`，
+没有对应的 `submitToken` 封装，后端也没有 msisdn 提交端点，做不出闭环。移动端若实现须保持同一取舍。
+
+**本条不再建议改代码**（原「等产品定精简是否有意」的前提已不适用）：
+1、2 项已落地，3、4 项经查为误报，第 5 项作为独立 P2 低优先事项登记即可。
 
 ### 12.4 全局搜索页中间栏错位（P1）—— **已修复（2026-11-27，`1cf9ac116`）**
 
