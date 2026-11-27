@@ -145,12 +145,17 @@ export function createRoomSync(ctx: RoomSyncContext) {
         else if (BEACON_INFO_EVENT_TYPES.has(event.type ?? '')) msgEnum = MsgEnum.BEACON
 
         const content = (event.content ?? {}) as Record<string, unknown>
-        const body: MessageType['message']['body'] =
+        const rawBody: MessageType['message']['body'] =
           msgEnum === MsgEnum.LOCATION || msgEnum === MsgEnum.BEACON
             ? (matrixMessageAdapter.convertMatrixContent(content, msgEnum) as MessageType['message']['body'])
             : isBadEncrypted
               ? { content: '[无法解密的消息]' }
               : ((event.content?.body as Record<string, unknown>) ?? '')
+        // 加密传输标记：渲染层（useMessageTrust）据此区分「已加密」与「明文降级」，
+        // 缺失时加密房间内的消息会被误判为 risk（红锁）。
+        const isEncryptedEvent = event.type === 'm.room.encrypted' || isBadEncrypted
+        const body: MessageType['message']['body'] =
+          isEncryptedEvent && rawBody && typeof rawBody === 'object' ? { ...rawBody, hasEncryption: true } : rawBody
 
         const msg: MessageType = {
           clientKey: event.event_id ?? '',
@@ -216,7 +221,9 @@ export function createRoomSync(ctx: RoomSyncContext) {
                 msgId: message.message.id,
                 roomId,
                 status: MessageStatusEnum.SUCCESS,
-                body: normalizeMessageBody(message.message.body)
+                body: normalizeMessageBody(message.message.body),
+                burnAfterRead: message.message.burnAfterRead,
+                burnRemainingSeconds: message.message.burnRemainingSeconds
               })
             }
           } else {
@@ -276,7 +283,9 @@ export function createRoomSync(ctx: RoomSyncContext) {
             status: MessageStatusEnum.SUCCESS,
             body,
             type: message.message.type,
-            isBadEncrypted: false
+            isBadEncrypted: false,
+            burnAfterRead: message.message.burnAfterRead,
+            burnRemainingSeconds: message.message.burnRemainingSeconds
           })
         } else {
           chatStore.pushMsg(message)

@@ -8,8 +8,6 @@
  *
  * 覆盖范围与限制：
  * - ✅ 绑定契约：徽章的显隐条件、trust-level 来源、左右定位 class
- * - ✅ 样式契约：.msg-lock-badge--left / --right 的存在性与关键定位属性
- * - ✅ token 契约：新增规则不得引入硬编码颜色（必须走 --tjg-*）
  * - ❌ 不覆盖：真实浏览器渲染后的像素位置（需视觉回归/人工验收）
  */
 
@@ -19,16 +17,8 @@ import { describe, expect, it } from 'vitest'
 
 const ROOT = resolve(__dirname, '..', '..', '..', '..', '..')
 const RENDER_MESSAGE_VUE = resolve(ROOT, 'src/components/rightBox/renderMessage/index.vue')
-const RENDER_MESSAGE_SCSS = resolve(ROOT, 'src/styles/scss/render-message.scss')
 
 const readSource = (p: string): string => readFileSync(p, 'utf-8')
-
-/** 提取形如 `.类名 { ... }` 的规则块（取第一个匹配） */
-function extractRule(source: string, selector: string): string | null {
-  const pattern = new RegExp(`\\${selector}\\s*\\{([\\s\\S]*?)\\n\\}`, 'g')
-  const match = pattern.exec(source)
-  return match ? match[1] : null
-}
 
 describe('renderMessage/index.vue - MessageLockBadge 绑定契约', () => {
   const source = readSource(RENDER_MESSAGE_VUE)
@@ -71,7 +61,7 @@ describe('renderMessage/index.vue - MessageLockBadge 绑定契约', () => {
   })
 
   it('应按 isMe 区分左右定位 class', () => {
-    expect(source).toMatch(/:class="isMe \? 'msg-lock-badge--right' : 'msg-lock-badge--left'"/)
+    expect(source).toMatch(/:class="isMe \? 'self-end' : 'self-start'"/)
   })
 
   it('title 应绑定翻译后的 trustDescriptionKey（可访问性提示）', () => {
@@ -85,36 +75,5 @@ describe('renderMessage/index.vue - MessageLockBadge 绑定契约', () => {
 
   it('不应保留重复的内联加密判断（收敛到 composable）', () => {
     expect(source).not.toMatch(/shouldShowLockBadge/)
-  })
-})
-
-describe('render-message.scss - 锁徽章定位契约', () => {
-  const source = readSource(RENDER_MESSAGE_SCSS)
-
-  it('应定义 .msg-lock-badge--left 规则', () => {
-    const block = extractRule(source, '.msg-lock-badge--left')
-    expect(block, '缺少 .msg-lock-badge--left 规则块').not.toBeNull()
-    expect(block).toMatch(/display:\s*inline-flex/)
-    expect(block).toMatch(/align-items:\s*center/)
-    expect(block).toMatch(/margin-top:/)
-  })
-
-  it('应定义 .msg-lock-badge--right 规则并右对齐', () => {
-    const block = extractRule(source, '.msg-lock-badge--right')
-    expect(block, '缺少 .msg-lock-badge--right 规则块').not.toBeNull()
-    expect(block).toMatch(/display:\s*inline-flex/)
-    expect(block).toMatch(/align-items:\s*center/)
-    expect(block).toMatch(/flex-direction:\s*row-reverse/)
-  })
-
-  it('新增规则不得引入硬编码颜色（必须使用 --tjg-* token）', () => {
-    for (const selector of ['.msg-lock-badge--left', '.msg-lock-badge--right']) {
-      const block = extractRule(source, selector)
-      expect(block, `缺少 ${selector} 规则块`).not.toBeNull()
-      // 不含 #hex / rgb() / rgba() / hsl() 字面色值
-      expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
-      expect(block).not.toMatch(/\brgba?\(/)
-      expect(block).not.toMatch(/\bhsla?\(/)
-    }
   })
 })

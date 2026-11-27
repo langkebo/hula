@@ -7,10 +7,25 @@ import { AbstractMessageStrategy } from '../base'
 
 const getUserInfoMock = vi.fn()
 
+const { matrixState, userState } = vi.hoisted(() => ({
+  matrixState: { userId: '' },
+  userState: {
+    userInfo: undefined as { uid?: string; name?: string; avatar?: string } | undefined
+  }
+}))
+
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
     getUserInfo: getUserInfoMock
   })
+}))
+
+vi.mock('@/stores/domains/chat/matrix', () => ({
+  useMatrixStore: () => matrixState
+}))
+
+vi.mock('@/stores/domains/user/user', () => ({
+  useUserStore: () => userState
 }))
 
 vi.mock('@/composables/common/useUpload', () => ({
@@ -43,6 +58,8 @@ describe('AbstractMessageStrategy', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    matrixState.userId = ''
+    userState.userInfo = undefined
     getUserInfoMock.mockReturnValue({ name: 'Alice', avatar: 'a.png' })
     strategy = new TestStrategy()
   })
@@ -83,9 +100,33 @@ describe('AbstractMessageStrategy', () => {
       expect(result.fromUser.avatar).toBe('')
     })
 
-    it('falls back to empty uid when userUid ref is empty', () => {
+    it('falls back to empty uid when both userUid ref and session userId are empty', () => {
       const result = strategy.buildMessageType('msg-3', {}, { currentSessionRoomId: 'r' }, ref(''))
       expect(result.fromUser.uid).toBe('')
+    })
+
+    it('回退到会话权威 userId，避免切换账号后本地回显被判成非本人', () => {
+      matrixState.userId = '@me:matrix.test'
+      const result = strategy.buildMessageType('msg-5', {}, { currentSessionRoomId: 'r' }, ref(''))
+      expect(result.fromUser.uid).toBe('@me:matrix.test')
+    })
+
+    it('本人资料兜底填充用户名/头像，避免回显消息作者显示未知用户', () => {
+      matrixState.userId = '@me:matrix.test'
+      userState.userInfo = { uid: '@me:matrix.test', name: 'Me', avatar: 'm.png' }
+      getUserInfoMock.mockReturnValue(null)
+      const result = strategy.buildMessageType('msg-6', {}, { currentSessionRoomId: 'r' }, ref(''))
+      expect(result.fromUser.uid).toBe('@me:matrix.test')
+      expect(result.fromUser.username).toBe('Me')
+      expect(result.fromUser.avatar).toBe('m.png')
+    })
+
+    it('不把其他账号的资料错配到本人回显上', () => {
+      matrixState.userId = '@me:matrix.test'
+      userState.userInfo = { uid: '@other:matrix.test', name: 'Other' }
+      getUserInfoMock.mockReturnValue(null)
+      const result = strategy.buildMessageType('msg-7', {}, { currentSessionRoomId: 'r' }, ref(''))
+      expect(result.fromUser.username).toBe('')
     })
 
     it('uses current time for sendTime and message.sendTime', () => {

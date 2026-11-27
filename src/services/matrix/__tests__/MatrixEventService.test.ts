@@ -191,14 +191,20 @@ describe('MatrixEventService', () => {
   })
 
   describe('convertEventToMessage', () => {
-    const makeEvent = (type: string, content: Record<string, unknown>, redacted = false): MatrixEvent =>
+    const makeEvent = (
+      type: string,
+      content: Record<string, unknown>,
+      redacted = false,
+      wireEncrypted = false
+    ): MatrixEvent =>
       ({
         getId: () => '$evt',
         getSender: () => '@alice:e',
         getType: () => type,
         getContent: () => content,
         getTs: () => 1700000000000,
-        isRedacted: () => redacted
+        isRedacted: () => redacted,
+        isEncrypted: () => wireEncrypted
       }) as unknown as MatrixEvent
 
     const makeRoom = (): Room =>
@@ -308,6 +314,30 @@ describe('MatrixEventService', () => {
         makeRoom()
       )
       expect(reply?.message.body.threadId).toBeUndefined()
+    })
+
+    it('marks body.hasEncryption for encrypted events (trust gate depends on it)', () => {
+      const encryptedType = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.encrypted', { msgtype: 'm.text', body: 'secret' }),
+        makeRoom()
+      )
+      expect(encryptedType?.message.body.hasEncryption).toBe(true)
+
+      // 已解密事件：getType() 已是明文类型，只能靠 isEncrypted() 识别
+      const decrypted = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.message', { msgtype: 'm.text', body: 'secret' }, false, true),
+        makeRoom()
+      )
+      expect(decrypted?.message.body.hasEncryption).toBe(true)
+    })
+
+    it('leaves hasEncryption unset for plaintext messages (no false red-lock)', () => {
+      const msg = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.message', { msgtype: 'm.text', body: 'plain' }),
+        makeRoom()
+      )
+
+      expect(msg?.message.body.hasEncryption).toBeUndefined()
     })
 
     it('maps a redacted event into a RECALL message with empty body (no stale or blank TEXT bubble)', () => {

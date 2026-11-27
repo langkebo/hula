@@ -146,6 +146,9 @@ function handleClick() {
   // 若根元素不是定位祖先，外环会逃逸到最近的定位祖先（消息气泡 / 视口）上
   position: relative;
   display: inline-flex;
+  // 徽章常作为竖向 flex 的直接子项：默认 align-items: stretch 会把它拉满整行，
+  // 导致 risk 外环横贯整个气泡宽度。显式收窄到内容宽度。
+  align-self: flex-start;
   align-items: center;
   gap: 3px;
   font-size: var(--tjg-font-size-xs);

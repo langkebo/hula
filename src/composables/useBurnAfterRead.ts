@@ -115,6 +115,15 @@ export function useBurnAfterRead() {
   const markMessageRead = async (msgId: string, roomId?: string): Promise<boolean> => {
     const targetRoomId = roomId || currentRoomId.value
     if (!targetRoomId) return false
+
+    // 房间未启用阅后即焚时服务端返回 400（Burn not enabled for this room），
+    // 历史消息可能仍带 burnAfterRead 标记，因此调用前必须先过房间开关门禁。
+    // 缓存未知时刷新一次再判定，避免每次渲染都重复请求。
+    if (burnSettingsCache.value[targetRoomId] === undefined) {
+      await refreshBurnSettings(targetRoomId)
+    }
+    if (!burnSettingsCache.value[targetRoomId]) return false
+
     try {
       return await matrixBurnAfterReadService.markBurnRead(targetRoomId, msgId)
     } catch {

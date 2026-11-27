@@ -226,7 +226,8 @@ export const createMessageInsertMutations = (deps: MessageMutationsDeps) => {
     roomId,
     isBurning,
     isBurned,
-    burnRemainingSeconds
+    burnRemainingSeconds,
+    burnAfterRead
   }: {
     msgId: string
     status?: MessageStatusEnum
@@ -239,7 +240,10 @@ export const createMessageInsertMutations = (deps: MessageMutationsDeps) => {
     roomId?: string
     isBurning?: boolean
     isBurned?: boolean
-    burnRemainingSeconds?: number
+    // 显式允许 undefined：调用方把消息上的可选字段直接透传过来，
+    // exactOptionalPropertyTypes 下 `?: number` 不接受显式 undefined。
+    burnRemainingSeconds?: number | undefined
+    burnAfterRead?: boolean | undefined
   }) => {
     const resolvedRoomId =
       (roomId && messageMap[roomId]?.[msgId] ? roomId : undefined) ??
@@ -267,6 +271,10 @@ export const createMessageInsertMutations = (deps: MessageMutationsDeps) => {
     }
     if (burnRemainingSeconds !== undefined) {
       msg.message.burnRemainingSeconds = burnRemainingSeconds
+    }
+    // 服务端事件确认焚毁属性后回填本地回显，保证倒计时/焚毁标识与对端一致
+    if (burnAfterRead !== undefined) {
+      msg.message.burnAfterRead = burnAfterRead
     }
     if (timeBlock !== undefined) {
       msg.timeBlock = timeBlock

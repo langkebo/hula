@@ -186,6 +186,36 @@ describe('MatrixRoomStoreAdapter', () => {
     })
   })
 
+  it('should mark encrypted events with hasEncryption so trust gate does not false-positive', () => {
+    const plainTimeline = matrixRoomStoreAdapter.convertTimelineEventToMessage('!room:id', {
+      event_id: '$plain',
+      type: 'm.room.message',
+      sender: '@user:server',
+      content: { body: 'hi', msgtype: 'm.text' },
+      origin_server_ts: 1
+    })
+    expect(plainTimeline.message.body.hasEncryption).toBeUndefined()
+
+    const encryptedTimeline = matrixRoomStoreAdapter.convertTimelineEventToMessage('!room:id', {
+      event_id: '$cipher',
+      type: 'm.room.encrypted',
+      sender: '@user:server',
+      content: { body: 'cipher', msgtype: 'm.text' },
+      origin_server_ts: 1
+    })
+    expect(encryptedTimeline.message.body.hasEncryption).toBe(true)
+
+    const encryptedSdkEvent = {
+      ...createEventLike({ id: '$sdk-cipher', type: 'm.room.encrypted', content: { body: 'cipher' } }),
+      isEncrypted: () => true,
+      getWireType: () => 'm.room.encrypted'
+    }
+    const decryptedSdkMessage = matrixRoomStoreAdapter.convertMatrixEventToMessage(
+      encryptedSdkEvent as unknown as MatrixEvent
+    )
+    expect(decryptedSdkMessage.message.body.hasEncryption).toBe(true)
+  })
+
   it('should identify displayable sdk message events', () => {
     expect(
       matrixRoomStoreAdapter.isDisplayableMessageEvent(

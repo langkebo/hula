@@ -82,6 +82,26 @@ export const useLoginFlow = () => {
     name: '',
     uid: ''
   })
+  /**
+   * 最近一次由「历史账号」填充到表单的身份标识。
+   *
+   * 用户通常先选中历史账号（昵称/头像随条目一起带出），再直接把账号输入框改成另一个账号登录。
+   * 此时表单里的昵称/头像仍属于旧账号，若原样写入新账号的 userInfo，就会出现
+   * 「账号 testuser2、昵称 testuser1」这类串号。因此只有表单账号与填充来源一致时才沿用这些资料。
+   */
+  const historyFillSource = ref<{ account: string; uid: string } | null>(null)
+
+  /** 账号归一化：去掉 `@` 前缀与 `:server` 后缀，忽略大小写后比较。 */
+  const normalizeAccount = (value?: string | null): string =>
+    (value ?? '').trim().replace(/^@/, '').split(':')[0].toLowerCase()
+
+  /** 当前表单账号是否仍与历史填充来源属于同一账号。 */
+  const isHistoryFillInUse = (account?: string | null): boolean => {
+    const source = historyFillSource.value
+    const typed = normalizeAccount(account)
+    if (!source || !typed) return false
+    return typed === normalizeAccount(source.account) || typed === normalizeAccount(source.uid)
+  }
   const uiState = ref<'manual' | 'auto'>('manual')
   const homeserverUrl = ref(matrixEndpointConfig.homeserverUrl)
   const identityServerUrl = ref(matrixEndpointConfig.identityServerUrl)
@@ -287,6 +307,8 @@ export const useLoginFlow = () => {
           })
         }
       } else {
+        // 仅当账号未偏离历史填充来源时，才沿用历史条目里的昵称/头像，避免跨账号串号
+        const reuseFilledProfile = isHistoryFillInUse(account)
         await sessionOrchestrator.loginWithPassword({
           username: account,
           password,
@@ -294,8 +316,8 @@ export const useLoginFlow = () => {
           identityServerUrl: identityServerUrl.value,
           deviceName: 'Tjg Client',
           account,
-          displayName: info.value.name || account,
-          avatar: info.value.avatar,
+          displayName: (reuseFilledProfile ? info.value.name : '') || account,
+          avatar: reuseFilledProfile ? info.value.avatar : undefined,
           client: isDesktop() ? 'PC' : 'MOBILE'
         })
       }
@@ -321,6 +343,11 @@ export const useLoginFlow = () => {
           info.value.avatar = userStore.userInfo.avatar
           info.value.name = userStore.userInfo.name
           info.value.uid = userStore.userInfo.uid
+          // 这些资料与持久化的 userInfo 同源，属于同一账号，可安全沿用
+          historyFillSource.value = {
+            account: info.value.account,
+            uid: info.value.uid || ''
+          }
         }
         if (isMobilePlatform.value) {
           await returnToMobileLogin()
@@ -416,6 +443,7 @@ export const useLoginFlow = () => {
     info.value.avatar = item.avatar || ''
     info.value.name = item.name || ''
     info.value.uid = item.uid || ''
+    historyFillSource.value = { account: item.account || '', uid: item.uid || '' }
   }
 
   /**
@@ -429,6 +457,7 @@ export const useLoginFlow = () => {
     info.value.avatar = ''
     info.value.name = ''
     info.value.uid = ''
+    historyFillSource.value = null
   }
 
   return {

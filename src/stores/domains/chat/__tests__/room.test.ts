@@ -971,10 +971,13 @@ describe('RoomStore', () => {
         msgId: '$new',
         roomId: '!room:id',
         status: 'success',
-        body: { content: 'decrypted hello' },
+        body: { content: 'decrypted hello', hasEncryption: true },
         // 解密成功回填：同步真实类型并清除解密失败标记（UI-P2-05）
         type: MsgEnum.TEXT,
-        isBadEncrypted: false
+        isBadEncrypted: false,
+        // 阅后即焚元数据随解密回填一并透传（P-29）
+        burnAfterRead: false,
+        burnRemainingSeconds: undefined
       })
     })
 

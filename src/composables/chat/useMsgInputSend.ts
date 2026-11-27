@@ -85,6 +85,12 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     resetInput()
 
     tempMsg.message.status = MessageStatusEnum.SENDING
+    // 本地回显补齐阅后即焚元数据：否则自己发出的焚毁消息在服务端事件回填前
+    // 没有焚毁标识与倒计时，气泡看起来像普通消息。
+    if (isBurnAfterRead.value) {
+      tempMsg.message.burnAfterRead = true
+      tempMsg.message.burnRemainingSeconds = burnDuration.value
+    }
     chatStore.pushMsg(tempMsg)
     chatStore.updateMsg({ msgId: tempMsgId, status: MessageStatusEnum.SENDING })
 

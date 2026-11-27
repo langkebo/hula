@@ -101,16 +101,37 @@ function isDisplayableMessageEvent(event: MatrixEvent): boolean {
  * - 位置/信标事件使用 MatrixMessageAdapter 解析为 LocationBody/BeaconBody
  * - 其余类型保持原始 content 透传，兼容现有渲染路径
  */
-function buildMessageBody(content: IContent, body: string, messageType: MsgEnum): MessageType['message']['body'] {
-  if (messageType === MsgEnum.LOCATION || messageType === MsgEnum.BEACON) {
-    return matrixMessageAdapter.convertMatrixContent(content, messageType) as MessageType['message']['body']
-  }
-  return {
-    ...content,
-    body,
-    content: body,
-    msgtype: (content.msgtype as string | undefined) ?? 'm.text'
-  }
+function buildMessageBody(
+  content: IContent,
+  body: string,
+  messageType: MsgEnum,
+  encrypted = false
+): MessageType['message']['body'] {
+  const base =
+    messageType === MsgEnum.LOCATION || messageType === MsgEnum.BEACON
+      ? (matrixMessageAdapter.convertMatrixContent(content, messageType) as MessageType['message']['body'])
+      : {
+          ...content,
+          body,
+          content: body,
+          msgtype: (content.msgtype as string | undefined) ?? 'm.text'
+        }
+  if (!encrypted) return base
+  // `hasEncryption` 是消息信任判定的唯一依据（useMessageTrust）。
+  // 不落这个标记时，加密房间内的所有消息都会被误判为「明文降级」→ 红锁 risk。
+  return { ...(base as Record<string, unknown>), hasEncryption: true } as MessageType['message']['body']
+}
+
+/**
+ * 判断 SDK 事件是否来自加密传输。
+ *
+ * 已解密事件 `getType()` 返回明文类型，必须再看 `isEncrypted()` / `getWireType()`；
+ * 未解密事件则直接是 `m.room.encrypted`。
+ */
+function isEncryptedSdkEvent(event: MatrixEvent): boolean {
+  if (event.getType() === 'm.room.encrypted') return true
+  if (typeof event.isEncrypted === 'function' && event.isEncrypted()) return true
+  return typeof event.getWireType === 'function' && event.getWireType() === 'm.room.encrypted'
 }
 
 /**
@@ -120,6 +141,7 @@ function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
   const content = event.getContent()
   const body = (content.body as string | undefined) ?? ''
   const messageType = matrixMessageAdapter.getMsgTypeFromEventLike(event.getType(), content)
+  const encrypted = isEncryptedSdkEvent(event)
 
   return {
     clientKey: event.getId() ?? '',
@@ -132,7 +154,7 @@ function convertMatrixEventToMessage(event: MatrixEvent): MessageType {
       id: event.getId() ?? '',
       roomId: event.getRoomId() ?? '',
       type: messageType,
-      body: buildMessageBody(content, body, messageType),
+      body: buildMessageBody(content, body, messageType, encrypted),
       sendTime: event.getTs(),
       messageMarks: {},
       status: MessageStatusEnum.SUCCESS
@@ -156,6 +178,7 @@ function convertTimelineEventToMessage(roomId: string, event: SlidingSyncRawEven
   const content: IContent = event.content ?? {}
   const body = (content.body as string | undefined) ?? ''
   const messageType = matrixMessageAdapter.getMsgTypeFromEventLike(event.type as string, content)
+  const encrypted = event.type === 'm.room.encrypted'
 
   return {
     clientKey: event.event_id as string,
@@ -168,7 +191,7 @@ function convertTimelineEventToMessage(roomId: string, event: SlidingSyncRawEven
       id: event.event_id as string,
       roomId,
       type: messageType,
-      body: buildMessageBody(content, body, messageType),
+      body: buildMessageBody(content, body, messageType, encrypted),
       sendTime: event.origin_server_ts as number,
       messageMarks: {},
       status: MessageStatusEnum.SUCCESS

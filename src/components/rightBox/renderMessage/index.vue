@@ -330,7 +330,7 @@
             :title="t(trustDescriptionKey)"
             :interactive="canVerifySender"
             :aria-label="canVerifySender ? t('message_container.verify_sender_device') : undefined"
-            :class="isMe ? 'msg-lock-badge--right' : 'msg-lock-badge--left'"
+            :class="isMe ? 'self-end' : 'self-start'"
             @verify="handleVerifySender" />
         </n-flex>
       </div>

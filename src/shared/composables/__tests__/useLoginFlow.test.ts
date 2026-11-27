@@ -188,3 +188,52 @@ describe('useLoginFlow — 登录重入锁', () => {
     expect(flow.lastLoginError.value).toBe('error.matrix.rate_limited')
   })
 })
+
+describe('useLoginFlow — 切换账号时不复用旧账号资料（P-28）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('选中 testuser1 历史后改用 testuser2 登录 ⇒ 昵称回退到账号本身，不沿用旧头像', async () => {
+    h.loginWithPassword.mockResolvedValueOnce(makeLoginResult('@testuser2:matrix.test', 'token'))
+
+    const flow = useLoginFlow()
+    flow.selectAccount({
+      account: '@testuser1:matrix.test',
+      password: 'Test@123',
+      avatar: 'mxc://avatar/testuser1',
+      name: 'testuser1',
+      uid: '@testuser1:matrix.test'
+    })
+    // 模拟用户在历史填充后直接改写账号输入框
+    flow.info.value.account = '@testuser2:matrix.test'
+    flow.info.value.password = 'Test@123'
+
+    await flow.normalLogin('PC', true, false)
+
+    expect(h.loginWithPassword).toHaveBeenCalledTimes(1)
+    const payload = h.loginWithPassword.mock.calls[0][0] as { account: string; displayName: string; avatar?: string }
+    expect(payload.account).toBe('@testuser2:matrix.test')
+    expect(payload.displayName).toBe('@testuser2:matrix.test')
+    expect(payload.avatar).toBeUndefined()
+  })
+
+  it('沿用同一历史账号登录 ⇒ 历史昵称与头像正常带出', async () => {
+    h.loginWithPassword.mockResolvedValueOnce(makeLoginResult('@testuser1:matrix.test', 'token'))
+
+    const flow = useLoginFlow()
+    flow.selectAccount({
+      account: 'testuser1',
+      password: 'Test@123',
+      avatar: 'mxc://avatar/testuser1',
+      name: 'testuser1',
+      uid: '@testuser1:matrix.test'
+    })
+
+    await flow.normalLogin('PC', true, false)
+
+    const payload = h.loginWithPassword.mock.calls[0][0] as { account: string; displayName: string; avatar?: string }
+    expect(payload.displayName).toBe('testuser1')
+    expect(payload.avatar).toBe('mxc://avatar/testuser1')
+  })
+})

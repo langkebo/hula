@@ -29,15 +29,15 @@ export function useMessageUser(
   const userStore = useUserStore()
   const groupStore = useGroupStore()
   const resolvingUserSet = new Set<string>()
-  const currentUserUid = computed(() => userStore.userInfo?.uid ?? '')
   const senderUid = computed(() => props.fromUser?.uid || props.message?.fromUser?.uid || '')
 
   const isMe = computed(() => {
-    return Boolean(senderUid.value) && senderUid.value === currentUserUid.value
+    // 统一走 store 的判定：userInfo 可能因持久化/多窗口同步滞后，matrixStore.userId 才是权威会话身份。
+    return Boolean(senderUid.value) && userStore.isMe(senderUid.value)
   })
 
   const getAvatarSrc = computed(() => (uid: string) => {
-    const isCurrentUser = Boolean(uid) && uid === currentUserUid.value
+    const isCurrentUser = Boolean(uid) && userStore.isMe(uid)
     const storeUser = groupStore.getUserInfo(uid)
     if (isMe.value && isCurrentUser) {
       return AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar as string)

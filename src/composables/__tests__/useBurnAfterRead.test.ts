@@ -316,7 +316,25 @@ describe('useBurnAfterRead', () => {
       expect(markBurnReadMock).not.toHaveBeenCalled()
     })
 
-    it('调用 markBurnRead 服务并返回 true', async () => {
+    it('房间未启用阅后即焚时跳过 markBurnRead（避免服务端 400）', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: false, burnAfterMs: 0 })
+      const { markMessageRead } = useBurnAfterRead()
+      const result = await markMessageRead('msg-1', 'room-1')
+      expect(getBurnSettingsMock).toHaveBeenCalledWith('room-1')
+      expect(markBurnReadMock).not.toHaveBeenCalled()
+      expect(result).toBe(false)
+    })
+
+    it('房间开关查询失败时跳过 markBurnRead', async () => {
+      getBurnSettingsMock.mockRejectedValue(new Error('not found'))
+      const { markMessageRead } = useBurnAfterRead()
+      const result = await markMessageRead('msg-1', 'room-1')
+      expect(markBurnReadMock).not.toHaveBeenCalled()
+      expect(result).toBe(false)
+    })
+
+    it('房间已启用时调用 markBurnRead 服务并返回 true', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
       markBurnReadMock.mockResolvedValue(true)
       const { markMessageRead } = useBurnAfterRead()
       const result = await markMessageRead('msg-1', 'room-1')
@@ -324,7 +342,16 @@ describe('useBurnAfterRead', () => {
       expect(result).toBe(true)
     })
 
+    it('开关缓存命中后不再重复查询房间设置', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      const { markMessageRead } = useBurnAfterRead()
+      await markMessageRead('msg-1', 'room-1')
+      await markMessageRead('msg-2', 'room-1')
+      expect(getBurnSettingsMock).toHaveBeenCalledTimes(1)
+    })
+
     it('服务返回 false 时返回 false', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
       markBurnReadMock.mockResolvedValue(false)
       const { markMessageRead } = useBurnAfterRead()
       const result = await markMessageRead('msg-1', 'room-1')
@@ -333,6 +360,7 @@ describe('useBurnAfterRead', () => {
 
     it('使用 currentSessionRoomId 作为默认 roomId', async () => {
       globalStoreMock.currentSessionRoomId = 'session-room'
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
       markBurnReadMock.mockResolvedValue(true)
       const { markMessageRead } = useBurnAfterRead()
       await markMessageRead('msg-1')
@@ -340,6 +368,7 @@ describe('useBurnAfterRead', () => {
     })
 
     it('服务抛错时返回 false 不抛出', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
       markBurnReadMock.mockRejectedValue(new Error('server error'))
       const { markMessageRead } = useBurnAfterRead()
       const result = await markMessageRead('msg-1', 'room-1')

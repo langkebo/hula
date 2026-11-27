@@ -317,6 +317,11 @@ class MatrixEventService extends BaseMatrixService {
     // SDK 解密失败时会把 clearEvent 置为 `{ msgtype: 'm.bad.encrypted' }` 占位，
     // 渲染层据此展示「无法解密 + 重试」卡片（不依赖正文内容）。
     const isBadEncrypted = content?.msgtype === 'm.bad.encrypted'
+    // 加密传输判定：已解密事件的 getType() 已变成明文类型，必须再看 isEncrypted()/getWireType()。
+    const isEncryptedEvent =
+      event.getType() === 'm.room.encrypted' ||
+      (typeof event.isEncrypted === 'function' && event.isEncrypted() === true) ||
+      (typeof event.getWireType === 'function' && event.getWireType() === 'm.room.encrypted')
 
     const burnAfterReadMeta = content?.['m.burn_after_read'] as { expires_in?: number } | undefined
     const burnAfterRead = !isRedacted && !!burnAfterReadMeta
@@ -346,6 +351,10 @@ class MatrixEventService extends BaseMatrixService {
     }
 
     const avatarUrl = member?.getMxcAvatarUrl?.() ?? undefined
+    // `body.hasEncryption` 是消息信任判定（useMessageTrust）的唯一依据：
+    // 加密房间里已解密的消息若不落这个标记，会被误判为「明文降级」→ 红锁 risk。
+    // 撤回态没有正文，不参与信任判定，保持 body 为空对象（避免污染既有断言）。
+    const finalBody = isEncryptedEvent && !isRedacted ? { ...body, hasEncryption: true } : body
 
     return {
       clientKey: event.getId() || '',
@@ -354,7 +363,7 @@ class MatrixEventService extends BaseMatrixService {
         roomId: room.roomId,
         sendTime: event.getTs?.() || Date.now(),
         type: msgType,
-        body,
+        body: finalBody,
         status: MessageStatusEnum.SUCCESS,
         burnAfterRead,
         isBurning: false,

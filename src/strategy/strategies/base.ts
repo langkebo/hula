@@ -4,6 +4,8 @@ import type { UploadOptions, UploadProviderEnum } from '@/composables/common/use
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 
 export const strategyLogger = createLogger('MessageStrategy')
@@ -90,12 +92,19 @@ export abstract class AbstractMessageStrategy implements MessageStrategy {
   ): MessageType {
     const currentTime = new Date().getTime()
     const groupStore = useGroupStore()
+    // 本地回显的身份必须用会话权威 userId 兜底：切换账号后 userInfo.uid 可能滞后为空，
+    // 回显消息 uid 一旦为空会被 useMessageUser 判成「非本人」，自己的消息被渲染成对方消息
+    // （左对齐 + 作者显示「未知用户」）。用户名/头像同样回退到本人资料，避免空名。
+    const selfUid = userUid.value || useMatrixStore().userId || ''
+    const cachedUser = selfUid ? groupStore.getUserInfo(selfUid) : null
+    const userStore = useUserStore()
+    const ownProfile = selfUid && userStore.userInfo?.uid === selfUid ? userStore.userInfo : undefined
     return {
       clientKey: messageId,
       fromUser: {
-        uid: userUid.value || '',
-        username: groupStore.getUserInfo(userUid.value)?.name || '',
-        avatar: groupStore.getUserInfo(userUid.value)?.avatar || ''
+        uid: selfUid,
+        username: cachedUser?.name || ownProfile?.name || '',
+        avatar: cachedUser?.avatar || ownProfile?.avatar || ''
       },
       message: {
         id: messageId,
