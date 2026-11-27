@@ -100,13 +100,14 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type DeviceSessionInfo, useDeviceSessions } from '@/composables/encryption/useDeviceSessions'
 import { useDeviceTrust } from '@/composables/encryption/useDeviceTrust'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
+import { useRefreshOnReactivate } from '@/mobile/composables/useRefreshOnReactivate'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceManagement')
@@ -187,14 +188,17 @@ const deviceActions = computed<DeviceAction[]>(() => {
   return actions
 })
 
-onMounted(async () => {
-  await loadDevices()
-})
+// 首次挂载加载；切 Tab 回来（keep-alive activate）时静默刷新，不闪骨架、不清列表
+useRefreshOnReactivate(loadDevices, () => loadDevices({ silent: true }))
 
-async function loadDevices() {
-  const loaded = await loadDeviceSessions()
+/**
+ * @param options.silent 静默刷新：后台重读不为「加载失败」弹提示（列表保持原样）。
+ *   用户主动操作（如注销设备）后的重读仍走默认的非静默路径。
+ */
+async function loadDevices(options: { silent?: boolean } = {}) {
+  const loaded = await loadDeviceSessions({ silent: options.silent === true })
   loadFailed.value = !loaded
-  if (!loaded) {
+  if (!loaded && options.silent !== true) {
     showToast({ type: 'fail', message: t('mobile_devices.load_failed') })
   }
 }

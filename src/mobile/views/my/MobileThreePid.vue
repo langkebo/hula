@@ -114,11 +114,12 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { computed, onActivated, onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
+import { useRefreshOnReactivate } from '@/mobile/composables/useRefreshOnReactivate'
 import { matrixAccountService } from '@/services/matrix'
 import type { ThreePidEntry } from '@/services/matrix/user/accountThreePids'
 import { createLogger } from '@/utils/Logger'
@@ -158,16 +159,24 @@ function entryKey(pid: ThreePidEntry): string {
   return `${pid.medium}:${pid.address}`
 }
 
-async function loadThreePids(): Promise<void> {
-  loading.value = true
+async function loadThreePids(options: { silent?: boolean } = {}): Promise<void> {
+  const silent = options.silent === true
+  if (!silent) {
+    loading.value = true
+  }
   try {
     const response = await matrixAccountService.getThreePids()
     threepids.value = response.threepids
   } catch (error) {
     logger.error('Failed to load three pids', error)
-    showToast({ type: 'fail', message: t('mobile_three_pid.load_failed') })
+    // 静默刷新失败不打扰用户：列表保持上次的值，下次激活会再试
+    if (!silent) {
+      showToast({ type: 'fail', message: t('mobile_three_pid.load_failed') })
+    }
   } finally {
-    loading.value = false
+    if (!silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -283,27 +292,6 @@ async function handleBind(): Promise<void> {
   }
 }
 
-onMounted(async () => {
-  await loadThreePids()
-})
-
-/**
- * 切走 Tab 再回来时重读绑定列表。
- *
- * 两种「回来」语义不同：进别的二级页再返回时，`MyLayout` 的 RouterView 没有 keep-alive，
- * 本页会重新挂载、onMounted 自然重跑；但 `MyLayout` 自身被外层 tab 布局缓存，
- * 切到别的 Tab 再切回来是 deactivate/activate，onMounted 不触发，
- * 中途在别处（如网页端）解绑的邮箱就会一直显示。
- *
- * 首次进入 mounted 与 activated 都会触发，用一次性开关跳过，避免刚进页发两轮请求。
- */
-let isFirstActivation = true
-
-onActivated(async () => {
-  if (isFirstActivation) {
-    isFirstActivation = false
-    return
-  }
-  await loadThreePids()
-})
+// 首次挂载加载；切 Tab 回来（keep-alive activate）时静默重读，不闪加载态
+useRefreshOnReactivate(loadThreePids, () => loadThreePids({ silent: true }))
 </script>

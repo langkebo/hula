@@ -39,11 +39,12 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
+import { useRefreshOnReactivate } from '@/mobile/composables/useRefreshOnReactivate'
 import { matrixAccountService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
@@ -57,15 +58,23 @@ const ignoredUsers = ref<string[]>([])
 /** 黑名单为空：交给 MobileAsyncState 统一渲染 */
 const isIgnoredListEmpty = computed(() => ignoredUsers.value.length === 0)
 
-async function loadIgnoredUsers(): Promise<void> {
-  loading.value = true
+async function loadIgnoredUsers(options: { silent?: boolean } = {}): Promise<void> {
+  const silent = options.silent === true
+  if (!silent) {
+    loading.value = true
+  }
   try {
     ignoredUsers.value = await matrixAccountService.getIgnoredUsers()
   } catch (error) {
     logger.error('Failed to load ignored users', error)
-    showToast({ type: 'fail', message: t('mobile_ignored_users.load_failed') })
+    // 静默刷新失败不打扰用户：列表保持上次的值，下次激活会再试
+    if (!silent) {
+      showToast({ type: 'fail', message: t('mobile_ignored_users.load_failed') })
+    }
   } finally {
-    loading.value = false
+    if (!silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -98,7 +107,6 @@ async function handleUnignore(userId: string): Promise<void> {
   }
 }
 
-onMounted(async () => {
-  await loadIgnoredUsers()
-})
+// 首次挂载加载；切 Tab 回来（keep-alive activate）时静默刷新
+useRefreshOnReactivate(loadIgnoredUsers, () => loadIgnoredUsers({ silent: true }))
 </script>

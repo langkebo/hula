@@ -85,10 +85,15 @@ export function useDeviceSessions() {
   /**
    * 加载设备列表。
    *
-   * @returns 是否加载成功；失败时清空列表并记录日志，提示文案由页面决定
+   * @param options.silent 静默刷新：不驱动整页 loading，失败也不清空现有列表。
+   *   用于 keep-alive 重新激活时的后台刷新，避免每次切 Tab 回来闪骨架、或一次抖动把列表清空。
+   * @returns 是否加载成功；失败时清空列表（非静默）并记录日志，提示文案由页面决定
    */
-  async function loadDevices(): Promise<boolean> {
-    loading.value = true
+  async function loadDevices(options: { silent?: boolean } = {}): Promise<boolean> {
+    const silent = options.silent === true
+    if (!silent) {
+      loading.value = true
+    }
     try {
       const sessionContext = matrixEncryptionContextService.getCurrentSessionContext()
       userId.value = sessionContext.userId ?? ''
@@ -109,10 +114,14 @@ export function useDeviceSessions() {
       return true
     } catch (err) {
       logger.error('Failed to load device sessions:', err)
-      devices.value = []
+      if (!silent) {
+        devices.value = []
+      }
       return false
     } finally {
-      loading.value = false
+      if (!silent) {
+        loading.value = false
+      }
     }
   }
 

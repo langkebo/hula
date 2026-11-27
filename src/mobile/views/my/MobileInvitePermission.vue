@@ -148,11 +148,12 @@
 
 <script setup lang="ts">
 import { showToast } from 'vant'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
+import { useRefreshOnReactivate } from '@/mobile/composables/useRefreshOnReactivate'
 import { matrixAccountService } from '@/services/matrix'
 import { cacheDmPrivacyPreferences, loadDmPrivacyPreferences } from '@/services/matrix/user/dmPrivacyPreferences'
 import {
@@ -190,23 +191,34 @@ const activeList = computed(() => (mode.value === 'blocklist' ? blocklist.value 
 /** 当前名单为空：行内占位提示，交由模板统一判定 */
 const isActiveListEmpty = computed(() => activeList.value.length === 0)
 
-async function loadConfig() {
-  loading.value = true
-  loadFailed.value = false
+/**
+ * @param options.silent 静默刷新：不驱动整页 loading；失败时**保留当前视图**
+ *   （后台刷新失败不应该把用户正在看的名单换成错误页），下次激活会再试。
+ */
+async function loadConfig(options: { silent?: boolean } = {}) {
+  const silent = options.silent === true
+  if (!silent) {
+    loading.value = true
+    loadFailed.value = false
+  }
   try {
-    // 严格读取：能区分「从未存过」（null）与「读取失败」（抛错），
-    // 读取失败时展示错误而不是把默认策略当成账号真实策略渲染。
     const policy = await matrixAccountService.getInvitePolicyStrict()
     applyConfig(policy)
+    loadFailed.value = false
   } catch (error) {
     logger.error('Failed to load invite permission config', error)
-    loadFailed.value = true
+    if (!silent) {
+      loadFailed.value = true
+    }
   } finally {
-    loading.value = false
+    if (!silent) {
+      loading.value = false
+    }
   }
 }
 
-onMounted(loadConfig)
+// 首次挂载加载；切 Tab 回来（keep-alive activate）时静默刷新
+useRefreshOnReactivate(loadConfig, () => loadConfig({ silent: true }))
 
 function applyConfig(policy: InvitePolicy | null) {
   const normalized = normalizeInvitePolicy(policy)

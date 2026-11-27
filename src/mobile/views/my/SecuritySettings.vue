@@ -213,13 +213,14 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showLoadingToast, showToast } from 'vant'
-import { computed, onActivated, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import MobileDeviceVerifyDialog from '#/components/encryption/MobileDeviceVerifyDialog.vue'
 import MobileSecureBackupDialog from '#/components/encryption/MobileSecureBackupDialog.vue'
 import MobilePrivateChatSection from '#/components/settings/MobilePrivateChatSection.vue'
 import { useSecuritySettings } from '@/composables/encryption/useSecuritySettings'
+import { useRefreshOnReactivate } from '@/mobile/composables/useRefreshOnReactivate'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
@@ -272,31 +273,9 @@ const keyBackupStatus = computed(() => {
   return keyBackupEnabled.value ? t('mobile_security.key_backup_enabled') : t('mobile_security.key_backup_disabled')
 })
 
-onMounted(async () => {
-  await loadSecurityInfo()
-})
-
-/**
- * 切走 Tab 再回来时补一次刷新。
- *
- * 本页挂在 `MyLayout` 的 RouterView 下，而该 RouterView 没有 keep-alive，
- * 所以「进二级页再返回」会重新挂载、onMounted 自然重跑；
- * 但 `MyLayout` 本身被外层 tab 布局的 keep-alive 缓存，
- * 切到别的 Tab 再切回来时本页是 **deactivate/activate** 而非重新挂载，
- * onMounted 不会再触发 —— 设备数、已忽略用户数、加密状态会停在旧值。
- *
- * 首次进入时 mounted 与 activated 都会触发，用一个一次性开关跳过，
- * 避免刚进页就发两轮 getDevices / getIgnoredUsers / 加密状态。
- */
-let isFirstActivation = true
-
-onActivated(async () => {
-  if (isFirstActivation) {
-    isFirstActivation = false
-    return
-  }
-  await loadSecurityInfo()
-})
+// 首次挂载加载；切 Tab 回来（keep-alive activate）时刷新计数。
+// loadSecurityInfo 不驱动整页 loading，无需 silent 参数。
+useRefreshOnReactivate(loadSecurityInfo)
 
 async function loadSecurityInfo() {
   try {
