@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useMitt } from '@/composables/common/useMitt'
+import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum } from '@/enums'
 import { PRIVATE_MODE_STATE_EVENT_TYPE, roomOperations } from '@/services/matrix/room/RoomOperations'
 import { createLogger } from '@/utils/Logger'
@@ -56,6 +57,41 @@ function deactivatePrivateMode() {
   useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
 }
 
+/**
+ * 进入/恢复私密模式时，从服务端回填房间级阅后即焚状态。
+ *
+ * 阅后即焚开关只在私密模式内可见（`BurnAfterReadBar`）。若回填缺失，
+ * 重进房间后开关会显示「关闭」，而服务端策略仍在生效，形成隐形焚毁。
+ */
+async function hydrateBurnState(roomId: string, version: number) {
+  try {
+    const burnAfterRead = useBurnAfterRead()
+    await burnAfterRead.refreshBurnSettings(roomId)
+    if (version !== stateVersion) return
+    burnEnabled.value = burnAfterRead.isRoomBurnEnabled(roomId)
+    const duration = burnAfterRead.getRoomBurnDuration(roomId)
+    if (duration > 0) burnDuration.value = duration
+  } catch (error) {
+    logger.warn('回填阅后即焚状态失败', error)
+  }
+}
+
+/**
+ * 退出私密模式时同步关闭房间级阅后即焚策略。
+ *
+ * 仅复位本地 `burnEnabled` 会让服务端策略在 UI 之外继续生效：
+ * 用户以为已退出私密聊天，后续消息却仍会被焚毁。
+ */
+async function disableBurnOnExit(roomId: string) {
+  try {
+    const burnAfterRead = useBurnAfterRead()
+    const ok = await burnAfterRead.disableBurn(roomId)
+    if (!ok) logger.warn('退出私密模式时关闭阅后即焚失败', roomId)
+  } catch (error) {
+    logger.warn('退出私密模式时关闭阅后即焚异常', error)
+  }
+}
+
 export function usePrivateMode() {
   /**
    * 同步当前房间号，并按房间状态事件恢复私密模式。
@@ -76,9 +112,11 @@ export function usePrivateMode() {
     if (!roomId) return
     try {
       const enabled = await roomOperations.getPrivateMode(roomId)
-      if (!enabled || version !== stateVersion) return
+      if (version !== stateVersion) return
+      if (!enabled) return
       privateModeActive.value = true
       useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, true)
+      await hydrateBurnState(roomId, version)
     } catch (error) {
       logger.warn('读取私密模式状态失败', error)
     }
@@ -87,21 +125,27 @@ export function usePrivateMode() {
   function togglePrivateMode() {
     if (privateModeActive.value) {
       const roomId = currentRoomId.value
+      // deactivatePrivateMode 会复位 burnEnabled，需先捕获，否则无法判断是否要同步关闭服务端策略
+      const shouldDisableBurn = burnEnabled.value
       deactivatePrivateMode()
-      if (roomId) void persistPrivateMode(roomId, false)
+      if (roomId) {
+        void persistPrivateMode(roomId, false)
+        if (shouldDisableBurn) void disableBurnOnExit(roomId)
+      }
     } else {
       showPrivateConfirm.value = true
     }
   }
 
   function confirmPrivateMode() {
-    stateVersion++
+    const version = ++stateVersion
     privateModeActive.value = true
     showPrivateConfirm.value = false
     useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, true)
     const roomId = currentRoomId.value
     if (roomId) {
       void persistPrivateMode(roomId, true)
+      void hydrateBurnState(roomId, version)
     }
   }
 

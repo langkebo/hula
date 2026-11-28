@@ -169,7 +169,7 @@
             circle
             size="small"
             :class="{ 'private-mode-active': privateModeActive }"
-            :aria-label="t('chat.header.private_mode_toggle')"
+            :aria-label="privateModeActive ? t('chat.header.private_mode_exit') : t('chat.header.private_mode_toggle')"
             @click="handleTogglePrivateMode">
             <template #icon>
               <svg
