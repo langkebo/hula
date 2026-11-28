@@ -28,7 +28,7 @@
 | `vue-router` | `^5.3.1` | ✅ 重大（5.x） | 主版本升级，路由 API / 类型签名可能调整 | `src/router/**` 路由定义与守卫；`useRouter` / `useRoute` 用法 |
 | `vite` | `^8.2.2` | ✅ 重大（8.x） | 主版本升级，插件 API / 默认行为（HMR、构建目标、`build.target`）可能调整 | `vite.config.ts`；`@vitejs/plugin-vue`、UnoCSS、`unplugin-auto-import`、`unplugin-vue-components`；`build/`（`components.ts` / `chunks.ts` / `console.ts`） |
 | `vitest` | `4.1.10` | ✅ 重大（4.x） | 主版本升级，reporters / 配置 schema / mock 行为可能调整（例：`--reporter=basic` 已在 4.x 移除） | `vitest.config`；`src/**/__tests__`；`scripts/run-vitest.js`；CI 测试作业 |
-| `storybook` | `^10.6.0` | ✅ 重大（10.x） | 主版本升级，配置（`main.ts` / `preview.ts`）与 addon 生态大版本对齐 | `.storybook/**`；`src/stories/**`；`STORYBOOK_TEST=1` 组件交互测试（P2.5-6 落地） |
+| `storybook` | `^10.6.0` | ✅ 重大（10.x） | 主版本升级，配置（`main.ts` / `preview.ts`）与 addon 生态大版本对齐 | `.storybook/**`；`src/**/*.stories.ts`；`pnpm check:a11y`（全量 story 扫描）与 `pnpm test:visual`（视觉基线） |
 | `vue-tsc` | `3.3.11` | ✅ 重大（3.x） | 与 TypeScript 主版本**强联动**（vue-tsc 需匹配 TS 主版本）；类型推导行为随上游变化 | `pnpm run typecheck`；`.vue` 类型检查；与 `typescript` 升级**必须同批** |
 
 > **口径**：上表「breaking 信号」为**类别级**描述，**具体条目以升级时对应官方 release notes / migration guide 为准**；本文档不臆造逐条变更。
@@ -73,7 +73,7 @@ CI 侧已有只读依赖审计闸门（P2.5-5 SC-09：`scripts/check-dependency-
 | `pnpm check:release` | 17 判据聚合链，须 ✅ exit 0 |
 | `pnpm run typecheck` | 全量类型检查，须 0 错误 |
 | `pnpm test:run` | 单元测试，除既有失败外无新增失败 |
-| `STORYBOOK_TEST=1 pnpm test:run` | 组件交互测试（涉及 `storybook` 时） |
+| `pnpm check:a11y --url <storybook>` + `pnpm test:visual` | story a11y 扫描与视觉基线（涉及 `storybook` 或组件样式时） |
 | `pnpm tauri:build`（或真机 smoke） | 运行期冒烟：登录 / 收发消息 / 媒体 / 上传 |
 
 ---

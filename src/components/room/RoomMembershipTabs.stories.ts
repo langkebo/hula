@@ -5,7 +5,6 @@ import RoomMembershipTabs from './RoomMembershipTabs.vue'
 const meta: Meta<typeof RoomMembershipTabs> = {
   title: 'Room/RoomMembershipTabs',
   component: RoomMembershipTabs,
-  tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
     modelValue: { control: 'select', options: ['all', 'joined', 'created'] },

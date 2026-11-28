@@ -5,12 +5,7 @@ const meta = {
   title: 'Atomic/MxidText',
   component: MxidText,
   parameters: {
-    layout: 'centered',
-    docs: {
-      description: {
-        component: 'Matrix MXID 文本展示组件，支持自动截断 + title 悬浮显示全量。'
-      }
-    }
+    layout: 'centered'
   },
   argTypes: {
     mxid: {

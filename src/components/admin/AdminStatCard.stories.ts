@@ -4,7 +4,6 @@ import AdminStatCard from './AdminStatCard.vue'
 const meta: Meta<typeof AdminStatCard> = {
   title: 'Admin/AdminStatCard',
   component: AdminStatCard,
-  tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
     label: { control: 'text' },

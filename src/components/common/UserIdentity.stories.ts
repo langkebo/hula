@@ -5,15 +5,7 @@ const meta = {
   title: 'Common/UserIdentity',
   component: UserIdentity,
   parameters: {
-    layout: 'centered',
-    docs: {
-      description: {
-        component:
-          '联邦身份组合展示单元（方案 §2.1）：头像 + 主标识 + 完整 MXID + 联邦 chip。' +
-          'MXID 解析全部走 `@/utils/userIdentity`（extractServerName / sameHomeserver / toLocalpart），' +
-          '组件内禁止自行 split。无法判定本机域名时按「本地用户」处理，避免误标联邦。'
-      }
-    }
+    layout: 'centered'
   },
   argTypes: {
     displayName: { control: 'text', description: '显示名称（优先于 MXID localpart）' },

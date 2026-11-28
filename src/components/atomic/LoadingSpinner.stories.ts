@@ -4,7 +4,6 @@ import LoadingSpinner from './LoadingSpinner.vue'
 const meta: Meta<typeof LoadingSpinner> = {
   title: 'Atomic/LoadingSpinner',
   component: LoadingSpinner,
-  tags: ['autodocs'],
   argTypes: {
     percentage: { control: { type: 'range', min: 0, max: 100 } },
     loadingText: { control: 'text' }

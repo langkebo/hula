@@ -39,7 +39,6 @@ const contentStyle = {
 const meta: Meta<typeof TjGlass> = {
   title: 'Atomic/TjGlass',
   component: TjGlass,
-  tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
     variant: {

@@ -4,7 +4,6 @@ import BurnIndicator from './BurnIndicator.vue'
 const meta: Meta<typeof BurnIndicator> = {
   title: 'Burn/BurnIndicator',
   component: BurnIndicator,
-  tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
     status: { control: 'select', options: ['waiting', 'burning', 'burned'] },

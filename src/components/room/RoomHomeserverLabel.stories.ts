@@ -5,15 +5,7 @@ const meta = {
   title: 'Room/RoomHomeserverLabel',
   component: RoomHomeserverLabel,
   parameters: {
-    layout: 'centered',
-    docs: {
-      description: {
-        component:
-          '房间 homeserver 域名 chip（方案 §2.1）：标注房间所在服务器。' +
-          '`roomId` 形如 `!opaque:server`，取 server 段统一走 `@/utils/userIdentity` 的 ' +
-          '`extractServerName`，组件内禁止自行 split / indexOf。'
-      }
-    }
+    layout: 'centered'
   },
   argTypes: {
     roomId: { control: 'text', description: '房间 ID（!opaque:server）；serverName 为空时生效' },

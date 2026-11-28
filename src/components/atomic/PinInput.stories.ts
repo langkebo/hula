@@ -4,7 +4,6 @@ import PinInput from './PinInput.vue'
 const meta: Meta<typeof PinInput> = {
   title: 'Atomic/PinInput',
   component: PinInput,
-  tags: ['autodocs'],
   argTypes: {
     length: { control: { type: 'number', min: 4, max: 8 } },
     modelValue: { control: 'text' },

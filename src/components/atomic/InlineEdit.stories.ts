@@ -4,7 +4,6 @@ import InlineEdit from './InlineEdit.vue'
 const meta: Meta<typeof InlineEdit> = {
   title: 'Atomic/InlineEdit',
   component: InlineEdit,
-  tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
     label: { control: 'text' },

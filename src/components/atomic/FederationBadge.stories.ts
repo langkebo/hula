@@ -5,13 +5,7 @@ const meta = {
   title: 'Atomic/FederationBadge',
   component: FederationBadge,
   parameters: {
-    layout: 'centered',
-    docs: {
-      description: {
-        component:
-          'Matrix 联邦身份徽章组件，用于标识房间或用户是否来自联邦（远端服务器）。支持三态尺寸（xs/sm/md），颜色区分本地/远端。'
-      }
-    }
+    layout: 'centered'
   },
   argTypes: {
     size: {

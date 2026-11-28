@@ -292,7 +292,7 @@ PC 桌面端为**三栏布局**：导航栏（第一栏）+ 列表面板（第�
 | `src/components/thread/ThreadView.vue` | 死代码（桌面端，零引用，被移动端版替代） | ✅ 已 `git rm` |
 | `src/services/discovery/adapters/static.ts` | 废弃（StaticRegistry 被 ConsulRegistry 取代） | ✅ 已 `git rm` |
 | 22 个 `.DS_Store` | macOS 系统垃圾（git 未跟踪） | ✅ 已删除 |
-| `.storybook/setup-file.ts` | knip 误报（被 vitest.config 引用） | 保留 |
+| `.storybook/setup-file.ts` | 原 knip 误报（被 vitest.config 引用） | ✅ 已随 storybook 瘦身移除（vitest 的 storybook project 一并删除） |
 | 9 个 devDependencies | knip 误报（vite 插件） | 保留 |
 | e2e 失效引用（3 处） | store 路径迁移后未同步 | 待修复 |
 

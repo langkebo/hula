@@ -5,12 +5,7 @@ const meta = {
   title: 'Atomic/MessageLockBadge',
   component: MessageLockBadge,
   parameters: {
-    layout: 'centered',
-    docs: {
-      description: {
-        component: '消息加密信任状态徽章组件，支持三态信任模型：绿锁=已验证、灰锁=未验证、红锁=风险。'
-      }
-    }
+    layout: 'centered'
   },
   argTypes: {
     trustLevel: {

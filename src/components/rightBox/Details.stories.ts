@@ -23,8 +23,7 @@ const meta: Meta<typeof Details> = {
   }),
   parameters: {
     layout: 'fullscreen'
-  },
-  tags: ['autodocs']
+  }
 }
 
 export default meta

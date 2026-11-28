@@ -4,7 +4,6 @@ import TjgAvatar from './TjgAvatar.vue'
 const meta: Meta<typeof TjgAvatar> = {
   title: 'Atomic/TjgAvatar',
   component: TjgAvatar,
-  tags: ['autodocs'],
   parameters: { layout: 'centered' },
   argTypes: {
     size: { control: { type: 'range', min: 24, max: 120, step: 4 } },
