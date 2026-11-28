@@ -2,7 +2,7 @@
  * MatrixEventRouter — 事件路由 + 房间监听器管理深模块
  *
  * 职责：
- * - 管理 SDK 事件监听器的注册与注销（sync/room/room_timeline/redaction/decrypted/typing/receipt）
+ * - 管理 SDK 事件监听器的注册与注销（sync/room/room_timeline/redaction/decrypted/typing/receipt/to_device）
  * - 管理 Room 级别监听器（Room.name / RoomState.events）+ setMaxListeners(30)
  * - 订阅 SlidingSync Lifecycle 事件（通过 syncManager 封装）
  * - 提供外部事件系统（on/off/emit）供消费者订阅
@@ -21,6 +21,7 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { createLogger } from '@/utils/Logger'
 import type { SearchEventDoc } from '@/workers/matrixWorkerTypes'
 import type { MatrixSyncManager } from './MatrixSyncManager'
+import { BURN_READ_TO_DEVICE_EVENT, type BurnReadToDeviceContent } from './messaging/burnReadSignal'
 import {
   ClientEvent,
   type MatrixClient,
@@ -67,7 +68,7 @@ const SEARCH_FLUSH_WAIT_DEADLINE_MS = 30_000
  * 事件路由器
  *
  * 深模块：小接口（setup/detach/on/off/emit）+ 大实现
- * （7 个 SDK 事件监听器、Room 级监听器管理、Worker 转发、Mitt 事件桥接）
+ * （8 个 SDK 事件监听器、Room 级监听器管理、Worker 转发、Mitt 事件桥接）
  */
 export class MatrixEventRouter {
   private readonly eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
@@ -200,10 +201,77 @@ export class MatrixEventRouter {
   }
 
   private readonly receiptListener = (...args: unknown[]) => {
+    const event = args[0] as MatrixEvent | undefined
     const room = args[1] as Room | undefined
-    if (room) {
-      useMitt.emit(MittEnum.ROOM_RECEIPT_CHANGED, { roomId: room.roomId })
+    if (!room) return
+    useMitt.emit(MittEnum.ROOM_RECEIPT_CHANGED, { roomId: room.roomId })
+    this.emitBurnReadFromReceipts(event, room)
+  }
+
+  /**
+   * 把「对端对本人焚毁消息的 m.read 回执」翻译成 BURN_MESSAGE_READ。
+   *
+   * 服务端 burn sweep 只把待焚毁行标记 processed，既不 redact 房间事件、也不广播任何事件，
+   * 因此接收方阅读后补发的 m.read 回执（经 Sliding Sync receipts 扩展广播）是发送端
+   * 跨端阅读信号的主通道；发送端据此启动倒计时，最终本地焚毁，形成双端闭环。
+   *
+   * 接收方关闭「发送已读回执」时不会有该回执，此时改由 toDeviceBurnListener 兜底。
+   */
+  private emitBurnReadFromReceipts(event: MatrixEvent | undefined, room: Room): void {
+    const content = event?.getContent() as Record<string, unknown> | undefined
+    if (!content) return
+    const selfUserId = this.observedClient?.getUserId()
+    if (!selfUserId) return
+
+    for (const [eventId, byType] of Object.entries(content)) {
+      const readMap = (byType as Record<string, unknown> | undefined)?.['m.read'] as Record<string, unknown> | undefined
+      if (!readMap) continue
+      const peerRead = Object.keys(readMap).some((userId) => userId !== selfUserId)
+      if (!peerRead) continue
+      this.emitBurnReadIfOwned(room, eventId)
     }
+  }
+
+  /**
+   * 接收方关闭已读回执时的兜底通道：`com.tjg.burn_read` to-device 定向信号。
+   *
+   * 该事件只投递给原消息发送者的设备，不含房间广播，因此不会向其他成员泄露阅读状态。
+   */
+  private readonly toDeviceBurnListener = (...args: unknown[]) => {
+    const event = args[0] as MatrixEvent | undefined
+    if (!event || event.getType() !== BURN_READ_TO_DEVICE_EVENT) return
+
+    const selfUserId = this.observedClient?.getUserId()
+    if (!selfUserId) return
+    // 自己发出的信号直接忽略，避免自触发
+    if (event.getSender() === selfUserId) return
+
+    const content = event.getContent() as Partial<BurnReadToDeviceContent> | undefined
+    const roomId = content?.room_id
+    const eventId = content?.event_id
+    if (!roomId || !eventId) return
+
+    const room = this.observedClient?.getRoom(roomId)
+    if (!room) return
+    this.emitBurnReadIfOwned(room, eventId)
+  }
+
+  /**
+   * 若 `eventId` 指向本人发送的焚毁消息，则发出 BURN_MESSAGE_READ。
+   *
+   * 四项校验（防止伪造信号烧毁任意消息）：事件存在、发送者是本人、内容带
+   * `m.burn_after_read`；调用方负责校验信号来源不是本人。
+   */
+  private emitBurnReadIfOwned(room: Room, eventId: string): void {
+    const selfUserId = this.observedClient?.getUserId()
+    if (!selfUserId) return
+
+    const target = room.findEventById(eventId)
+    if (!target) return
+    if (target.getSender() !== selfUserId) return
+    if (!(target.getContent() as Record<string, unknown> | undefined)?.['m.burn_after_read']) return
+
+    useMitt.emit(MittEnum.BURN_MESSAGE_READ, { eventId, readAt: Date.now() })
   }
 
   private readonly syncLifecycleListener = (state: SlidingSyncState, _resp: unknown, err?: Error): void => {
@@ -248,7 +316,7 @@ export class MatrixEventRouter {
    * 注册所有 SDK 事件监听器
    *
    * 隐藏的复杂实现：
-   * - 7 个 client.on() 注册（sync/room/room_timeline/redaction/decrypted/typing/receipt）
+   * - 8 个 client.on() 注册（sync/room/room_timeline/redaction/decrypted/typing/receipt/to_device）
    * - SlidingSync Lifecycle 订阅（通过 syncManager 封装）
    * - 防重复注册（observedClient 去重）
    * - 旧 client 自动 detach
@@ -262,7 +330,7 @@ export class MatrixEventRouter {
       this.detach(this.observedClient, syncManager)
     }
 
-    // client EventEmitter 监听器累积超过默认上限 10（7 个本路由 + VoIP/Push/Presence/SpecialFriend 等），
+    // client EventEmitter 监听器累积超过默认上限 10（8 个本路由 + VoIP/Push/Presence/SpecialFriend 等），
     // 提升实例级 maxListeners 至 50 以避免 MaxListenersExceededWarning。
     const clientAny = client as { setMaxListeners?: (n: number) => void }
     clientAny.setMaxListeners?.(50)
@@ -274,6 +342,7 @@ export class MatrixEventRouter {
     client.on(MatrixEventEvent.Decrypted, this.eventDecryptedListener)
     client.on(RoomMemberEvent.Typing, this.typingListener)
     client.on(RoomEvent.Receipt, this.receiptListener)
+    client.on(ClientEvent.ToDeviceEvent, this.toDeviceBurnListener)
 
     // 订阅 SlidingSync Lifecycle 事件，补全 SDK 瞬时错误感知 seam。
     this.syncManager_onLifecycleEvent(syncManager, this.syncLifecycleListener)
@@ -285,7 +354,7 @@ export class MatrixEventRouter {
    * 注销所有 SDK 事件监听器
    *
    * 隐藏的复杂实现：
-   * - 7 个 client.off() 注销
+   * - 8 个 client.off() 注销
    * - SlidingSync Lifecycle 取消订阅
    * - Room 级监听器批量清理
    */
@@ -297,6 +366,7 @@ export class MatrixEventRouter {
     client.off(MatrixEventEvent.Decrypted, this.eventDecryptedListener)
     client.off(RoomMemberEvent.Typing, this.typingListener)
     client.off(RoomEvent.Receipt, this.receiptListener)
+    client.off(ClientEvent.ToDeviceEvent, this.toDeviceBurnListener)
 
     this.syncManager_offLifecycleEvent(syncManager, this.syncLifecycleListener)
     // 收尾路径：写一次成功则保留索引，失败不再回队重试（router 正在脱离当前 client）

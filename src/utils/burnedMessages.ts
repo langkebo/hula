@@ -2,7 +2,7 @@
  * 已焚毁消息的本地黑名单。
  *
  * 为什么需要它：阅后即焚在服务端是 **per-user 时间登记**（`burn_after_read_service`），
- * 到期后只把该行标记 processed 并推 `BURN_MESSAGE_BURNED`，**不会 redact 房间事件**
+ * 到期后只把该行标记 processed，**既不 redact 房间事件、也不推送任何事件**
  * ——因为房间事件由全员共享，一人到期就 redact 等于「一人已读、全员丢消息」。
  * 代价是：客户端的「烧掉」只活在内存里（`deleteMsg` / `isBurned`），
  * 重进会话或重新 sync 后，到期消息会原样复活。

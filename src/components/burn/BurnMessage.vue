@@ -30,6 +30,7 @@ import { useI18n } from 'vue-i18n'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
+import { markEventBurned } from '@/utils/burnedMessages'
 import BurnIndicator from './BurnIndicator.vue'
 
 const { t } = useI18n()
@@ -63,11 +64,16 @@ const rootEl = ref<HTMLElement | null>(null)
 // Fix 5: 消息进入视口时触发 markBurnRead，而非倒计时结束后。
 // 正确流程：用户看到消息 → markBurnRead 通知后端 → 成功后设 isBurning=true → 启动倒计时。
 onMounted(() => {
+  // 挂载时 isBurning 已为 true（重进会话、或发送端收到对端已读回执后重渲染），
+  // watch 只在变化时触发，这里必须主动补启动倒计时，否则会永远停在「燃烧中」。
+  if (internalIsBurning.value && !internalIsBurned.value) {
+    startCountdown()
+  }
   if (!rootEl.value || typeof IntersectionObserver === 'undefined') return
   intersectionObserver = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
-        if (entry.isIntersecting && !hasMarkedRead.value && !internalIsBurned.value) {
+        if (entry.isIntersecting && !hasMarkedRead.value && !internalIsBurned.value && !internalIsBurning.value) {
           hasMarkedRead.value = true
           handleMessageVisible()
         }
@@ -139,8 +145,10 @@ function startCountdown() {
 }
 
 function completeBurn() {
-  // 本地倒计时只做展示收尾；删除由 SDK 的 MessageBurned 事件驱动
-  // （burnMessage 先本地删缓存再无条件 emit，不再依赖 /redact 成功）。
+  // 服务端不会 redact 共享事件，也不会推送焚毁事件（sweep 只标记 processed），
+  // 所以本端必须自己落「黑名单 + 移除」；只显示遮罩会导致重载后消息复活。
+  // 顺序固定：先写黑名单，再删当前会话内存视图。
+  markEventBurned(props.eventId || props.msgId)
   internalIsBurning.value = false
   internalIsBurned.value = true
   internalRemainingSeconds.value = 0
@@ -151,6 +159,7 @@ function completeBurn() {
     isBurned: true,
     burnRemainingSeconds: 0
   })
+  chatStore.deleteMsg(props.msgId)
 }
 
 function clearCountdown() {

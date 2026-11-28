@@ -4,6 +4,8 @@ import {
   type BurnStats,
   matrixBurnAfterReadService
 } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
+import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
+import { isSendReadReceiptsEnabled } from '@/services/matrix/privacyPreferences'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { normalizeBurnDefaultDuration } from '@/stores/domains/settings/settings-helpers'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -125,7 +127,19 @@ export function useBurnAfterRead() {
     if (!burnSettingsCache.value[targetRoomId]) return false
 
     try {
-      return await matrixBurnAfterReadService.markBurnRead(targetRoomId, msgId)
+      const marked = await matrixBurnAfterReadService.markBurnRead(targetRoomId, msgId)
+      if (marked) {
+        // 服务端没有阅读/焚毁推送通道（sweep 只标记 processed，不广播事件）。
+        // 回执开启：补发 m.read，服务端经 Sliding Sync 广播给发送端；
+        // 回执关闭：m.read 会被隐私开关拦下，改发只投递给发送者的 to-device 信号，
+        // 既不向房间其他成员泄露阅读状态，也不让发送端丢掉跨端阅读信号。
+        if (isSendReadReceiptsEnabled()) {
+          matrixReceiptService.sendReadReceiptByEventId(targetRoomId, msgId).catch(() => undefined)
+        } else {
+          matrixBurnAfterReadService.notifyBurnReadToSender(targetRoomId, msgId).catch(() => undefined)
+        }
+      }
+      return marked
     } catch {
       return false
     }

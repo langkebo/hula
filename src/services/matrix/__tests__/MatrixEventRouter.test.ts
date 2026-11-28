@@ -44,7 +44,8 @@ vi.mock('@/composables/common/useMitt', () => ({
 vi.mock('@/enums', () => ({
   MittEnum: {
     ROOM_TYPING_CHANGED: 'roomTypingChanged',
-    ROOM_RECEIPT_CHANGED: 'roomReceiptChanged'
+    ROOM_RECEIPT_CHANGED: 'roomReceiptChanged',
+    BURN_MESSAGE_READ: 'burnMessageRead'
   }
 }))
 
@@ -59,6 +60,7 @@ function makeClient() {
     setMaxListeners: vi.fn(),
     getRooms: vi.fn(),
     getRoom: vi.fn(),
+    getUserId: vi.fn(() => '@me:hs'),
     getHomeserverUrl: vi.fn(() => 'https://hs.example.com'),
     on: vi.fn((evt: string, handler: Handler) => {
       handlers.set(evt, handler)
@@ -126,11 +128,11 @@ describe('MatrixEventRouter', () => {
   })
 
   describe('setup', () => {
-    it('注册 7 个 SDK 事件监听器并提升 maxListeners 至 50', () => {
+    it('注册 8 个 SDK 事件监听器并提升 maxListeners 至 50', () => {
       router.setup(client as never, syncManager as never)
 
       expect(client.setMaxListeners).toHaveBeenCalledWith(50)
-      expect(client.on).toHaveBeenCalledTimes(7)
+      expect(client.on).toHaveBeenCalledTimes(8)
 
       const events = client.on.mock.calls.map((call) => call[0])
       expect(events).toEqual(
@@ -141,7 +143,8 @@ describe('MatrixEventRouter', () => {
           'Room.redaction',
           'Event.decrypted',
           'RoomMember.typing',
-          'Room.receipt'
+          'Room.receipt',
+          'toDeviceEvent'
         ])
       )
       expect(syncManager.onLifecycleEvent).toHaveBeenCalledTimes(1)
@@ -152,7 +155,7 @@ describe('MatrixEventRouter', () => {
       router.setup(client as never, syncManager as never)
       router.setup(client as never, syncManager as never)
 
-      expect(client.on).toHaveBeenCalledTimes(7)
+      expect(client.on).toHaveBeenCalledTimes(8)
       expect(syncManager.onLifecycleEvent).toHaveBeenCalledTimes(1)
     })
 
@@ -161,19 +164,19 @@ describe('MatrixEventRouter', () => {
       router.setup(client as never, syncManager as never)
       router.setup(client2 as never, syncManager as never)
 
-      expect(client.off).toHaveBeenCalledTimes(7)
+      expect(client.off).toHaveBeenCalledTimes(8)
       expect(syncManager.offLifecycleEvent).toHaveBeenCalledTimes(1)
-      expect(client2.on).toHaveBeenCalledTimes(7)
+      expect(client2.on).toHaveBeenCalledTimes(8)
       expect(router.getObservedClient()).toBe(client2 as never)
     })
   })
 
   describe('detach', () => {
-    it('注销全部 7 个监听器、取消 Lifecycle 订阅并清空 observedClient', () => {
+    it('注销全部 8 个监听器、取消 Lifecycle 订阅并清空 observedClient', () => {
       router.setup(client as never, syncManager as never)
       router.detach(client as never, syncManager as never)
 
-      expect(client.off).toHaveBeenCalledTimes(7)
+      expect(client.off).toHaveBeenCalledTimes(8)
       expect(syncManager.offLifecycleEvent).toHaveBeenCalledTimes(1)
       expect(router.getObservedClient()).toBeNull()
     })
@@ -371,6 +374,230 @@ describe('MatrixEventRouter', () => {
       client.handlers.get('Room.receipt')?.(undefined, room as never)
 
       expect(mittMock.emit).toHaveBeenCalledWith('roomReceiptChanged', { roomId: '!room:hs' })
+    })
+
+    /**
+     * 双端闭环的发送端一半：接收方阅读焚毁消息后会补发 m.read 回执，
+     * 服务端把回执经 Sliding Sync 广播回房间；这里要把它翻译成
+     * BURN_MESSAGE_READ，发送端才能启动倒计时并最终本地焚毁。
+     */
+    describe('焚毁回执桥接（接收端已读 → 发送端倒计时）', () => {
+      function makeBurnEvent(eventId: string, sender = '@me:hs', burn = true) {
+        return makeMatrixEvent({
+          getId: vi.fn(() => eventId),
+          getSender: vi.fn(() => sender),
+          getContent: vi.fn(() =>
+            burn
+              ? { msgtype: 'm.text', body: 'secret', 'm.burn_after_read': { expires_in: 60000 } }
+              : { msgtype: 'm.text', body: 'plain' }
+          )
+        })
+      }
+
+      function makeReceiptEvent(content: Record<string, unknown> | undefined) {
+        return makeMatrixEvent({
+          getType: vi.fn(() => 'm.receipt'),
+          getContent: vi.fn(() => content)
+        })
+      }
+
+      it('对端 m.read 回执命中本人焚毁事件时 emit BURN_MESSAGE_READ', () => {
+        router.setup(client as never, syncManager as never)
+        const burnEvent = makeBurnEvent('$burn1')
+        const room = makeRoom({ findEventById: vi.fn(() => burnEvent) })
+        const receipt = makeReceiptEvent({ $burn1: { 'm.read': { '@peer:hs': { ts: 1 } } } })
+
+        client.handlers.get('Room.receipt')?.(receipt as never, room as never)
+
+        expect(mittMock.emit).toHaveBeenCalledWith('burnMessageRead', {
+          eventId: '$burn1',
+          readAt: expect.any(Number)
+        })
+      })
+
+      it('自身回执不触发 BURN_MESSAGE_READ', () => {
+        router.setup(client as never, syncManager as never)
+        const burnEvent = makeBurnEvent('$burn1')
+        const room = makeRoom({ findEventById: vi.fn(() => burnEvent) })
+        const receipt = makeReceiptEvent({ $burn1: { 'm.read': { '@me:hs': { ts: 1 } } } })
+
+        client.handlers.get('Room.receipt')?.(receipt as never, room as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('对端回执命中他人发送的焚毁事件时不触发（只关心自己发出的消息）', () => {
+        router.setup(client as never, syncManager as never)
+        const burnEvent = makeBurnEvent('$burn1', '@peer:hs')
+        const room = makeRoom({ findEventById: vi.fn(() => burnEvent) })
+        const receipt = makeReceiptEvent({ $burn1: { 'm.read': { '@other:hs': { ts: 1 } } } })
+
+        client.handlers.get('Room.receipt')?.(receipt as never, room as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('对端回执命中普通消息时不触发', () => {
+        router.setup(client as never, syncManager as never)
+        const plainEvent = makeBurnEvent('$plain1', '@me:hs', false)
+        const room = makeRoom({ findEventById: vi.fn(() => plainEvent) })
+        const receipt = makeReceiptEvent({ $plain1: { 'm.read': { '@peer:hs': { ts: 1 } } } })
+
+        client.handlers.get('Room.receipt')?.(receipt as never, room as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('回执内容不含 m.read 类型时不触发', () => {
+        router.setup(client as never, syncManager as never)
+        const burnEvent = makeBurnEvent('$burn1')
+        const room = makeRoom({ findEventById: vi.fn(() => burnEvent) })
+        const receipt = makeReceiptEvent({ $burn1: { 'm.fully_read': { '@peer:hs': { ts: 1 } } } })
+
+        client.handlers.get('Room.receipt')?.(receipt as never, room as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('事件不在本地时间线（findEventById 未命中）时不触发且不抛错', () => {
+        router.setup(client as never, syncManager as never)
+        const room = makeRoom({ findEventById: vi.fn(() => undefined) })
+        const receipt = makeReceiptEvent({ $missing: { 'm.read': { '@peer:hs': { ts: 1 } } } })
+
+        expect(() => client.handlers.get('Room.receipt')?.(receipt as never, room as never)).not.toThrow()
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('回执事件内容为空时不触发且不抛错', () => {
+        router.setup(client as never, syncManager as never)
+        const room = makeRoom({ findEventById: vi.fn(() => undefined) })
+        const receipt = makeReceiptEvent(undefined)
+
+        expect(() => client.handlers.get('Room.receipt')?.(receipt as never, room as never)).not.toThrow()
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+    })
+
+    describe('焚毁已读定向信号桥接（接收端关闭回执 → to-device 兜底）', () => {
+      function makeBurnEvent(eventId: string, sender = '@me:hs', burn = true) {
+        return makeMatrixEvent({
+          getId: vi.fn(() => eventId),
+          getSender: vi.fn(() => sender),
+          getContent: vi.fn(() =>
+            burn
+              ? { msgtype: 'm.text', body: 'secret', 'm.burn_after_read': { expires_in: 60000 } }
+              : { msgtype: 'm.text', body: 'plain' }
+          )
+        })
+      }
+
+      function makeToDeviceEvent(type: string, content: unknown, sender = '@peer:hs') {
+        return makeMatrixEvent({
+          getType: vi.fn(() => type),
+          getSender: vi.fn(() => sender),
+          getContent: vi.fn(() => content)
+        })
+      }
+
+      it('对端 to-device 焚毁信号命中本人焚毁事件时 emit BURN_MESSAGE_READ', () => {
+        router.setup(client as never, syncManager as never)
+        const burnEvent = makeBurnEvent('$burn1')
+        const room = makeRoom({ findEventById: vi.fn(() => burnEvent) })
+        client.getRoom.mockReturnValue(room)
+        const signal = makeToDeviceEvent('com.tjg.burn_read', {
+          room_id: '!room:hs',
+          event_id: '$burn1',
+          read_ts: 1
+        })
+
+        client.handlers.get('toDeviceEvent')?.(signal as never)
+
+        expect(client.getRoom).toHaveBeenCalledWith('!room:hs')
+        expect(mittMock.emit).toHaveBeenCalledWith('burnMessageRead', {
+          eventId: '$burn1',
+          readAt: expect.any(Number)
+        })
+      })
+
+      it('本人发出的 to-device 信号被忽略', () => {
+        router.setup(client as never, syncManager as never)
+        const burnEvent = makeBurnEvent('$burn1')
+        const room = makeRoom({ findEventById: vi.fn(() => burnEvent) })
+        client.getRoom.mockReturnValue(room)
+        const signal = makeToDeviceEvent(
+          'com.tjg.burn_read',
+          { room_id: '!room:hs', event_id: '$burn1', read_ts: 1 },
+          '@me:hs'
+        )
+
+        client.handlers.get('toDeviceEvent')?.(signal as never)
+
+        expect(client.getRoom).not.toHaveBeenCalled()
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('非 com.tjg.burn_read 的 to-device 事件被忽略', () => {
+        router.setup(client as never, syncManager as never)
+        const room = makeRoom({ findEventById: vi.fn(() => makeBurnEvent('$burn1')) })
+        client.getRoom.mockReturnValue(room)
+        const signal = makeToDeviceEvent('com.tjg.other', { room_id: '!room:hs', event_id: '$burn1' })
+
+        client.handlers.get('toDeviceEvent')?.(signal as never)
+
+        expect(client.getRoom).not.toHaveBeenCalled()
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('信号缺少 room_id / event_id 时不触发', () => {
+        router.setup(client as never, syncManager as never)
+        const signal = makeToDeviceEvent('com.tjg.burn_read', { read_ts: 1 })
+
+        expect(() => client.handlers.get('toDeviceEvent')?.(signal as never)).not.toThrow()
+        expect(client.getRoom).not.toHaveBeenCalled()
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('房间不在本地客户端时不触发', () => {
+        router.setup(client as never, syncManager as never)
+        client.getRoom.mockReturnValue(undefined)
+        const signal = makeToDeviceEvent('com.tjg.burn_read', { room_id: '!unknown:hs', event_id: '$burn1' })
+
+        client.handlers.get('toDeviceEvent')?.(signal as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('目标事件不在本地时间线时不触发', () => {
+        router.setup(client as never, syncManager as never)
+        client.getRoom.mockReturnValue(makeRoom({ findEventById: vi.fn(() => undefined) }))
+        const signal = makeToDeviceEvent('com.tjg.burn_read', { room_id: '!room:hs', event_id: '$missing' })
+
+        client.handlers.get('toDeviceEvent')?.(signal as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('目标事件不是本人发送时不触发（防伪造信号烧毁他人消息）', () => {
+        router.setup(client as never, syncManager as never)
+        const room = makeRoom({ findEventById: vi.fn(() => makeBurnEvent('$burn1', '@other:hs')) })
+        client.getRoom.mockReturnValue(room)
+        const signal = makeToDeviceEvent('com.tjg.burn_read', { room_id: '!room:hs', event_id: '$burn1' })
+
+        client.handlers.get('toDeviceEvent')?.(signal as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
+
+      it('目标事件不是焚毁消息时不触发', () => {
+        router.setup(client as never, syncManager as never)
+        const room = makeRoom({ findEventById: vi.fn(() => makeBurnEvent('$plain1', '@me:hs', false)) })
+        client.getRoom.mockReturnValue(room)
+        const signal = makeToDeviceEvent('com.tjg.burn_read', { room_id: '!room:hs', event_id: '$plain1' })
+
+        client.handlers.get('toDeviceEvent')?.(signal as never)
+
+        expect(mittMock.emit).not.toHaveBeenCalledWith('burnMessageRead', expect.anything())
+      })
     })
 
     it('Room.redaction 有关联 id 时调用 worker redactSearchEvent', () => {

@@ -1,6 +1,7 @@
 import type { IContent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import { BURN_READ_TO_DEVICE_EVENT, type BurnReadToDeviceContent } from './burnReadSignal'
 
 const logger = createLogger('BurnAfterRead')
 
@@ -163,6 +164,49 @@ class MatrixBurnAfterReadService {
       return result.success
     } catch (error) {
       logger.error(`标记已读失败: ${error}`)
+      if (throwOnError) throw error
+      return false
+    }
+  }
+
+  /**
+   * 定向告知原消息发送者「我方已读该焚毁消息」。
+   *
+   * 接收方关闭「发送已读回执」时不会补发 `m.read`，发送端就收不到任何跨端阅读信号；
+   * 这里改发 to-device 事件，只投递给消息发送者的全部设备，不向房间其他成员泄露
+   * 阅读状态。事件类型与接收侧 `MatrixEventRouter` 保持同一约定。
+   *
+   * @returns 发送请求是否被服务端确认；找不到目标事件/发送者时返回 false。
+   */
+  async notifyBurnReadToSender(roomId: string, eventId: string, throwOnError = false): Promise<boolean> {
+    try {
+      const client = matrixClientService.getClient()
+      if (!client) return false
+
+      const target = client.getRoom(roomId)?.findEventById(eventId)
+      const senderId = target?.getSender()
+      if (!senderId) {
+        logger.warn(`焚毁已读定向信号缺少发送者，跳过: eventId=${eventId}`)
+        return false
+      }
+      // 自己的消息不需要通知自己（防御性判断）
+      if (client.getUserId() === senderId) return false
+
+      const content: BurnReadToDeviceContent & IContent = {
+        room_id: roomId,
+        event_id: eventId,
+        read_ts: Date.now()
+      }
+      const manager = client.getToDeviceManager()
+      const result = await manager.sendToDevice(BURN_READ_TO_DEVICE_EVENT, {
+        [senderId]: { '*': content }
+      })
+      if (!result.success) {
+        logger.warn(`焚毁已读定向信号发送未确认: eventId=${eventId}`)
+      }
+      return result.success
+    } catch (error) {
+      logger.error(`发送焚毁已读定向信号失败: ${error}`)
       if (throwOnError) throw error
       return false
     }

@@ -31,6 +31,9 @@ const getBurnStatsMock = vi.fn()
 const cancelBurnMock = vi.fn()
 const getPendingBurnsMock = vi.fn()
 const setBurnConfigMock = vi.fn()
+const notifyBurnReadToSenderMock = vi.fn()
+const sendReadReceiptByEventIdMock = vi.fn()
+const isSendReadReceiptsEnabledMock = vi.fn(() => true)
 
 vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
   matrixBurnAfterReadService: {
@@ -41,7 +44,21 @@ vi.mock('@/services/matrix/messaging/MatrixBurnAfterReadService', () => ({
     getBurnStats: (...args: unknown[]) => getBurnStatsMock(...args),
     cancelBurn: (...args: unknown[]) => cancelBurnMock(...args),
     getPendingBurns: (...args: unknown[]) => getPendingBurnsMock(...args),
-    setBurnConfig: (...args: unknown[]) => setBurnConfigMock(...args)
+    setBurnConfig: (...args: unknown[]) => setBurnConfigMock(...args),
+    notifyBurnReadToSender: (...args: unknown[]) => notifyBurnReadToSenderMock(...args)
+  }
+}))
+
+// 回执开关：开启时走 m.read（房间广播），关闭时走 to-device 定向信号。
+vi.mock('@/services/matrix/privacyPreferences', () => ({
+  isSendReadReceiptsEnabled: () => isSendReadReceiptsEnabledMock()
+}))
+
+// 阅读焚毁消息后必须补发 m.read 回执，服务端没有阅读推送通道，
+// 这是发送端得知「对方已读」并启动倒计时的唯一来源。
+vi.mock('@/services/matrix/messaging/MatrixReceiptService', () => ({
+  matrixReceiptService: {
+    sendReadReceiptByEventId: (...args: unknown[]) => sendReadReceiptByEventIdMock(...args)
   }
 }))
 
@@ -61,6 +78,12 @@ describe('useBurnAfterRead', () => {
     cancelBurnMock.mockReset()
     getPendingBurnsMock.mockReset()
     setBurnConfigMock.mockReset()
+    notifyBurnReadToSenderMock.mockReset()
+    notifyBurnReadToSenderMock.mockResolvedValue(true)
+    sendReadReceiptByEventIdMock.mockReset()
+    sendReadReceiptByEventIdMock.mockResolvedValue(undefined)
+    isSendReadReceiptsEnabledMock.mockReset()
+    isSendReadReceiptsEnabledMock.mockReturnValue(true)
   })
 
   afterEach(() => {
@@ -373,6 +396,82 @@ describe('useBurnAfterRead', () => {
       const { markMessageRead } = useBurnAfterRead()
       const result = await markMessageRead('msg-1', 'room-1')
       expect(result).toBe(false)
+    })
+
+    it('markBurnRead 成功后补发 m.read 回执，把阅读信号带给发送端', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      markBurnReadMock.mockResolvedValue(true)
+      const { markMessageRead } = useBurnAfterRead()
+
+      const result = await markMessageRead('msg-1', 'room-1')
+
+      expect(result).toBe(true)
+      expect(sendReadReceiptByEventIdMock).toHaveBeenCalledWith('room-1', 'msg-1')
+    })
+
+    it('markBurnRead 返回 false 时不补发已读回执', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      markBurnReadMock.mockResolvedValue(false)
+      const { markMessageRead } = useBurnAfterRead()
+
+      await markMessageRead('msg-1', 'room-1')
+
+      expect(sendReadReceiptByEventIdMock).not.toHaveBeenCalled()
+    })
+
+    it('补发回执失败不影响 markMessageRead 的返回值', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      markBurnReadMock.mockResolvedValue(true)
+      sendReadReceiptByEventIdMock.mockRejectedValue(new Error('receipt failed'))
+      const { markMessageRead } = useBurnAfterRead()
+
+      await expect(markMessageRead('msg-1', 'room-1')).resolves.toBe(true)
+    })
+
+    it('已读回执开启时不发 to-device 定向信号（避免双通道重复）', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      markBurnReadMock.mockResolvedValue(true)
+      isSendReadReceiptsEnabledMock.mockReturnValue(true)
+      const { markMessageRead } = useBurnAfterRead()
+
+      await markMessageRead('msg-1', 'room-1')
+
+      expect(sendReadReceiptByEventIdMock).toHaveBeenCalledWith('room-1', 'msg-1')
+      expect(notifyBurnReadToSenderMock).not.toHaveBeenCalled()
+    })
+
+    it('已读回执关闭时改发 to-device 定向信号，不泄露房间级 m.read', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      markBurnReadMock.mockResolvedValue(true)
+      isSendReadReceiptsEnabledMock.mockReturnValue(false)
+      const { markMessageRead } = useBurnAfterRead()
+
+      const result = await markMessageRead('msg-1', 'room-1')
+
+      expect(result).toBe(true)
+      expect(notifyBurnReadToSenderMock).toHaveBeenCalledWith('room-1', 'msg-1')
+      expect(sendReadReceiptByEventIdMock).not.toHaveBeenCalled()
+    })
+
+    it('已读回执关闭且 to-device 信号发送失败不影响返回值', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      markBurnReadMock.mockResolvedValue(true)
+      isSendReadReceiptsEnabledMock.mockReturnValue(false)
+      notifyBurnReadToSenderMock.mockRejectedValue(new Error('to-device failed'))
+      const { markMessageRead } = useBurnAfterRead()
+
+      await expect(markMessageRead('msg-1', 'room-1')).resolves.toBe(true)
+    })
+
+    it('markBurnRead 返回 false 时不发 to-device 定向信号', async () => {
+      getBurnSettingsMock.mockResolvedValue({ enabled: true, burnAfterMs: 60000 })
+      markBurnReadMock.mockResolvedValue(false)
+      isSendReadReceiptsEnabledMock.mockReturnValue(false)
+      const { markMessageRead } = useBurnAfterRead()
+
+      await markMessageRead('msg-1', 'room-1')
+
+      expect(notifyBurnReadToSenderMock).not.toHaveBeenCalled()
     })
   })
 

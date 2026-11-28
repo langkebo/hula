@@ -204,4 +204,70 @@ describe('MatrixBurnAfterReadService', () => {
       expect(result).toEqual([])
     })
   })
+
+  describe('notifyBurnReadToSender', () => {
+    const sendToDevice = vi.fn()
+    const getSender = vi.fn(() => '@peer:hs')
+
+    beforeEach(() => {
+      sendToDevice.mockReset()
+      sendToDevice.mockResolvedValue({ success: true })
+      getSender.mockReset()
+      getSender.mockReturnValue('@peer:hs')
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+        getRoom: vi.fn(() => ({ findEventById: vi.fn(() => ({ getSender })) })),
+        getUserId: vi.fn(() => '@me:hs'),
+        getToDeviceManager: () => ({ sendToDevice })
+      } as never)
+    })
+
+    it('向原消息发送者的全部设备定向发送 com.tjg.burn_read', async () => {
+      const result = await matrixBurnAfterReadService.notifyBurnReadToSender('!room:test', '$burn1')
+
+      expect(sendToDevice).toHaveBeenCalledWith('com.tjg.burn_read', {
+        '@peer:hs': {
+          '*': { room_id: '!room:test', event_id: '$burn1', read_ts: expect.any(Number) }
+        }
+      })
+      expect(result).toBe(true)
+    })
+
+    it('目标事件不在本地时间线时返回 false 且不发请求', async () => {
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+        getRoom: vi.fn(() => ({ findEventById: vi.fn(() => undefined) })),
+        getUserId: vi.fn(() => '@me:hs'),
+        getToDeviceManager: () => ({ sendToDevice })
+      } as never)
+
+      const result = await matrixBurnAfterReadService.notifyBurnReadToSender('!room:test', '$missing')
+
+      expect(sendToDevice).not.toHaveBeenCalled()
+      expect(result).toBe(false)
+    })
+
+    it('目标事件由本人发送时跳过，不通知自己', async () => {
+      getSender.mockReturnValue('@me:hs')
+
+      const result = await matrixBurnAfterReadService.notifyBurnReadToSender('!room:test', '$burn1')
+
+      expect(sendToDevice).not.toHaveBeenCalled()
+      expect(result).toBe(false)
+    })
+
+    it('to-device 发送异常时返回 false', async () => {
+      sendToDevice.mockRejectedValueOnce(new Error('network'))
+
+      const result = await matrixBurnAfterReadService.notifyBurnReadToSender('!room:test', '$burn1')
+
+      expect(result).toBe(false)
+    })
+
+    it('throwOnError 为 true 时抛出异常', async () => {
+      sendToDevice.mockRejectedValueOnce(new Error('network'))
+
+      await expect(matrixBurnAfterReadService.notifyBurnReadToSender('!room:test', '$burn1', true)).rejects.toThrow(
+        'network'
+      )
+    })
+  })
 })
