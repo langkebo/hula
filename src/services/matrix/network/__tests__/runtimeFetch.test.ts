@@ -7,13 +7,22 @@ import {
   isExpectedNonSuccess
 } from '../runtimeFetch'
 
-const { warnMock, debugMock } = vi.hoisted(() => ({
+const { warnMock, debugMock, emitMock } = vi.hoisted(() => ({
   warnMock: vi.fn(),
-  debugMock: vi.fn()
+  debugMock: vi.fn(),
+  emitMock: vi.fn()
 }))
 
 vi.mock('@tauri-apps/plugin-http', () => ({
   fetch: vi.fn()
+}))
+
+vi.mock('@/composables/common/useMitt', () => ({
+  useMitt: {
+    emit: emitMock,
+    on: vi.fn(),
+    off: vi.fn()
+  }
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -279,6 +288,72 @@ describe('runtimeFetch', () => {
   })
 })
 
+describe('runtimeFetch 会话失效广播', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+    __resetRuntimeFetchWarningForTests()
+  })
+
+  const mockUnknownTokenResponse = () => ({
+    ok: false,
+    status: 401,
+    headers: new Headers(),
+    clone: () => ({ json: async () => ({ errcode: 'M_UNKNOWN_TOKEN' }) })
+  })
+
+  it('401 M_UNKNOWN_TOKEN 广播时携带请求所用的 access token', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockUnknownTokenResponse())
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/sync', {
+      headers: { Authorization: 'Bearer old-token' }
+    })
+
+    await vi.waitFor(() => expect(emitMock).toHaveBeenCalled())
+    expect(emitMock).toHaveBeenCalledWith(expect.anything(), { accessToken: 'old-token' })
+  })
+
+  it('缺少 Authorization 头时从 access_token 查询参数提取 token', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockUnknownTokenResponse())
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/sync?access_token=query-token')
+
+    await vi.waitFor(() => expect(emitMock).toHaveBeenCalled())
+    expect(emitMock).toHaveBeenCalledWith(expect.anything(), { accessToken: 'query-token' })
+  })
+
+  it('非 M_UNKNOWN_TOKEN 的 401 不触发会话失效', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 401,
+      headers: new Headers(),
+      clone: () => ({ json: async () => ({ errcode: 'M_FORBIDDEN' }) })
+    })
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/profile/@alice:matrix.test')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(emitMock).not.toHaveBeenCalled()
+  })
+
+  it('登录端点的 401 不触发会话失效', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockUnknownTokenResponse())
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/login', { method: 'POST' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(emitMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('isExpectedNonSuccess', () => {
   it('把能力探测与权限结论视为预期结果', () => {
     expect(isExpectedNonSuccess('https://matrix.test/_matrix/vendor/v1/friends?limit=0', 400)).toBe(true)
@@ -296,6 +371,12 @@ describe('isExpectedNonSuccess', () => {
 })
 
 describe('runtimeFetch 告警噪音', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+    __resetRuntimeFetchWarningForTests()
+  })
+
   it('vendor 能力探测的 400 不再记为 WARN', async () => {
     vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
     ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({

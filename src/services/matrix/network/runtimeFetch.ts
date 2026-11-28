@@ -233,14 +233,61 @@ export function isExpectedNonSuccess(url: string, status: number): boolean {
 const SESSION_INVALID_NOTIFY_COOLDOWN_MS = 30_000
 let sessionInvalidNotifiedAt = 0
 
+/** 读取 HeadersInit（Headers / 数组 / 普通对象）中的指定头。 */
+function readHeaderValue(headers: HeadersInit | undefined, name: string): string | null {
+  if (!headers) return null
+  const target = name.toLowerCase()
+  if (headers instanceof Headers) return headers.get(name)
+  if (Array.isArray(headers)) {
+    for (const [key, value] of headers) {
+      if (String(key).toLowerCase() === target) return String(value)
+    }
+    return null
+  }
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === target) return value ?? null
+  }
+  return null
+}
+
+/**
+ * 从请求中提取 access token，随会话失效事件一起广播。
+ *
+ * 切换账号时旧会话的在途请求可能晚于新登录返回 401；只凭 URL 无法区分，
+ * home 窗口需要用它和当前 token 比对，避免旧 token 的 401 把新会话登出。
+ */
+function extractAccessToken(url: string, input: URL | RequestInfo, init?: RequestInit): string | null {
+  const authorization =
+    readHeaderValue(init?.headers, 'authorization') ??
+    (typeof Request !== 'undefined' && input instanceof Request
+      ? readHeaderValue(input.headers, 'authorization')
+      : null)
+  if (authorization) {
+    const match = /^Bearer\s+(.+)$/i.exec(authorization.trim())
+    if (match) return match[1].trim() || null
+  }
+
+  const fromQuery = /[?&]access_token=([^&]+)/.exec(url)
+  if (fromQuery) {
+    try {
+      return decodeURIComponent(fromQuery[1]) || null
+    } catch {
+      return fromQuery[1] || null
+    }
+  }
+  return null
+}
+
 /**
  * `401 M_UNKNOWN_TOKEN` 表示服务端已吊销 access token（改密、被踢下线、token 重置等）。
  *
  * 重启应用时若 sync 未启动或未收到 WS 的 `TOKEN_EXPIRED`，应用会永久停留在 401 故障态
  * （报告 P-01）。因此在 HTTP 边界兜底：命中即广播 `SESSION_AUTH_INVALID`，由 home 窗口
  * 统一清理会话并打开登录窗口。
+ *
+ * 广播携带发起请求的 access token，供接收方区分「当前会话失效」与「旧会话残留 401」。
  */
-function notifySessionInvalid(url: string, response: Response): void {
+function notifySessionInvalid(url: string, response: Response, accessToken: string | null = null): void {
   if (response.status !== 401) return
   if (!url.includes(`${MATRIX_ROOT}/`)) return
   // 登录/注册/访客探测的 401 是业务结论，不是会话失效
@@ -262,7 +309,7 @@ function notifySessionInvalid(url: string, response: Response): void {
       if (errcode !== 'M_UNKNOWN_TOKEN') return
       sessionInvalidNotifiedAt = Date.now()
       logger.warn('access token 已失效（401 M_UNKNOWN_TOKEN），触发统一登出回到登录页')
-      useMitt.emit(MittEnum.SESSION_AUTH_INVALID)
+      useMitt.emit(MittEnum.SESSION_AUTH_INVALID, { accessToken })
     })
     .catch(() => {
       // 响应体不是 JSON（代理/网关错误页）时无需处理
@@ -301,7 +348,7 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
           logger.warn(`nativeFetch ${method} ${url} -> ${response.status}`)
         }
       }
-      notifySessionInvalid(url, response)
+      notifySessionInvalid(url, response, extractAccessToken(url, input, normalizedInit))
       return response
     } catch (error) {
       // Tauri plugin-http 在请求被主动取消（SDK 显式 abort 或插件自身资源表竞态）时，
@@ -329,7 +376,7 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
 
       // 对网络级错误（如 ERR_CONNECTION_REFUSED）进行有限重试
       const fallbackResponse = await fetchWithRetry(globalThis.fetch, fallbackInput, fallbackInit)
-      notifySessionInvalid(url, fallbackResponse)
+      notifySessionInvalid(url, fallbackResponse, extractAccessToken(url, fallbackInput, fallbackInit))
       return fallbackResponse
     }
   }) as typeof globalThis.fetch
@@ -343,7 +390,11 @@ export function getRuntimeAwareFetch(): typeof globalThis.fetch {
   } else {
     baseFetch = (async (input: URL | RequestInfo, init?: RequestInit) => {
       const response = await globalThis.fetch(input, withOmittedCredentials(init))
-      notifySessionInvalid(resolveRequestUrl(input), response)
+      notifySessionInvalid(
+        resolveRequestUrl(input),
+        response,
+        extractAccessToken(resolveRequestUrl(input), input, init)
+      )
       return response
     }) as typeof globalThis.fetch
   }
@@ -364,4 +415,5 @@ export function __resetRuntimeFetchWarningForTests(): void {
   hasWarnedNativeFetchFallback = false
   nativeFetchFailureCounts.clear()
   warnedNativeFetchHosts.clear()
+  sessionInvalidNotifiedAt = 0
 }

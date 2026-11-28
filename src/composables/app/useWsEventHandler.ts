@@ -189,11 +189,26 @@ export function useWsEventHandler() {
      *（如重启后 sync 尚未建立），`runtimeFetch` 会在 401 M_UNKNOWN_TOKEN 时广播该事件。
      * 桌面端多窗口共用 App.vue，仅 home 窗口负责登出，避免重复清理。
      */
-    useMitt.on(MittEnum.SESSION_AUTH_INVALID, async () => {
+    useMitt.on(MittEnum.SESSION_AUTH_INVALID, async (payload?: { accessToken?: string | null }) => {
       if (sessionAuthInvalidHandling) return
       if (isDesktop() && hasTauriRuntime() && WebviewWindow.getCurrent().label !== 'home') return
       sessionAuthInvalidHandling = true
       try {
+        const { isLoginInFlight } = await import('@/shared/composables/useLoginFlow')
+        // 登录换新 token 期间，旧会话遗留请求的 401 不能打断正在进行的新登录
+        if (isLoginInFlight()) {
+          logger.warn('登录进行中，忽略旧会话的 401 失效广播')
+          return
+        }
+
+        const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
+        const currentToken = matrixClientService.getAccessToken()
+        // 请求 token 与当前会话不一致 → 旧账号/旧 token 的残留 401，不登出当前会话
+        if (payload?.accessToken && currentToken && payload.accessToken !== currentToken) {
+          logger.warn('忽略非当前会话 token 的 401 失效广播')
+          return
+        }
+
         const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
         if (!(await sessionOrchestrator.hasAuthenticatedSession())) return
         const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
@@ -282,8 +297,9 @@ export function useWsEventHandler() {
       }
     })
 
-    // T6: 接收方阅读 burn 消息后，后端发射 MessageRead 事件给所有房间成员。
-    // 发送方收到此事件后启动倒计时（发送方自身不调 markBurnRead）。
+    // 接收方阅读 burn 消息后补发 m.read 回执，服务端经 Sliding Sync 广播回房间；
+    // MatrixEventRouter.receiptListener 将其翻译成 BURN_MESSAGE_READ。
+    // 发送方收到后启动倒计时（发送方自身不调 markBurnRead）。
     useMitt.on<{ eventId: string; readAt: number }>(MittEnum.BURN_MESSAGE_READ, (payload) => {
       logger.debug('[ManagerEvent] 阅后即焚消息已被对方阅读', payload)
       if (payload?.eventId) {

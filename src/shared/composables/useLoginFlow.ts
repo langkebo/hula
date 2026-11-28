@@ -38,6 +38,14 @@ const logger = createLogger('useLoginFlow')
  */
 let loginInFlight = false
 
+/**
+ * 是否有登录流程正在进行。
+ *
+ * 供会话失效兜底（`SESSION_AUTH_INVALID`）判定：登录换新 token 期间，
+ * 旧会话遗留请求返回的 401 不应打断正在进行的新登录。
+ */
+export const isLoginInFlight = () => loginInFlight
+
 export const useLoginFlow = () => {
   const settingStore = useSettingStore()
   const userStore = useUserStore()
