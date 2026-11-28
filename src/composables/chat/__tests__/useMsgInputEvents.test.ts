@@ -127,15 +127,21 @@ describe('useMsgInputEvents', () => {
     expect(ctx.aiKeyword.value).toBe('foo')
   })
 
-  it('onReplyMeg bails out when user info is missing', () => {
+  it('onReplyMeg falls back to event sender info when member info is missing', async () => {
     const ctx = mountHook()
     ctx.handlers.onReplyMeg({
-      fromUser: { uid: 'u-unknown' },
-      message: { id: 'm-1' }
+      fromUser: { uid: 'u-unknown', username: 'Bob', avatar: 'b.png' },
+      message: { id: 'm-1', body: {}, type: 1 }
     } as any)
 
-    expect(ctx.focusOn).not.toHaveBeenCalled()
-    expect(ctx.reply.value.content).toBe('')
+    expect(ctx.focusOn).toHaveBeenCalled()
+    expect(ctx.reply.value.accountName).toBe('Bob')
+    expect(ctx.reply.value.avatar).toBe('b.png')
+    expect(ctx.reply.value.content).toBe('REPLY_BODY')
+    expect(ctx.reply.value.key).toBe('m-1')
+
+    await nextTick()
+    expect(ctx.triggerInputEvent).toHaveBeenCalledWith(ctx.dom)
   })
 
   it('onReplyMeg populates reply state and schedules reply node insertion', async () => {

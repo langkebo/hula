@@ -77,6 +77,24 @@ describe('MatrixReactionService', () => {
 
       await expect(matrixReactionService.addReaction('!room', '$event', '👍')).rejects.toThrow()
     })
+
+    it('should ignore a duplicate click while the same emoji is in flight', async () => {
+      let resolveFirst: (value: string) => void = () => {}
+      reactToMessageMock.mockReturnValueOnce(
+        new Promise<string>((resolve) => {
+          resolveFirst = resolve
+        })
+      )
+
+      const first = matrixReactionService.addReaction('!room:example.com', '$event_1', '👍')
+      const second = await matrixReactionService.addReaction('!room:example.com', '$event_1', '👍')
+
+      expect(second).toBe('')
+      expect(reactToMessageMock).toHaveBeenCalledTimes(1)
+
+      resolveFirst('$reaction_event_1')
+      await expect(first).resolves.toBe('$reaction_event_1')
+    })
   })
 
   describe('removeReaction', () => {
@@ -130,11 +148,27 @@ describe('MatrixReactionService', () => {
     })
   })
   describe('getReactionsForEvent — SDK 关系容器优先', () => {
-    const makeReaction = (key: string, sender: string, target = '$event_1') =>
+    const makeReaction = (key: string, sender: string, target = '$event_1', eventId?: string, redacted = false) =>
       ({
+        getId: () => eventId,
         getType: () => 'm.reaction',
         getContent: () => ({ 'm.relates_to': { rel_type: 'm.annotation', event_id: target, key } }),
-        getSender: () => sender
+        getSender: () => sender,
+        isRedacted: () => redacted,
+        isRedaction: () => false,
+        getRedactionTargetId: () => undefined
+      }) as never
+
+    /** 本地下发的撤回事件（room v11+ 目标在 content.redacts）。 */
+    const makeRedaction = (targetEventId: string) =>
+      ({
+        getId: () => `$redaction_${targetEventId}`,
+        getType: () => 'm.room.redaction',
+        getContent: () => ({ redacts: targetEventId }),
+        getSender: () => '@a:x',
+        isRedacted: () => false,
+        isRedaction: () => true,
+        getRedactionTargetId: () => targetEventId
       }) as never
 
     const makeRoom = (opts: { container?: never[]; timeline?: never[]; relations?: ReturnType<typeof vi.fn> }) =>
@@ -146,15 +180,16 @@ describe('MatrixReactionService', () => {
         getRelations: opts.relations
       }) as never
 
-    it('容器里有回应时不扫时间线（老回应也能算到）', () => {
-      mockClient.getRoom = vi.fn(() =>
-        makeRoom({ container: [makeReaction('👍', '@a:x'), makeReaction('👍', '@user:example.com')] })
-      )
+    it('容器与 timeline 按 event_id 合并去重（容器里的回应不再让时间线被跳过）', () => {
+      const inContainer = makeReaction('👍', '@a:x', '$event_1', '$r1')
+      const duplicate = makeReaction('👍', '@a:x', '$event_1', '$r1')
+      const timelineOnly = makeReaction('👍', '@b:x', '$event_1', '$r2')
+      mockClient.getRoom = vi.fn(() => makeRoom({ container: [inContainer], timeline: [duplicate, timelineOnly] }))
 
       const result = matrixReactionService.getReactionsForEvent('!room:example.com', '$event_1')
 
       expect(result).toHaveLength(1)
-      expect(result[0]).toMatchObject({ key: '👍', count: 2, me: true })
+      expect(result[0]).toMatchObject({ key: '👍', count: 2 })
     })
 
     it('容器为空时回退扫 live timeline', () => {
@@ -179,6 +214,66 @@ describe('MatrixReactionService', () => {
       expect(getRelations).toHaveBeenCalledWith('$event_1', 'm.annotation', 'm.reaction', { limit: 200 })
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({ key: '❤️', count: 3, me: false })
+    })
+
+    it('撤回后的回应不计入聚合（取消回应后 chip 必须消失）', () => {
+      const active = makeReaction('👍', '@a:x', '$event_1', '$r1')
+      const redacted = makeReaction('👍', '@b:x', '$event_1', '$r2', true)
+      mockClient.getRoom = vi.fn(() => makeRoom({ timeline: [active, redacted] }))
+
+      const result = matrixReactionService.getReactionsForEvent('!room:example.com', '$event_1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ key: '👍', count: 1 })
+    })
+
+    it('refreshReactions 过滤服务端返回的已撤回回应', async () => {
+      const getRelations = vi.fn().mockResolvedValue({
+        events: [makeReaction('❤️', '@a:x', '$event_1', '$r1'), makeReaction('❤️', '@b:x', '$event_1', '$r2', true)]
+      })
+      mockClient.getRoom = vi.fn(() => makeRoom({ relations: getRelations }))
+
+      const result = await matrixReactionService.refreshReactions('!room:example.com', '$event_1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ key: '❤️', count: 1 })
+    })
+
+    it('refreshReactions 全部回应已撤回时返回空（不回退本地陈旧副本）', async () => {
+      const getRelations = vi.fn().mockResolvedValue({
+        events: [makeReaction('❤️', '@a:x', '$event_1', '$r1', true)]
+      })
+      mockClient.getRoom = vi.fn(() =>
+        makeRoom({ relations: getRelations, timeline: [makeReaction('❤️', '@a:x', '$event_1', '$r1')] })
+      )
+
+      const result = await matrixReactionService.refreshReactions('!room:example.com', '$event_1')
+
+      expect(result).toEqual([])
+    })
+
+    it('refreshReactions 服务端返回原 content（isRedacted=false）但本地已有撤回事件时仍要过滤', async () => {
+      // synapse-rust 的 /relations 把已撤回的回应照旧返回，且不带 unsigned.redacted_because，
+      // 只靠 isRedacted() 会漏过，必须用本地 redaction 交叉校验。
+      const getRelations = vi.fn().mockResolvedValue({
+        events: [makeReaction('1', '@user:example.com', '$event_1', '$r1')]
+      })
+      mockClient.getRoom = vi.fn(() => makeRoom({ relations: getRelations, timeline: [makeRedaction('$r1')] }))
+
+      const result = await matrixReactionService.refreshReactions('!room:example.com', '$event_1')
+
+      expect(result).toEqual([])
+    })
+
+    it('容器里仍有未撤回副本、但本地已有撤回事件时不复活 chip', () => {
+      const staleCopy = makeReaction('1', '@user:example.com', '$event_1', '$r1')
+      mockClient.getRoom = vi.fn(() =>
+        makeRoom({ container: [staleCopy], timeline: [staleCopy, makeRedaction('$r1')] })
+      )
+
+      const result = matrixReactionService.getReactionsForEvent('!room:example.com', '$event_1')
+
+      expect(result).toEqual([])
     })
 
     it('refreshReactions 失败时回退本地（不抛错）', async () => {

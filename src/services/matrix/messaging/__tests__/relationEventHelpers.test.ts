@@ -9,7 +9,15 @@ function createMockEvent(content: Record<string, unknown>): MatrixEvent {
 
 describe('relationEventHelpers', () => {
   describe('isEdited', () => {
-    it('当存在 m.new_content 时返回 true', () => {
+    it('当 replacingEvent() 非空时返回 true（真实编辑事件 getContent 只剩 m.new_content）', () => {
+      const event = {
+        getContent: () => ({ body: '编辑后的内容', msgtype: 'm.text' }),
+        replacingEvent: () => ({ getId: () => '$edit:server.com' })
+      } as unknown as MatrixEvent
+      expect(isEdited(event)).toBe(true)
+    })
+
+    it('当存在 m.new_content 时返回 true（无 replacingEvent 时退回 replace relation）', () => {
       const event = createMockEvent({
         body: '原始内容',
         'm.new_content': { body: '编辑后的内容' }
@@ -46,27 +54,16 @@ describe('relationEventHelpers', () => {
   })
 
   describe('getEditedContent', () => {
-    it('当事件已编辑时返回 m.new_content 的内容', () => {
-      const newContent = { body: '编辑后的内容', msgtype: 'm.text' }
-      const event = createMockEvent({
-        body: '原始内容',
-        'm.new_content': newContent
-      })
-      expect(getEditedContent(event)).toEqual(newContent)
+    it('直接返回 getContent()（SDK 已把 m.new_content 聚合进来）', () => {
+      const editedContent = { body: '编辑后的内容', msgtype: 'm.text' }
+      const event = createMockEvent(editedContent)
+      expect(getEditedContent(event)).toEqual(editedContent)
     })
 
     it('当事件未编辑时返回原始内容', () => {
       const originalContent = { body: '原始内容', msgtype: 'm.text' }
       const event = createMockEvent(originalContent)
       expect(getEditedContent(event)).toEqual(originalContent)
-    })
-
-    it('当 m.new_content 为空对象时返回空对象', () => {
-      const event = createMockEvent({
-        body: '原始内容',
-        'm.new_content': {}
-      })
-      expect(getEditedContent(event)).toEqual({})
     })
 
     it('当内容为空对象时返回空对象', () => {
@@ -206,6 +203,14 @@ describe('relationEventHelpers', () => {
     it('当内容为空对象时返回 null', () => {
       const event = createMockEvent({})
       expect(getThreadRootId(event)).toBeNull()
+    })
+
+    it('优先使用 event.threadRootId（编辑后的线程回复 content 已无 relation）', () => {
+      const event = {
+        getContent: () => ({ body: '编辑后的回复', msgtype: 'm.text' }),
+        threadRootId: '$thread_root:server.com'
+      } as unknown as MatrixEvent
+      expect(getThreadRootId(event)).toBe('$thread_root:server.com')
     })
   })
 })

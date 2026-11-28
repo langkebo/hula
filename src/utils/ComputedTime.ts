@@ -4,7 +4,37 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import weekday from 'dayjs/plugin/weekday'
 import 'dayjs/locale/zh-cn'
 import 'dayjs/locale/en'
+import { shallowRef } from 'vue'
 import { useI18nGlobal } from '@/services/i18n'
+
+/** 相对时间/日期分隔的全局刷新周期（毫秒） */
+export const NOW_TICK_INTERVAL_MS = 60_000
+
+/**
+ * 全仓共享的“当前时间”tick：每 60 秒更新一次。
+ * 单例常驻，不随组件挂载/卸载启停，避免泄漏或重复定时器。
+ */
+const nowTick = shallowRef(Date.now())
+let nowTickTimerId: number | null = null
+
+/** 确保全局 tick 定时器已启动（仅首次调用创建） */
+const ensureNowTickTimer = () => {
+  if (nowTickTimerId !== null || typeof window === 'undefined') return
+  nowTickTimerId = window.setInterval(() => {
+    nowTick.value = Date.now()
+  }, NOW_TICK_INTERVAL_MS)
+}
+
+/**
+ * 读取当前时间（毫秒），同时建立对共享 tick 的响应式依赖：
+ * 调用点位于 computed / 渲染函数中时，tick 每分钟更新会触发重新求值。
+ * tick 超过一个刷新周期未更新（后台节流、测试假时钟）时回退到 Date.now()。
+ */
+const readNow = (): number => {
+  ensureNowTickTimer()
+  const current = Date.now()
+  return Math.abs(current - nowTick.value) < NOW_TICK_INTERVAL_MS ? nowTick.value : current
+}
 
 export const setDayjsLocale = (lang: string) => {
   const mapped = lang.toLowerCase().includes('zh') ? 'zh-cn' : 'en'
@@ -38,7 +68,8 @@ export const formatChatTime = (timestamp: number, opts?: { detail?: boolean }): 
   const ts = Number(timestamp)
   if (!Number.isFinite(ts) || ts <= 0) return ''
 
-  const now = dayjs()
+  const nowMs = readNow()
+  const now = dayjs(nowMs)
   const date = dayjs(ts)
   const i18n = useI18nGlobal()
 
@@ -54,7 +85,6 @@ export const formatChatTime = (timestamp: number, opts?: { detail?: boolean }): 
   }
 
   // 非 detail 模式：智能格式化
-  const nowMs = Date.now()
   const diff = nowMs - ts
 
   // 容错：未来时间直接显示绝对时间
@@ -115,7 +145,7 @@ export const isDiffNow = ({ time, unit, diff }: { unit: OpUnitType; time: Config
  */
 export const formatDateLabel = (timestamp: number): string => {
   const date = dayjs(timestamp)
-  const now = dayjs()
+  const now = dayjs(readNow())
   const i18n = useI18nGlobal()
 
   if (now.isSame(date, 'day')) {

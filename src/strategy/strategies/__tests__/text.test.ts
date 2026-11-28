@@ -69,4 +69,23 @@ describe('TextMessageStrategyImpl', () => {
       type: MsgEnum.TEXT
     })
   })
+
+  it('getMsg resolves flat ReplyState input into reply ref', () => {
+    const reply = { content: 'hi', key: 'evt-1', accountName: 'alice' }
+    const msg = strategy.getMsg('hello', reply) as Record<string, unknown>
+    expect(msg.reply).toEqual({ content: 'hi', key: 'evt-1' })
+  })
+
+  it('buildMessageBody resolves flat ReplyState input into reply body', () => {
+    const reply = { content: 'hi', key: 'evt-1', accountName: 'alice' }
+    const msg = strategy.getMsg('child', reply) as Record<string, unknown>
+    const body = strategy.buildMessageBody(msg, reply)
+    expect(body.replyMsgId).toBe('evt-1')
+    expect(body.reply).toEqual({
+      body: 'hi',
+      id: 'evt-1',
+      username: 'alice',
+      type: MsgEnum.TEXT
+    })
+  })
 })

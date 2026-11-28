@@ -1,7 +1,6 @@
 import type { UploadOptions, UploadProviderEnum } from '@/composables/common/useUpload'
 import { MsgEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
-import { AbstractMessageStrategy, type CallInfo } from './base'
+import { AbstractMessageStrategy, type CallInfo, type ReplyInput } from './base'
 
 /**
  * 处理视频通话系统消息
@@ -12,8 +11,8 @@ export class VideoCallMessageStrategyImpl extends AbstractMessageStrategy {
     super(MsgEnum.VIDEO_CALL)
   }
 
-  getMsg(_msgInputValue: string, _replyValue: MessageType | null, _fileList?: File[]): Record<string, unknown> {
-    const callInfo = _replyValue as MessageType & CallInfo
+  getMsg(_msgInputValue: string, _replyValue: ReplyInput | null, _fileList?: File[]): Record<string, unknown> {
+    const callInfo = _replyValue as ReplyInput & CallInfo
     return {
       type: this.msgType,
       duration: callInfo.duration,
@@ -25,7 +24,7 @@ export class VideoCallMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: Record<string, unknown>, _reply?: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, _reply?: ReplyInput | null): Record<string, unknown> {
     return {
       duration: msg.duration,
       reason: msg.reason,

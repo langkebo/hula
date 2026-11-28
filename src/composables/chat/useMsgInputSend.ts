@@ -216,13 +216,14 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     messageStrategy: MessageStrategy
   ): Promise<void> {
     const { update, stop } = bindUploadProgress(chatStore, messageStrategy, tempMsgId)
+    const thumbnail = msg.thumbnail instanceof File ? msg.thumbnail : undefined
     try {
       const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
       if (isEncrypted) {
         let thumbnailEncryptedFile: EncryptedAttachmentFile | undefined
-        if (msg.thumbnail) {
-          const thumbnailResult = await matrixMediaService.uploadEncryptedFile(msg.thumbnail as File)
+        if (thumbnail) {
+          const thumbnailResult = await matrixMediaService.uploadEncryptedFile(thumbnail)
           thumbnailEncryptedFile = thumbnailResult.encryptedFile
         }
 
@@ -241,21 +242,23 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
         delete messageBody.url
         delete messageBody.thumbUrl
       } else {
-        let uploadResult: string
-        if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
-          const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
-            provider: UploadProviderEnum.DEFAULT
-          })
-          const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
-            msg.thumbnail as File,
-            thumbnailUploadInfo.uploadUrl,
-            thumbnailUploadInfo.config as Record<string, unknown>
-          )
-          uploadResult = thumbnailUploadResult || thumbnailUploadInfo.downloadUrl
-        } else {
-          uploadResult = await useUpload()
-            .uploadFile(msg.thumbnail as File, { provider: UploadProviderEnum.DEFAULT, scene: UploadSceneEnum.CHAT })
-            .then((result) => result?.downloadUrl || '')
+        let uploadResult = ''
+        if (thumbnail) {
+          if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
+            const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(thumbnail, {
+              provider: UploadProviderEnum.DEFAULT
+            })
+            const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
+              thumbnail,
+              thumbnailUploadInfo.uploadUrl,
+              thumbnailUploadInfo.config as Record<string, unknown>
+            )
+            uploadResult = thumbnailUploadResult || thumbnailUploadInfo.downloadUrl
+          } else {
+            uploadResult = await useUpload()
+              .uploadFile(thumbnail, { provider: UploadProviderEnum.DEFAULT, scene: UploadSceneEnum.CHAT })
+              .then((result) => result?.downloadUrl || '')
+          }
         }
 
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
@@ -267,16 +270,20 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
           config as Record<string, unknown>
         )
         messageBody.url = uploadedUrl || downloadUrl
-        messageBody.thumbUrl = uploadResult
+        if (thumbnail) {
+          messageBody.thumbUrl = uploadResult
+        }
       }
     } finally {
       stop()
     }
 
     delete messageBody.path
-    messageBody.thumbSize = (msg.thumbnail as File).size
-    messageBody.thumbWidth = 300
-    messageBody.thumbHeight = 150
+    if (thumbnail) {
+      messageBody.thumbSize = thumbnail.size
+      messageBody.thumbWidth = 300
+      messageBody.thumbHeight = 150
+    }
     chatStore.updateMsg({ msgId: tempMsgId, body: { ...messageBody }, status: MessageStatusEnum.SENDING })
   }
 

@@ -111,6 +111,8 @@ export enum MittEnum {
   OPEN_ROOM_SEARCH = 'openRoomSearch',
   /** 阅后即焚设置变更 */
   BURN_SETTINGS_CHANGED = 'burnSettingsChanged',
+  /** 房间内消息反应汇总变更（用于刷新反应芯片） */
+  MSG_REACTIONS_CHANGED = 'msgReactionsChanged',
   /** Widget 已创建 */
   WIDGET_CREATED = 'widgetCreated',
   /** Widget 已更新 */

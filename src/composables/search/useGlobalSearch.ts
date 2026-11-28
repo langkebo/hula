@@ -17,6 +17,7 @@ interface GlobalSearchResults {
 }
 
 type GlobalSearchStatus = 'idle' | 'loading' | 'success' | 'error'
+type GlobalSearchSource = 'users' | 'rooms' | 'messages'
 
 /**
  * 阶段 3：全局搜索 composable
@@ -35,6 +36,8 @@ export function useGlobalSearch() {
   const status = ref<GlobalSearchStatus>('idle')
   const errorMessage = ref('')
   const results = ref<GlobalSearchResults>({ users: [], rooms: [], messages: [] })
+  // 按来源记录失败，便于 UI 呈现部分失败态
+  const failedSources = ref<GlobalSearchSource[]>([])
 
   // 当前请求的唯一标识。每次发起搜索时递增，
   // 返回结果时若 ID 不匹配则丢弃（与 AbortController.abided 配合）
@@ -68,6 +71,7 @@ export function useGlobalSearch() {
       abortInFlight()
       requestEpoch++ // 让前一次请求的结果失效
       resetResults()
+      failedSources.value = []
       status.value = 'idle'
       appliedQuery.value = ''
       return
@@ -82,12 +86,13 @@ export function useGlobalSearch() {
     appliedQuery.value = trimmed
     status.value = 'loading'
     errorMessage.value = ''
+    failedSources.value = []
 
     // 并行发起三类搜索，单类型失败不阻断其他
     const settled = await Promise.allSettled([
       matrixSearchService.searchUsers(trimmed, MAX_RESULTS_PER_TYPE),
       matrixSearchService.searchRooms(trimmed),
-      matrixSearchService.searchMessages(trimmed, { limit: MAX_RESULTS_PER_TYPE }).catch(() => [] as SearchResult[])
+      matrixSearchService.searchMessages(trimmed, { limit: MAX_RESULTS_PER_TYPE })
     ])
 
     // 检查请求是否已被取消（过期）
@@ -100,8 +105,11 @@ export function useGlobalSearch() {
     const rooms = settled[1]?.status === 'fulfilled' ? settled[1].value : []
     const messages = settled[2]?.status === 'fulfilled' ? settled[2].value : []
 
-    const failedCount = settled.filter((r) => r.status === 'rejected').length
-    if (failedCount === settled.length) {
+    const sources: GlobalSearchSource[] = ['users', 'rooms', 'messages']
+    const failed = sources.filter((_, index) => settled[index]?.status === 'rejected')
+    failedSources.value = failed
+
+    if (failed.length === settled.length) {
       status.value = 'error'
       errorMessage.value = '所有搜索源均失败'
       logger.error(`[GlobalSearch] 全部搜索源失败: "${trimmed}"`)
@@ -111,6 +119,9 @@ export function useGlobalSearch() {
     results.value = { users, rooms, messages }
     status.value = 'success'
 
+    if (failed.length > 0) {
+      logger.error(`[GlobalSearch] 部分搜索源失败: "${trimmed}" 失败=${failed.join(',')}`)
+    }
     logger.info(
       `[GlobalSearch] 搜索完成: "${trimmed}" 用户=${users.length} 房间=${rooms.length} 消息=${messages.length}`
     )
@@ -130,6 +141,7 @@ export function useGlobalSearch() {
     appliedQuery.value = ''
     status.value = 'idle'
     errorMessage.value = ''
+    failedSources.value = []
     resetResults()
   }
 
@@ -139,6 +151,7 @@ export function useGlobalSearch() {
     status,
     errorMessage,
     results,
+    failedSources,
     isLoading,
     hasQuery,
     hasResults,

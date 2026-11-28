@@ -71,3 +71,21 @@ describe('useFileUploadQueue — updateFileServerProgress', () => {
     expect(globalFileUploadQueue.queue.items[0]?.serverProgress).toBeUndefined()
   })
 })
+
+describe('useFileUploadQueue — 批次隔离', () => {
+  beforeEach(() => {
+    globalFileUploadQueue.clearQueue()
+  })
+
+  it('不同批次生成的 fileId 不重复，旧批次回调不会命中新批次条目', () => {
+    const first = initSingleItem()
+    globalFileUploadQueue.updateFileStatus(first.id, 'uploading')
+    const second = initSingleItem()
+
+    expect(second.id).not.toBe(first.id)
+
+    globalFileUploadQueue.updateFileProgress(first.id, 50)
+
+    expect(globalFileUploadQueue.queue.items[0]?.progress).toBe(0)
+  })
+})

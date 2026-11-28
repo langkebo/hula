@@ -4,6 +4,14 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   readFile: vi.fn()
 }))
 
+vi.mock('@/services/media/uploadTransports', () => ({
+  isAbsoluteFsPath: (path: string) => /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(path)
+}))
+
+vi.mock('@/utils/PathUtil', () => ({
+  getCacheBaseDir: () => 0
+}))
+
 vi.mock('@/services/matrix/media/MatrixVoiceService', () => ({
   matrixVoiceService: {
     uploadVoice: vi.fn(),
@@ -70,6 +78,18 @@ describe('useVoiceInput', () => {
     expect((fileArg as File).name).toBe('voice.webm')
     expect((fileArg as File).type).toBe('audio/webm')
     expect(result).toBe(fakeResult)
+  })
+
+  it('reads cache-relative recording path with baseDir', async () => {
+    vi.mocked(readFile).mockResolvedValueOnce(new Uint8Array([4, 5]))
+    vi.mocked(cryptoSDKAdapter.getRoomEncryptionState).mockResolvedValueOnce('plaintext')
+    vi.mocked(matrixVoiceService.uploadVoice).mockResolvedValueOnce(makeVoiceUploadResult())
+
+    const { uploadVoiceToMatrix } = useVoiceInput()
+    await uploadVoiceToMatrix('!r:s', 'cache/uid/audio/a.mp3', 'a.mp3', 'audio/mpeg')
+
+    expect(readFile).toHaveBeenCalledWith('cache/uid/audio/a.mp3', { baseDir: 0 })
+    expect(matrixVoiceService.uploadVoice).toHaveBeenCalledTimes(1)
   })
 
   it('propagates readFile errors', async () => {

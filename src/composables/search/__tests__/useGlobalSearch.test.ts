@@ -159,4 +159,29 @@ describe('useGlobalSearch - basic behavior (regression)', () => {
     expect(hostApi!.results.value.messages).toHaveLength(1)
     expect(hostApi!.totalCount.value).toBe(3)
   })
+
+  it('enters error status when every source rejects', async () => {
+    searchUsersMock.mockRejectedValue(new Error('network'))
+    searchRoomsMock.mockRejectedValue(new Error('network'))
+    searchMessagesMock.mockRejectedValue(new Error('network'))
+
+    mount(TestHost)
+    await hostApi!.executeSearch('test')
+
+    expect(hostApi!.status.value).toBe('error')
+    expect(hostApi!.failedSources.value).toEqual(['users', 'rooms', 'messages'])
+  })
+
+  it('keeps success status and records failedSources when only some sources reject', async () => {
+    searchUsersMock.mockResolvedValue([{ userId: '@a:example.com', displayName: 'A' }])
+    searchRoomsMock.mockRejectedValue(new Error('network'))
+    searchMessagesMock.mockResolvedValue([])
+
+    mount(TestHost)
+    await hostApi!.executeSearch('test')
+
+    expect(hostApi!.status.value).toBe('success')
+    expect(hostApi!.results.value.users).toHaveLength(1)
+    expect(hostApi!.failedSources.value).toEqual(['rooms'])
+  })
 })

@@ -47,7 +47,7 @@ import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'
 import MessageSessionToolbar from '@/components/workbench/MessageSessionToolbar.vue'
 // biome-ignore lint/style/useImportType: SFC is used in <template> at runtime (session list), must stay a runtime import
 import RoomSessionList from '@/components/workbench/RoomSessionList.vue'
-import { openMsgSession } from '@/composables/chat/openMsgSession'
+import { openMsgSession, openMsgSessionByRoomId } from '@/composables/chat/openMsgSession'
 import { useMessage } from '@/composables/chat/useMessage'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
@@ -289,6 +289,25 @@ watch(
     if (previousCount === roomCount && previousCount !== 0) return
     await ensureSessionListLoaded()
   }
+)
+
+// 全局搜索 / 深链跳转：路由携带 eventId 时，进入会话后复用 ChatMain 的消息跳转能力定位到该消息
+watch(
+  () => [route.params.roomId, route.query.eventId] as const,
+  async ([roomId, eventId]) => {
+    if (typeof roomId !== 'string' || !roomId || typeof eventId !== 'string' || !eventId) return
+    await openMsgSessionByRoomId(roomId)
+    // 等待 ChatBox/ChatMain 挂载后再广播跳转事件
+    await nextTick()
+    useMitt.emit(MittEnum.NAVIGATE_TO_MESSAGE, { roomId, eventId })
+    // 消费后移除 query，避免刷新 / 路由回退时重复定位
+    if (typeof route.query.eventId === 'string') {
+      const restQuery = { ...route.query }
+      delete restQuery.eventId
+      await router.replace({ name: MESSAGE_ROUTE_NAME, params: { roomId }, query: restQuery }).catch(() => {})
+    }
+  },
+  { immediate: true }
 )
 
 onBeforeMount(async () => {

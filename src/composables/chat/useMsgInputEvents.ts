@@ -67,10 +67,11 @@ export const useMsgInputEvents = ({
     if (!messageInputDom.value) return
 
     try {
+      // 成员信息可能尚未缓存（新房间/未同步成员）：回退到消息自带的发送者信息，
+      // 否则引用条会静默不出现，用户以为「回复」按钮失效。
       const userInfo = groupStore.getUserInfo(event.fromUser.uid)
-      if (!userInfo) return
-      const accountName = userInfo.name ?? ''
-      const avatar = userInfo.avatar ?? ''
+      const accountName = userInfo?.name ?? event.fromUser.username ?? event.fromUser.uid
+      const avatar = userInfo?.avatar ?? event.fromUser.avatar ?? ''
 
       focusOn(messageInputDom.value)
 

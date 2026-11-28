@@ -1,5 +1,6 @@
 import { type ShallowRef, triggerRef } from 'vue'
-import { MessageStatusEnum, MsgEnum } from '@/enums'
+import { useMitt } from '@/composables/common/useMitt'
+import { MessageStatusEnum, MittEnum, MsgEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixEventService } from '@/services/matrix/MatrixEventService'
 import matrixMessageAdapter from '@/services/matrix/messaging/MatrixMessageAdapter'
@@ -211,7 +212,29 @@ export function createRoomSync(ctx: RoomSyncContext) {
     }
 
     matrixRoomRealtimeService.onTimelineEvent(
-      ({ roomId, eventType, roomInfo, message }) => {
+      ({ roomId, eventType, event, roomInfo, message }) => {
+        // 反应事件/反应撤回不产出消息气泡，但要通知对应消息刷新反应芯片。
+        if (eventType === 'm.reaction' || eventType === 'm.room.redaction') {
+          const content = event.getContent() as {
+            'm.relates_to'?: { event_id?: string }
+            redacts?: string
+          }
+          let targetEventId = content['m.relates_to']?.event_id ?? content.redacts ?? ''
+          // 反应撤回的 redacts 指向反应事件本身，芯片按消息 id 过滤会漏刷新；
+          // 这里回溯到该反应所附着的那条消息。
+          const redactedId = content.redacts
+          if (eventType === 'm.room.redaction' && redactedId) {
+            const redactedEvent = matrixClientService.getClient()?.getRoom(roomId)?.findEventById(redactedId)
+            const attachedTo = (
+              redactedEvent?.getContent() as { 'm.relates_to'?: { event_id?: string } } | undefined
+            )?.['m.relates_to']?.event_id
+            if (attachedTo) targetEventId = attachedTo
+          }
+          useMitt.emit(MittEnum.MSG_REACTIONS_CHANGED, {
+            roomId,
+            eventId: targetEventId
+          })
+        }
         // 撤回提示不在这里处理：由 SDK 的 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
         // 时间线里的 m.room.redaction 不产出消息，避免与目标事件的撤回态重复渲染。
         if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {

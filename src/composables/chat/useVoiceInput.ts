@@ -3,6 +3,8 @@ import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { getAudioDuration } from '@/services/matrix/media/mediaMetadata'
+import { isAbsoluteFsPath } from '@/services/media/uploadTransports'
+import { getCacheBaseDir } from '@/utils/PathUtil'
 
 type VoiceUploadResult = Awaited<ReturnType<typeof matrixVoiceService.uploadVoice>>
 
@@ -38,7 +40,11 @@ export function useVoiceInput(): VoiceInputHook {
     filename: string,
     mimeType: string
   ): Promise<VoiceUploadResult> => {
-    const fileBytes = await readFile(localPath)
+    // 录音缓存路径是相对 cache 根目录的（useVoiceRecordRust 用 baseDir 写入），必须带 baseDir 读取；
+    // 绝对路径（临时文件回退等）直接读取。
+    const fileBytes = isAbsoluteFsPath(localPath)
+      ? await readFile(localPath)
+      : await readFile(localPath, { baseDir: getCacheBaseDir() })
     const file = new File([fileBytes], filename, { type: mimeType })
 
     // 检查房间是否加密

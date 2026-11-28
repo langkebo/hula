@@ -44,7 +44,8 @@
         item.uploadProgress,
         item.message.content?.info?.h?._,
         item.message.content?.file?._,
-        item.replyEvent
+        item.replyEvent,
+        reactionTick
       ]"
       :data-index="index">
       <n-flex vertical class="flex-y-center mb-12px" :data-message-id="item.message.id" :data-message-index="index">
@@ -105,7 +106,8 @@ import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import EmptyState from '@/components/common/EmptyState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import { useUnreadDividerIndex } from '@/composables/chat/useUnreadDivider'
-import { MsgEnum } from '@/enums'
+import { useMitt } from '@/composables/common/useMitt'
+import { MittEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -129,6 +131,14 @@ const globalStore = useGlobalStore()
 const userStore = useUserStore()
 
 const hoverId = ref('')
+
+// 反应变更会让消息行多出/少掉 chip，行高随之变化；但反应不在 item 自身字段里，
+// DynamicScroller 的 size-dependencies 感知不到。用一个全局 tick 强制重新测量，
+// 否则 chip 出现后行高仍是旧值，会被下一条消息行覆盖。
+const reactionTick = ref(0)
+useMitt.on(MittEnum.MSG_REACTIONS_CHANGED, () => {
+  reactionTick.value += 1
+})
 const canHover = (() => {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
   return window.matchMedia('(hover: hover) and (pointer: fine)').matches

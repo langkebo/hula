@@ -72,6 +72,14 @@ class MatrixMessageRelationService extends BaseMatrixService {
         newContentObj.formatted_body = newContent.html
         content.format = MatrixFormat.HTML
         content.formatted_body = `* ${newContent.html}`
+      } else {
+        // 原消息是 HTML 时，顶层内容会随 spread 带出旧 format/formatted_body；
+        // 改为纯文本编辑必须清除，否则渲染层仍按旧 HTML 展示。
+        delete content.format
+        delete content.formatted_body
+        const newContentObj = content['m.new_content'] as RelationContent
+        delete newContentObj.format
+        delete newContentObj.formatted_body
       }
 
       const response = await client.sendEvent(roomId, MatrixEventType.ROOM_MESSAGE, content)

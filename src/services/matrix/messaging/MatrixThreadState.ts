@@ -20,6 +20,7 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixReceiptService } from './MatrixReceiptService'
+import { getThreadRootId as getThreadRootIdFromEvent } from './relationEventHelpers'
 import type { IContent, MessageContent } from './threadTypes'
 
 const logger = createLogger('MatrixThreadState')
@@ -57,11 +58,11 @@ export class MatrixThreadState extends BaseMatrixService {
   }
 
   /** 判断事件是否属于话题
+   *
+   * 用 threadRootId 判定：编辑后的线程回复 content 里已没有 m.relates_to。
    */
   isInThread(event: MatrixEvent): boolean {
-    const content = event.getContent() as MessageContent
-    const relatesTo = content?.[MatrixContentField.RELATES_TO]
-    return relatesTo?.rel_type === MatrixRelType.THREAD
+    return getThreadRootIdFromEvent(event) !== null
   }
 
   /** 判断消息体是否在话题中
@@ -74,12 +75,7 @@ export class MatrixThreadState extends BaseMatrixService {
   /** 获取话题根消息 ID
    */
   getThreadRootId(event: MatrixEvent): string | null {
-    const content = event.getContent() as MessageContent
-    const relatesTo = content?.[MatrixContentField.RELATES_TO]
-    if (relatesTo?.rel_type === MatrixRelType.THREAD) {
-      return relatesTo.event_id || null
-    }
-    return null
+    return getThreadRootIdFromEvent(event)
   }
 
   /** 获取话题通知计数
@@ -98,7 +94,10 @@ export class MatrixThreadState extends BaseMatrixService {
     const replies = this.fetchThreadReplies(roomId, threadRootId)
 
     let unreadCount = 0
-    for (const reply of replies) {
+    // fetchThreadReplies 返回按时间升序（旧 -> 新）。未读 = read receipt 之后的回复，
+    // 因此必须从最新一条往回走，遇到 receipt 即停止；从前往后会把已读消息当成未读。
+    for (let i = replies.length - 1; i >= 0; i--) {
+      const reply = replies[i]
       if (reply.getId() === receipt) break
       if (reply.getSender() !== myUserId) {
         unreadCount++

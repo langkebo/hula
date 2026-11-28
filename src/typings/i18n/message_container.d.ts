@@ -8,6 +8,7 @@ export type Messages = {
   "emoji_already_marked": "该表情已标记",
   "copy_translation": "复制翻译",
   "unknown_user": "未知用户",
+  "reply_unavailable": "原消息不可用",
   "reaction": {
     "add_failed": "添加表情失败",
     "add_success": "添加成功",
@@ -57,6 +58,7 @@ export type KeyPaths =
   | "message_container.emoji_already_marked"
   | "message_container.copy_translation"
   | "message_container.unknown_user"
+  | "message_container.reply_unavailable"
   | "message_container.reaction.add_failed"
   | "message_container.reaction.add_success"
   | "message_container.reaction.menu_title"

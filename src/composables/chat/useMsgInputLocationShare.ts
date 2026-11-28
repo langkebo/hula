@@ -59,6 +59,9 @@ export const useMsgInputLocationShare = ({ currentSessionRoomId, sendLocationDir
     } catch (error) {
       logger.error('Failed to send location:', error)
       showFeedback(t('message.location.send_failed'), 'error')
+    } finally {
+      // 发送结束（成功或失败）关闭弹窗，期间弹窗保持 loading
+      showLocationModal.value = false
     }
   }
 

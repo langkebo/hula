@@ -143,6 +143,31 @@ describe('formatDateLabel', () => {
   })
 })
 
+describe('相对时间自动刷新（共享 now tick）', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('跨过分钟边界后 computed 标签会随 tick 自动变化', async () => {
+    vi.setSystemTime(new Date('2026-08-05T12:00:00'))
+    // 重置模块，拿到在假时钟下初始化的全新 tick 单例
+    vi.resetModules()
+    const [{ computed, nextTick }, freshTime] = await Promise.all([import('vue'), import('../ComputedTime')])
+    const ts = new Date('2026-08-05T11:58:30').getTime()
+    const label = computed(() => freshTime.formatChatTime(ts))
+
+    expect(label.value).toBe('1 分钟前')
+
+    await vi.advanceTimersByTimeAsync(freshTime.NOW_TICK_INTERVAL_MS)
+    await nextTick()
+
+    expect(label.value).toBe('2 分钟前')
+  })
+})
+
 describe('normalizeHistoryDateRange', () => {
   it('同一天：起止收敛到当天 00:00:00.000 - 23:59:59.999', () => {
     const sameMoment = new Date(2026, 5, 15, 10, 30).getTime()

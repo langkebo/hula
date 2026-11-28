@@ -37,6 +37,9 @@ import {
 
 const logger = createLogger('MsgInputFileUpload')
 
+/** 上传大小上限（500MB），blob 与路径两条链路统一使用 */
+const MAX_UPLOAD_SIZE = 500 * 1024 * 1024
+
 interface FileUploadContext {
   reply: Ref<ReplyState>
   userUid: Ref<string>
@@ -47,6 +50,7 @@ interface FileUploadContext {
 }
 
 interface FileUploadHooks {
+  onProgress?: (percentage: number) => void
   onServerProgress?: (progress: ServerUploadProgress) => void
 }
 
@@ -59,6 +63,13 @@ async function processGenericFile(
   hooks?: FileUploadHooks
 ): Promise<void> {
   const { reply, globalStore, userUid, chatStore, sendWithTracking } = ctx
+  const { t } = useI18nGlobal()
+  if (file.size <= 0) {
+    throw new Error(t('hooks.msg_input.file_send_failed', { fileName: file.name }))
+  }
+  if (file.size > MAX_UPLOAD_SIZE) {
+    throw new Error(t('hooks.msg_input.file_size_exceeded'))
+  }
   // 上传链统一走 FILE 策略（500MB 上限、blob/path 双通道）；图片只改发送时的 msgtype 与 info 字段。
   const msgType = isImageUpload(file) ? MsgEnum.IMAGE : MsgEnum.FILE
   const msg = await messageStrategy.getMsg('', reply.value as StrategyReplyArg, [file])
@@ -81,6 +92,7 @@ async function processGenericFile(
     const progressCallback = (pct: number) => {
       if (!isProgressActive) return
       updateProgress(pct)
+      hooks?.onProgress?.(pct)
     }
 
     const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
@@ -112,7 +124,10 @@ async function processGenericFile(
         const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(localPath, {
           provider: UploadProviderEnum.DEFAULT
         })
-        const uploadedUrl = await messageStrategy.doUpload(localPath, uploadUrl, config as Record<string, unknown>)
+        const uploadedUrl = await messageStrategy.doUpload(localPath, uploadUrl, {
+          ...config,
+          progressCallback
+        } as Record<string, unknown>)
         messageBody.url = uploadedUrl || downloadUrl
       } catch (error) {
         logger.warn('path 版上传不可用，回退 blob 直传:', error)
@@ -147,11 +162,14 @@ async function processGenericPathFile(
   tempMsgId: string,
   messageStrategy: MessageStrategy,
   targetRoomId: string,
-  ctx: FileUploadContext
+  ctx: FileUploadContext,
+  hooks?: FileUploadHooks
 ): Promise<void> {
   const { reply, globalStore, userUid, chatStore, sendWithTracking } = ctx
   const { t } = useI18nGlobal()
-  const MAX_UPLOAD_SIZE = 500 * 1024 * 1024
+  if (file.size <= 0) {
+    throw new Error(t('hooks.msg_input.file_send_failed', { fileName: file.name }))
+  }
   if (file.size > MAX_UPLOAD_SIZE) {
     throw new Error(t('hooks.msg_input.file_size_exceeded'))
   }
@@ -185,6 +203,7 @@ async function processGenericPathFile(
     const progressCallback = (pct: number) => {
       if (!isProgressActive) return
       updateProgress(pct)
+      hooks?.onProgress?.(pct)
     }
 
     const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
@@ -203,7 +222,10 @@ async function processGenericPathFile(
       const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path, {
         provider: UploadProviderEnum.DEFAULT
       })
-      const uploadedUrl = await messageStrategy.doUpload(msg.path, uploadUrl, config as Record<string, unknown>)
+      const uploadedUrl = await messageStrategy.doUpload(msg.path, uploadUrl, {
+        ...config,
+        progressCallback
+      } as Record<string, unknown>)
       cleanup()
       messageBody.url = uploadedUrl || downloadUrl
     }
@@ -309,22 +331,26 @@ export function useMsgInputFileUpload(
           }
 
           const messageStrategy = await getStrategy(MsgEnum.FILE)
-          if (isPathUploadFile(job.file)) {
-            await processGenericPathFile(job.file, tempMsgId, messageStrategy, targetRoomId, ctx)
-          } else {
-            const fileId = job.fileId
-            const hooks: FileUploadHooks | undefined = fileId
-              ? {
-                  onServerProgress: (progress) => {
-                    const { uploadedChunks, totalChunks, uploadedSize, totalSize, status } = progress
-                    globalFileUploadQueue.updateFileServerProgress(fileId, uploadedChunks, totalChunks, {
-                      uploadedSize,
-                      totalSize,
-                      status
-                    })
-                  }
+          const fileId = job.fileId
+          const hooks: FileUploadHooks | undefined = fileId
+            ? {
+                onProgress: (percentage) => {
+                  globalFileUploadQueue.updateFileProgress(fileId, percentage)
+                },
+                onServerProgress: (progress) => {
+                  const { uploadedChunks, totalChunks, uploadedSize, totalSize, status } = progress
+                  globalFileUploadQueue.updateFileServerProgress(fileId, uploadedChunks, totalChunks, {
+                    uploadedSize,
+                    totalSize,
+                    status
+                  })
                 }
-              : undefined
+              }
+            : undefined
+
+          if (isPathUploadFile(job.file)) {
+            await processGenericPathFile(job.file, tempMsgId, messageStrategy, targetRoomId, ctx, hooks)
+          } else {
             await processGenericFile(job.file, tempMsgId, messageStrategy, targetRoomId, ctx, hooks)
           }
 

@@ -3,6 +3,7 @@
   "emoji_already_marked": "Emoji already marked",
   "copy_translation": "Copy Translation",
   "unknown_user": "Unknown User",
+  "reply_unavailable": "Original message unavailable",
   "reaction": {
     "add_failed": "Add Reaction Failed",
     "add_success": "Added",

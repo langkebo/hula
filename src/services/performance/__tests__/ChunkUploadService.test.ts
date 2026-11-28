@@ -126,6 +126,22 @@ describe('ChunkUploadService (MediaManager-backed)', () => {
     expect(chunkHits).toBe(3)
   })
 
+  it('restores the SDK retry options after upload', async () => {
+    const media = realClient.getMediaManager!()
+    const retryState = media as unknown as { retryOptions?: { maxRetries?: number } }
+    media.setRetryOptions({ maxRetries: 7 })
+
+    await chunkUploadService.upload({ file: makeFile(), chunkSize: 10 })
+
+    expect(retryState.retryOptions?.maxRetries).toBe(3)
+  })
+
+  it('rejects empty files before creating an upload session', async () => {
+    await expect(chunkUploadService.upload({ file: new File([], 'empty.bin'), chunkSize: 10 })).rejects.toThrow('empty')
+
+    expect(seenRequests).toHaveLength(0)
+  })
+
   it('progress callback receives percentage based on completed chunks', async () => {
     const onProgress = vi.fn()
     await chunkUploadService.upload({ file: makeFile(), chunkSize: 10, onProgress })

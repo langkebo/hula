@@ -1,7 +1,6 @@
 import { AppException } from '@/common/exception.ts'
 import { MsgEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
-import { AbstractMessageStrategy, type ReplyRef } from './base'
+import { AbstractMessageStrategy, type ReplyInput, type ReplyRef, resolveReplyTarget } from './base'
 
 /**
  * 处理 Beacon 位置信标消息
@@ -11,7 +10,8 @@ export class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
     super(MsgEnum.BEACON)
   }
 
-  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
+  getMsg(msgInputValue: string, replyValue: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(replyValue)
     try {
       const beaconData = JSON.parse(msgInputValue)
 
@@ -24,12 +24,7 @@ export class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
         description: beaconData.description,
         timeout: beaconData.timeout,
         isLive: beaconData.isLive,
-        reply: replyValue?.message?.body?.content
-          ? {
-              content: replyValue.message.body.content,
-              key: replyValue.message.id
-            }
-          : undefined
+        reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
       }
     } catch (error) {
       if (error instanceof SyntaxError) {
@@ -39,7 +34,8 @@ export class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(reply)
     return {
       description: msg.description,
       timeout: msg.timeout,
@@ -53,11 +49,11 @@ export class BeaconMessageStrategyImpl extends AbstractMessageStrategy {
       msgtype: 'm.beacon_info',
       body: `开启了位置共享: ${msg.description}`,
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
-      reply: reply?.message?.body?.content
+      reply: replyTarget
         ? {
-            body: reply.message.body.content,
-            id: reply.message.id,
-            username: reply.fromUser.username,
+            body: replyTarget.content,
+            id: replyTarget.key,
+            username: replyTarget.username,
             type: msg.type as string
           }
         : void 0

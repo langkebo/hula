@@ -3,6 +3,7 @@
   "emoji_already_marked": "该表情已标记",
   "copy_translation": "复制翻译",
   "unknown_user": "未知用户",
+  "reply_unavailable": "原消息不可用",
   "reaction": {
     "add_failed": "添加表情失败",
     "add_success": "添加成功",

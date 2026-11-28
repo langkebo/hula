@@ -8,8 +8,10 @@
  */
 
 import type { ComputedRef, Ref } from 'vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { MessageStatusEnum, MittEnum, MsgEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import type { VoiceBody } from '@/services/types.ts'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -55,6 +57,9 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
     isBurnAfterRead,
     burnDuration
   } = ctx
+
+  const { t } = useI18nGlobal()
+  const { showFeedback } = useActionFeedback()
 
   const sendVoiceDirect = async (voiceData: {
     localPath: string
@@ -160,10 +165,17 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
     }
   }
 
-  const sendStructuredDirect = async (msgType: MsgEnum, content: string, errorLabel: string, rethrow = false) => {
+  const sendStructuredDirect = async (
+    msgType: MsgEnum,
+    content: string,
+    errorLabel: string,
+    rethrow = false,
+    failureMessage?: string
+  ) => {
     const targetRoomId = globalStore.currentSessionRoomId
+    const tempMsgId = 'T' + Date.now().toString()
+    let tempMsgPushed = false
     try {
-      const tempMsgId = 'T' + Date.now().toString()
       const messageStrategy = await getStrategy(msgType)
       const msg = (await Promise.resolve(messageStrategy.getMsg(content, reply.value as StrategyReplyArg))) as Record<
         string,
@@ -177,6 +189,7 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
       tempMsg.message.status = MessageStatusEnum.SENDING
 
       chatStore.pushMsg(tempMsg)
+      tempMsgPushed = true
       chatStore.updateMsg({ msgId: tempMsgId, status: MessageStatusEnum.SENDING })
 
       await sendWithTracking({
@@ -185,12 +198,25 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
       })
     } catch (error) {
       logger.error(errorLabel, error)
+      // 临时消息不能永远停留「发送中」：失败时置为 FAILED 并给出可见提示
+      if (tempMsgPushed) {
+        chatStore.updateMsg({ msgId: tempMsgId, status: MessageStatusEnum.FAILED })
+      }
+      if (failureMessage) {
+        showFeedback(failureMessage, 'error')
+      }
       if (rethrow) throw error
     }
   }
 
   const sendBeaconDirect = async (beaconData: { description: string; timeout: number; isLive: boolean }) => {
-    await sendStructuredDirect(MsgEnum.BEACON, JSON.stringify(beaconData), '实时位置共享消息发送失败:')
+    await sendStructuredDirect(
+      MsgEnum.BEACON,
+      JSON.stringify(beaconData),
+      '实时位置共享消息发送失败:',
+      false,
+      t('message.beacon.failed')
+    )
   }
 
   const sendLinkPreviewDirect = async (linkData: {
@@ -210,7 +236,13 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
     description?: string
     timestamp: number
   }) => {
-    await sendStructuredDirect(MsgEnum.LOCATION, JSON.stringify(locationData), '位置消息发送失败:')
+    await sendStructuredDirect(
+      MsgEnum.LOCATION,
+      JSON.stringify(locationData),
+      '位置消息发送失败:',
+      false,
+      t('message.location.send_failed')
+    )
   }
 
   const sendEmojiDirect = async (emojiUrl: string) => {

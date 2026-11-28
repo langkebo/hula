@@ -49,6 +49,21 @@ describe('useRoomSearch', () => {
       expect(results.value).toEqual([])
       expect(activeIndex.value).toBe(-1)
     })
+
+    it('resets loading when closing while a request is still in flight', async () => {
+      vi.mocked(matrixSearchService.searchRoomMessages).mockImplementationOnce(() => new Promise(() => {}))
+      const roomId = ref('!room:example.com')
+      const { query, loading, performSearch, closeSearch } = useRoomSearch(roomId)
+
+      query.value = 'match'
+      // 请求悬挂在 pending 状态，loading 保持 true
+      void performSearch()
+      await Promise.resolve()
+      expect(loading.value).toBe(true)
+
+      closeSearch()
+      expect(loading.value).toBe(false)
+    })
   })
 
   describe('query input -> debounced search', () => {

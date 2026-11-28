@@ -236,10 +236,47 @@ describe('SearchPane', () => {
 
     const { wrapper } = await mountPane('alice')
 
-    // useGlobalSearch 内部对 searchMessages 加了 .catch 兜底，所以 messages 永远 fulfilled；
-    // 当 users + rooms 都失败时，仍会进入 success 状态（无结果），渲染 no-results。
-    // 此用例验证部分失败时不会抛错，仍能渲染无结果文案。
-    expect(wrapper.find('.search-pane__no-results').exists()).toBe(true)
+    // 三个来源全部失败时应呈现错误态，而非误报「无结果」
+    expect(wrapper.find('.search-pane__error').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Search failed')
+  })
+
+  it('shows partial-error banner when one source rejects but others succeed', async () => {
+    searchUsersMock.mockResolvedValue([{ userId: '@alice:example.com', displayName: 'Alice' }])
+    searchRoomsMock.mockRejectedValue(new Error('network'))
+    searchMessagesMock.mockResolvedValue([])
+
+    const { wrapper } = await mountPane('ali')
+
+    expect(wrapper.find('.search-pane__partial-error').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Search failed')
+    // 可用来源的结果仍正常展示
+    expect(wrapper.text()).toContain('Alice')
+  })
+
+  it('navigates to the message route with eventId query when clicking a message result', async () => {
+    searchUsersMock.mockResolvedValue([])
+    searchRoomsMock.mockResolvedValue([])
+    searchMessagesMock.mockResolvedValue([
+      {
+        eventId: '$msg1',
+        roomId: '!room1:example.com',
+        roomName: 'Room One',
+        content: { body: 'hello world' },
+        timestamp: Date.now()
+      }
+    ])
+
+    const { wrapper, router } = await mountPane('hello')
+    const pushSpy = vi.spyOn(router, 'push')
+
+    await wrapper.find('.search-pane__item').trigger('click')
+
+    expect(wrapper.emitted('select')).toEqual([['message', '$msg1']])
+    expect(pushSpy).toHaveBeenCalledWith({
+      path: '/message/!room1:example.com',
+      query: { eventId: '$msg1' }
+    })
   })
 
   it('wraps matched text in <mark> via highlightSearchMatch', async () => {

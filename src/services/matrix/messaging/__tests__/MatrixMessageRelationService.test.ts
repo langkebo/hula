@@ -81,13 +81,10 @@ describe('MatrixMessageRelationService', () => {
   })
 
   describe('getEditedContent', () => {
-    it('should return new content for edited event', () => {
-      const newContent = { body: 'edited', msgtype: 'm.text' }
-      const event = createMockEvent('$1', '@user:server', {
-        body: '* edited',
-        'm.new_content': newContent
-      })
-      expect(matrixMessageRelationService.getEditedContent(event as unknown as MatrixEvent)).toEqual(newContent)
+    it('should return getContent() for edited event (SDK already aggregates m.new_content)', () => {
+      const editedContent = { body: 'edited', msgtype: 'm.text' }
+      const event = createMockEvent('$1', '@user:server', editedContent)
+      expect(matrixMessageRelationService.getEditedContent(event as unknown as MatrixEvent)).toEqual(editedContent)
     })
 
     it('should return original content for non-edited event', () => {
@@ -127,6 +124,14 @@ describe('MatrixMessageRelationService', () => {
         'm.relates_to': { 'm.in_reply_to': { event_id: '$0' } }
       })
       expect(matrixMessageRelationService.getThreadRootId(event as unknown as MatrixEvent)).toBeNull()
+    })
+
+    it('should prefer event.threadRootId when content relation is gone', () => {
+      const event = {
+        ...createMockEvent('$1', '@user:server', { body: 'edited' }),
+        threadRootId: '$root'
+      }
+      expect(matrixMessageRelationService.getThreadRootId(event as unknown as MatrixEvent)).toBe('$root')
     })
   })
 
@@ -182,6 +187,39 @@ describe('MatrixMessageRelationService', () => {
       const result = await matrixMessageRelationService.editMessage('!r:s', '$e', { body: 'new text' })
       expect(result).toBe('$new')
       expect(sendEvent).toHaveBeenCalled()
+    })
+
+    it('clears leftover format/formatted_body when editing an HTML message without html', async () => {
+      const sendEvent = vi.fn().mockResolvedValue({ event_id: '$new' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoom: vi.fn(() => ({
+          findEventById: vi.fn(() =>
+            createMockEvent('$e', '@me:server', {
+              body: 'old',
+              msgtype: 'm.text',
+              format: 'org.matrix.custom.html',
+              formatted_body: '<b>old</b>',
+              'm.new_content': {
+                body: 'old',
+                msgtype: 'm.text',
+                format: 'org.matrix.custom.html',
+                formatted_body: '<b>old</b>'
+              }
+            })
+          )
+        })),
+        getUserId: vi.fn(() => '@me:server'),
+        sendEvent
+      } as unknown as MatrixClient)
+
+      await matrixMessageRelationService.editMessage('!r:s', '$e', { body: 'plain text' })
+
+      const content = sendEvent.mock.calls[0][2] as Record<string, unknown>
+      expect(content.format).toBeUndefined()
+      expect(content.formatted_body).toBeUndefined()
+      const newContent = content['m.new_content'] as Record<string, unknown>
+      expect(newContent.format).toBeUndefined()
+      expect(newContent.formatted_body).toBeUndefined()
     })
   })
 

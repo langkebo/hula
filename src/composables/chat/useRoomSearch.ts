@@ -79,6 +79,8 @@ export function useRoomSearch(roomId: Ref<string>) {
     }
     requestSeq++
     isOpen.value = false
+    // 关闭时一并复位 loading：进行中的请求因 seq 失效不会再走 finally 复位
+    loading.value = false
     query.value = ''
     results.value = []
     error.value = false

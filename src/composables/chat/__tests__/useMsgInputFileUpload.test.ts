@@ -11,6 +11,7 @@ const {
   getImageDimensionsMock,
   initQueueMock,
   updateFileStatusMock,
+  updateFileProgressMock,
   queueState,
   requestAnimationFrameMock,
   cancelAnimationFrameMock
@@ -26,6 +27,7 @@ const {
     queueState.items = files.map((_, index) => ({ id: `file-${index + 1}` }))
   }),
   updateFileStatusMock: vi.fn(),
+  updateFileProgressMock: vi.fn(),
   queueState: {
     items: [] as Array<{ id: string }>
   },
@@ -76,6 +78,7 @@ vi.mock('../../common/useFileUploadQueue', () => ({
   globalFileUploadQueue: {
     initQueue: initQueueMock,
     updateFileStatus: updateFileStatusMock,
+    updateFileProgress: updateFileProgressMock,
     queue: queueState
   }
 }))
@@ -293,6 +296,45 @@ describe('useMsgInputFileUpload path 版上传失败时回退 blob', () => {
     expect(ctx.sendWithTracking).toHaveBeenCalled()
     // 回退成功不应把消息标成失败
     expect(ctx.chatStore.updateMsg).not.toHaveBeenCalledWith(expect.objectContaining({ status: 'failed' }))
+  })
+})
+
+describe('useMsgInputFileUpload 前置校验与进度回写', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrameMock)
+    vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrameMock)
+    queueState.items = []
+    getStrategyMock.mockResolvedValue(createStrategy())
+    checkQuotaMock.mockResolvedValue(null)
+    uploadFileMock.mockResolvedValue({ contentUri: 'mxc://example.com/blob', size: 100, mimetype: 'text/plain' })
+  })
+
+  it('空文件直接拒绝并提示，不触发上传', async () => {
+    const { uploader, ctx } = createUploader()
+
+    await uploader.sendFilesDirect([makeFile('empty.txt', 0)])
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('hooks.msg_input.file_send_failed:{"fileName":"empty.txt"}', 'error')
+    expect(uploadFileMock).not.toHaveBeenCalled()
+    expect(ctx.chatStore.updateMsg).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed' }))
+    expect(ctx.sendWithTracking).not.toHaveBeenCalled()
+  })
+
+  it('path 版上传把进度回调写回全局队列', async () => {
+    const strategy = createStrategy()
+    strategy.doUpload.mockImplementation(
+      async (_path: string, _url: string, options: { progressCallback?: (pct: number) => void }) => {
+        options.progressCallback?.(50)
+        return 'mxc://example.com/a'
+      }
+    )
+    getStrategyMock.mockResolvedValue(strategy)
+    const { uploader } = createUploader()
+
+    await uploader.sendFilesDirect([makeFile('a.txt', 100)])
+
+    expect(updateFileProgressMock).toHaveBeenCalledWith('file-1', 50)
   })
 })
 

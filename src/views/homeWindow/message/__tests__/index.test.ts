@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive, ref } from 'vue'
-import { RoomTypeEnum } from '@/enums'
+import { MittEnum, RoomTypeEnum } from '@/enums'
 import MessageView from '../index.vue'
 
 const {
@@ -14,9 +14,10 @@ const {
   markSessionReadMock,
   useMittOnMock,
   useMittEmitMock,
-  scrollToIndexMock
+  scrollToIndexMock,
+  openMsgSessionByRoomIdMock
 } = vi.hoisted(() => ({
-  routerReplaceMock: vi.fn(),
+  routerReplaceMock: vi.fn<(to: unknown) => Promise<void>>(async () => {}),
   addListenerMock: vi.fn(async () => {}),
   handleMsgClickMock: vi.fn(),
   handleMsgDeleteMock: vi.fn(),
@@ -25,12 +26,14 @@ const {
   markSessionReadMock: vi.fn(),
   useMittOnMock: vi.fn(),
   useMittEmitMock: vi.fn(),
-  scrollToIndexMock: vi.fn()
+  scrollToIndexMock: vi.fn(),
+  openMsgSessionByRoomIdMock: vi.fn(async () => {})
 }))
 
 const route = reactive({
   path: '/message',
   name: 'message',
+  params: {} as Record<string, string>,
   query: {} as Record<string, unknown>
 })
 
@@ -105,7 +108,8 @@ vi.mock('@/composables/common/useTauriListener', () => ({
 }))
 
 vi.mock('@/composables/chat/openMsgSession', () => ({
-  openMsgSession: vi.fn()
+  openMsgSession: vi.fn(),
+  openMsgSessionByRoomId: openMsgSessionByRoomIdMock
 }))
 
 vi.mock('@/composables/chat/useMessage', () => ({
@@ -280,6 +284,7 @@ describe('MessageView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     route.query = {}
+    route.params = {}
     route.path = '/message'
     route.name = 'message'
     chatStore.sessionOptions.isLoading = false
@@ -329,5 +334,25 @@ describe('MessageView', () => {
     await nextTick()
 
     expect(wrapper.get('[data-test="toolbar-search-value"]').text()).toBe('alice')
+  })
+
+  it('opens the target session and broadcasts navigation when route carries eventId', async () => {
+    route.params = { roomId: '!alice:server' }
+    route.query = { eventId: '$msg1' }
+
+    mount(MessageView)
+    await flushPromises()
+    await nextTick()
+
+    expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('!alice:server')
+    expect(useMittEmitMock).toHaveBeenCalledWith(MittEnum.NAVIGATE_TO_MESSAGE, {
+      roomId: '!alice:server',
+      eventId: '$msg1'
+    })
+    expect(routerReplaceMock).toHaveBeenCalledWith({
+      name: 'message',
+      params: { roomId: '!alice:server' },
+      query: {}
+    })
   })
 })

@@ -51,12 +51,17 @@ const useFileUploadQueue = () => {
     return queue.isActive && queue.items.some((item) => item.status === 'uploading')
   })
 
+  // 批次序号：用于保证不同批次的 fileId 不重复，避免上一批的回调命中下一批的同名条目
+  let batchSeq = 0
+
   /**
    * 初始化队列
    */
   const initQueue = (files: UploadFile[]) => {
+    batchSeq += 1
+    const batchId = batchSeq
     queue.items = files.map((file, index) => ({
-      id: `${Date.now()}_${index}`,
+      id: `${batchId}_${index}`,
       name: file.name,
       size: file.size,
       type: file.type,

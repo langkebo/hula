@@ -4,11 +4,16 @@ import { AppException } from '@/common/exception.ts'
 import { parseInnerText } from '@/composables/common/useCommon'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { getMimeTypeFromExtension } from '@/utils/Formatting'
 import { getCacheBaseDir } from '@/utils/PathUtil'
-import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
+import {
+  AbstractMessageStrategy,
+  strategyLogger as logger,
+  type ReplyInput,
+  type ReplyRef,
+  resolveReplyTarget
+} from './base'
 
 /**
  * 处理文件消息
@@ -65,9 +70,10 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
 
   async getMsg(
     msgInputValue: string,
-    replyValue: MessageType | null,
+    replyValue: ReplyInput | null,
     fileList?: File[]
   ): Promise<Record<string, unknown>> {
+    const replyTarget = resolveReplyTarget(replyValue)
     logger.debug('开始处理文件消息:', msgInputValue, replyValue, fileList?.length ? '有附件文件' : '无附件文件')
 
     let file: File | null = null
@@ -109,16 +115,12 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
       fileName: validatedFile.name,
       size: validatedFile.size,
       mimeType: validatedFile.type || getMimeTypeFromExtension(validatedFile.name) || 'application/octet-stream',
-      reply: replyValue?.message?.body?.content
-        ? {
-            content: replyValue.message.body.content,
-            key: replyValue.message.id
-          }
-        : undefined
+      reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
     }
   }
 
-  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(reply)
     return {
       url: '', // 上传后会被设置
       path: msg.path as string,
@@ -129,12 +131,12 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
       // 回退成 application/octet-stream，接收端拿不到真实类型。
       mimetype: msg.mimeType as string,
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || undefined,
-      reply: reply?.message?.body?.content
+      reply: replyTarget
         ? {
-            body: reply.message.body.content,
-            id: reply.message.id,
-            username: reply.fromUser.username,
-            type: msg.type
+            body: replyTarget.content,
+            id: replyTarget.key,
+            username: replyTarget.username,
+            type: msg.type as string
           }
         : undefined
     }

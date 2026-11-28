@@ -184,6 +184,7 @@ describe('MatrixRoomRealtimeService', () => {
       expect(cb).toHaveBeenCalledWith({
         roomId: '!r:e',
         eventType: 'm.room.message',
+        event,
         roomInfo: { roomId: '!r:e' },
         message: { id: 'm1' }
       })

@@ -165,6 +165,7 @@ export class MatrixRoomRealtimeService {
     callback: (data: {
       roomId: string
       eventType: string
+      event: MatrixEvent
       roomInfo: RoomInfo
       message: import('@/stores/domains/chat/chat/types').MessageType | null
     }) => void,
@@ -192,7 +193,7 @@ export class MatrixRoomRealtimeService {
           // m.room.redaction 不在此列：目标事件由 SDK 的 tryApplyRedaction 置为已撤回，
           // 撤回提示由 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
 
-          callback({ roomId: room.roomId, eventType, roomInfo, message })
+          callback({ roomId: room.roomId, eventType, event, roomInfo, message })
         } catch (error) {
           reportError(room.roomId, error)
         }

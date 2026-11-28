@@ -301,15 +301,22 @@ const handleMapError = (error: string) => {
 }
 
 // 确认发送位置
-const handleConfirm = async () => {
+const handleConfirm = () => {
   if (!originalLocation.value) return
 
   sendingLocation.value = true
   // 回传 WGS-84 坐标，geo URI 存储/发送必须用 WGS-84
+  // 弹窗由父级在发送流程结束后关闭，期间保持 loading，避免同步复位导致加载态失效
   emit('location-selected', originalLocation.value)
-  modalVisible.value = false
-  sendingLocation.value = false
 }
+
+// 父级关闭弹窗（发送结束）后复位 loading
+watch(
+  () => props.show,
+  (visible) => {
+    if (!visible) sendingLocation.value = false
+  }
+)
 </script>
 
 <style scoped lang="scss">

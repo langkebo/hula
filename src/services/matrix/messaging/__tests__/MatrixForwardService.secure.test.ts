@@ -63,6 +63,19 @@ function makePlainEvent(): MatrixEvent {
   } as unknown as MatrixEvent
 }
 
+/** 加密文本事件：getContent() 已是解密后的明文，但 isEncrypted() 为 true */
+function makeEncryptedTextEvent(): MatrixEvent {
+  return {
+    getType: () => 'm.room.message',
+    getId: () => '$evt-encrypted-text',
+    isEncrypted: () => true,
+    getContent: () => ({
+      msgtype: 'm.text',
+      body: 'secret plaintext'
+    })
+  } as unknown as MatrixEvent
+}
+
 describe('MatrixForwardService 加密附件转发防护', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -98,6 +111,26 @@ describe('MatrixForwardService 加密附件转发防护', () => {
     const sendEvent = vi.spyOn(matrixEventService, 'sendEvent').mockResolvedValue('$sent')
 
     await matrixForwardService.forwardEvent(makePlainEvent(), '!plain:example.com')
+
+    expect(sendEvent).toHaveBeenCalledTimes(1)
+  })
+
+  it('拒绝把加密文本消息转发进明文房间，且不发送任何事件', async () => {
+    vi.spyOn(cryptoSDKAdapter, 'isRoomEncrypted').mockImplementation(
+      async (roomId: string) => roomId === '!enc:example.com'
+    )
+    const sendEvent = vi.spyOn(matrixEventService, 'sendEvent').mockResolvedValue('$sent')
+
+    await expect(matrixForwardService.forwardEvent(makeEncryptedTextEvent(), '!plain:example.com')).rejects.toThrow()
+
+    expect(sendEvent).not.toHaveBeenCalled()
+  })
+
+  it('加密文本消息转发进加密房间时正常发送', async () => {
+    vi.spyOn(cryptoSDKAdapter, 'isRoomEncrypted').mockResolvedValue(true)
+    const sendEvent = vi.spyOn(matrixEventService, 'sendEvent').mockResolvedValue('$sent')
+
+    await matrixForwardService.forwardEvent(makeEncryptedTextEvent(), '!enc:example.com')
 
     expect(sendEvent).toHaveBeenCalledTimes(1)
   })

@@ -1,8 +1,13 @@
 import { AppException } from '@/common/exception.ts'
 import type { UploadOptions, UploadProviderEnum } from '@/composables/common/useUpload'
 import { MsgEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
-import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
+import {
+  AbstractMessageStrategy,
+  strategyLogger as logger,
+  type ReplyInput,
+  type ReplyRef,
+  resolveReplyTarget
+} from './base'
 
 export class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {
@@ -19,7 +24,8 @@ export class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
+  getMsg(msgInputValue: string, replyValue: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(replyValue)
     // 检查是否是URL
     if (!this.isValidEmojiUrl(msgInputValue)) {
       throw new AppException('无效的表情包URL')
@@ -29,24 +35,20 @@ export class EmojiMessageStrategyImpl extends AbstractMessageStrategy {
       type: this.msgType,
       url: msgInputValue,
       path: msgInputValue,
-      reply: replyValue?.message?.body?.content
-        ? {
-            content: replyValue.message.body.content,
-            key: replyValue.message.id
-          }
-        : undefined
+      reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
     }
   }
 
-  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(reply)
     return {
       url: msg.url as string,
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
-      reply: reply?.message?.body?.content
+      reply: replyTarget
         ? {
-            body: reply.message.body.content,
-            id: reply.message.id,
-            username: reply.fromUser.username,
+            body: replyTarget.content,
+            id: replyTarget.key,
+            username: replyTarget.username,
             type: msg.type as string
           }
         : void 0

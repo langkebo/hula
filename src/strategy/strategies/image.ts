@@ -3,12 +3,18 @@ import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { fixFileMimeType } from '@/utils/FileType'
 import { getMimeTypeFromExtension } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
 import { getCacheBaseDir } from '@/utils/PathUtil'
-import { AbstractMessageStrategy, type ImageInfo, strategyLogger as logger, type ReplyRef } from './base'
+import {
+  AbstractMessageStrategy,
+  type ImageInfo,
+  strategyLogger as logger,
+  type ReplyInput,
+  type ReplyRef,
+  resolveReplyTarget
+} from './base'
 
 export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
   // 最大上传图片大小 2MB
@@ -111,9 +117,10 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
    */
   async getMsg(
     msgInputValue: string,
-    replyValue: MessageType | null,
+    replyValue: ReplyInput | null,
     fileList?: File[]
   ): Promise<Record<string, unknown>> {
+    const replyTarget = resolveReplyTarget(replyValue)
     // 优先处理fileList中的文件
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
@@ -138,12 +145,7 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
           height, // 原始图片高度
           size: file.size // 原始文件大小
         },
-        reply: replyValue?.message?.body?.content
-          ? {
-              content: replyValue.message.body.content,
-              key: replyValue.message.id
-            }
-          : undefined
+        reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
       }
     }
 
@@ -162,12 +164,7 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
             height,
             size
           },
-          reply: replyValue?.message?.body?.content
-            ? {
-                content: replyValue.message.body.content,
-                key: replyValue.message.id
-              }
-            : undefined
+          reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
         }
       } catch (error) {
         logger.error('处理图片URL失败:', error)
@@ -221,12 +218,7 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
           height, // 原始图片高度
           size: originalFile.size // 原始文件大小
         },
-        reply: replyValue?.message?.body?.content
-          ? {
-              content: replyValue.message.body.content,
-              key: replyValue.message.id
-            }
-          : undefined
+        reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
       }
     } catch (error) {
       logger.error('处理图片失败:', error)
@@ -311,7 +303,8 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(reply)
     return {
       url: msg.url as string,
       path: msg.path as string,
@@ -319,12 +312,12 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
       height: (msg.imageInfo as ImageInfo).height,
       size: (msg.imageInfo as ImageInfo).size,
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
-      reply: reply?.message?.body?.content
+      reply: replyTarget
         ? {
-            body: reply.message.body.content,
-            id: reply.message.id,
-            username: reply.fromUser.username,
-            type: msg.type
+            body: replyTarget.content,
+            id: replyTarget.key,
+            username: replyTarget.username,
+            type: msg.type as string
           }
         : void 0
     }

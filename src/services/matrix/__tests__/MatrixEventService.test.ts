@@ -316,6 +316,85 @@ describe('MatrixEventService', () => {
       expect(reply?.message.body.threadId).toBeUndefined()
     })
 
+    it('prefers event.threadRootId over content relation (edited thread reply loses m.relates_to)', () => {
+      // 编辑后 getContent() 只返回 m.new_content，relation 已丢失；threadRootId 仍可解析线程根。
+      const event = {
+        ...makeEvent('m.room.message', { msgtype: 'm.text', body: 'edited' }),
+        threadRootId: '$root'
+      } as unknown as MatrixEvent
+
+      const msg = matrixEventService.convertEventToMessage(event, makeRoom())
+
+      expect(msg?.message.body.threadId).toBe('$root')
+    })
+
+    it('fills body.reply from m.relates_to.m.in_reply_to (receiving side)', () => {
+      const targetEvent = {
+        getContent: () => ({ msgtype: 'm.text', body: 'original' }),
+        getSender: () => '@bob:e',
+        isRedacted: () => false
+      } as unknown as MatrixEvent
+      const room = {
+        roomId: '!room:e',
+        getMember: (userId: string) => (userId === '@bob:e' ? { name: 'Bob' } : null),
+        findEventById: (eventId: string) => (eventId === '$parent' ? targetEvent : null)
+      } as unknown as Room
+
+      const msg = matrixEventService.convertEventToMessage(
+        makeEvent('m.room.message', {
+          msgtype: 'm.text',
+          body: 'reply',
+          'm.relates_to': { 'm.in_reply_to': { event_id: '$parent' } }
+        }),
+        room
+      )
+
+      expect(msg?.message.body.reply).toEqual({
+        id: '$parent',
+        roomId: '!room:e',
+        body: 'original',
+        uid: '@bob:e',
+        username: 'Bob'
+      })
+    })
+
+    it('degrades safely when the reply target is missing or redacted', () => {
+      const makeReplyEvent = (targetId: string) =>
+        makeEvent('m.room.message', {
+          msgtype: 'm.text',
+          body: 'reply',
+          'm.relates_to': { 'm.in_reply_to': { event_id: targetId } }
+        })
+
+      const roomWithoutTarget = {
+        roomId: '!room:e',
+        getMember: () => null,
+        findEventById: () => null
+      } as unknown as Room
+
+      const missing = matrixEventService.convertEventToMessage(makeReplyEvent('$gone'), roomWithoutTarget)
+      expect(missing?.message.body.reply).toEqual({ id: '$gone', roomId: '!room:e' })
+
+      const redactedTarget = {
+        getContent: () => ({}),
+        getSender: () => '@bob:e',
+        isRedacted: () => true
+      } as unknown as MatrixEvent
+      const roomWithRedacted = {
+        roomId: '!room:e',
+        getMember: () => ({ name: 'Bob' }),
+        findEventById: () => redactedTarget
+      } as unknown as Room
+
+      const redacted = matrixEventService.convertEventToMessage(makeReplyEvent('$redacted'), roomWithRedacted)
+      expect(redacted?.message.body.reply).toEqual({
+        id: '$redacted',
+        roomId: '!room:e',
+        uid: '@bob:e',
+        username: 'Bob'
+      })
+    })
+
     it('marks body.hasEncryption for encrypted events (trust gate depends on it)', () => {
       const encryptedType = matrixEventService.convertEventToMessage(
         makeEvent('m.room.encrypted', { msgtype: 'm.text', body: 'secret' }),

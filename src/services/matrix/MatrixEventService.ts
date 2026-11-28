@@ -344,10 +344,34 @@ class MatrixEventService extends BaseMatrixService {
 
     // 线程内消息：m.relates_to.rel_type === 'm.thread'，event_id 指向线程根。
     // body 是新建对象（LINK_PREVIEW 例外但同样可安全附加），这里直接补字段。
-    const relatesTo = content?.['m.relates_to'] as { rel_type?: string; event_id?: string } | undefined
-    const threadId = relatesTo?.rel_type === 'm.thread' ? relatesTo.event_id : undefined
+    const relatesTo = content?.['m.relates_to'] as
+      | { rel_type?: string; event_id?: string; 'm.in_reply_to'?: { event_id?: string } }
+      | undefined
+    // 编辑过的线程回复 getContent() 只返回 m.new_content（relation 已丢失），
+    // 因此线程根优先取 SDK 的 event.threadRootId，再退回 content 关系。
+    const threadId =
+      (typeof event.threadRootId === 'string' ? event.threadRootId : undefined) ??
+      (relatesTo?.rel_type === 'm.thread' ? relatesTo.event_id : undefined)
     if (threadId) {
       body.threadId = threadId
+    }
+
+    // 接收侧还原引用回复：发送侧写入 body.reply（见 strategy/strategies/text.ts），
+    // 而线上只保留 m.relates_to.m.in_reply_to.event_id，必须在这里补回同一结构。
+    const replyToEventId = relatesTo?.['m.in_reply_to']?.event_id
+    if (replyToEventId) {
+      const replyTarget = room.findEventById?.(replyToEventId) ?? undefined
+      const replySender = replyTarget?.getSender?.() ?? undefined
+      const replyMember = replySender ? room.getMember(replySender) : null
+      const replyTargetBody = replyTarget?.isRedacted?.() === true ? undefined : replyTarget?.getContent?.()?.body
+      // 目标事件不存在或已撤回时只保留 id/roomId，避免渲染层拿到未定义字段报错。
+      body.reply = {
+        id: replyToEventId,
+        roomId: room.roomId,
+        ...(typeof replyTargetBody === 'string' ? { body: replyTargetBody } : {}),
+        ...(replySender ? { uid: replySender } : {}),
+        ...(replyMember?.name ? { username: replyMember.name } : {})
+      }
     }
 
     const avatarUrl = member?.getMxcAvatarUrl?.() ?? undefined

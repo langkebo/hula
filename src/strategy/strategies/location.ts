@@ -3,7 +3,7 @@ import { AppException } from '@/common/exception.ts'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { AbstractMessageStrategy, type ReplyRef } from './base'
+import { AbstractMessageStrategy, type ReplyInput, type ReplyRef, resolveReplyTarget } from './base'
 
 /**
  * 处理位置消息的策略
@@ -19,7 +19,8 @@ export class LocationMessageStrategyImpl extends AbstractMessageStrategy {
    * @param replyValue 回复信息
    * @returns 位置消息对象
    */
-  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
+  getMsg(msgInputValue: string, replyValue: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(replyValue)
     try {
       // 解析位置数据
       const locationData = JSON.parse(msgInputValue)
@@ -36,12 +37,7 @@ export class LocationMessageStrategyImpl extends AbstractMessageStrategy {
         address: locationData.address,
         precision: locationData.precision || '高精度',
         timestamp: locationData.timestamp || Date.now(),
-        reply: replyValue?.message?.body?.content
-          ? {
-              content: replyValue.message.body.content,
-              key: replyValue.message.id
-            }
-          : undefined
+        reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
       }
     } catch (error) {
       if (error instanceof SyntaxError) {
@@ -57,7 +53,8 @@ export class LocationMessageStrategyImpl extends AbstractMessageStrategy {
    * @param reply 回复信息
    * @returns 消息体
    */
-  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(reply)
     const latitude = String(msg.latitude)
     const longitude = String(msg.longitude)
     const address = String(msg.address)
@@ -78,11 +75,11 @@ export class LocationMessageStrategyImpl extends AbstractMessageStrategy {
         timestamp
       },
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
-      reply: reply?.message?.body?.content
+      reply: replyTarget
         ? {
-            body: reply.message.body.content,
-            id: reply.message.id,
-            username: reply.fromUser.username,
+            body: replyTarget.content,
+            id: replyTarget.key,
+            username: replyTarget.username,
             type: msg.type as string
           }
         : void 0

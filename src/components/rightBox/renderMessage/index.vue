@@ -201,6 +201,13 @@
               @reaction-added="showReactionPickerId = ''"
               @reaction-removed="showReactionPickerId = ''" />
 
+            <!-- 已有反应汇总：点击芯片可切换自己的反应 -->
+            <ReactionChips
+              v-if="!historyMode"
+              :room-id="message.message.roomId"
+              :event-id="message.message.id"
+              :is-me="isMe" />
+
             <!-- 显示翻译文本 -->
             <Transition name="fade-translate" appear mode="out-in">
               <div v-if="messageBody.translatedText" class="translated-text cursor-default flex flex-col">
@@ -260,40 +267,14 @@
               color="var(--tjg-surface-panel)"
               fallback-src="/logo.png"
               :src="getAvatarSrc(messageBody.reply.uid ?? '')" />
-            <span>{{ `${messageBody.reply.username}: ` }}</span>
+            <span>{{ `${messageBody.reply.username || t('message_container.unknown_user')}: ` }}</span>
             <span class="content-span">
-              {{ messageBody.reply.body }}
+              {{ messageBody.reply.body || t('message_container.reply_unavailable') }}
             </span>
             <div v-if="messageBody.reply.imgCount" class="reply-img-sub">
               {{ messageBody.reply.imgCount }}
             </div>
           </n-flex>
-
-          <!-- 动态渲染所有回复表情反应 -->
-          <div
-            v-if="message.message"
-            class="flex-y-center gap-6px flex-wrap w-270px"
-            :class="{ 'justify-end': isSingleLineEmojis(message) }">
-            <template v-for="emoji in emojiList" :key="emoji.value">
-              <!-- 根据表情类型获取对应的计数属性名 -->
-              <div class="flex-y-center" v-if="message && getEmojiCount(message, emoji.value) > 0">
-                <div
-                  class="emoji-reply-bubble"
-                  :class="{ 'emoji-reply-bubble--active': hasUserMarkedEmoji(message, emoji.value) }"
-                  @click.stop="message && cancelReplyEmoji(message, emoji.value)">
-                  <img :title="emoji.title" class="size-18px" :src="emoji.url" :alt="emoji.title" />
-                  <span
-                    :class="
-                      hasUserMarkedEmoji(message, emoji.value)
-                        ? 'text-[--tjg-color-warning-400]'
-                        : 'text-(12px [--tjg-text-inverse])'
-                    ">
-                    {{ message ? getEmojiCount(message, emoji.value) : 0 }}
-                  </span>
-                </div>
-              </div>
-            </template>
-          </div>
 
           <!-- 线程指示器 -->
           <component
@@ -369,6 +350,7 @@ import DecryptionFailureCard from './DecryptionFailureCard.vue'
 import Emoji from './Emoji.vue'
 import Image from './Image.vue'
 import MessageActionBar from './MessageActionBar.vue'
+import ReactionChips from './ReactionChips.vue'
 import ReactionPicker from './ReactionPicker.vue'
 import RecallMessage from './special/RecallMessage.vue'
 import SystemMessage from './special/SystemMessage.vue'
@@ -517,15 +499,7 @@ const bubbleMaxWidth = computed(() => {
   return props.isGroup ? '32vw' : '50vw'
 })
 
-const {
-  handleRetry,
-  handleCopyTranslation,
-  isSingleLineEmojis,
-  cancelReplyEmoji,
-  getEmojiCount,
-  hasUserMarkedEmoji,
-  handleEmojiSelect
-} = useMessageActions({ isMe, emojiList })
+const { handleRetry, handleCopyTranslation, handleEmojiSelect } = useMessageActions({ isMe, emojiList })
 
 const showReactionPickerId = ref('')
 

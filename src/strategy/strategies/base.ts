@@ -15,6 +15,43 @@ export interface ReplyRef {
   key: string
 }
 
+/** UI 侧引用状态（扁平结构） */
+export interface ReplyStateLike {
+  content: string
+  key: string | number
+  accountName?: string
+}
+
+/** 引用输入：兼容 UI 扁平结构与本项目历史单测使用的 MessageType 结构 */
+export interface ReplyInput extends Partial<ReplyStateLike> {
+  message?: { id?: string; body?: { content?: string } }
+  fromUser?: { username?: string }
+}
+
+export interface ReplyTarget {
+  content: string
+  key: string
+  username: string
+}
+
+/**
+ * 归一化引用输入：UI 传入的是扁平 ReplyState，历史单测传的是 MessageType 结构，
+ * 策略层只依赖归一化后的 { content, key, username }，避免运行时读到 undefined 导致引用丢失。
+ * content 缺失或 key 为空视为未引用。
+ */
+export function resolveReplyTarget(reply: ReplyInput | null | undefined): ReplyTarget | null {
+  const content = reply?.content ?? reply?.message?.body?.content
+  const key = reply?.key ?? reply?.message?.id
+  if (!content || key === undefined || key === null || key === '') {
+    return null
+  }
+  return {
+    content,
+    key: String(key),
+    username: reply?.accountName ?? reply?.fromUser?.username ?? ''
+  }
+}
+
 export interface ImageInfo {
   width: number
   height: number
@@ -45,10 +82,10 @@ export interface MessageStrategy {
   readonly msgType: MsgEnum
   getMsg: (
     msgInputValue: string,
-    replyValue: MessageType | null,
+    replyValue: ReplyInput | null,
     fileList?: File[]
   ) => Record<string, unknown> | Promise<Record<string, unknown>>
-  buildMessageBody: (msg: Record<string, unknown>, reply: MessageType | null) => Record<string, unknown>
+  buildMessageBody: (msg: Record<string, unknown>, reply: ReplyInput | null) => Record<string, unknown>
   buildMessageType: (
     messageId: string,
     messageBody: Record<string, unknown>,
@@ -120,11 +157,11 @@ export abstract class AbstractMessageStrategy implements MessageStrategy {
     }
   }
 
-  abstract buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown>
+  abstract buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown>
 
   abstract getMsg(
     msgInputValue: string,
-    replyValue: MessageType | null,
+    replyValue: ReplyInput | null,
     fileList?: File[]
   ): Record<string, unknown> | Promise<Record<string, unknown>>
 

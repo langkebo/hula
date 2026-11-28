@@ -4,12 +4,17 @@ import { AppException } from '@/common/exception.ts'
 import { parseInnerText } from '@/composables/common/useCommon'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { isVideoUrl } from '@/utils/FileType'
 import { getCacheBaseDir } from '@/utils/PathUtil'
 import { removeTempFile } from '@/utils/TempFileManager'
 import { generateVideoThumbnail } from '@/utils/VideoThumbnail'
-import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
+import {
+  AbstractMessageStrategy,
+  strategyLogger as logger,
+  type ReplyInput,
+  type ReplyRef,
+  resolveReplyTarget
+} from './base'
 
 /**
  * 处理视频消息
@@ -64,9 +69,10 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
 
   async getMsg(
     msgInputValue: string,
-    replyValue: MessageType | null,
+    replyValue: ReplyInput | null,
     fileList?: File[]
   ): Promise<Record<string, unknown>> {
+    const replyTarget = resolveReplyTarget(replyValue)
     // 1. 优先处理fileList中的文件
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
@@ -87,9 +93,7 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         thumbnail: thumbnail || '',
         size: validatedFile.size,
         duration: 0, // 实际项目中可解析视频时长
-        reply: replyValue?.message?.body?.content
-          ? { content: replyValue.message.body.content, key: replyValue.message.id }
-          : undefined
+        reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
       }
     }
 
@@ -99,9 +103,7 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
         type: this.msgType,
         url: msgInputValue,
         path: msgInputValue,
-        reply: replyValue?.message?.body?.content
-          ? { content: replyValue.message.body.content, key: replyValue.message.id }
-          : undefined
+        reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
       }
     }
     const actualFile = await this.convertToVideoFile(msgInputValue)
@@ -121,9 +123,7 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       thumbnail: thumbnail || '',
       size: validatedFile.size,
       duration: 0, // 实际项目中可解析视频时长
-      reply: replyValue?.message?.body?.content
-        ? { content: replyValue.message.body.content, key: replyValue.message.id }
-        : undefined
+      reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
     }
   }
 
@@ -254,7 +254,8 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(reply)
     // 为缩略图创建本地预览URL
     let thumbUrl = ''
     if (msg.thumbnail instanceof File) {
@@ -272,11 +273,11 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       size: msg.size as number,
       duration: msg.duration as number,
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
-      reply: reply?.message?.body?.content
+      reply: replyTarget
         ? {
-            body: reply.message.body.content,
-            id: reply.message.id,
-            username: reply.fromUser.username,
+            body: replyTarget.content,
+            id: replyTarget.key,
+            username: replyTarget.username,
             type: msg.type as string
           }
         : void 0

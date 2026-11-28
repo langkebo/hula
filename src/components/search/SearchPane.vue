@@ -47,6 +47,10 @@
 
       <!-- 分组结果 -->
       <div v-else class="search-pane__sections px-12px py-12px">
+        <!-- 部分来源失败：结果仍展示可用部分，同时提示失败态 -->
+        <p v-if="hasPartialError" class="search-pane__partial-error mb-8px text-(12px --tjg-color-danger-500)">
+          {{ t('search.error') }}
+        </p>
         <!-- 空间分组（type=space 模式） -->
         <section v-if="isSpaceMode && spaces.length" class="search-pane__section">
           <h3 class="search-pane__section-title">
@@ -233,6 +237,10 @@ const isLoading = computed(() => status.value === 'loading')
 const hasQuery = globalSearch.hasQuery
 const hasResults = computed(() => (isSpaceMode.value ? spaces.value.length > 0 : globalSearch.hasResults.value))
 const totalCount = computed(() => (isSpaceMode.value ? spaces.value.length : globalSearch.totalCount.value))
+/** 部分来源失败（其它来源仍有结果）时展示失败提示 */
+const hasPartialError = computed(
+  () => !isSpaceMode.value && status.value === 'success' && globalSearch.failedSources.value.length > 0
+)
 
 /** 取消当前进行中的空间搜索请求，使其结果不会被应用 */
 const abortSpaceInFlight = () => {
@@ -337,7 +345,8 @@ const handleRoomClick = (room: RoomSearchResult) => {
 
 const handleMessageClick = (msg: SearchResult) => {
   emit('select', 'message', msg.eventId)
-  void router.push(`/message/${msg.roomId}`)
+  // 携带 eventId，进入会话后由消息页复用 ChatMain 的跳转能力定位到该消息
+  void router.push({ path: `/message/${msg.roomId}`, query: { eventId: msg.eventId } })
 }
 
 const handleJoinSpace = async (spaceId: string) => {

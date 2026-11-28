@@ -99,12 +99,17 @@ class ChunkUploadService {
     if (!client) {
       throw new Error('Matrix client not initialized')
     }
+    // 空文件无法分片（totalChunks=0），直接拒绝，避免创建无意义的上传会话
+    if (file.size <= 0) {
+      throw new Error('Cannot upload empty file')
+    }
     const media = this.getMedia(client)
 
     // 禁用 SDK 层重试：ChunkUploadService 自身已有 maxRetries=3 的重试编排，
     // 若 SDK withRetry 也重试（uploadChunk 默认 idempotent=true 会触发 5xx 重试），
     // 单个 chunk 失败最坏可放大到 16 次 HTTP 请求（SDK 3 次 × 前端 4 次）。
     // 此处设 maxRetries=0 让前端重试成为唯一来源；finally 中恢复默认值 3。
+    // retryOptions 在 SDK 中为 protected，无法安全读取原值，这里沿用既有默认配置。
     media.setRetryOptions({ maxRetries: 0 })
 
     const totalChunks = Math.ceil(file.size / chunkSize)

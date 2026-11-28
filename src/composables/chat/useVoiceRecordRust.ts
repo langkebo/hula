@@ -47,6 +47,9 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
   const maxDuration = ref(60)
   let voiceConfigLoaded = false
 
+  /** 最短可发送录音时长（秒），低于该值视为误触 */
+  const MIN_VOICE_DURATION_SECONDS = 1
+
   /** 拉取服务端语音配置；失败时沿用默认上限，不阻塞录音 */
   const syncVoiceConfig = async () => {
     if (voiceConfigLoaded) return
@@ -148,7 +151,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         audioMonitor.value = null
       }
 
-      // 如果有音频文件路径，立即处理并显示录音结果
+      // 如果有音频文件路径，处理并显示录音结果
       if (audioPath) {
         // 读取录音文件
         const audioData = await readFile(audioPath)
@@ -177,17 +180,23 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
           compressionRatio: `${compressionRatio}%`
         })
 
-        // 立即回调显示录音结果，传递压缩后的音频
-        options.onStop?.(compressedBlob, duration, audioPath)
+        // 过短或空文件不发送：避免产生 0 字节 / 无意义的语音消息
+        if (duration < MIN_VOICE_DURATION_SECONDS || compressedBlob.size === 0) {
+          logger.warn('录音过短或为空，已丢弃:', { duration, size: compressedBlob.size })
+          await removeTempFile(audioPath, { reason: '删除过短录音文件失败' })
+          options.onError?.('unknown', '录音时间过短')
+          return
+        }
 
-        // 异步处理缓存，不阻塞UI更新
-        saveAudioToCache(compressedBlob, duration).catch((error) => {
-          logger.error('缓存音频文件失败:', error)
-          // 缓存失败不影响主要功能，只记录错误
-        })
-
-        // 删除原始的wav文件，释放磁盘空间
-        await removeTempFile(audioPath, { reason: '删除原始录音文件失败' })
+        // 先落盘缓存，再回调一次；保证后续上传拿到的是持久化路径
+        const cachedPath = await saveAudioToCache(compressedBlob)
+        if (cachedPath) {
+          options.onStop?.(compressedBlob, duration, cachedPath)
+          await removeTempFile(audioPath, { reason: '删除原始录音文件失败' })
+        } else {
+          // 缓存失败：回退到临时文件，仍允许本次发送
+          options.onStop?.(compressedBlob, duration, audioPath)
+        }
       }
     } catch (error) {
       logger.error('停止录音或压缩失败:', error)
@@ -242,8 +251,8 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
     }
   }
 
-  /** 保存音频到本地缓存 */
-  const saveAudioToCache = async (audioBlob: Blob, duration: number) => {
+  /** 保存音频到本地缓存；成功返回相对缓存根目录的路径，失败返回 null */
+  const saveAudioToCache = async (audioBlob: Blob): Promise<string | null> => {
     const getFileHashName = async (tempFileName: string) => {
       const audioFile = new File([audioBlob], tempFileName)
       // 计算文件真正的资源哈希文件名
@@ -289,13 +298,10 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       await file.close()
 
       logger.debug('音频文件已保存到:', fullPath)
-
-      // 调用回调，传递本地路径
-      options.onStop?.(audioBlob, duration, fullPath)
+      return fullPath
     } catch (error) {
       logger.error('保存音频文件失败:', error)
-      showFeedback('音频保存失败', 'error')
-      options.onError?.('unknown', '音频保存失败')
+      return null
     }
   }
 

@@ -145,6 +145,15 @@ describe('MatrixThreadState', () => {
       expect(state.isInThread(event)).toBe(true)
     })
 
+    it('should return true when only event.threadRootId survives (edited thread reply)', () => {
+      // 编辑后的线程回复 getContent() 只剩 m.new_content，relation 已丢失。
+      const event = {
+        ...createEvent({ content: { body: 'edited' } }),
+        threadRootId: '$root'
+      } as unknown as MatrixEvent
+      expect(state.isInThread(event)).toBe(true)
+    })
+
     it('should return false for plain event', () => {
       const event = createEvent({ content: { body: 'hi' } })
       expect(state.isInThread(event)).toBe(false)
@@ -192,22 +201,31 @@ describe('MatrixThreadState', () => {
       })
       expect(state.getThreadRootId(event)).toBeNull()
     })
+
+    it('should prefer event.threadRootId when content relation is gone', () => {
+      const event = {
+        ...createEvent({ content: { body: 'edited' } }),
+        threadRootId: '$root'
+      } as unknown as MatrixEvent
+      expect(state.getThreadRootId(event)).toBe('$root')
+    })
   })
 
   describe('getThreadNotificationCount', () => {
-    it('should count unread replies from others up to read receipt', async () => {
+    it('should count only replies after the read receipt (timeline is oldest-first)', async () => {
       vi.spyOn(mockClient, 'getRoom').mockReturnValue(createRoom([], { getEventReadUpTo: () => '$read' }))
       vi.spyOn(mockClient, 'getUserId').mockReturnValue('@me:server.com')
+      // fetchThreadReplies 返回升序（旧 -> 新）：$o1/$o2 在 receipt 之前（已读），$r1 在之后（未读）。
       fetchThreadReplies.mockReturnValue([
-        createEvent({ id: '$r1', sender: '@other:server.com' }),
+        createEvent({ id: '$o1', sender: '@other:server.com' }),
+        createEvent({ id: '$o2', sender: '@other:server.com' }),
         createEvent({ id: '$read', sender: '@me:server.com' }),
-        createEvent({ id: '$r2', sender: '@other:server.com' })
+        createEvent({ id: '$r1', sender: '@other:server.com' })
       ])
 
-      const count = await state.getThreadNotificationCount('!room', '$root')
-
-      // 遍历到 $read 即 break，$r1（他人）计数为 1
-      expect(count).toBe(1)
+      // 旧实现从前往后遍历并 break，会把 receipt 之前的 $o1/$o2 计成未读（=2）；
+      // 修正后从最新往回走、遇到 receipt 停止，只统计 receipt 之后的他人消息（$r1 = 1）。
+      expect(await state.getThreadNotificationCount('!room', '$root')).toBe(1)
     })
 
     it('should skip own replies', async () => {

@@ -1,16 +1,16 @@
 import DOMPurify from 'dompurify'
 import { AppException } from '@/common/exception.ts'
 import { MsgEnum } from '@/enums'
-import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { removeTag } from '@/utils/Formatting'
-import { AbstractMessageStrategy, type ReplyRef } from './base'
+import { AbstractMessageStrategy, type ReplyInput, type ReplyRef, resolveReplyTarget } from './base'
 
 export class TextMessageStrategyImpl extends AbstractMessageStrategy {
   constructor() {
     super(MsgEnum.TEXT)
   }
 
-  getMsg(msgInputValue: string, replyValue: MessageType | null): Record<string, unknown> {
+  getMsg(msgInputValue: string, replyValue: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(replyValue)
     // 处理&nbsp;为空格
     let content = removeTag(msgInputValue)
     if (content && typeof content === 'string') {
@@ -20,15 +20,10 @@ export class TextMessageStrategyImpl extends AbstractMessageStrategy {
     const msg: Record<string, unknown> = {
       type: this.msgType,
       content: content,
-      reply: replyValue?.message?.body?.content
-        ? {
-            content: replyValue.message.body.content,
-            key: replyValue.message.id
-          }
-        : undefined
+      reply: replyTarget ? { content: replyTarget.content, key: replyTarget.key } : undefined
     }
     // 处理回复内容
-    if (replyValue?.message?.body?.content) {
+    if (replyTarget) {
       const tempDiv = document.createElement('div')
       tempDiv.innerHTML = DOMPurify.sanitize(msg.content as string)
       tempDiv.innerHTML = DOMPurify.sanitize(removeTag(tempDiv.innerHTML), { RETURN_DOM: false })
@@ -46,17 +41,18 @@ export class TextMessageStrategyImpl extends AbstractMessageStrategy {
     return msg
   }
 
-  buildMessageBody(msg: Record<string, unknown>, reply: MessageType | null): Record<string, unknown> {
+  buildMessageBody(msg: Record<string, unknown>, reply: ReplyInput | null): Record<string, unknown> {
+    const replyTarget = resolveReplyTarget(reply)
     return {
       content: msg.content,
       msgtype: 'm.text',
       body: msg.content,
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || void 0,
-      reply: reply?.message?.body?.content
+      reply: replyTarget
         ? {
-            body: reply.message.body.content,
-            id: reply.message.id,
-            username: reply.fromUser.username,
+            body: replyTarget.content,
+            id: replyTarget.key,
+            username: replyTarget.username,
             type: msg.type as string
           }
         : void 0

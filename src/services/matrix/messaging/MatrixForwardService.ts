@@ -43,11 +43,20 @@ class MatrixForwardService {
       const eventType = event.getType()
       const content = event.getContent()
       const carriesEncryptedMedia = hasEncryptedFile(content) || hasEncryptedThumbnail(content)
+      const carriesEncryptedText = typeof event.isEncrypted === 'function' && event.isEncrypted()
 
-      // 安全门：带加密描述符的消息只能转发进加密房间。
-      // 明文房间会把它当作普通 file/url 存储并公开 key.k，导致附件失去端到端保护。
-      if (carriesEncryptedMedia && !(await cryptoSDKAdapter.isRoomEncrypted(roomId))) {
-        throw new Error('无法转发加密附件到未加密房间：这会泄露该附件的解密密钥。请先为目标房间开启加密。')
+      // 安全门：加密消息（含加密附件）只能转发进加密房间。
+      // 加密消息的 getContent() 已是解密后的明文，转发进明文房间会直接泄露正文；
+      // 加密附件还会公开 file.key.k，导致附件失去端到端保护。
+      if (carriesEncryptedMedia || carriesEncryptedText) {
+        if (!(await cryptoSDKAdapter.isRoomEncrypted(roomId))) {
+          if (carriesEncryptedMedia) {
+            throw new Error('无法转发加密附件到未加密房间：这会泄露该附件的解密密钥。请先为目标房间开启加密。')
+          }
+          throw new Error(
+            'Cannot forward an encrypted message to an unencrypted room: it would expose plaintext content.'
+          )
+        }
       }
 
       const eventId = event.getId()

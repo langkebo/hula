@@ -177,6 +177,8 @@ const props = defineProps<{
 const replyContent = ref('')
 const sendingReply = ref(false)
 const threadReplies = ref<ThreadMessage[]>([])
+// 已发送但尚未被服务端线程索引收录的回复 id，用于本地回显与去重。
+const pendingReplyIds = new Set<string>()
 const isFrozen = ref(false)
 const isMuted = ref(false)
 const pendingAction = ref<'freeze' | 'mute' | null>(null)
@@ -184,7 +186,7 @@ const threadStats = ref<ThreadStatistics | null>(null)
 const deleting = ref(false)
 const redactingId = ref<string | null>(null)
 
-const replyCount = computed(() => threadStats.value?.totalReplies ?? threadReplies.value.length)
+const replyCount = computed(() => Math.max(threadStats.value?.totalReplies ?? 0, threadReplies.value.length))
 const participantCount = computed(() => threadStats.value?.totalParticipants ?? 0)
 
 const isOwnReply = (reply: ThreadMessage) => {
@@ -206,9 +208,23 @@ const handleSendReply = async () => {
 
   sendingReply.value = true
   try {
-    await matrixThreadService.sendThreadReply(props.roomId, props.threadId, { body })
+    const eventId = await matrixThreadService.sendThreadReply(props.roomId, props.threadId, { body })
     replyContent.value = ''
-    await loadThreadReplies()
+    // 服务端线程索引存在延迟，先本地回显一条，避免面板短暂显示「暂无回复」。
+    const senderId = matrixClientService.getUserId() ?? ''
+    const senderName = matrixClientService.getClient()?.getUser?.(senderId)?.displayName ?? senderId
+    pendingReplyIds.add(eventId)
+    threadReplies.value = [
+      ...threadReplies.value,
+      {
+        id: eventId,
+        senderId,
+        senderName,
+        content: body,
+        timestamp: Date.now()
+      }
+    ]
+    await loadThreadReplies({ silent: true })
   } catch (err) {
     logger.error(`Failed to send thread reply: ${err}`)
     showFeedback(t('thread.send_failed'), 'error')
@@ -315,24 +331,60 @@ watch(visible, (val) => {
   }
 })
 
-const loadThreadReplies = async () => {
-  if (!props.roomId || !props.threadId) return
-  try {
-    const replies = await matrixThreadService.getThreadRepliesViaApi(props.roomId, props.threadId)
-    threadReplies.value = replies.map((reply) => ({
-      id: reply.event_id,
-      senderId: reply.sender,
-      senderName: reply.sender,
-      content: typeof reply.content?.body === 'string' ? reply.content.body : '',
-      timestamp: reply.origin_server_ts
-    }))
-    const last = threadReplies.value[threadReplies.value.length - 1]
-    if (last) {
-      await matrixThreadService.markThreadReadViaApi(props.roomId, props.threadId, last.id, last.timestamp)
+const mergeReplies = (incoming: ThreadMessage[]): ThreadMessage[] => {
+  const map = new Map<string, ThreadMessage>(incoming.map((item) => [item.id, item]))
+  for (const item of threadReplies.value) {
+    if (map.has(item.id)) {
+      // 服务端已收录这条本地回显，后续交给远端数据。
+      pendingReplyIds.delete(item.id)
+      continue
     }
+    if (pendingReplyIds.has(item.id)) map.set(item.id, item)
+  }
+  return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp)
+}
+
+const loadThreadReplies = async (options: { silent?: boolean } = {}) => {
+  if (!props.roomId || !props.threadId) return
+  const { roomId, threadId } = props
+  try {
+    const replies = await matrixThreadService.getThreadRepliesViaApi(roomId, threadId)
+    threadReplies.value = mergeReplies(
+      replies.map((reply) => ({
+        id: reply.event_id,
+        senderId: reply.sender,
+        senderName: reply.sender,
+        content: typeof reply.content?.body === 'string' ? reply.content.body : '',
+        timestamp: reply.origin_server_ts
+      }))
+    )
   } catch (err) {
-    logger.error(`Failed to load thread replies: ${err}`)
-    showFeedback(t('thread.load_failed'), 'error')
+    // 刚创建线程/刚回复时服务端可能还查不到（404 Thread not found）：
+    // 回退本地 SDK Thread 模型，避免面板显示「暂无回复」并误报加载失败。
+    let localReplies: ThreadMessage[] = []
+    try {
+      localReplies = matrixThreadService.getThreadViewData(roomId, threadId).replies.map((reply) => ({
+        id: reply.eventId,
+        senderId: reply.sender,
+        senderName: reply.senderName,
+        senderAvatar: reply.avatarUrl ?? '',
+        content: reply.content,
+        timestamp: reply.timestamp
+      }))
+    } catch (localErr) {
+      logger.warn(`Failed to read local thread replies: ${localErr}`)
+    }
+    threadReplies.value = mergeReplies(localReplies)
+    logger.warn(`Failed to load thread replies, fallback to local: ${err}`)
+    if (!options.silent && threadReplies.value.length === 0) {
+      showFeedback(t('thread.load_failed'), 'error')
+    }
+    return
+  }
+
+  const last = threadReplies.value[threadReplies.value.length - 1]
+  if (last) {
+    await matrixThreadService.markThreadReadViaApi(props.roomId!, props.threadId!, last.id, last.timestamp)
   }
 }
 </script>
